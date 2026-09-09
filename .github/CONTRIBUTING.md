@@ -17,7 +17,7 @@ Install Android Studio with support for AGP 8.5, Temurin JDK 17, Android SDK Pla
 
 Use `./gradlew --version` to confirm the build JDK and Wrapper version. Do not install a separate system Gradle. On Windows, use `gradlew.bat` in place of `./gradlew`. Run `bash scripts/setup-hooks.sh` once, in Git Bash on Windows, to install commit and branch checks; rerun it when hooks are added.
 
-The API 34 minimum is an initial assumption for the supplied Android 14 environment. Confirm this, vehicle permissions, signing requirements, and manifest configuration against the provided AAOS sample before device integration. This launcher does not yet access vehicle APIs or declare driving-state behavior.
+The API 34 minimum is an initial assumption for the supplied Android 14 environment. Confirm this, vehicle permissions, signing requirements, and manifest configuration against the provided AAOS sample before device integration. The current foundation does not yet access real vehicle APIs. Debug uses an explicitly simulated parked provider in a separate `.demo` application; Release reports vehicle availability and driving state as unknown. Quest commands require a fresh verified parked snapshot.
 
 ## Before opening or updating a PR
 
@@ -33,16 +33,17 @@ pushing. On Windows, replace `./gradlew` with `gradlew.bat`.
 2. Run the same checks as Android CI:
 
    ```bash
-   ./gradlew ktlintCheck :app:lintDebug :app:testDebugUnitTest :app:assembleDebug
+   ./gradlew ktlintCheck lintDebug testDebugUnitTest :core:core-domain:test :core:core-vss:test :app:assembleDebug
    ```
 
 3. Inspect formatting, Lint, and test reports under the corresponding
    `build/reports/` directories. Fix failures and review warnings that affect the
    change. The Debug APK is under `app/build/outputs/apk/debug/`.
 4. Add or update tests for changed behavior. JUnit 4 and `kotlinx-coroutines-test`
-   are configured for `app/src/test/`. No behavior tests exist yet; `NO-SOURCE`
-   means no tests ran. Prioritize reward calculations, state transitions,
-   asynchronous responses, and persistence behavior as those features are added.
+   are configured in the application and relevant libraries. Rule, ViewModel,
+   Compose/Robolectric, and local SQLite tests live beside their subjects; Room
+   device tests live in `core/core-database/src/androidTest/`. `NO-SOURCE` means
+   no tests ran for that source set. See [TESTING](../docs/TESTING.md).
 5. Check affected user flows on a device or emulator when changing UI,
    permissions, or platform integrations. Vehicle APIs require the supplied AAOS
    environment. Debug CI does not verify device behavior or a Release/R8 build;
@@ -71,10 +72,10 @@ phase. Android Lint errors fail CI; warnings remain visible in the report.
 ## Dependency management
 
 - Declare library and plugin versions in `gradle/libs.versions.toml`; reference the aliases from module build files.
-- `app/gradle.lockfile` records the resolved application/test compile and runtime dependencies, including transitive dependencies for Debug and Release variants. Locking is strict: missing or inconsistent lock state fails dependency resolution.
+- Each implemented module has a `gradle.lockfile` recording its resolved compile and runtime dependencies. Android modules include Debug, Release, and configured test variants. Locking is strict: missing or inconsistent lock state fails dependency resolution.
 - `settings-gradle.lockfile` is Gradle's generated lock state for importing the local version catalog. Keep it with the application lock when regenerating dependencies.
 - Gradle/plugin tool classpaths are outside this application lock. Plugin versions are pinned in the catalog, ktlint's engine version is pinned explicitly, and the Wrapper distribution includes a SHA-256 checksum. This is not a claim that the application lock covers every build tool.
-- Compose versions are aligned with a pinned BOM. New dependencies must support compileSdk 34 and the selected Kotlin version. Add Room, KSP, and service SDKs when their features need them, after checking compatibility with the supplied environment.
+- Compose versions are aligned with a pinned BOM. New dependencies must support compileSdk 34 and the selected Kotlin version. Room 2.6.1, KSP 2.0.21-1.0.28, Hilt 2.52, DataStore 1.1.1, lifecycle 2.8.3, and Robolectric 4.13 are installed for this foundation. Add service SDKs only after checking the supplied environment.
 
 To change dependencies:
 
@@ -82,11 +83,11 @@ To change dependencies:
 2. Generate the lock state locally:
 
    ```bash
-   ./gradlew :app:dependencies --write-locks
+   ./gradlew :app:dependencies :core:core-domain:dependencies :core:core-database:dependencies :core:core-vss:dependencies :core:core-ui:dependencies :feature:feature-pet:dependencies :feature:feature-quest:dependencies :feature:feature-vehicle-info:dependencies --write-locks
    ```
 
 3. Inspect the lock diff for unexpected transitive upgrades. Run the required checks **without** `--write-locks`.
-4. Commit the catalog/build changes and `app/gradle.lockfile` together. For new modules, enable locking and generate their own lock files.
+4. Commit the catalog/build changes and `app/gradle.lockfile` together. For new modules, enable locking and generate their own lock files. The database module and app instrumentation runtime explicitly include the pinned Kotlin common runtime so AGP compile/runtime consistency and lock generation resolve the same graph.
 
 Normal CI consumes committed locks; it does not update them or run `clean` on every build. The Gradle action owns its dependency/build cache.
 
