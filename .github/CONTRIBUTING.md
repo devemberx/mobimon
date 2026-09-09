@@ -1,29 +1,118 @@
 # Contributing to RIVO
 
-## Setup
+## Development environment
 
-Enable the commit message hook and template once after cloning:
+| Component | Pinned version |
+| --- | --- |
+| Build JDK / JVM target | 17 |
+| Gradle Wrapper | 8.7 |
+| Android Gradle Plugin | 8.5.2 |
+| Kotlin / Compose Compiler | 2.0.21 |
+| compileSdk / targetSdk / initial minSdk | 34 / 34 / 34 |
+| Compose BOM | 2024.06.00 |
+| ktlint Gradle plugin / engine | 12.1.2 / 1.3.1 |
+| Kover | 0.8.3 |
+
+Install Android Studio with support for AGP 8.5, Temurin JDK 17, Android SDK Platform 34, and SDK Build Tools 34.0.0. Point Android Studio's **Gradle JDK** and your terminal's `JAVA_HOME` at the same JDK 17 installation. Android Studio itself can use its bundled runtime. Local SDK paths belong in the ignored `local.properties` (`sdk.dir=/your/sdk/path`) or the `ANDROID_HOME` environment variable.
+
+Use `./gradlew --version` to confirm the build JDK and Wrapper version. Do not install a separate system Gradle. On Windows, use `gradlew.bat` in place of `./gradlew`. Run `bash scripts/setup-hooks.sh` once, in Git Bash on Windows, to install the repository's existing commit checks.
+
+The API 34 minimum is an initial assumption for the supplied Android 14 environment. Confirm this, vehicle permissions, signing requirements, and manifest configuration against the provided AAOS sample before device integration. This launcher does not yet access vehicle APIs or declare driving-state behavior.
+
+## Before opening or updating a PR
+
+For code or build changes, run these commands from the repository root before
+pushing. On Windows, replace `./gradlew` with `gradlew.bat`.
+
+1. Apply the shared Kotlin formatting rules and review the resulting diff:
+
+   ```bash
+   ./gradlew ktlintFormat
+   ```
+
+2. Run the same checks as Android CI:
+
+   ```bash
+   ./gradlew ktlintCheck :app:lintDebug :app:testDebugUnitTest :app:assembleDebug
+   ```
+
+3. Inspect formatting, Lint, and test reports under the corresponding
+   `build/reports/` directories. Fix failures and review warnings that affect the
+   change. The Debug APK is under `app/build/outputs/apk/debug/`.
+4. Add or update tests for changed behavior. JUnit 4 and `kotlinx-coroutines-test`
+   are configured for `app/src/test/`. No behavior tests exist yet; `NO-SOURCE`
+   means no tests ran. Prioritize reward calculations, state transitions,
+   asynchronous responses, and persistence behavior as those features are added.
+5. Check affected user flows on a device or emulator when changing UI,
+   permissions, or platform integrations. Vehicle APIs require the supplied AAOS
+   environment. Debug CI does not verify device behavior or a Release/R8 build;
+   validate the actual submission artifact before the demo.
+6. Review `git diff --check` and the changed files. Record checks performed and
+   any device or integration checks not run, with reasons, in the PR's
+   `Verification` section. Validate the PR format as described below.
+
+For dependency changes, follow the lockfile procedure below before running the
+checks. For documentation-only changes, check content, relative links, and
+`git diff --check`; a local Android build is unnecessary. GitHub still runs the
+required PR checks.
+
+Coverage reports are optional locally and are generated on main and manual CI
+runs:
 
 ```bash
-bash scripts/setup-hooks.sh
+./gradlew :app:koverHtmlReportDebug :app:koverXmlReportDebug
 ```
 
-On Windows, run this in Git Bash.
+Kover measures local JVM tests, not on-device coverage. Reports are informational;
+there is no minimum percentage gate. CI also omits detekt, a blanket
+warnings-as-errors setting, and emulator tests for this initial development
+phase. Android Lint errors fail CI; warnings remain visible in the report.
 
-Android environment setup and dependency updates are documented in [README](../README.md).
-Before opening a code PR, run:
+## Dependency management
 
-```bash
-./gradlew ktlintCheck :app:lintDebug :app:testDebugUnitTest :app:assembleDebug
-```
+- Declare library and plugin versions in `gradle/libs.versions.toml`; reference the aliases from module build files.
+- `app/gradle.lockfile` records the resolved application/test compile and runtime dependencies, including transitive dependencies for Debug and Release variants. Locking is strict: missing or inconsistent lock state fails dependency resolution.
+- `settings-gradle.lockfile` is Gradle's generated lock state for importing the local version catalog. Keep it with the application lock when regenerating dependencies.
+- Gradle/plugin tool classpaths are outside this application lock. Plugin versions are pinned in the catalog, ktlint's engine version is pinned explicitly, and the Wrapper distribution includes a SHA-256 checksum. This is not a claim that the application lock covers every build tool.
+- Compose versions are aligned with a pinned BOM. New dependencies must support compileSdk 34 and the selected Kotlin version. Add Room, KSP, and service SDKs when their features need them, after checking compatibility with the supplied environment.
 
-Use `./gradlew ktlintFormat` for local formatting fixes. On Windows, replace `./gradlew` with `gradlew.bat`.
-Commit `app/gradle.lockfile` with dependency changes; regenerate it locally with
-`./gradlew :app:dependencies --write-locks`. CI only reads the committed lock state.
+To change dependencies:
 
-During initial development, merging requires successful `PR format` and `Android checks`
-statuses, with **zero required review approvals**. Coverage reports are informational;
-there is no minimum coverage percentage or mandatory emulator test in PR CI.
+1. Edit the version catalog and module declarations. Use exact versions, not `+` or snapshots.
+2. Generate the lock state locally:
+
+   ```bash
+   ./gradlew :app:dependencies --write-locks
+   ```
+
+3. Inspect the lock diff for unexpected transitive upgrades. Run the required checks **without** `--write-locks`.
+4. Commit the catalog/build changes and `app/gradle.lockfile` together. For new modules, enable locking and generate their own lock files.
+
+Normal CI consumes committed locks; it does not update them or run `clean` on every build. The Gradle action owns its dependency/build cache.
+
+## CI and merge policy
+
+During initial development, merging requires successful `PR format` and
+`Android checks` statuses, with **zero required review approvals**.
+
+- PR creation and code updates run formatting, Android Lint, local unit-test
+  tasks, and Debug APK assembly.
+- PR title/body edits rerun the PR-format workflow.
+- Pushes to main and manual Android CI runs also retain the Debug APK for 14 days
+  and generate coverage reports.
+- CI preserves available reports even after a failure, for 7 days. Superseded
+  Android CI runs are cancelled. Android checks use one Ubuntu job.
+
+CI does not call real AI or vehicle services. Branch protection is configured in
+GitHub separately from the workflow YAML; keep the required status names stable.
+
+## Documentation
+
+Keep README focused on what users can do with the Android app and its current
+availability. Put developer setup, dependency management, and checks to run after
+code changes in this guide. Update the guide when commands or workflows change.
+Local agent planning and design documents under `docs/superpowers/` are ignored
+and must not be committed.
 
 ## Commit messages
 
