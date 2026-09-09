@@ -10,6 +10,21 @@ bash scripts/setup-hooks.sh
 
 On Windows, run this in Git Bash.
 
+Android environment setup and dependency updates are documented in [README](../README.md).
+Before opening a code PR, run:
+
+```bash
+./gradlew ktlintCheck :app:lintDebug :app:testDebugUnitTest :app:assembleDebug
+```
+
+Use `./gradlew ktlintFormat` for local formatting fixes. On Windows, replace `./gradlew` with `gradlew.bat`.
+Commit `app/gradle.lockfile` with dependency changes; regenerate it locally with
+`./gradlew :app:dependencies --write-locks`. CI only reads the committed lock state.
+
+During initial development, merging requires successful `PR format` and `Android checks`
+statuses, with **zero required review approvals**. Coverage reports are informational;
+there is no minimum coverage percentage or mandatory emulator test in PR CI.
+
 ## Commit messages
 
 Use `type(scope): summary`, followed by a blank line and two bullets:
