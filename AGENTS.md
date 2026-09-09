@@ -1,11 +1,13 @@
-# Shared AI instructions
-
-- Before development or working on issues, pull requests, or commits, read and follow `.github/CONTRIBUTING.md`.
+- Before development or Git/GitHub operations, read and follow [CONTRIBUTING.md](.github/CONTRIBUTING.md) for environment setup, dependency locks, issue/PR rules, and required checks.
 - Follow the [branch rules](.github/CONTRIBUTING.md#branches) when creating work branches.
-- For PR merges, follow the [squash merge instructions](.github/CONTRIBUTING.md#squash-merges): use the latest PR title as the commit subject and copy only the two `Changes` bullets verbatim into the body.
-- Preserve the bullets' wording and order; omit the section heading, comments, other PR sections, and intermediate commit messages. Correct the PR first if its message needs changing.
-- Before merging, verify the required checks for the current PR revision. When using GitHub CLI, explicitly supply `--squash`, `--subject`, `--body-file`, and `--match-head-commit`; do not rely on the generated message or bypass required checks.
-- For UI design or changes, also read and follow `docs/DESIGN.md`.
-- Shared skill originals live in `.agents/skills/` for Codex and Gemini; `.claude/skills/` contains committed copies for Claude Code.
-- When a shared skill needs updating, edit the original in `.agents/skills/`, then copy its entire folder, including references and licenses, to `.claude/skills/`.
-- Keep both copies identical and include their updates in the same commit.
+- Before merging, verify required checks for the current PR revision and follow the [squash merge instructions](.github/CONTRIBUTING.md#squash-merges) exactly.
+- For feature behavior or module boundaries, read the relevant sections of [ARCHITECTURE.md](docs/ARCHITECTURE.md).
+- For UI design or changes, follow [DESIGN.md](docs/DESIGN.md).
+- For behavior changes or tests, follow [TESTING.md](docs/TESTING.md) for test placement, Fakes, and appropriate verification.
+- Design documents include planned work. Inspect source and build configuration before assuming a module, dependency, test task, or integration exists; report only verification actually performed.
+- Preserve the [module boundaries](docs/ARCHITECTURE.md#target-modules-and-dependencies): keep `core-domain` independent of Android, keep feature modules independent of each other and concrete data implementations, and assemble bindings in `app`.
+- Keep simulated providers in Debug/demo source sets with explicit labels and separate application IDs, profiles, and databases. Release must report unavailable vehicle data until a verified real adapter is connected; unknown driving state cannot authorize quest commands.
+- Route quest rewards through the repository's atomic Room transaction. Preserve evidence validation, ownership/revision checks, and completion uniqueness when extending progression; UI code must not award XP directly.
+- Keep character artwork replaceable through [PetAvatar](core/core-ui/src/main/java/com/devemberx/rivo/core/ui/PetAvatar.kt). Keep progression and interaction state outside the renderer, and limit placeholder artwork work while separate character assets are being prepared.
+- Update the current implementation sections in ARCHITECTURE.md and TESTING.md when adding modules or integrations; update CONTRIBUTING.md and CI when build or verification commands change. Local plans under `docs/superpowers/` remain ignored and must not be committed.
+- When updating shared skills, edit `.agents/skills/`, then copy the entire affected skill folder, including references and licenses, to `.claude/skills/`. Keep both copies identical in the same commit.
