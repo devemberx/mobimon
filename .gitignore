@@ -1,5 +1,17 @@
 # Local Android Studio / IntelliJ IDEA project metadata
 /.idea/
 
+# Machine-specific Android SDK settings and generated build output
+/local.properties
+.gradle/
+.kotlin/
+**/build/
+*.iml
+*.jks
+*.keystore
+
 # Python validation scripts
 __pycache__/
+
+# Local agent planning and design documents
+/docs/superpowers/
