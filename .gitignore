@@ -12,3 +12,6 @@
 
 # Python validation scripts
 __pycache__/
+
+# Local agent planning and design documents
+/docs/superpowers/
