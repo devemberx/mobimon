@@ -2,7 +2,8 @@ name: PR check
 
 on:
   pull_request:
-    types: [opened, edited, synchronize, reopened, ready_for_review]
+    branches: [main]
+    types: [opened, edited, synchronize, reopened]
 
 permissions:
   contents: read
