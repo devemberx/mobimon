@@ -1,0 +1,57 @@
+#!/usr/bin/env bash
+# Rules: .github/CONTRIBUTING.md#branches
+set -euo pipefail
+export LC_ALL=C
+
+allowed='^(feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert)/[a-z0-9]+(-[a-z0-9]+)*$'
+
+validate_branch() {
+    local branch=$1
+    if [[ $branch =~ $allowed ]] && [ "${#branch}" -le 50 ]; then
+        return 0
+    fi
+    printf 'pre-push: Branch %q must use <type>/<short-kebab-summary>, at most 50 characters.\n' "$branch" >&2
+    printf '  Types: feat fix docs style refactor perf test build ci chore revert\n' >&2
+    printf '  Examples: feat/home-rewards, build/android-ci\n' >&2
+    printf '  Rules: .github/CONTRIBUTING.md#branches\n' >&2
+    return 1
+}
+
+failed=0
+while read -r local_ref local_sha remote_ref remote_sha; do
+    # Inspect destinations, including when the source is HEAD or a commit SHA.
+    case "$remote_ref" in
+        refs/heads/main)
+            printf 'pre-push: Do not push directly to or delete main; open a PR from a work branch.\n' >&2
+            failed=1
+            continue
+            ;;
+        refs/heads/*) ;;
+        *) continue ;; # Tags and other namespaces have no branch naming rule.
+    esac
+
+    # Allow cleanup of old work branches, even if their names violate the rule.
+    # Match all-zero object IDs without assuming a particular Git hash length.
+    case "$local_sha" in *[!0]*) ;; *) continue ;; esac
+
+    remote_branch=${remote_ref#refs/heads/}
+    if ! validate_branch "$remote_branch"; then
+        printf 'pre-push: Fix the destination branch name in your push refspec.\n' >&2
+        failed=1
+    fi
+
+    # main may be the source of a new work branch. Unnamed revisions have no
+    # local branch name to check; their destination was still checked above.
+    case "$local_ref" in
+        refs/heads/main) continue ;;
+        refs/heads/*) ;;
+        *) continue ;;
+    esac
+    local_branch=${local_ref#refs/heads/}
+    if [ "$local_branch" != "$remote_branch" ] && ! validate_branch "$local_branch"; then
+        printf 'pre-push: Rename the local work branch with git branch -m <old-name> <valid-name>.\n' >&2
+        failed=1
+    fi
+done
+
+exit "$failed"

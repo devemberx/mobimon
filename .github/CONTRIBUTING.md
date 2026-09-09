@@ -15,7 +15,7 @@
 
 Install Android Studio with support for AGP 8.5, Temurin JDK 17, Android SDK Platform 34, and SDK Build Tools 34.0.0. Point Android Studio's **Gradle JDK** and your terminal's `JAVA_HOME` at the same JDK 17 installation. Android Studio itself can use its bundled runtime. Local SDK paths belong in the ignored `local.properties` (`sdk.dir=/your/sdk/path`) or the `ANDROID_HOME` environment variable.
 
-Use `./gradlew --version` to confirm the build JDK and Wrapper version. Do not install a separate system Gradle. On Windows, use `gradlew.bat` in place of `./gradlew`. Run `bash scripts/setup-hooks.sh` once, in Git Bash on Windows, to install the repository's existing commit checks.
+Use `./gradlew --version` to confirm the build JDK and Wrapper version. Do not install a separate system Gradle. On Windows, use `gradlew.bat` in place of `./gradlew`. Run `bash scripts/setup-hooks.sh` once, in Git Bash on Windows, to install commit and branch checks; rerun it when hooks are added.
 
 The API 34 minimum is an initial assumption for the supplied Android 14 environment. Confirm this, vehicle permissions, signing requirements, and manifest configuration against the provided AAOS sample before device integration. This launcher does not yet access vehicle APIs or declare driving-state behavior.
 
@@ -113,6 +113,19 @@ availability. Put developer setup, dependency management, and checks to run afte
 code changes in this guide. Update the guide when commands or workflows change.
 Local agent planning and design documents under `docs/superpowers/` are ignored
 and must not be committed.
+
+## Branches
+
+Create one branch per topic from an up-to-date `main`. Use
+`<type>/<short-kebab-summary>`, such as `feat/home-rewards` or `build/android-ci`.
+
+- Use the same types as [commit messages](#commit-messages).
+- Keep the entire name within **50 characters**, including the type and `/`.
+- Use lowercase ASCII letters and digits in the summary, with single hyphens between words.
+
+The local `pre-push` hook checks branch names and blocks direct pushes to or
+deletion of `main`. Other branch deletions and tags are allowed. Rename an invalid
+local branch with `git branch -m <old-name> <valid-name>` before pushing.
 
 ## Commit messages
 
