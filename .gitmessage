@@ -1,0 +1,16 @@
+
+# type(scope): summary
+#
+# - Why the change is needed
+# - What changed
+#
+# Write your message above these instructions using the format shown here.
+# Write in English using printable ASCII characters, including all footers.
+# Comments and verbose diffs in the message file must also use ASCII text.
+# Subject: at most 50 characters. Do not end it with a period.
+# Add a blank line, then exactly two bullets (at most 120 characters each, including '- ').
+# type: feat fix docs style refactor perf test build ci chore revert
+# scope examples: app ui navigation auth data domain network database di resources build deps git
+# Optional footers after a blank line: Closes #12, Refs: #12
+# Breaking changes: type(scope)!: summary + BREAKING CHANGE: impact and migration
+# Full rules: .github/CONTRIBUTING.md

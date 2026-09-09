@@ -1,0 +1,95 @@
+#!/usr/bin/env bash
+# Rules and Android examples: .github/CONTRIBUTING.md
+set -e
+# Use byte ranges consistently: accepted commit text is printable ASCII.
+export LC_ALL=C
+
+reject() {
+    printf 'commit-msg: %s\n\n' "$1" >&2
+    cat >&2 <<'EXAMPLE'
+Format: type(scope): summary (entire subject: at most 50 characters)
+
+feat(auth): add automatic login
+
+- Reduce repeated sign-ins after restarting the app
+- Store tokens and restore the login state
+
+Write in English using printable ASCII characters.
+Include exactly two '- ' bullets, each at most 120 characters.
+Full rules: .github/CONTRIBUTING.md
+EXAMPLE
+    exit 1
+}
+
+if [ "$#" -ne 1 ] || [ ! -f "$1" ] || [ ! -r "$1" ]; then
+    reject 'Pass a readable commit message file as the only argument.'
+fi
+
+comment_prefix=$(git config --get core.commentString || git config --get core.commentChar || printf '#')
+[ "$comment_prefix" != auto ] || comment_prefix='#'
+lines=()
+# Git may retain comments and scissors content with -m, -F, or custom cleanup.
+# Check the entire input for non-ASCII bytes, even content skipped by format checks.
+input_pattern=$'^[\t -~]*$'
+after_scissors=false
+while IFS= read -r line || [ -n "$line" ]; do
+    # Normalize CRLF and trailing whitespace only for validation; leave the file intact.
+    line=${line%$'\r'}
+    line=${line%"${line##*[![:space:]]}"}
+    [[ $line =~ $input_pattern ]] || reject 'Use ASCII text throughout the message file, including comments and verbose diff content.'
+    [ "$after_scissors" = false ] || continue
+    case "$line" in
+        "$comment_prefix ------------------------ >8 ------------------------") after_scissors=true; continue ;;
+        "$comment_prefix"*) continue ;;
+    esac
+    if [ "${#lines[@]}" -eq 0 ] && [ -z "$line" ]; then continue; fi
+    lines+=("$line")
+done < "$1"
+
+subject=${lines[0]:-}
+[ -n "$subject" ] || reject 'The subject must not be empty.'
+
+# Check all message text before format exceptions, including footer values.
+# This enforces a character set, not English vocabulary or grammar.
+ascii_pattern='^[ -~]*$'
+for line in "${lines[@]}"; do
+    [[ $line =~ $ascii_pattern ]] || reject 'Write the subject, body, and footers in English using printable ASCII characters only.'
+done
+
+# Preserve Git's generated merge/revert and autosquash messages, as in the reference repo.
+case "$subject" in
+    'Merge '*|'Revert '*|'fixup! '*|'squash! '*|'amend! '*) exit 0 ;;
+esac
+
+subject_pattern='^(feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert)\([a-z][a-z0-9]*(-[a-z0-9]+)*\)!?: [^[:space:]].*$'
+[[ $subject =~ $subject_pattern ]] || reject 'Use type(scope): summary with a supported lowercase type and lowercase kebab-case scope.'
+[ "${#subject}" -le 50 ] || reject "The subject has ${#subject} characters; the limit is 50."
+[[ $subject != *. ]] || reject 'Do not end the subject with a period.'
+[ -z "${lines[1]:-}" ] || reject 'Separate the subject and body with a blank line.'
+
+bullet_count=0
+in_footers=false
+previous_blank=true
+footer_pattern='^(BREAKING CHANGE: |[A-Za-z][A-Za-z-]*: |(Closes|Fixes|Refs) #)[^[:space:]].*$'
+for ((index = 2; index < ${#lines[@]}; index++)); do
+    line=${lines[index]}
+    if [ -z "$line" ]; then
+        previous_blank=true
+        continue
+    fi
+    if [[ $line == '- '* ]]; then
+        [ "$in_footers" = false ] || reject 'Place all bullets before the footers.'
+        [[ $line =~ ^-\ [^[:space:]] ]] || reject 'Use "- content" for each bullet, with exactly one leading space after the dash.'
+        [ "${#line}" -le 120 ] || reject "A bullet has ${#line} characters; the limit is 120 including '- '."
+        bullet_count=$((bullet_count + 1))
+    elif [[ $line =~ $footer_pattern ]] && [ "$bullet_count" -eq 2 ]; then
+        if [ "$in_footers" = false ] && [ "$previous_blank" = false ]; then
+            reject 'Separate the bullets and footers with a blank line.'
+        fi
+        in_footers=true
+    else
+        reject 'Write exactly two body bullets. Put additional metadata in footers such as Refs: #12 after a blank line.'
+    fi
+    previous_blank=false
+done
+[ "$bullet_count" -eq 2 ] || reject "The body must contain exactly two bullets; found ${bullet_count}."
