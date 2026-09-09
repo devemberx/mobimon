@@ -1,0 +1,253 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>강아지 홈 — 작은 산책 초안</title>
+<style>
+:root{font-family:'Noto Sans KR','Apple SD Gothic Neo','Malgun Gothic',sans-serif;color:#615441;background:#eee9e0;font-synthesis:none}
+*{box-sizing:border-box}body{margin:0;padding:28px 24px}button,input{font:inherit;color:inherit}button{cursor:pointer;border:0}button:disabled{cursor:default}button:focus-visible,input:focus-visible{outline:3px solid #aa8154;outline-offset:5px}[hidden]{display:none!important}svg{display:block}button svg{pointer-events:none}.icon{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.draft-label{max-width:1160px;margin:0 auto 13px;display:flex;justify-content:space-between;gap:12px;font-size:10px;color:#9c9181;letter-spacing:.7px}.draft-label strong{font-weight:500;color:#7f715f}.scene{max-width:1160px;height:700px;margin:auto;position:relative;overflow:hidden;isolation:isolate;border-radius:28px;background:#faf2e6;border:1px solid #e1d7c7;box-shadow:0 20px 50px #6a513914}.landscape{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}.header{position:absolute;top:0;left:0;right:0;display:flex;align-items:center;justify-content:space-between;padding:26px 30px;z-index:5}.menu-button{width:44px;height:44px;border:1px solid #e6dccb;background:#fffaf1b3;border-radius:50%;display:grid;place-items:center}.status{display:flex;align-items:center;gap:13px;font-size:11px;color:#978a77}.status b{font-size:10px;background:#e8ebdc;color:#879175;padding:6px 8px;border-radius:8px;font-weight:500}.intro{position:absolute;top:132px;left:15px;right:15px;text-align:center;transition:opacity .25s;pointer-events:none}.intro .overline{font-size:10px;letter-spacing:3px;color:#b8a388;margin:0 0 16px}.intro h1{font-size:34px;letter-spacing:-1.4px;font-weight:500;margin:0;color:#705c44}.intro .subtitle{font-size:12px;color:#ae9b82;margin:15px 0 0}.scene.talking .intro{opacity:0}.idle-hint{position:absolute;bottom:44px;left:20px;right:20px;text-align:center;color:#aa967c;font-size:12px;line-height:1.8;pointer-events:none}.idle-hint .little-paw{display:block;margin:0 auto 10px;color:#c5b190;width:20px;height:20px}.scene.talking .idle-hint{display:none}
+.puppy{position:absolute;z-index:3;width:240px;aspect-ratio:320/260;background:transparent;padding:0;border-radius:45%;touch-action:manipulation}.puppy svg{width:100%;height:100%;overflow:visible;transform:scaleX(var(--direction,1));filter:drop-shadow(0 3px 1px #79512f08)}.puppy-shadow{position:absolute;left:23%;right:12%;height:9px;bottom:5%;background:#96795425;border-radius:50%;filter:blur(4px)}.dog-face,.dog-tail{transform-box:fill-box}.dog-tail{transform-origin:100% 85%}.dog-ear{transform-box:fill-box;transform-origin:60% 10%}.leg{fill:none;stroke-linecap:round;stroke-linejoin:round}.puppy:focus-visible{outline-offset:0}
+.reply{position:absolute;z-index:4;width:270px;padding:20px 23px;background:#fffdf7;border:1px solid #e8ddcb;border-radius:23px;box-shadow:0 10px 30px #7a5d3510;pointer-events:none}.reply:after{content:"";position:absolute;bottom:-9px;left:var(--tail,50%);width:17px;height:17px;background:#fffdf7;border-right:1px solid #e8ddcb;border-bottom:1px solid #e8ddcb;transform:translateX(-50%) rotate(45deg)}.reply p{margin:0;font-size:14px;line-height:1.85;white-space:pre-wrap;overflow-wrap:anywhere}.reply.thinking{color:#b7a58e}
+.chat-dock{position:absolute;z-index:6;bottom:25px;left:50%;transform:translateX(-50%);width:min(610px,calc(100% - 48px))}.user-message{margin:0 8px 12px;display:flex;justify-content:flex-end;align-items:baseline;gap:9px;font-size:12px;color:#9c896c}.user-message>span:first-child{font-size:10px;color:#b6a389;flex-shrink:0}.user-message .sent-text{background:#eee3d0;padding:9px 14px;border-radius:13px 13px 3px 13px;max-width:85%;white-space:pre-wrap;overflow-wrap:anywhere;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}.input-row{display:flex;align-items:center;gap:10px;padding:8px 9px 8px 20px;background:#fffdf7;border:1px solid #e3d7c3;border-radius:19px;box-shadow:0 8px 24px #79593108}.input-row input{border:0;outline:0;min-width:0;flex:1;background:transparent;font-size:13px;line-height:28px}.input-row input::placeholder{color:#bbab96}.input-row:focus-within{border-color:#cbb18f}.send{width:38px;height:38px;border-radius:12px;background:#9b815e;color:#fffdf7;display:grid;place-items:center;flex-shrink:0}.send:disabled{opacity:.45}.close-chat{display:grid;place-items:center;background:transparent;color:#b2a18a;width:30px;height:36px;flex-shrink:0}.close-chat .icon{width:17px;height:17px}.chat-note{font-size:9px;color:#bba990;text-align:center;margin:9px 0 0}
+.menu-shade{position:absolute;inset:0;z-index:7;background:#685c4920;width:100%;height:100%;cursor:default}.menu{position:absolute;z-index:8;left:22px;top:22px;width:265px;background:#fffaf1;border:1px solid #e4d8c3;border-radius:23px;padding:18px;box-shadow:0 15px 45px #6b563b18}.menu-top{display:flex;align-items:center;justify-content:space-between;padding:0 7px 12px;font-size:12px;font-weight:500}.menu-top button{background:transparent;width:30px;height:30px;display:grid;place-items:center;color:#ad987b}.menu nav{display:grid;gap:4px}.menu-item{padding:14px 12px;text-align:left;background:transparent;font-size:13px;border-radius:12px}.menu-item:hover,.menu-item.active{background:#f1e7d6}.menu-detail{margin:12px 4px 2px;padding:15px 10px 2px;border-top:1px solid #e9dfcf;font-size:11px;line-height:1.9;color:#a08b6d}.menu-detail p{margin:0}.motion-row{display:flex;align-items:center;justify-content:space-between;gap:12px}.toggle{width:36px;height:23px;border-radius:20px;background:#ded3be;padding:3px;flex-shrink:0}.toggle:before{content:"";display:block;width:17px;height:17px;border-radius:50%;background:#fffaf1;transition:transform .15s}.toggle[aria-checked="true"]{background:#a1ad88}.toggle[aria-checked="true"]:before{transform:translateX(13px)}.review-footer{max-width:1160px;margin:14px auto 0;font-size:10px;color:#a39582;line-height:1.8;display:flex;justify-content:space-between;gap:15px}
+@media(max-width:700px){body{padding:17px 12px}.draft-label{font-size:9px;margin-bottom:10px;letter-spacing:0}.scene{height:630px;border-radius:22px}.header{padding:19px 18px}.status{font-size:10px;gap:8px}.menu-button{width:39px;height:39px}.intro{top:133px}.intro h1{font-size:28px}.intro .subtitle{font-size:11px}.intro .overline{font-size:9px;letter-spacing:2px}.puppy{width:205px}.reply{width:245px;padding:17px 20px;border-radius:20px}.reply p{font-size:13px}.chat-dock{width:calc(100% - 28px);bottom:23px}.input-row{padding-left:13px;gap:6px;border-radius:16px}.input-row input{font-size:11px}.send{width:34px;height:34px}.user-message{font-size:11px;margin-bottom:10px}.idle-hint{bottom:49px;font-size:11px}.menu{left:13px;top:13px;width:250px}.review-footer{font-size:9px;flex-wrap:wrap;gap:2px}}
+@media(prefers-reduced-motion:reduce){*{transition:none!important}}
+.draft-label{align-items:center}.review-controls{display:flex;flex-wrap:wrap;gap:4px}.review-controls button{font-size:10px;background:transparent;padding:7px 11px;border-radius:18px;color:#92836f}.review-controls button.active{background:#fffaf1;color:#796247}.os-shortcut{background:transparent;font-size:10px;color:#aa9579;padding:7px}.os-screen{position:absolute;inset:0;background:radial-gradient(ellipse at 65% 0,#515956,#333d3c 60%,#2c3535);color:#e6e9df}.scene[data-screen="os"] .landscape,.scene[data-screen="os"] .intro,.scene[data-screen="os"] .idle-hint,.scene[data-screen="os"] .os-shortcut{display:none}.scene[data-screen="os"] .menu-button{background:#ffffff0c;border-color:#ffffff1a;color:#dfe2d8}.scene[data-screen="os"] .status{color:#c6cebf}.scene[data-screen="os"] .status b{background:#6b7c672f;color:#c9d3b9}.scene[data-screen="os"] .puppy{width:195px}.scene[data-screen="os"] .chat-dock{bottom:99px}.scene[data-screen="os"] .chat-note{color:#aeb5a5}.scene[data-screen="os"] .user-message>span:first-child{color:#bdc4b5}.scene[data-screen="os"] .puppy-shadow{background:#17212040}.os-heading{position:absolute;left:100px;top:42px;margin:0;font-size:12px;letter-spacing:1px;color:#ccd3c7}.os-widgets{position:absolute;left:30px;right:30px;top:105px;display:grid;grid-template-columns:1.55fr 1fr;gap:19px;height:287px}.map-widget{border-radius:22px;background:#dde3d7;overflow:hidden;position:relative}.map-widget>svg{width:100%;height:100%;display:block}.map-caption{position:absolute;left:20px;top:19px;display:flex;flex-direction:column;gap:7px;padding:14px 18px;background:#faf8eeec;border:1px solid #f8f6ee;border-radius:15px;color:#66705f;box-shadow:0 4px 14px #6d77520b}.map-caption>span{font-size:9px;color:#929b86}.map-caption>strong{font-size:18px;font-weight:500}.map-caption>small{font-size:10px;color:#8b967b}.map-pin{position:absolute;left:56%;top:40%;color:#71846b;font-size:10px}.music-widget{position:relative;padding:21px 24px;background:#f0e8d8;border-radius:22px;color:#7c6850;overflow:hidden}.widget-kicker{font-size:10px;color:#a68f72}.album-art{height:126px;margin:15px 0 13px;background:#d2d4b8;border-radius:13px;position:relative;overflow:hidden}.vinyl{width:125px;height:125px;position:absolute;border-radius:50%;background:repeating-radial-gradient(circle,#707866 0 2px,#77816c 3px 4px);right:-13px;top:18px;display:grid;place-items:center}.vinyl i{width:36px;height:36px;border-radius:50%;background:#e5d4b0;border:10px solid #b9b995}.album-art>span{position:absolute;top:18px;left:17px;font:italic 19px/1.2 Georgia,serif;color:#6e7960}.music-widget>strong{font-size:16px;font-weight:500}.music-widget>p{font-size:10px;color:#aa947a;margin:5px 0}.music-controls{position:absolute;right:22px;bottom:24px;display:flex;align-items:center;gap:13px;font-size:24px;color:#a08c70}.play-glyph{display:grid;place-items:center;width:34px;height:34px;border-radius:50%;font-size:12px;background:#dccdb4;color:#8d795e}.os-dock{position:absolute;bottom:17px;left:28px;right:28px;height:66px;display:flex;align-items:center;justify-content:space-around;border:1px solid #ffffff10;background:#25302fe0;border-radius:19px;padding:0 18px;color:#d8dece}.climate{font-size:21px;font-weight:400;letter-spacing:1px}.climate small{font-size:13px}.dock-line{height:23px;width:1px;background:#ffffff10}.system-glyph{font-size:25px;color:#a8b4a0}.pet-home-button{display:flex;align-items:center;gap:10px;padding:10px 17px;border-radius:13px;background:#6c7b635c;color:#e2e7d5;font-size:10px}.pet-home-button svg{width:20px;height:20px}.pet-off-note{position:absolute;top:68%;left:15px;right:15px;text-align:center;color:#a8b5a0;font-size:12px}.pet-off-note button{background:transparent;border-bottom:1px solid #788771;padding:5px;color:#c4cfbb;font-size:10px}
+.detail-panel{position:absolute;z-index:8;right:22px;top:22px;bottom:22px;width:374px;border:1px solid #e5dac7;border-radius:24px;background:#fffbf3;box-shadow:0 15px 45px #44351f20;display:flex;flex-direction:column;overflow:hidden}.panel-heading{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:24px 24px 20px;border-bottom:1px solid #eee4d3}.panel-heading h2{font-size:20px;font-weight:500;letter-spacing:-.7px;margin:0}.panel-heading p{font-size:10px;color:#ae9a7e;margin:8px 0 0}.panel-close{width:32px;height:32px;border-radius:50%;background:#f0e7d8;color:#ab987a;display:grid;place-items:center;flex-shrink:0}.panel-close .icon{width:17px;height:17px}.panel-content{padding:20px 23px 24px;overflow-y:auto;flex:1}.character-summary{text-align:center;margin:-12px 0 23px}.portrait{width:168px;height:135px;display:block;margin:0 auto 4px}.character-summary h3{font-size:19px;font-weight:500;margin:10px 0 5px}.character-summary p{font-size:10px;color:#b29e81;margin:7px 0}.level-badge{display:inline-block;background:#e8ecdc;color:#96a07f;font-size:9px;border-radius:6px;padding:5px 8px}.stat-card{padding:17px 18px;border:1px solid #eae1d0;background:#f5efdf;border-radius:16px;margin-bottom:13px}.stat-card>div:not(.progress-track){display:flex;justify-content:space-between;gap:10px;align-items:center;font-size:11px;margin-bottom:14px}.stat-card>div:last-child{margin-bottom:0}.stat-card>div>span{color:#b09d7f}.stat-card strong{font-size:11px;font-weight:500}.progress-track{height:5px;background:#e2dcc8;border-radius:9px;margin:16px 0 0;overflow:hidden}.progress-track i{display:block;width:50%;height:100%;background:#abb694;border-radius:9px}.fine-print{font-size:10px;color:#b19d80;line-height:1.9;margin:13px 0 0}.small-stat{display:flex;justify-content:space-between;font-size:11px;color:#ac9777;padding:5px 5px}.small-stat strong{font-size:12px;font-weight:500;color:#8c7658}.panel-kicker{font-size:10px;color:#b6a082;margin:1px 0 13px;letter-spacing:.5px}.quest-preview{padding:20px;background:#f1e7d3;border:1px solid #e7dac0;border-radius:18px;margin-bottom:25px}.quest-badge{font-size:9px;color:#a58d68;background:#e7dac0;border-radius:6px;padding:5px 8px;display:inline-block}.quest-preview h3{font-size:17px;font-weight:500;margin:16px 0 10px}.quest-preview p{font-size:11px;line-height:1.9;color:#ac9777;margin:0}.quest-reward{display:flex;justify-content:space-between;margin-top:22px;font-size:10px;color:#a69170}.quest-reward strong{color:#8e9c75;font-size:12px;font-weight:500}.primary-button{width:100%;padding:13px 12px;background:#a08a68;color:#fffaf2;font-size:11px;border-radius:11px;margin-top:19px}.primary-button:disabled{background:#d1c2a8;color:#fffbf4}.completed-quest{display:flex;align-items:center;gap:13px;padding:17px 5px;border-bottom:1px solid #eee4d3}.checkmark{width:29px;height:29px;border-radius:50%;display:grid;place-items:center;background:#e9eddc;color:#a5b28a;font-size:13px}.completed-quest strong{font-size:12px;font-weight:500}.completed-quest p{font-size:10px;color:#b19d7e;margin:6px 0 0}.setting-card{padding:18px;border:1px solid #e9dfcb;border-radius:18px;background:#f5efdf}.setting-line{display:flex;justify-content:space-between;align-items:center;gap:12px}.setting-line h3{font-size:13px;font-weight:500;margin:0 0 8px}.setting-line p{font-size:10px;line-height:1.8;color:#ae997b;margin:0}.motion-setting{padding:24px 3px;border-bottom:1px solid #eee3ce}.os-mini{height:130px;border-radius:12px;position:relative;background:#3d4846;margin-top:18px;padding:15px;display:grid;grid-template-columns:1.4fr 1fr;gap:9px}.os-mini>div{height:65px;border-radius:7px;background:#b9c4ad}.os-mini>div+div{background:#d9cbb0}.os-mini>span svg{width:23px;height:23px}.os-mini>span{position:absolute;right:36px;bottom:10px;font-size:19px;filter:grayscale(1);opacity:.75}.character-options{display:grid;grid-template-columns:1fr 1fr;gap:12px}.character-option{padding:15px 6px;background:#f7f0e2;border:1px solid #e7dcc6;border-radius:17px;overflow:hidden}.character-option[aria-pressed="true"]{border:2px solid #a6b18e;padding:14px 5px;background:#f0f1e2}.character-option .portrait{width:130px;max-width:100%;height:110px}.character-option strong{display:block;font-size:13px;font-weight:500;margin:3px 0 9px}.character-option span{font-size:9px;color:#b09a7b}
+@media(max-width:700px){.draft-label{align-items:flex-start;flex-direction:column;gap:9px}.review-controls{width:100%;justify-content:space-between;gap:0}.review-controls button{font-size:9px;padding:7px 5px}.os-shortcut{font-size:9px;padding:5px}.os-heading{left:76px;top:33px;font-size:10px}.os-widgets{left:17px;right:17px;top:91px;gap:10px;grid-template-columns:1.25fr 1fr;height:216px}.map-widget,.music-widget{border-radius:15px}.map-caption{left:9px;top:9px;padding:10px;gap:6px;border-radius:10px}.map-caption>span{font-size:8px}.map-caption>strong{font-size:14px}.map-caption>small{font-size:9px}.map-pin{display:none}.music-widget{padding:14px 11px}.widget-kicker{font-size:8px}.album-art{height:80px;margin:10px 0}.album-art>span{font-size:13px;left:10px;top:13px}.vinyl{width:80px;height:80px;right:-22px;top:17px}.vinyl i{width:25px;height:25px;border-width:7px}.music-widget>strong{font-size:12px}.music-widget>p{font-size:8px}.music-controls{bottom:11px;right:12px;gap:12px}.music-controls>span:not(.play-glyph){display:none}.play-glyph{width:24px;height:24px;font-size:8px}.scene[data-screen="os"] .puppy{width:174px}.scene[data-screen="os"] .chat-dock{bottom:96px}.os-dock{left:14px;right:14px;bottom:15px;height:59px;padding:0 10px;border-radius:15px}.climate{font-size:17px}.system-glyph{font-size:20px}.pet-home-button{padding:9px;font-size:8px;gap:7px}.pet-home-button svg{width:17px;height:17px}.dock-line{display:none}.pet-off-note{top:61%;font-size:11px}.detail-panel{left:12px;right:12px;top:12px;bottom:12px;width:auto;border-radius:21px}.panel-heading{padding:20px}.panel-content{padding:18px 20px}.panel-heading h2{font-size:18px}.character-summary{margin-bottom:17px}.portrait{height:121px;width:150px}.character-summary h3{font-size:17px}.stat-card{padding:15px}.character-options .portrait{height:108px}.os-mini{height:120px}}
+
+
+/* One left drawer; menu and details share the same frame. */
+.drawer-shell{position:absolute;z-index:8;left:22px;top:22px;bottom:22px;width:374px;border:1px solid #e5dac7;border-radius:24px;background:#fffbf3;box-shadow:0 15px 45px #44351f20;overflow:hidden}
+.drawer-shell>.menu,.drawer-shell>.detail-panel{position:absolute;inset:0;width:100%;height:100%;padding:0;border:0;border-radius:0;box-shadow:none;background:transparent;display:flex;flex-direction:column}
+.drawer-shell .menu-top,.drawer-shell .panel-heading{flex-shrink:0;min-height:104px;padding:22px 23px;border-bottom:1px solid #eee4d3;gap:10px}
+.drawer-shell .menu-top h2{font-size:20px;font-weight:500;letter-spacing:-.7px;margin:0}.drawer-shell .menu-top p{font-size:10px;color:#ae9a7e;margin:8px 0 0}
+.drawer-shell .menu-top button{width:32px;height:32px;border-radius:50%;background:#f0e7d8;flex-shrink:0}
+.drawer-shell .menu nav{padding:15px;overflow-y:auto}.drawer-shell .menu-item{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:17px 15px}
+.menu-chevron{width:16px;height:16px;color:#baa98e}.panel-back{width:32px;height:32px;flex-shrink:0;display:grid;place-items:center;background:transparent;border-radius:50%;color:#9b8463}.panel-back:hover{background:#f0e7d8}.panel-back .icon{width:19px;height:19px}.panel-title{min-width:0;flex:1}.drawer-shell .panel-heading p{line-height:1.7}.drawer-shell .panel-close{margin-left:auto}
+@media(max-width:700px){.drawer-shell{left:12px;right:12px;top:12px;bottom:12px;width:auto;border-radius:21px}.drawer-shell .menu-top,.drawer-shell .panel-heading{padding:18px 16px;min-height:106px;gap:7px}.drawer-shell .menu-top h2{font-size:18px}.drawer-shell .panel-heading h2{font-size:17px}.drawer-shell .panel-heading p{font-size:9px}.drawer-shell .menu nav{padding:12px}}
+
+</style>
+</head>
+<body>
+<div class="draft-label"><strong>강아지 홈 · 컨셉 스케치</strong><nav class="review-controls" aria-label="초안 화면 바로가기"><button class="active" data-screen="home">강아지 홈</button><button data-screen="os">차량 OS</button><button data-panel="info">캐릭터 정보</button><button data-panel="quests">퀘스트 정보</button><button data-panel="settings">설정</button></nav></div>
+<main class="scene" id="scene" data-screen="home" aria-label="강아지와 함께하는 홈 초안">
+<svg class="landscape" viewBox="0 0 1160 700" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+ <rect width="1160" height="700" fill="#faf2e6"/>
+ <circle cx="925" cy="156" r="45" fill="#f4dfbc"/>
+ <path d="M170 160q13-16 28-4 8-26 31-16 18-4 26 17h20" fill="none" stroke="#fffaf2" stroke-width="17" stroke-linecap="round"/>
+ <path d="M0 440Q180 360 410 433T850 410 1160 436V700H0" fill="#efe8d3"/>
+ <path d="M0 500Q280 420 530 487T1160 455V700H0" fill="#e8e6cc"/>
+ <path d="M0 579Q270 481 541 511T1160 521V700H0" fill="#f2e5ce"/>
+ <path d="M0 620Q320 535 660 562T1160 579V700H0" fill="#f5ead8"/>
+ <g fill="none" stroke="#b9bc94" stroke-width="3" stroke-linecap="round"><path d="M164 493l-5-12m6 12 5-8m772 2 3-12m-3 12-5-6m87 31 2-9"/></g>
+ <g fill="#d4bd98"><ellipse cx="325" cy="565" rx="4" ry="2"/><ellipse cx="829" cy="550" rx="5" ry="2"/><ellipse cx="817" cy="552" rx="2" ry="1.5"/></g>
+</svg>
+<header class="header" id="header"><button class="menu-button" id="menuButton" aria-label="메뉴 열기" aria-expanded="false" aria-controls="navigationDrawer"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 7h14M5 12h14M5 17h9"/></svg></button><div class="status"><button class="os-shortcut" data-screen="os" aria-label="차량 OS로 나가기">차량 홈 ↗</button><b>P · 주차 중</b><span>09:41</span></div></header>
+<div class="intro"><p class="overline">함께 쉬는 시간</p><h1>오늘도, 같이 갈까?</h1><p class="subtitle">작은 발걸음으로 네 곁에.</p></div>
+<section class="os-screen" id="osScreen" aria-label="차량 OS 홈 미리보기" hidden>
+ <p class="os-heading">차량 홈</p>
+ <div class="os-widgets">
+  <article class="map-widget"><svg viewBox="0 0 640 320" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><rect width="640" height="320" fill="#dce2d7"/><path d="M410-20Q340 110 410 170T470 340" fill="none" stroke="#b7d0cf" stroke-width="72"/><path d="M-20 80 670 270M75-20l140 360M300-20l-40 360M-20 228l680-100" stroke="#f4f1e5" stroke-width="18" fill="none"/><path d="M110 267 234 195 321 178 337 111" stroke="#91a587" stroke-width="8" fill="none" stroke-linecap="round" stroke-linejoin="round"/><circle cx="111" cy="267" r="9" fill="#fffaf0" stroke="#91a587" stroke-width="4"/><circle cx="337" cy="111" r="13" fill="#91a587"/><circle cx="337" cy="111" r="4" fill="#fffaf0"/><rect x="472" y="39" width="115" height="62" rx="20" fill="#c1ceaf"/><rect x="31" y="118" width="83" height="64" rx="18" fill="#c6d2b7"/></svg><div class="map-caption"><span>가까운 곳으로</span><strong>산책 공원</strong><small>12분 · 3.2 km</small></div><span class="map-pin">공원</span></article>
+  <article class="music-widget"><span class="widget-kicker">지금 듣는 음악</span><div class="album-art" aria-hidden="true"><div class="vinyl"><i></i></div><span>slow<br>afternoon</span></div><strong>느린 오후</strong><p>오늘의 플레이리스트</p><div class="music-controls" aria-hidden="true"><span>‹</span><span class="play-glyph">▶</span><span>›</span></div></article>
+ </div>
+ <div class="pet-off-note" id="petOffNote" hidden><p>강아지가 잠시 쉬고 있어요.</p><button data-panel="settings">설정에서 함께하기</button></div>
+ <div class="os-dock"><span class="climate">21<small>°</small></span><span class="dock-line"></span><span class="system-glyph" aria-hidden="true"><svg class="icon" viewBox="0 0 24 24"><path d="m3 5 6-2 6 2 6-2v16l-6 2-6-2-6 2Zm6-2v16m6-14v16"/></svg></span><button class="pet-home-button" data-screen="home"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><ellipse cx="6" cy="7" rx="2.5" ry="3"/><ellipse cx="12" cy="5" rx="2.5" ry="3"/><ellipse cx="18" cy="8" rx="2.5" ry="3"/><path d="M6 17c0-3 3-7 6-7s7 4 7 7c0 5-5 2-7 2s-6 3-6-2Z"/></svg><span>강아지 홈</span></button><span class="system-glyph" aria-hidden="true"><svg class="icon" viewBox="0 0 24 24"><path d="M9 17V5l11-2v12M9 8l11-2"/><ellipse cx="6" cy="18" rx="3" ry="2"/><ellipse cx="17" cy="16" rx="3" ry="2"/></svg></span><span class="dock-line"></span><span class="climate">21<small>°</small></span></div>
+</section>
+<button class="puppy" id="puppy" aria-label="강아지를 눌러 대화하기" aria-expanded="false" aria-controls="chatDock">
+ <span class="puppy-shadow"></span>
+ <svg id="dogArt" viewBox="0 0 320 260" aria-hidden="true">
+  <g class="dog-tail" id="tail"><path d="M92 174Q57 180 48 145" fill="none" stroke="#dcb382" stroke-width="19" stroke-linecap="round"/><path d="M48 145l-1-5" stroke="#f6e1bf" stroke-width="18" stroke-linecap="round"/></g>
+  <path class="leg" data-leg="0" d="M110 183Q107 212 106 232h5" stroke="var(--far-leg,#d5b286)" stroke-width="17"/>
+  <path class="leg" data-leg="1" d="M198 184Q198 212 199 232h5" stroke="var(--far-leg,#d5b286)" stroke-width="17"/>
+  <path class="leg" data-leg="2" d="M123 183Q120 212 119 233h6" stroke="var(--fur,#f0d5ad)" stroke-width="21"/>
+  <path class="leg" data-leg="3" d="M215 182Q215 212 215 233h6" stroke="var(--fur,#f0d5ad)" stroke-width="21"/>
+  <g id="dogBody">
+   <path d="M78 176c0-27 28-42 70-39 24 1 44 1 59 12 18 13 29 21 26 36-4 27-33 31-77 28-44-1-78-10-78-37Z" fill="var(--fur,#f0d5ad)"/>
+   <path d="M90 176q9-24 37-25" fill="none" stroke="#fae9cb" stroke-width="8" stroke-linecap="round"/>
+   <path d="M194 158q2 26 30 35l10-19-16-22" fill="#fff0d4"/>
+   <g class="dog-face" id="dogFace">
+    <path d="M191 135c-3-38 14-60 47-60 29 0 46 23 43 51l14 12c7 19-9 34-32 34h-32c-25-1-38-13-40-37Z" fill="var(--head,#f3dcb8)"/>
+    <path d="M240 76q-7-9-10 0m-2 0q-8-6-10 3" fill="var(--head,#f3dcb8)" stroke="var(--head,#f3dcb8)" stroke-width="5" stroke-linecap="round"/>
+    <path class="dog-ear" id="ear" d="M211 90c-15-7-30 3-31 22-2 18 4 42 17 43 14 1 18-22 19-40 1-13 0-21-5-25Z" fill="var(--ear,#d9ad77)"/>
+    <path d="M190 110q-3 12 0 22" fill="none" stroke="#e7bf8b" stroke-width="5" stroke-linecap="round"/>
+    <ellipse cx="256" cy="121" rx="5" ry="6.8" fill="#66503a"/><circle cx="257.5" cy="119" r="1.7" fill="#fffaf0"/>
+    <path d="M250 107q6-3 11 1" fill="none" stroke="#c89b67" stroke-width="2.5" stroke-linecap="round"/>
+    <ellipse cx="272" cy="148" rx="22" ry="17" fill="#fff0d6"/>
+    <path d="M282 137q13-5 15 2-1 9-9 10-7-3-6-12Z" fill="#6b5138"/>
+    <path d="M268 155q8 5 15-1" fill="none" stroke="#9b7650" stroke-width="2" stroke-linecap="round"/>
+    <ellipse cx="247" cy="144" rx="7" ry="3.8" fill="#e5b9a0" opacity=".65"/>
+   </g>
+   <path d="M203 170q16 9 31 5" fill="none" stroke="#9aa581" stroke-width="8" stroke-linecap="round"/>
+   <circle cx="227" cy="183" r="5" fill="#d9b579"/>
+  </g>
+ </svg>
+</button>
+<div class="reply" id="replyBubble" role="status" aria-live="polite" hidden><p id="dogReply">멍! 불렀어?
+네 이야기 듣고 싶어.</p></div>
+<div class="idle-hint"><svg class="little-paw" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><ellipse cx="6" cy="7" rx="2.5" ry="3"/><ellipse cx="12" cy="5" rx="2.5" ry="3"/><ellipse cx="18" cy="8" rx="2.5" ry="3"/><path d="M6 17c0-3 3-7 6-7s7 4 7 7c0 5-5 2-7 2s-6 3-6-2Z"/></svg>강아지를 톡 눌러 이야기해 보세요.</div>
+<section class="chat-dock" id="chatDock" aria-label="내 채팅" hidden>
+ <p class="user-message" id="userMessage" hidden><span>나</span><span class="sent-text" id="sentText"></span></p>
+ <div class="input-row"><input id="chatInput" aria-label="강아지에게 할 말" placeholder="오늘은 어떤 하루였어?" maxlength="300" autocomplete="off"><button class="send" id="sendButton" type="button" aria-label="메시지 보내기"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 19V5m-6 6 6-6 6 6"/></svg></button><button class="close-chat" id="closeChat" aria-label="대화 닫고 산책 계속하기"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m7 7 10 10M7 17 17 7"/></svg></button></div>
+ <p class="chat-note">예시 대화</p>
+</section>
+<button class="menu-shade" id="menuShade" aria-label="메뉴 닫기" tabindex="-1" hidden></button>
+<aside class="drawer-shell" id="navigationDrawer" role="dialog" aria-modal="true" aria-labelledby="menuTitle" hidden>
+<section class="menu" id="menu" hidden>
+ <div class="menu-top"><div><h2 id="menuTitle">메뉴</h2><p>우리의 작은 일상</p></div><button id="closeMenu" aria-label="메뉴 닫기"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m7 7 10 10M7 17 17 7"/></svg></button></div>
+ <nav aria-label="주요 메뉴"><button class="menu-item" data-menu="info">캐릭터 정보<svg class="icon menu-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg></button><button class="menu-item" data-menu="quests">퀘스트 정보<svg class="icon menu-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg></button><button class="menu-item" data-menu="characters">캐릭터 선택<svg class="icon menu-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg></button><button class="menu-item" data-menu="settings">설정<svg class="icon menu-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg></button></nav>
+
+</section>
+<section class="detail-panel" id="infoPanel" aria-labelledby="infoTitle" hidden><div class="panel-heading"><button class="panel-back" data-back-menu aria-label="메뉴로 돌아가기" title="메뉴로 돌아가기"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m14 6-6 6 6 6"/></svg></button><div class="panel-title"><h2 id="infoTitle">캐릭터 정보</h2><p>우리가 함께한 작은 순간들</p></div><button class="panel-close" data-close-panel aria-label="메뉴 전체 닫기"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m7 7 10 10M7 17 17 7"/></svg></button></div><div class="panel-content"><div class="character-summary"><svg class="portrait" viewBox="0 0 320 260" aria-hidden="true"><use href="#dogArt"/></svg><span class="level-badge">Lv. 2</span><h3>나의 작은 강아지</h3><p>이름은 천천히 정해도 좋아요.</p></div><div class="stat-card"><div><span>지금의 기분</span><strong>평온해요</strong></div><div><span>성격</span><strong>다정하고 호기심 많음</strong></div></div><div class="stat-card"><div><span>함께 쌓은 경험</span><strong>160 XP</strong></div><div class="progress-track"><i></i></div><p class="fine-print">다음 성장까지 80 XP</p></div><div class="small-stat"><span>완료한 작은 약속</span><strong>2개</strong></div></div></section><section class="detail-panel" id="questsPanel" aria-labelledby="questsTitle" hidden><div class="panel-heading"><button class="panel-back" data-back-menu aria-label="메뉴로 돌아가기" title="메뉴로 돌아가기"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m14 6-6 6 6 6"/></svg></button><div class="panel-title"><h2 id="questsTitle">퀘스트 정보</h2><p>작은 돌봄으로 함께 자라요</p></div><button class="panel-close" data-close-panel aria-label="메뉴 전체 닫기"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m7 7 10 10M7 17 17 7"/></svg></button></div><div class="panel-content"><p class="panel-kicker">다음 작은 약속</p><article class="quest-preview"><span class="quest-badge" id="questStatus">시작 전</span><h3>우리의 첫 충전 돌봄</h3><p>차에 에너지가 필요할 때<br>함께 충전을 챙겨요.</p><div class="quest-reward"><span>첫 완료 보상</span><strong>+80 XP</strong></div><button class="primary-button" id="questStart">퀘스트 시작하기</button></article><p class="panel-kicker">함께한 기억</p><div class="completed-quest"><span class="checkmark">✓</span><div><strong>내 차와 첫 인사</strong><p>차량 상태를 함께 확인했어요.</p></div></div><div class="completed-quest"><span class="checkmark">✓</span><div><strong>우리의 첫 약속</strong><p>서로를 조금 더 알아갔어요.</p></div></div><p class="fine-print">화면 검토용 예시 퀘스트예요.</p></div></section><section class="detail-panel" id="charactersPanel" aria-labelledby="charactersTitle" hidden><div class="panel-heading"><button class="panel-back" data-back-menu aria-label="메뉴로 돌아가기" title="메뉴로 돌아가기"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m14 6-6 6 6 6"/></svg></button><div class="panel-title"><h2 id="charactersTitle">캐릭터 선택</h2><p>어떤 모습으로 함께할까요?</p></div><button class="panel-close" data-close-panel aria-label="메뉴 전체 닫기"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m7 7 10 10M7 17 17 7"/></svg></button></div><div class="panel-content"><div class="character-options"><button class="character-option" data-character="golden" aria-pressed="true" style="--fur:#f0d5ad;--head:#f3dcb8;--ear:#d9ad77;--far-leg:#d5b286"><svg class="portrait" viewBox="0 0 320 260" aria-hidden="true"><use href="#dogArt"/></svg><strong>골든</strong><span>포근한 햇살빛</span></button><button class="character-option" data-character="cream" aria-pressed="false" style="--fur:#eee4ce;--head:#f4ead7;--ear:#cdbb9f;--far-leg:#c9b99d"><svg class="portrait" viewBox="0 0 320 260" aria-hidden="true"><use href="#dogArt"/></svg><strong>크림</strong><span>부드러운 크림빛</span></button></div><p class="fine-print">선택한 모습으로 홈과 차량 화면에서 함께해요.</p></div></section><section class="detail-panel" id="settingsPanel" aria-labelledby="settingsTitle" hidden><div class="panel-heading"><button class="panel-back" data-back-menu aria-label="메뉴로 돌아가기" title="메뉴로 돌아가기"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m14 6-6 6 6 6"/></svg></button><div class="panel-title"><h2 id="settingsTitle">설정</h2><p>함께하는 방식을 골라요</p></div><button class="panel-close" data-close-panel aria-label="메뉴 전체 닫기"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m7 7 10 10M7 17 17 7"/></svg></button></div><div class="panel-content"><div class="setting-card"><div class="setting-line"><div><h3>차량 화면 위 강아지</h3><p>차량 홈에서도 함께 산책해요.</p></div><button class="toggle" id="osPetToggle" role="switch" aria-checked="true" aria-label="차량 화면 위 강아지"></button></div><div class="os-mini" aria-hidden="true"><div></div><div></div><span><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><ellipse cx="6" cy="7" rx="2.5" ry="3"/><ellipse cx="12" cy="5" rx="2.5" ry="3"/><ellipse cx="18" cy="8" rx="2.5" ry="3"/><path d="M6 17c0-3 3-7 6-7s7 4 7 7c0 5-5 2-7 2s-6 3-6-2Z"/></svg></span></div><button class="primary-button" id="openOS" data-screen="os">차량 OS에서 미리보기 ↗</button></div><div class="setting-line motion-setting"><div><h3>차분한 움직임</h3><p>걷기와 꼬리 움직임을 쉬어요.</p></div><button class="toggle" id="motionToggle" role="switch" aria-checked="false" aria-label="차분한 움직임"></button></div><p class="fine-print">이 시안의 차량 화면 안에서 움직여요.</p></div></section>
+</aside>
+</main>
+<footer class="review-footer"><span>강아지 터치 → 아래에서 말 걸기 → 강아지가 말풍선으로 답하기</span><span>차량 OS·정보 창을 포함한 HTML 초안</span></footer>
+<script>
+(()=>{
+'use strict';
+const $=id=>document.getElementById(id),scene=$('scene'),puppy=$('puppy');
+const reduced=matchMedia('(prefers-reduced-motion: reduce)'),legs=[...document.querySelectorAll('[data-leg]')];
+const finePointer=matchMedia('(hover: hover) and (pointer: fine)');
+const hips=[110,198,123,215],phases=[.0,.5,.75,.25];
+let talking=false,pending=false,calm=false,menuOpen=false,activePanel=null,currentScreen='home',petEnabled=true,x=null,direction=1,cycle=0,last=0,turnWait=0,replyTimer,version=0;
+let lastExchange=null,pendingText='';
+const clamp=(n,min,max)=>Math.max(min,Math.min(max,n));
+function pose(walking,dt){
+ if(walking)cycle=(cycle+dt/1.2)%1;
+ legs.forEach((leg,i)=>{
+  const p=(cycle+phases[i])%1,stance=p<.7,t=stance?p/.7:(p-.7)/.3;
+  const offset=walking?(stance?12-24*t:-12+24*t):0;
+  const lift=walking&&!stance?Math.sin(Math.PI*t)*7:0;
+  const hip=hips[i],foot=hip+offset,y=233-lift;
+  const knee=hip+(i%2===0?-5:1)+offset*.35;
+  leg.setAttribute('d',`M${hip} 185Q${knee.toFixed(2)} 214 ${foot.toFixed(2)} ${y.toFixed(2)}h5`);
+ });
+ const still=calm||reduced.matches;
+ $('dogBody').setAttribute('transform',`translate(0 ${walking?(Math.sin(cycle*Math.PI*4)*.7).toFixed(2):0})`);
+ $('tail').style.transform=still?'none':`rotate(${Math.sin(performance.now()/320)*5}deg)`;
+ $('ear').style.transform=walking?`rotate(${Math.sin(cycle*Math.PI*2)*2}deg)`:'none';
+}
+function positionReply(){
+ if(!talking)return;
+ const w=scene.clientWidth,h=scene.clientHeight,dw=puppy.offsetWidth,dh=puppy.offsetHeight;
+ const center=x+dw*(direction===1?.73:.27),b=$('replyBubble'),bw=b.offsetWidth,bh=b.offsetHeight;
+ const left=clamp(center-bw/2,14,w-bw-14);
+ const top=clamp(parseFloat(puppy.style.top)+dh*.29-bh-15,90,h-bh-185);
+ b.style.left=left+'px';b.style.top=top+'px';b.style.setProperty('--tail',clamp(center-left,23,bw-23)+'px');
+}
+function frame(time){
+ const dt=Math.min((time-last)/1000||0,.05);last=time;
+ const w=scene.clientWidth,h=scene.clientHeight,dw=puppy.offsetWidth,dh=puppy.offsetHeight;
+ const min=Math.max(10,w*.12-dw*.15),max=Math.max(min,w*.88-dw*.85);
+ if(x===null)x=(w-dw)/2;x=clamp(x,min,max);turnWait=Math.max(0,turnWait-dt);
+ const walking=!puppy.hidden&&!talking&&!menuOpen&&!activePanel&&!calm&&!reduced.matches&&!document.hidden&&!(finePointer.matches&&puppy.matches(':hover'))&&turnWait===0;
+ if(walking){
+  x+=direction*(24*(dw/320)/.7/1.2)*dt;
+  if(x>=max||x<=min){x=clamp(x,min,max);direction*=-1;turnWait=.6;}
+ }
+ puppy.style.left=x+'px';puppy.style.top=(h*(currentScreen==='os'?(w<=700?.60:.64):.72)-dh*.93)+'px';puppy.style.setProperty('--direction',direction);
+ puppy.dataset.walking=String(walking);pose(walking,dt);positionReply();requestAnimationFrame(frame);
+}
+function closeChat(focus=true){
+ if(pending&&!$('chatInput').value.trim())$('chatInput').value=pendingText;
+ pendingText='';
+ talking=false;pending=false;version++;clearTimeout(replyTimer);scene.classList.remove('talking');
+ $('replyBubble').hidden=true;$('chatDock').hidden=true;$('sendButton').disabled=false;
+ puppy.setAttribute('aria-expanded','false');if(focus)puppy.focus({preventScroll:true});
+}
+function openChat(){
+ if(talking){closeChat();return;}
+ talking=true;scene.classList.add('talking');$('replyBubble').hidden=false;$('chatDock').hidden=false;
+ $('replyBubble').classList.remove('thinking');
+ $('dogReply').textContent=lastExchange?.reply||'멍! 불렀어?\n네 이야기 듣고 싶어.';
+ $('userMessage').hidden=!lastExchange;$('sentText').textContent=lastExchange?.user||'';
+ puppy.setAttribute('aria-expanded','true');positionReply();$('chatInput').focus({preventScroll:true});
+}
+function replyFor(text){
+ if(/힘들|피곤|지쳤|속상/.test(text))return '오늘도 수고했어.\n잠깐 나랑 쉬었다 가자, 멍.';
+ if(/산책|걷|가자/.test(text))return '좋아! 너랑 걷는 게 제일 좋아.\n이야기 끝나면 다시 같이 걷자.';
+ if(/안녕|반가/.test(text))return '멍! 만나서 반가워.\n오늘도 네 옆에 있을게.';
+ if(/기분|오늘|하루/.test(text))return '네가 와서 기분 좋은 하루야.\n너는 오늘 어땠어?';
+ return '응, 듣고 있어.\n네 이야기를 조금 더 들려줘, 멍.';
+}
+function send(){
+ const text=$('chatInput').value.trim();if(!talking||pending||!text)return;
+ pending=true;pendingText=text;const request=++version;$('sentText').textContent=text;$('userMessage').hidden=false;$('chatInput').value='';
+ $('sendButton').disabled=true;$('dogReply').textContent='음…';$('replyBubble').classList.add('thinking');positionReply();
+ replyTimer=setTimeout(()=>{
+  if(!talking||request!==version)return;
+  lastExchange={user:text,reply:replyFor(text)};
+  $('dogReply').textContent=lastExchange.reply;$('replyBubble').classList.remove('thinking');pending=false;pendingText='';$('sendButton').disabled=false;positionReply();
+ },650);
+}
+const panelKeys=['info','quests','characters','settings'];
+function updateModal(){
+ const open=menuOpen||!!activePanel;
+ $('navigationDrawer').hidden=!open;
+ $('navigationDrawer').setAttribute('aria-labelledby',activePanel?activePanel+'Title':'menuTitle');
+ $('menu').hidden=!menuOpen;$('menuShade').hidden=!open;
+ panelKeys.forEach(key=>$(key+'Panel').hidden=key!==activePanel);
+ $('menuButton').setAttribute('aria-expanded',String(open));$('header').inert=open;puppy.inert=open;$('osScreen').inert=open;
+ document.querySelectorAll('.review-controls [data-panel]').forEach(b=>b.classList.toggle('active',b.dataset.panel===activePanel));
+}
+function toggleMenu(open){
+ if(open)closeChat(false);menuOpen=open;activePanel=null;updateModal();
+ if(open)$('closeMenu').focus({preventScroll:true});else $('menuButton').focus({preventScroll:true});
+}
+function openPanel(key){
+ if(!panelKeys.includes(key))return;
+ closeChat(false);menuOpen=false;activePanel=key;updateModal();
+ $(key+'Panel').querySelector('[data-back-menu]').focus({preventScroll:true});
+}
+function backToMenu(){
+ if(!activePanel)return;
+ const previous=activePanel;activePanel=null;menuOpen=true;updateModal();
+ $('menu').querySelector('[data-menu="'+previous+'"]').focus({preventScroll:true});
+}
+function closePanel(){activePanel=null;menuOpen=false;updateModal();$('menuButton').focus({preventScroll:true});}
+function updatePet(){
+ puppy.hidden=currentScreen==='os'&&!petEnabled;
+ $('petOffNote').hidden=petEnabled;$('osPetToggle').setAttribute('aria-checked',String(petEnabled));
+}
+function showScreen(screen){
+ if(!['home','os'].includes(screen))return;
+ closeChat(false);menuOpen=false;activePanel=null;currentScreen=screen;scene.dataset.screen=screen;
+ $('osScreen').hidden=screen!=='os';x=null;updateModal();updatePet();
+ document.querySelectorAll('.review-controls [data-screen]').forEach(b=>b.classList.toggle('active',b.dataset.screen===screen));
+ $('menuButton').focus({preventScroll:true});
+}
+puppy.addEventListener('click',openChat);$('closeChat').addEventListener('click',()=>closeChat());$('sendButton').addEventListener('click',send);
+$('chatInput').addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.isComposing){e.preventDefault();send();}});
+$('menuButton').addEventListener('click',()=>toggleMenu(true));$('closeMenu').addEventListener('click',()=>toggleMenu(false));
+$('menuShade').addEventListener('click',()=>{if(activePanel)closePanel();else toggleMenu(false);});
+document.querySelectorAll('[data-menu]').forEach(b=>b.addEventListener('click',()=>openPanel(b.dataset.menu)));
+document.querySelectorAll('[data-panel]').forEach(b=>b.addEventListener('click',()=>openPanel(b.dataset.panel)));
+document.querySelectorAll('button[data-screen]').forEach(b=>b.addEventListener('click',()=>showScreen(b.dataset.screen)));
+document.querySelectorAll('[data-close-panel]').forEach(b=>b.addEventListener('click',closePanel));
+document.querySelectorAll('[data-back-menu]').forEach(b=>b.addEventListener('click',backToMenu));
+$('osPetToggle').addEventListener('click',()=>{petEnabled=!petEnabled;closeChat(false);updatePet();});
+$('motionToggle').addEventListener('click',()=>{calm=!calm;$('motionToggle').setAttribute('aria-checked',String(calm));});
+$('questStart').addEventListener('click',()=>{$('questStatus').textContent='진행 중';$('questStart').textContent='완료를 기다리고 있어요';$('questStart').disabled=true;});
+document.querySelectorAll('[data-character]').forEach(b=>b.addEventListener('click',()=>{
+ const cream=b.dataset.character==='cream';
+ const colors=cream?['#eee4ce','#f4ead7','#cdbb9f','#c9b99d']:['#f0d5ad','#f3dcb8','#d9ad77','#d5b286'];
+ ['--fur','--head','--ear','--far-leg'].forEach((key,i)=>scene.style.setProperty(key,colors[i]));
+ document.querySelectorAll('[data-character]').forEach(item=>item.setAttribute('aria-pressed',String(item===b)));
+}));
+document.addEventListener('keydown',e=>{
+ if(e.key==='Escape'){
+  if(activePanel){e.preventDefault();backToMenu();}else if(menuOpen){e.preventDefault();toggleMenu(false);}else if(talking){e.preventDefault();closeChat();}
+ }
+ const modal=activePanel?$(activePanel+'Panel'):menuOpen?$('menu'):null;
+ if(e.key==='Tab'&&modal){
+  const items=[...modal.querySelectorAll('button:not(:disabled),input')].filter(el=>el.getClientRects().length),first=items[0],last=items[items.length-1];
+  if(e.shiftKey&&document.activeElement===first){e.preventDefault();last.focus();}else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first.focus();}
+ }
+});
+
+requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>
