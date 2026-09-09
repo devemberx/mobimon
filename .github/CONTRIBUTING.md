@@ -199,5 +199,35 @@ The `PR format` GitHub Actions check runs on PR creation, edits, and updates.
 To block merging on failure, make `PR format` a required status check in the repository's branch rules.
 Local Git hooks cannot validate PR edits made on GitHub.
 
-For squash merges, use the PR title and only the two `Changes` bullets as the commit message.
-This check validates the PR; it does not generate or validate GitHub's final squash message.
+## Squash merges
+
+Use squash merge for PRs. The person or agent performing the merge must build the
+final commit message from the latest PR title and body:
+
+- Subject: copy the PR title exactly, following the commit subject rules above.
+- Body: copy only the two `Changes` bullets, preserving their wording, order, and
+  `- ` prefixes. Separate the subject and body with a blank line.
+
+Do not include the `Changes` heading, template comments, other PR sections, or the
+list of intermediate commits. Do not summarize or rewrite the bullets at merge
+time; correct the PR first if its title or `Changes` needs updating.
+
+Before merging, confirm that `PR format` and `Android checks` have passed for the
+current PR revision. If the title or body changes, wait for the updated
+`PR format` result. If new commits arrive, check the new revision again. Required
+checks must not be bypassed; zero review approvals are required during initial
+development.
+
+In GitHub, select **Squash and merge**, replace the proposed commit title and body
+with the values above, and inspect both fields before confirming. Remove any
+automatically added title suffix or body text that is not part of those values.
+
+When using GitHub CLI, pass the title explicitly with `--subject` and the two
+bullets via `--body-file`, together with `--squash`. Use `--match-head-commit` with
+the checked PR head SHA so a new commit prevents that merge attempt. Read the
+latest PR metadata before preparing the message, and preserve actual newlines in
+the body file.
+
+These are contributor and agent instructions. They do not automatically fill
+GitHub's merge dialog or enforce its final message. `PR format` validates the PR;
+local commit hooks do not run for squash commits created on GitHub.
