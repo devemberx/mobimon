@@ -1,2 +1,5 @@
 # Local Android Studio / IntelliJ IDEA project metadata
 /.idea/
+
+# Python validation scripts
+__pycache__/

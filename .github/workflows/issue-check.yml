@@ -1,0 +1,40 @@
+name: Issue check
+
+on:
+  issues:
+    types: [opened, edited, reopened]
+  workflow_dispatch:
+    inputs:
+      issue_number:
+        description: Issue number to check
+        required: true
+        type: number
+
+permissions:
+  contents: read
+
+concurrency:
+  group: issue-check-${{ github.event.issue.number || inputs.issue_number || github.ref }}
+  # Serialize feedback writes so interrupted runs do not leave duplicate comments.
+  cancel-in-progress: false
+
+jobs:
+  feedback:
+    name: Issue format
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # Always use trusted default-branch code for writes, including manual runs.
+          ref: ${{ github.event.repository.default_branch }}
+          persist-credentials: false
+      - name: Validate current issue and update feedback
+        run: python3 scripts/issue_feedback.py --repository "$ISSUE_REPOSITORY" --issue-number "$ISSUE_NUMBER"
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ISSUE_REPOSITORY: ${{ github.repository }}
+          ISSUE_NUMBER: ${{ github.event.issue.number || inputs.issue_number }}
