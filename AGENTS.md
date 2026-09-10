@@ -24,8 +24,12 @@
 
 ## Documentation
 
+- Keep one authoritative home per topic: `CONTRIBUTING.md` for workflow and required checks; `ARCHITECTURE.md` for structure and contracts; `DESIGN.md` for UI behavior; `TESTING.md` for test strategy and coverage; `AGENTS.md` for essential agent rules.
+- Link to that section or source/configuration instead of repeating commands, versions, settings, test inventories or general tutorials. Repeat only brief safety reminders.
+- Revise existing sections instead of appending overlapping explanations. Keep planned contracts separate from current implementation; put task breakdowns, ownership, schedules and run logs in issues/PRs.
 - Update the current implementation sections in `ARCHITECTURE.md` and `TESTING.md` when adding modules or integrations.
 - Update `CONTRIBUTING.md` and CI together when build or verification commands change.
+- Before committing documentation, remove stale or duplicate guidance and verify relative links, including heading anchors. Preserve safety contracts and verification limits when shortening.
 - Local plans under `docs/superpowers/` remain ignored and must not be committed.
 - When updating shared skills, edit `.agents/skills/`, then copy the entire affected skill folder, including references and licenses, to `.claude/skills/`. Keep both copies identical in the same commit.
 
