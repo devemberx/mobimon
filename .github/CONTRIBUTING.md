@@ -66,15 +66,10 @@ With a compatible device or emulator, run the Room and shared app journeys:
 ./gradlew :core:core-database:connectedDebugAndroidTest :app:connectedDebugAndroidTest
 ```
 
-CI runs these tests on an Android Automotive OS API 34-ext9 Google APIs x86_64
-emulator in parallel with local checks. Its CSTDe-like display is 2560x1440 at
-160 dpi, with 4 CPU cores and 4096 MB RAM. Before tests, CI checks the automotive
-feature, API, ABI and display using `bash scripts/check-aaos-environment.sh`.
-Both jobs run in parallel with a 20-minute timeout per job and must pass through
-`Android checks`. These timeouts are failure limits, not expected run times. See the
-[AAOS environment comparison](../docs/TESTING.md#ci-aaos-environment) for the
-supplied image differences and local reproduction. This does not verify custom
-CSTD services, real vehicle integration or Release behavior.
+CI runs local checks and AAOS API 34-ext9 device tests in parallel. Both jobs
+must pass through `Android checks`. See the
+[AAOS environment guide](../docs/TESTING.md#ci-aaos-environment) for host validation,
+local reproduction and the limits of simulated device coverage.
 
 For documentation-only changes, verify the content and relative links and run
 `git diff --check`; an Android build is unnecessary. Record every check performed,
