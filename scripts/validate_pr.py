@@ -37,16 +37,8 @@ def has_content(text):
     return bool(re.sub(r"[\s#*`~>\[\]().:_-]", "", text))
 
 
-def validate(title, body):
-    errors = []
-    if not TITLE_PATTERN.fullmatch(title) or len(title) > 50 or title.endswith("."):
-        errors.append("Title: use type(scope): summary, printable ASCII, max 50 characters, no final period.")
-    if has_disallowed_non_ascii(body):
-        errors.append("Body: write in English; non-ASCII characters are allowed only for emoji and typographic punctuation.")
-
+def extract_sections(body):
     body = re.sub(r"<!--.*?-->", "", body.replace("\r\n", "\n"), flags=re.DOTALL)
-    if "<!--" in body or "-->" in body:
-        errors.append("Close HTML comments correctly.")
     sections = []
     preamble = []
     fence = None
@@ -61,8 +53,22 @@ def validate(title, body):
             sections.append((line[3:].rstrip(), []))
             continue
         (sections[-1][1] if sections else preamble).append(line)
+    return preamble, sections, bool(fence)
 
-    if fence:
+
+def validate(title, body):
+    errors = []
+    if not TITLE_PATTERN.fullmatch(title) or len(title) > 50 or title.endswith("."):
+        errors.append("Title: use type(scope): summary, printable ASCII, max 50 characters, no final period.")
+    if has_disallowed_non_ascii(body):
+        errors.append("Body: write in English; non-ASCII characters are allowed only for emoji and typographic punctuation.")
+
+    normalized_body = re.sub(r"<!--.*?-->", "", body.replace("\r\n", "\n"), flags=re.DOTALL)
+    if "<!--" in normalized_body or "-->" in normalized_body:
+        errors.append("Close HTML comments correctly.")
+    preamble, sections, fence_open = extract_sections(normalized_body)
+
+    if fence_open:
         errors.append("Close Markdown code fences correctly.")
     if any(line.strip() for line in preamble):
         errors.append("Place content under the five required headings.")

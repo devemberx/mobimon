@@ -1,0 +1,18 @@
+{
+  "hooks": {
+    "BeforeTool": [
+      {
+        "matcher": "run_shell_command",
+        "hooks": [
+          {
+            "type": "command",
+            "name": "validate-merge",
+            "description": "Validate pull-request merge commands.",
+            "command": "python3 \"$(git rev-parse --show-toplevel)/scripts/validate_merge.py\"",
+            "timeout": 30000
+          }
+        ]
+      }
+    ]
+  }
+}
