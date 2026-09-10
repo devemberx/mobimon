@@ -1,12 +1,7 @@
 package com.monsters.mobimon.di
 
-import android.content.Context
-import android.os.SystemClock
 import androidx.datastore.core.DataStore
-import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import androidx.datastore.preferences.core.Preferences
-import androidx.datastore.preferences.preferencesDataStoreFile
-import androidx.room.Room
 import com.monsters.mobimon.core.database.AppDatabase
 import com.monsters.mobimon.core.database.DataStoreSettingsRepository
 import com.monsters.mobimon.core.database.RoomCompanionRepository
@@ -23,7 +18,6 @@ import com.monsters.mobimon.runtime.CompanionRuntime
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
-import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import java.util.UUID
 import javax.inject.Inject
@@ -39,10 +33,6 @@ data class AppEnvironment(
 object AppModule {
     @Provides
     @Singleton
-    fun clock(): Clock = Clock { SystemClock.elapsedRealtime() }
-
-    @Provides
-    @Singleton
     fun ids(): IdGenerator = IdGenerator { UUID.randomUUID().toString() }
 
     @Provides
@@ -51,13 +41,6 @@ object AppModule {
     @Provides
     @Singleton
     fun evaluator(): QuestEvaluator = QuestEvaluator(maxAgeMillis = 15_000)
-
-    @Provides
-    @Singleton
-    fun database(
-        @ApplicationContext context: Context,
-        environment: AppEnvironment,
-    ): AppDatabase = Room.databaseBuilder(context, AppDatabase::class.java, environment.databaseName).build()
 
     @Provides
     @Singleton
@@ -77,13 +60,6 @@ object AppModule {
 
     @Provides
     fun rewards(repository: RoomCompanionRepository): RewardRepository = repository
-
-    @Provides
-    @Singleton
-    fun preferences(
-        @ApplicationContext context: Context,
-    ): DataStore<Preferences> =
-        PreferenceDataStoreFactory.create { context.preferencesDataStoreFile("companion-settings") }
 
     @Provides
     @Singleton

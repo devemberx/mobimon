@@ -14,8 +14,8 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  verify:
-    name: Android checks
+  local:
+    name: Android local checks
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
@@ -41,7 +41,9 @@ jobs:
             testDebugUnitTest \
             :core:core-domain:test \
             :core:core-vss:test \
-            :app:assembleDebug
+            :app:assembleDebug \
+            :app:assembleDebugAndroidTest \
+            :core:core-database:assembleDebugAndroidTest
       - name: Save APK
         if: github.event_name != 'pull_request'
         uses: actions/upload-artifact@v7
@@ -60,9 +62,77 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v7
         with:
-          name: reports-${{ github.sha }}
+          name: local-reports-${{ github.sha }}
           path: |
             **/build/reports/
             **/build/test-results/
           if-no-files-found: warn
           retention-days: 7
+
+  device:
+    name: AAOS device checks
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "17"
+      - uses: gradle/actions/setup-gradle@v6
+      - name: Prepare Android SDK
+        uses: android-actions/setup-android@v4
+        with:
+          cmdline-tools-version: "11076708"
+          packages: "platform-tools platforms;android-34 build-tools;34.0.0"
+          log-accepted-android-sdk-licenses: false
+      - name: Enable emulator acceleration
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: Run Room and app journeys on CSTDe-like AAOS
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 34
+          system-image-api-level: 34-ext9
+          target: android-automotive
+          arch: x86_64
+          avd-name: cstd_api_34
+          cores: 4
+          ram-size: 4096M
+          disk-size: 6G
+          pre-emulator-launch-script: |
+            sed -i -E '/^(hw\.lcd\.(width|height|density)|hw\.initialOrientation|vm\.heapSize|skin\.(name|path|dynamic)|showDeviceFrame)=/d' "$ANDROID_AVD_HOME/cstd_api_34.avd/config.ini"
+            cat .github/avd/cstd.ini >> "$ANDROID_AVD_HOME/cstd_api_34.avd/config.ini"
+          disable-animations: true
+          script: |
+            bash scripts/check-aaos-environment.sh
+            ./gradlew --no-daemon --stacktrace :core:core-database:connectedDebugAndroidTest :app:connectedDebugAndroidTest
+      - name: Save device reports
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: device-reports-${{ github.sha }}
+          path: |
+            build/reports/aaos/
+            **/build/reports/androidTests/
+            **/build/outputs/androidTest-results/
+          if-no-files-found: warn
+          retention-days: 7
+
+  verify:
+    name: Android checks
+    if: always()
+    needs: [local, device]
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Require local and device success
+        env:
+          LOCAL_RESULT: ${{ needs.local.result }}
+          DEVICE_RESULT: ${{ needs.device.result }}
+        run: |
+          test "$LOCAL_RESULT" = success
+          test "$DEVICE_RESULT" = success

@@ -28,6 +28,9 @@ On Windows, use `gradlew.bat` instead of `./gradlew`. The Debug APK is written t
 `app/build/outputs/apk/debug/` and installs as the separate simulated `.demo`
 application.
 
+In WSL, use `./gradlew` with a Linux JDK and Android SDK instead of Windows
+binaries, even when the checkout is under `/mnt/c`.
+
 ## Before changing code
 
 - Create or use an issue based on [ISSUE_TEMPLATE.md](ISSUE_TEMPLATE.md). Do not
@@ -49,13 +52,24 @@ For code or build changes, format first and review the resulting diff:
 
 ```bash
 ./gradlew ktlintFormat
-./gradlew ktlintCheck lintDebug testDebugUnitTest :core:core-domain:test :core:core-vss:test :app:assembleDebug
+./gradlew ktlintCheck lintDebug testDebugUnitTest :core:core-domain:test :core:core-vss:test :app:assembleDebug :app:assembleDebugAndroidTest :core:core-database:assembleDebugAndroidTest
 git diff --check
 ```
 
 Add or update tests for changed behavior. Follow [TESTING.md](../docs/TESTING.md)
 for test placement and Fakes. Check affected flows on a device or emulator when
 changing UI, permissions, or platform integrations.
+
+With a compatible device or emulator, run the Room and shared app journeys:
+
+```bash
+./gradlew :core:core-database:connectedDebugAndroidTest :app:connectedDebugAndroidTest
+```
+
+CI runs local checks and AAOS API 34-ext9 device tests in parallel. Both jobs
+must pass through `Android checks`. See the
+[AAOS environment guide](../docs/TESTING.md#ci-aaos-environment) for host validation,
+local reproduction and the limits of simulated device coverage.
 
 For documentation-only changes, verify the content and relative links and run
 `git diff --check`; an Android build is unnecessary. Record every check performed,

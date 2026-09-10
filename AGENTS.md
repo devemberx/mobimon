@@ -6,6 +6,7 @@
 - Inspect source and build configuration before assuming that a planned module, dependency, test task, or integration exists. Report only verification actually performed.
 - Read the relevant sections of [ARCHITECTURE.md](docs/ARCHITECTURE.md) before changing feature behavior or module boundaries.
 - Follow [DESIGN.md](docs/DESIGN.md) for UI changes and [TESTING.md](docs/TESTING.md) for behavior changes or tests.
+- Mirror subject modules/packages for focused tests; do not require one test file per source file. Update the current requirement map in `TESTING.md` for changed critical behavior.
 
 ## Code Quality
 
@@ -23,19 +24,15 @@
 
 ## Documentation
 
+- Keep one authoritative home per topic: `CONTRIBUTING.md` for workflow and required checks; `ARCHITECTURE.md` for structure and contracts; `DESIGN.md` for UI behavior; `TESTING.md` for test strategy and coverage; `AGENTS.md` for essential agent rules.
+- Link to that section or source/configuration instead of repeating commands, versions, settings, test inventories or general tutorials. Repeat only brief safety reminders.
+- Revise existing sections instead of appending overlapping explanations. Keep planned contracts separate from current implementation; put task breakdowns, ownership, schedules and run logs in issues/PRs.
 - Update the current implementation sections in `ARCHITECTURE.md` and `TESTING.md` when adding modules or integrations.
 - Update `CONTRIBUTING.md` and CI together when build or verification commands change.
+- Before committing documentation, remove stale or duplicate guidance and verify relative links, including heading anchors. Preserve safety contracts and verification limits when shortening.
 - Local plans under `docs/superpowers/` remain ignored and must not be committed.
 - When updating shared skills, edit `.agents/skills/`, then copy the entire affected skill folder, including references and licenses, to `.claude/skills/`. Keep both copies identical in the same commit.
 
 ## Verification
 
-For code or build changes, run the canonical checks from the repository root:
-
-```bash
-./gradlew ktlintFormat
-./gradlew ktlintCheck lintDebug testDebugUnitTest :core:core-domain:test :core:core-vss:test :app:assembleDebug
-git diff --check
-```
-
-On Windows, use `gradlew.bat` instead of `./gradlew`. For documentation-only changes, verify the content and relative links, then run `git diff --check`; an Android build is unnecessary. See [CONTRIBUTING.md](.github/CONTRIBUTING.md) for setup, dependency-lock updates, device checks, and PR requirements.
+Run the [canonical checks](.github/CONTRIBUTING.md#verification) for the change type, including device checks when available. Report only the layers actually executed; APK assembly and Robolectric do not establish device-test execution.

@@ -21,7 +21,7 @@ android {
         targetSdk = 34
         versionCode = 1
         versionName = "0.1.0"
-        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        testInstrumentationRunner = "com.monsters.mobimon.testing.MobiMonTestRunner"
     }
 
     buildTypes {
@@ -29,6 +29,11 @@ android {
     }
 
     testOptions { unitTests.isIncludeAndroidResources = true }
+
+    sourceSets {
+        getByName("testDebug").java.srcDir("src/journeyTest/java")
+        getByName("androidTest").java.srcDir("src/journeyTest/java")
+    }
 
     buildFeatures {
         buildConfig = true
@@ -87,6 +92,8 @@ dependencies {
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.datastore.preferences)
     testImplementation(libs.robolectric)
+    testImplementation(libs.hilt.android.testing)
+    kspTest(libs.hilt.compiler)
     testImplementation(libs.androidx.test.core)
     testImplementation(libs.androidx.test.junit)
     testImplementation(platform(libs.androidx.compose.bom))
@@ -96,6 +103,9 @@ dependencies {
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
     androidTestImplementation(libs.androidx.test.runner)
     androidTestImplementation(libs.androidx.test.junit)
+    androidTestImplementation(libs.androidx.test.core)
+    androidTestImplementation(libs.hilt.android.testing)
+    kspAndroidTest(libs.hilt.compiler)
     // Match AGP's tested-app runtime graph when generating strict test dependency locks.
     androidTestRuntimeOnly(libs.kotlin.stdlib.common)
     kover(project(":core:core-domain"))
