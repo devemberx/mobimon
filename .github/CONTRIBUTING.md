@@ -17,6 +17,15 @@ Install Android Studio with support for AGP 8.5, Temurin JDK 17, Android SDK Pla
 
 Use `./gradlew --version` to confirm the build JDK and Wrapper version. Do not install a separate system Gradle. On Windows, use `gradlew.bat` in place of `./gradlew`. Run `bash scripts/setup-hooks.sh` once, in Git Bash on Windows, to install commit and branch checks; rerun it when hooks are added.
 
+After moving or renaming a checkout, open its new root in Android Studio and run
+the Wrapper there. In PowerShell, use `.\gradlew.bat --version`; keep `JAVA_HOME`
+pointing to JDK 17 and `ANDROID_HOME` to the Windows SDK. In WSL, use `./gradlew`
+with a Linux JDK and Linux SDK, even when the checkout is under `/mnt/c`.
+Do not point Linux Gradle at the Windows SDK binaries. Keep machine-specific
+SDK paths untracked. If switching operating systems, avoid concurrent builds of
+the same checkout and refresh any stale local SDK configuration. Changing the
+folder/display name does not require changing the installed application ID.
+
 The API 34 minimum is an initial assumption for the supplied Android 14 environment. Confirm this, vehicle permissions, signing requirements, and manifest configuration against the provided AAOS sample before device integration. The current foundation does not yet access real vehicle APIs. Debug uses an explicitly simulated parked provider in a separate `.demo` application; Release reports vehicle availability and driving state as unknown. Quest commands require a fresh verified parked snapshot.
 
 ## Before opening or updating a PR
@@ -33,7 +42,7 @@ pushing. On Windows, replace `./gradlew` with `gradlew.bat`.
 2. Run the same checks as Android CI:
 
    ```bash
-   ./gradlew ktlintCheck lintDebug testDebugUnitTest :core:core-domain:test :core:core-vss:test :app:assembleDebug
+   ./gradlew ktlintCheck lintDebug testDebugUnitTest :core:core-domain:test :core:core-vss:test :app:assembleDebug :app:assembleDebugAndroidTest :core:core-database:assembleDebugAndroidTest
    ```
 
 3. Inspect formatting, Lint, and test reports under the corresponding
@@ -44,9 +53,16 @@ pushing. On Windows, replace `./gradlew` with `gradlew.bat`.
    Compose/Robolectric, and local SQLite tests live beside their subjects; Room
    device tests live in `core/core-database/src/androidTest/`. `NO-SOURCE` means
    no tests ran for that source set. See [TESTING](../docs/TESTING.md).
+   Shared Q01 UI journeys in `app/src/journeyTest/` run on both Robolectric and
+   instrumentation. With an API 34 device/emulator connected, also run the device
+   CI command (APK assembly alone does not execute these tests):
+
+   ```bash
+   ./gradlew :core:core-database:connectedDebugAndroidTest :app:connectedDebugAndroidTest
+   ```
 5. Check affected user flows on a device or emulator when changing UI,
    permissions, or platform integrations. Vehicle APIs require the supplied AAOS
-   environment. Debug CI does not verify device behavior or a Release/R8 build;
+   environment. Debug CI verifies standard-emulator behavior, not AAOS or a Release/R8 build;
    validate the actual submission artifact before the demo.
 6. Review `git diff --check` and the changed files. Record checks performed and
    any device or integration checks not run, with reasons, in the PR's
@@ -65,9 +81,10 @@ main:
 ```
 
 Kover measures local JVM tests, not on-device coverage. Reports are informational;
-there is no minimum percentage gate. CI also omits detekt, a blanket
-warnings-as-errors setting, and emulator tests for this initial development
-phase. Android Lint errors fail CI; warnings remain visible in the report.
+there is no minimum percentage gate. CI omits detekt and a blanket
+warnings-as-errors setting. Android Lint errors fail CI; warnings remain visible
+in the report. Device coverage is reported through instrumented test results,
+not the Kover report.
 
 ## Dependency management
 
@@ -97,12 +114,17 @@ During initial development, merging requires successful `PR format` and
 `Android checks` statuses, with **zero required review approvals**.
 
 - PR creation and code updates targeting main run formatting, Android Lint,
-  local unit-test tasks, and Debug APK assembly.
+  local tests (including the Hilt app journeys), and Debug app/instrumentation APK assembly.
+- A parallel device job runs Room and Q01 app tests on an API 34 Google APIs
+  x86_64 emulator. The existing `Android checks` status aggregates both jobs and
+  fails if either fails, is cancelled or is skipped. No new required status name
+  needs to be configured to include device tests in that gate.
 - PR title/body edits rerun the PR-format workflow.
 - Pushes to main also retain the Debug APK for 14 days and generate coverage
   reports.
 - CI preserves available reports even after a failure, for 7 days. Superseded
-  Android CI runs are cancelled. Android checks use one Ubuntu job.
+  Android CI runs are cancelled. Local and device reports have separate artifact
+  names; both execution jobs use Ubuntu.
 
 CI does not call real AI or vehicle services. Branch protection is configured in
 GitHub separately from the workflow YAML; keep the required status names stable.

@@ -11,9 +11,9 @@ marked planned must be implemented before their commands are usable.
 | Modules and UI | Eight implemented modules; two native home surfaces, drawer, settings and Q01 |
 | Local tests | JUnit 4.13.2 and coroutines-test 1.8.1; domain, ViewModel, runtime, Compose and storage behavior cases |
 | Coverage | Kover 0.8.3; informational local-JVM reports, no percentage gate |
-| CI | ktlint, all Android module Lint/local tests, domain/vss JVM tests, Debug APK; aggregated app Kover on main pushes |
+| CI | Parallel local and API 34 device jobs; both must succeed for `Android checks`; aggregated app Kover on main pushes |
 | DI, Room and platform adapters | Hilt 2.52, Room 2.6.1, KSP 2.0.21-1.0.28, DataStore 1.1.1; debug demo and release unavailable vehicle providers |
-| Compose behavior test harness, Robolectric, instrumentation runner | Compose Testing 1.6.8 via BOM, Robolectric 4.13/API 34, AndroidJUnitRunner configured; Room device test sources present |
+| Compose behavior test harness, Robolectric, instrumentation runner | Compose Testing 1.6.8 via BOM, Robolectric 4.13/API 34; Hilt 2.52 app journey harness and Room device tests |
 | Screenshot or system-UI test harness | Not configured |
 
 Keep JUnit 4, coroutines-test, and Kover. Do not add a second coverage system or a
@@ -35,6 +35,11 @@ additions need compatible versions in the catalog and reviewed lockfile updates.
 - `app/src/test/java`: runtime, shell navigation, Compose drawer integration,
   and the Q01 journey through feature ViewModels and a real local Room database.
   `app/src/testDebug/java` checks the debug-only simulated provider lifecycle.
+- `app/src/journeyTest/java`: the same MainActivity/Hilt/Room UI journeys run in
+  Debug local tests and app instrumentation. This directory is explicitly added
+  to those two test source sets in `app/build.gradle.kts`, never to production.
+  `app/src/androidTest/java` contains the Hilt instrumentation runner;
+  `app/src/testDebug/resources/robolectric.properties` selects the local host.
 
 Helpers are currently module-local. A production APK does not depend on test
 Fakes. Debug/demo classes live in `app/src/debug`; Release has its own unavailable
@@ -76,6 +81,46 @@ Test business behavior, async transitions, persistence guarantees, and meaningfu
 UI contracts. Do not mechanically pair every data class, Activity, composable,
 getter, or DI registration with a unit-test file. A test should fail when a
 requirement is violated, rather than merely repeat the implementation formula.
+
+Path correspondence helps discover tests; it is not a file-count or method-count
+gate. Every changed critical behavior must have an identifiable test. Update the
+current requirement map below when changing that behavior. An integration test
+may cover multiple subjects, and a subject may have both local and device tests.
+
+## Current requirement map
+
+These links identify implemented tests, not evidence of a particular run passing.
+Use the local/device CI reports to establish execution for the current revision.
+IDs below are local documentation identifiers, not Polarion work-item bindings.
+
+| ID / requirement | Implemented test and representative method | Layer |
+| --- | --- | --- |
+| GROW-01: fixed XP growth boundaries | [RewardCalculatorTest](../core/core-domain/src/test/kotlin/com/monsters/mobimon/core/domain/RewardCalculatorTest.kt), `stage changes at the fixed XP boundaries` | JVM |
+| REWARD-01: concurrent completion awards once | [RoomCompanionRepositoryTest](../core/core-database/src/test/java/com/monsters/mobimon/core/database/RoomCompanionRepositoryTest.kt), `duplicate concurrent completion grants exactly one reward`; [device counterpart](../core/core-database/src/androidTest/java/com/monsters/mobimon/core/database/RoomCompanionRepositoryAndroidTest.kt), `uniqueSqlConstraintsAndConcurrentRewardAllowOneCompletion` | Local SQLite + device |
+| REWARD-02: storage failure rolls back all reward writes | Same Room suites: `sqlite failure during xp update rolls back completion and run status` / `sqliteAbortRollsBackEveryRewardWrite` | Local SQLite + device |
+| STORE-01: committed profile and reward survive DB reopening | Same Room suites: `file database reopen restores appearance xp and completion` / `fileDatabaseReopenRestoresCommittedProfileAndReward` | File-backed DB; not process restart |
+| SIGNAL-01: old, invalid, wrong-source or wrong-epoch evidence is rejected | [QuestEvaluatorTest](../core/core-domain/src/test/kotlin/com/monsters/mobimon/core/domain/QuestEvaluatorTest.kt); [QuestViewModelTest](../feature/feature-quest/src/test/java/com/monsters/mobimon/feature/quest/QuestViewModelTest.kt), `snapshotFreshnessExpiresWithoutAnotherVehicleEmission` | JVM / ViewModel |
+| JOURNEY-01: UI acknowledgment commits one 80 XP reward and Activity recreation retains it | [Q01AppJourneyTest](../app/src/journeyTest/java/com/monsters/mobimon/Q01AppJourneyTest.kt), `q01AwardsOnceThroughUiAndSurvivesActivityRecreation` | Hilt + MainActivity + Room, local and device |
+| JOURNEY-02: unavailable/unknown/moving vehicle state blocks starting; parked recovery enables it | Same app suite: `unavailableVehicleBlocksStartUntilParked`, `unknownDrivingStateBlocksStartUntilParked`, `movingVehicleBlocksStartUntilParked` | Hilt + MainActivity + Room, local and device |
+| SETTINGS-01: failed saves preserve committed state; cancellation propagates | [PetViewModelTest](../feature/feature-pet/src/test/java/com/monsters/mobimon/feature/pet/PetViewModelTest.kt), `failedAppearanceSavePreservesCommittedSelectionAndExposesFailure`; [DataStoreSettingsRepositoryTest](../core/core-database/src/test/java/com/monsters/mobimon/core/database/DataStoreSettingsRepositoryTest.kt) | Local |
+| SHELL-01: detail back returns to menu; close dismisses drawer | [MobiMonContentTest](../app/src/test/java/com/monsters/mobimon/ui/MobiMonContentTest.kt), `detailBackReturnsToMenuAndCloseDismissesTheWholeDrawer` | Compose + Robolectric |
+| RUNTIME-01: repeated foreground notifications do not duplicate vehicle connection | [CompanionRuntimeTest](../app/src/test/java/com/monsters/mobimon/runtime/CompanionRuntimeTest.kt), `repeatedForegroundNotificationsDoNotDuplicateConnection` | JVM; not Application lifecycle integration |
+| SOURCE-01: real progression rejects simulated evidence; real adapter reports unavailable | Room local suite, `real repository rejects simulated start and completion evidence`; [UnavailableVehicleRepositoryTest](../core/core-vss/src/test/kotlin/com/monsters/mobimon/core/vss/UnavailableVehicleRepositoryTest.kt) | JVM / local SQLite |
+| BRAND-01: Debug application ID and launcher label match MobiMon | [BrandingTest](../app/src/testDebug/java/com/monsters/mobimon/BrandingTest.kt) | Debug + Robolectric |
+
+The app journeys use `HiltTestApplication`, not `MobiMonApplication`. They verify
+the production MainActivity, ViewModels, AppModule repository bindings and Room
+transactions. `JourneyTestModule` replaces only PlatformModule/VehicleProviderModule
+with a fixed clock, controllable simulated vehicle, in-memory Room and disposable
+DataStore. Each test gets new Hilt singletons; Activity closes before DataStore
+jobs are cancelled/joined, Room closes and the temporary preferences directory is
+removed. The fixed clock keeps these UI journeys independent of execution speed;
+freshness/time-boundary behavior remains covered by the dedicated rule/ViewModel tests.
+
+Activity recreation is not process death or file persistence. App startup/runtime
+integration, a process-restart journey, Release artifact checks and real AAOS
+acceptance remain separate work. Screenshot tests remain deferred until visuals
+stabilize; neither a screenshot suite nor `core-testing` is required to add a feature.
 
 ## Reusable setup and test doubles
 
@@ -160,10 +205,12 @@ when configuring the test Application, runner, and rule ordering.
 | ViewModel/use-case tests, feature `src/test` | Loading/success/failure, cancellation, stale responses, observed state | A live AI/vehicle connection |
 | Compose + Robolectric, feature `src/test` | State rendering, callbacks, focus, enabled actions, drawer/back behavior | Screenshots for assertions available through semantics |
 | Room integration, `core-database/src/test` and `src/androidTest` | Native SQLite constraints, rollback, concurrent completion, persistence; device counterparts | Fake repositories as proof of SQL behavior, local runs as proof of device execution |
-| App integration, `app/src/test`; future `src/androidTest` | Drawer behavior and core journey with Fake external providers and real local DB; device/DI journey still planned | Claim of real vehicle/AI support |
+| App integration, `app/src/test` and shared `src/journeyTest` | Drawer behavior and Q01 UI journey through Hilt/MainActivity/Room; shared journeys run locally and on device | Process restart, Application runtime lifecycle, or real vehicle/AI support |
 | Supplied AAOS environment | Overlay/permission behavior, parked restrictions, real signals, real AI, restart/submission artifact | A standard emulator or passing JVM tests |
 
-Prioritize these cases with the feature that introduces the behavior:
+The roadmap below includes future features and stronger acceptance targets. It is
+not a list of currently passing tests; the current requirement map above identifies
+implemented coverage. Prioritize each case with the feature introducing it:
 
 | Case | Expected result | Owner / strongest test |
 | --- | --- | --- |
@@ -222,7 +269,7 @@ restart verify different guarantees and must not be reported interchangeably.
 Currently configured commands, from the repository root:
 
 ```bash
-./gradlew ktlintCheck lintDebug testDebugUnitTest :core:core-domain:test :core:core-vss:test :app:assembleDebug
+./gradlew ktlintCheck lintDebug testDebugUnitTest :core:core-domain:test :core:core-vss:test :app:assembleDebug :app:assembleDebugAndroidTest :core:core-database:assembleDebugAndroidTest
 ./gradlew :app:koverHtmlReportDebug :app:koverXmlReportDebug
 ```
 
@@ -242,14 +289,20 @@ is still planned. Connected tests require a compatible connected device:
 ./gradlew :feature:feature-quest:testDebugUnitTest
 
 # Requires a compatible connected device or emulator and configured runners.
-./gradlew :core:core-database:connectedDebugAndroidTest
+./gradlew :core:core-database:connectedDebugAndroidTest :app:connectedDebugAndroidTest
+
+# The same Q01 app journeys on the local Robolectric host.
+./gradlew :app:testDebugUnitTest --tests com.monsters.mobimon.Q01AppJourneyTest
 ```
 
 When splitting modules, update CI to run local tests and Lint in every applicable
 module, including pure JVM tests separately. Merely depending on a library does
 not make `:app:testDebugUnitTest` execute that library's tests. Retain the required
-`Android checks` status; instrumented/AAOS checks are additional evidence, not
-part of the currently configured CI job. Extend Kover configuration/reports to
+`Android checks` status, which now requires both parallel jobs to succeed. The
+device job runs Room and app journeys on an API 34 Google APIs x86_64 emulator;
+this is not an AAOS environment. Local results are saved as `local-reports-*`,
+device reports as `device-reports-*`, including on failure. Kover still measures
+only local tests. Extend Kover configuration/reports to
 new modules when they acquire meaningful tests; do not assume app coverage
 automatically includes them.
 
