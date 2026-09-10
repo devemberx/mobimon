@@ -12,11 +12,11 @@ plugins {
 }
 
 android {
-    namespace = "com.devemberx.rivo"
+    namespace = "com.monsters.mobimon"
     compileSdk = 34
 
     defaultConfig {
-        applicationId = "com.devemberx.rivo"
+        applicationId = "com.monsters.mobimon"
         minSdk = 34
         targetSdk = 34
         versionCode = 1

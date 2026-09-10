@@ -11,7 +11,7 @@ Implemented modules are `:app`, `:core:core-domain`, `:core:core-database`,
 `:core:core-vss`, `:core:core-ui`, `:feature:feature-pet`,
 `:feature:feature-quest`, and `:feature:feature-vehicle-info`.
 
-- `RivoApp` is the composition route collecting feature-owned Pet/Quest ViewModel
+- `MobiMonApp` is the composition route collecting feature-owned Pet/Quest ViewModel
   state with lifecycle awareness. `CompanionDrawer` owns one typed drawer frame;
   the feature screens remain state-and-callback composables.
 - Room stores one local profile, Q01 runs and completions. A single repository
@@ -23,8 +23,8 @@ Implemented modules are `:app`, `:core:core-domain`, `:core:core-database`,
   provider. Q01 completion is a user command; no background care tracker or
   overlay service has been introduced yet.
 - Debug-only `DemoVehicleRepository` emits SIMULATED parked snapshots. Debug has
-  application ID `com.devemberx.rivo.demo`, `rivo-demo.db`, and `demo-profile`;
-  Release uses the REAL unavailable provider, `rivo.db`, and `local-profile`.
+  application ID `com.monsters.mobimon.demo`, `mobimon-demo.db`, and `demo-profile`;
+  Release uses the REAL unavailable provider, `mobimon.db`, and `local-profile`.
   The demo freshness window is 15 seconds. A real adapter must supply its verified
   freshness policy before enabling real signals; unknown state cannot authorize
   quest commands.
@@ -61,7 +61,7 @@ The remaining sections retain the target design for those subsequent increments.
 
 This adapts the boundaries in [MobiMon's design at commit 74891dd](https://github.com/myme4u/MobiMon/blob/74891ddb819745df1397c6ee1db236809769830e/MobiMon.md)
 to the agreed quest, AI, and memory scope. Its dependency versions and driving
-habit scoring are not the RIVO baseline.
+habit scoring are not the MobiMon baseline.
 
 Product inputs are the agreed [quest and growth rules](https://app.notion.com/p/3d3071f5db1f8140997cec6f7d991c0d)
 and [AI and memory rules](https://app.notion.com/p/3d3071f5db1f81d88132fc2fd4eb1a33).
@@ -117,7 +117,7 @@ plain constructors and an app-owned factory.
 
 A composition route obtains feature ViewModels and collects their read-only
 `StateFlow<*UiState>` using `collectAsStateWithLifecycle()`. The current route is
-`RivoApp`; a feature-specific `*Route` may be extracted when its entry flow needs
+`MobiMonApp`; a feature-specific `*Route` may be extracted when its entry flow needs
 one. Each `*Screen` takes state, callbacks, and a `Modifier`; it does not obtain a
 ViewModel, open a database, or call a vehicle/AI SDK.
 
@@ -171,7 +171,7 @@ verified parked state; unknown driving state must not imply permission to act.
 
 ## Contracts for parallel implementation
 
-Use `com.devemberx.rivo` as the package root, with feature and core subpackages.
+Use `com.monsters.mobimon` as the package root, with feature and core subpackages.
 Agree the following fields, units, and outcomes before connecting features.
 Keep `UiState` types in their feature; only genuinely shared concepts belong in
 `core-domain`.

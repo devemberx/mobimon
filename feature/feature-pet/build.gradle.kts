@@ -10,7 +10,7 @@ plugins {
 }
 
 android {
-    namespace = "com.devemberx.rivo.feature.pet"
+    namespace = "com.monsters.mobimon.feature.pet"
     compileSdk = 34
     defaultConfig {
         minSdk = 34

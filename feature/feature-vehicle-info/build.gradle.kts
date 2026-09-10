@@ -10,7 +10,7 @@ plugins {
 }
 
 android {
-    namespace = "com.devemberx.rivo.feature.vehicle"
+    namespace = "com.monsters.mobimon.feature.vehicle"
     compileSdk = 34
     defaultConfig {
         minSdk = 34

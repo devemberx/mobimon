@@ -10,7 +10,7 @@ plugins {
 }
 
 android {
-    namespace = "com.devemberx.rivo.core.database"
+    namespace = "com.monsters.mobimon.core.database"
     compileSdk = 34
     defaultConfig {
         minSdk = 34

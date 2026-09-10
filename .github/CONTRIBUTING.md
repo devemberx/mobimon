@@ -1,4 +1,4 @@
-# Contributing to RIVO
+# Contributing to MobiMon
 
 ## Development environment
 
