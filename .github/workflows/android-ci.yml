@@ -70,9 +70,9 @@ jobs:
           retention-days: 7
 
   device:
-    name: Android device checks
+    name: AAOS device checks
     runs-on: ubuntu-24.04
-    timeout-minutes: 30
+    timeout-minutes: 40
     steps:
       - uses: actions/checkout@v6
         with:
@@ -93,21 +93,31 @@ jobs:
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
           sudo udevadm control --reload-rules
           sudo udevadm trigger --name-match=kvm
-      - name: Run Room and app journeys on API 34
+      - name: Run Room and app journeys on CSTDe-like AAOS
         uses: reactivecircus/android-emulator-runner@v2
         with:
           api-level: 34
-          target: google_apis
+          system-image-api-level: 34-ext9
+          target: android-automotive
           arch: x86_64
-          profile: pixel_2
+          avd-name: cstd_api_34
+          cores: 4
+          ram-size: 4096M
+          disk-size: 6G
+          pre-emulator-launch-script: |
+            sed -i -E '/^(hw\.lcd\.(width|height|density)|hw\.initialOrientation|vm\.heapSize|skin\.(name|path|dynamic)|showDeviceFrame)=/d' "$ANDROID_AVD_HOME/cstd_api_34.avd/config.ini"
+            cat .github/avd/cstd.ini >> "$ANDROID_AVD_HOME/cstd_api_34.avd/config.ini"
           disable-animations: true
-          script: ./gradlew --no-daemon --stacktrace :core:core-database:connectedDebugAndroidTest :app:connectedDebugAndroidTest
+          script: |
+            bash scripts/check-aaos-environment.sh
+            ./gradlew --no-daemon --stacktrace :core:core-database:connectedDebugAndroidTest :app:connectedDebugAndroidTest
       - name: Save device reports
         if: always()
         uses: actions/upload-artifact@v7
         with:
           name: device-reports-${{ github.sha }}
           path: |
+            build/reports/aaos/
             **/build/reports/androidTests/
             **/build/outputs/androidTest-results/
           if-no-files-found: warn

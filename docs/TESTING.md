@@ -11,7 +11,7 @@ marked planned must be implemented before their commands are usable.
 | Modules and UI | Eight implemented modules; two native home surfaces, drawer, settings and Q01 |
 | Local tests | JUnit 4.13.2 and coroutines-test 1.8.1; domain, ViewModel, runtime, Compose and storage behavior cases |
 | Coverage | Kover 0.8.3; informational local-JVM reports, no percentage gate |
-| CI | Parallel local and API 34 device jobs; both must succeed for `Android checks`; aggregated app Kover on main pushes |
+| CI | Parallel local and AAOS API 34-ext9 x86_64 device jobs; CSTDe-like 2560x1440/160 dpi display; both must succeed for `Android checks`; aggregated app Kover on main pushes |
 | DI, Room and platform adapters | Hilt 2.52, Room 2.6.1, KSP 2.0.21-1.0.28, DataStore 1.1.1; debug demo and release unavailable vehicle providers |
 | Compose behavior test harness, Robolectric, instrumentation runner | Compose Testing 1.6.8 via BOM, Robolectric 4.13/API 34; Hilt 2.52 app journey harness and Room device tests |
 | Screenshot or system-UI test harness | Not configured |
@@ -107,6 +107,7 @@ IDs below are local documentation identifiers, not Polarion work-item bindings.
 | RUNTIME-01: repeated foreground notifications do not duplicate vehicle connection | [CompanionRuntimeTest](../app/src/test/java/com/monsters/mobimon/runtime/CompanionRuntimeTest.kt), `repeatedForegroundNotificationsDoNotDuplicateConnection` | JVM; not Application lifecycle integration |
 | SOURCE-01: real progression rejects simulated evidence; real adapter reports unavailable | Room local suite, `real repository rejects simulated start and completion evidence`; [UnavailableVehicleRepositoryTest](../core/core-vss/src/test/kotlin/com/monsters/mobimon/core/vss/UnavailableVehicleRepositoryTest.kt) | JVM / local SQLite |
 | BRAND-01: Debug application ID and launcher label match MobiMon | [BrandingTest](../app/src/testDebug/java/com/monsters/mobimon/BrandingTest.kt) | Debug + Robolectric |
+| CI-AAOS-01: device journeys run on an automotive API 34 x86_64 host with the supplied display dimensions/density | [check-aaos-environment.sh](../scripts/check-aaos-environment.sh), required before connected tests in [Android CI](../.github/workflows/android-ci.yml) | AAOS device environment |
 
 The app journeys use `HiltTestApplication`, not `MobiMonApplication`. They verify
 the production MainActivity, ViewModels, AppModule repository bindings and Room
@@ -299,9 +300,11 @@ When splitting modules, update CI to run local tests and Lint in every applicabl
 module, including pure JVM tests separately. Merely depending on a library does
 not make `:app:testDebugUnitTest` execute that library's tests. Retain the required
 `Android checks` status, which now requires both parallel jobs to succeed. The
-device job runs Room and app journeys on an API 34 Google APIs x86_64 emulator;
-this is not an AAOS environment. Local results are saved as `local-reports-*`,
-device reports as `device-reports-*`, including on failure. Kover still measures
+device job runs Room and app journeys on an AAOS API 34-ext9 Google APIs x86_64
+emulator with the CSTDe-like settings below. Local results are saved as
+`local-reports-*`, device reports as `device-reports-*`, including on failure.
+Device artifacts also include `build/reports/aaos/` with system properties,
+features and display metrics collected before validating the host. Kover still measures
 only local tests. Extend Kover configuration/reports to
 new modules when they acquire meaningful tests; do not assume app coverage
 automatically includes them.
@@ -310,3 +313,44 @@ Each behavior PR includes the relevant owner-written tests and a small
 integration check when crossing a boundary. Report exactly which layers ran,
 their outcomes, and which were not run with reasons. Documentation-only changes
 need content/link checks and `git diff --check`, not an Android build.
+
+### CI AAOS environment
+
+The supplied `setting/cstd/x86_64/source.properties` and `package.xml` identify
+Android 14 / API 34, extension 9, Automotive with Google APIs, x86_64, revision 5
+(build `UAA1.250512.001`, incremental `13479943`). The adjacent
+`setting/CSTDe_API_34.avd/config.ini` supplies the display and hardware settings.
+These local reference files are not CI inputs and are not uploaded to GitHub.
+
+| Setting | Supplied CSTDe environment | CI |
+| --- | --- | --- |
+| System image | Local `system-images/cstd/x86_64/`, tag `connect_s` | Official `system-images;android-34-ext9;android-automotive;x86_64` |
+| Android / ABI | Android 14, API 34-ext9, x86_64 | Same API/extension and ABI; Google APIs without Play Store |
+| Display | 2560x1440, 160 dpi, `hw.initialOrientation=portrait` | Same values from [cstd.ini](../.github/avd/cstd.ini); width exceeds height as supplied |
+| CPU / RAM / VM heap | 4 cores / 4096 MB / 512 MB | Same |
+| Data partition | 30 GB | 6 GB for the disposable CI test data and runner disk budget |
+| Rendering / saved state | Automatic GPU, local AVD state | Headless software rendering, fresh AVD, animations disabled |
+
+The [official SDK image index](https://dl.google.com/android/repository/sys-img/android-automotive/sys-img2-3.xml)
+currently lists revision 5 for this package, matching the supplied metadata.
+`sdkmanager` resolves the available revision; CI does not pin or claim byte-for-byte
+equivalence with the supplied CSTD image. Local modifications, preinstalled CSTD
+services, saved data and real vehicle/AI integration still require acceptance on
+the supplied environment. AAOS CI exercises the existing simulated Hilt journeys
+and device SQLite tests, not a real vehicle adapter.
+
+For local reproduction, use JDK 17 and install the official image with
+`sdkmanager 'system-images;android-34-ext9;android-automotive;x86_64'` and emulator
+35.1.9 or newer. Create an Automotive AVD and set its display to 2560x1440 / 160 dpi,
+CPU to 4 cores, RAM to 4096 MB and VM heap to 512 MB as above. Alternatively, boot
+the supplied `CSTDe_API_34` AVD for CSTD-specific acceptance. With exactly that
+emulator connected, run from the repository root:
+
+```bash
+bash scripts/check-aaos-environment.sh
+./gradlew :core:core-database:connectedDebugAndroidTest :app:connectedDebugAndroidTest
+```
+
+On Windows use Git Bash for the environment check and `gradlew.bat` for Gradle.
+Passing the environment check identifies the host; only the connected-test
+results establish that the Room and app journeys ran.

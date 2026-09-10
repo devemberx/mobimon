@@ -24,6 +24,10 @@ Implemented modules are `:app`, `:core:core-domain`, `:core:core-database`,
   vehicle modules with test-only fixtures while exercising MainActivity and the
   real feature/repository graph. The harness uses HiltTestApplication, so production
   Application lifecycle and process-restart acceptance remain separate.
+- CI runs the shared journeys and Room device tests on an AAOS API 34-ext9
+  x86_64 emulator with the supplied CSTDe display and memory settings. It uses
+  the official Google APIs image; custom CSTD services and real vehicle access
+  remain separate acceptance work. See the [environment comparison](TESTING.md#ci-aaos-environment).
 - `CompanionRuntime` follows process foreground lifecycle and owns one vehicle
   provider. Q01 completion is a user command; no background care tracker or
   overlay service has been introduced yet.

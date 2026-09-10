@@ -41,4 +41,4 @@ git diff --check
 
 On Windows, use `gradlew.bat` instead of `./gradlew`. For documentation-only changes, verify the content and relative links, then run `git diff --check`; an Android build is unnecessary. See [CONTRIBUTING.md](.github/CONTRIBUTING.md) for setup, dependency-lock updates, device checks, and PR requirements.
 
-With a compatible connected device, run `./gradlew :core:core-database:connectedDebugAndroidTest :app:connectedDebugAndroidTest`. CI requires both local and API 34 device jobs through `Android checks`. Report device tests as unrun when only APK assembly or Robolectric ran.
+With a compatible connected device, run `./gradlew :core:core-database:connectedDebugAndroidTest :app:connectedDebugAndroidTest`. CI requires both local and AAOS API 34-ext9 device jobs through `Android checks`. Report device tests as unrun when only APK assembly or Robolectric ran.
