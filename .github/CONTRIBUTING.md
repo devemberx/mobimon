@@ -70,7 +70,8 @@ CI runs these tests on an Android Automotive OS API 34-ext9 Google APIs x86_64
 emulator in parallel with local checks. Its CSTDe-like display is 2560x1440 at
 160 dpi, with 4 CPU cores and 4096 MB RAM. Before tests, CI checks the automotive
 feature, API, ABI and display using `bash scripts/check-aaos-environment.sh`.
-Both jobs must pass through `Android checks`. See the
+Both jobs run in parallel with a 20-minute timeout per job and must pass through
+`Android checks`. These timeouts are failure limits, not expected run times. See the
 [AAOS environment comparison](../docs/TESTING.md#ci-aaos-environment) for the
 supplied image differences and local reproduction. This does not verify custom
 CSTD services, real vehicle integration or Release behavior.

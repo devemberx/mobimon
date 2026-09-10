@@ -300,6 +300,8 @@ When splitting modules, update CI to run local tests and Lint in every applicabl
 module, including pure JVM tests separately. Merely depending on a library does
 not make `:app:testDebugUnitTest` execute that library's tests. Retain the required
 `Android checks` status, which now requires both parallel jobs to succeed. The
+local and device jobs each have a 20-minute timeout; these limits do not specify
+normal run times. The
 device job runs Room and app journeys on an AAOS API 34-ext9 Google APIs x86_64
 emulator with the CSTDe-like settings below. Local results are saved as
 `local-reports-*`, device reports as `device-reports-*`, including on failure.
