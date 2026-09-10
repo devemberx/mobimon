@@ -1,0 +1,19 @@
+<resources>
+  <string name="vehicle_current_status">지금 내 차는</string>
+  <string name="vehicle_quality_valid">차량 정보를 확인했어요</string>
+  <string name="vehicle_quality_stale">새로운 차량 정보가 필요해요</string>
+  <string name="vehicle_quality_unavailable">차량 상태를 확인할 수 없어요</string>
+  <string name="vehicle_driving_unknown">주차 여부 확인 불가</string>
+  <string name="vehicle_driving_moving">주행 중</string>
+  <string name="vehicle_driving_parked">주차 확인됨</string>
+  <string name="vehicle_battery_unavailable">배터리 정보 없음</string>
+  <string name="vehicle_battery">배터리 %1$d%%</string>
+  <string name="vehicle_parked_required">최신 정보로 주차가 확인되면 퀘스트를 진행할 수 있어요.</string>
+  <string name="vehicle_q01_title">Q01 · 내 차와 첫 인사</string>
+  <string name="vehicle_q01_completed">이미 확인을 마쳤어요. 받은 경험치는 그대로 유지돼요.</string>
+  <string name="vehicle_q01_start_required">퀘스트에서 Q01을 시작한 뒤 돌아와 주세요.</string>
+  <string name="vehicle_q01_saving">확인한 내용을 저장하고 있어요.</string>
+  <string name="vehicle_q01_waiting">지금은 확인을 마칠 수 없어요. 새로운 차량 정보와 퀘스트 진행 상황을 확인해 주세요.</string>
+  <string name="vehicle_q01_instruction">현재 표시된 차량 상태를 살펴보고 확인해 주세요.</string>
+  <string name="vehicle_acknowledge">상태 확인 완료</string>
+</resources>

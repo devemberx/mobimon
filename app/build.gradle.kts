@@ -5,6 +5,8 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
+    alias(libs.plugins.ksp)
+    alias(libs.plugins.hilt)
     alias(libs.plugins.ktlint)
     alias(libs.plugins.kover)
 }
@@ -19,9 +21,17 @@ android {
         targetSdk = 34
         versionCode = 1
         versionName = "0.1.0"
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
+    buildTypes {
+        debug { applicationIdSuffix = ".demo" }
+    }
+
+    testOptions { unitTests.isIncludeAndroidResources = true }
+
     buildFeatures {
+        buildConfig = true
         compose = true
     }
 
@@ -62,6 +72,40 @@ dependencyLocking {
 }
 
 dependencies {
+    implementation(project(":core:core-domain"))
+    implementation(project(":core:core-database"))
+    implementation(project(":core:core-vss"))
+    implementation(project(":core:core-ui"))
+    implementation(project(":feature:feature-pet"))
+    implementation(project(":feature:feature-quest"))
+    implementation(project(":feature:feature-vehicle-info"))
+    implementation(libs.hilt.android)
+    ksp(libs.hilt.compiler)
+    implementation(libs.androidx.lifecycle.runtime.compose)
+    implementation(libs.androidx.lifecycle.process)
+    implementation(libs.androidx.lifecycle.viewmodel.compose)
+    implementation(libs.androidx.room.runtime)
+    implementation(libs.androidx.datastore.preferences)
+    testImplementation(libs.robolectric)
+    testImplementation(libs.androidx.test.core)
+    testImplementation(libs.androidx.test.junit)
+    testImplementation(platform(libs.androidx.compose.bom))
+    testImplementation(libs.androidx.compose.ui.test.junit4)
+    debugImplementation(libs.androidx.compose.ui.test.manifest)
+    androidTestImplementation(platform(libs.androidx.compose.bom))
+    androidTestImplementation(libs.androidx.compose.ui.test.junit4)
+    androidTestImplementation(libs.androidx.test.runner)
+    androidTestImplementation(libs.androidx.test.junit)
+    // Match AGP's tested-app runtime graph when generating strict test dependency locks.
+    androidTestRuntimeOnly(libs.kotlin.stdlib.common)
+    kover(project(":core:core-domain"))
+    kover(project(":core:core-database"))
+    kover(project(":core:core-vss"))
+    kover(project(":core:core-ui"))
+    kover(project(":feature:feature-pet"))
+    kover(project(":feature:feature-quest"))
+    kover(project(":feature:feature-vehicle-info"))
+
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.activity.compose)
     implementation(platform(libs.androidx.compose.bom))

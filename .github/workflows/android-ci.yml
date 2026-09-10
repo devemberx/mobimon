@@ -37,8 +37,10 @@ jobs:
         run: |
           ./gradlew --no-daemon --stacktrace \
             ktlintCheck \
-            :app:lintDebug \
-            :app:testDebugUnitTest \
+            lintDebug \
+            testDebugUnitTest \
+            :core:core-domain:test \
+            :core:core-vss:test \
             :app:assembleDebug
       - name: Save APK
         if: github.event_name != 'pull_request'

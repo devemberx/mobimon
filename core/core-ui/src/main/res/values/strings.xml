@@ -1,0 +1,11 @@
+<resources>
+  <string name="rivo_appearance_golden">골든</string>
+  <string name="rivo_appearance_cream">크림</string>
+  <string name="rivo_pet_description">%1$s 강아지, 성장 %2$d단계</string>
+  <string name="rivo_source_simulated">시뮬레이션</string>
+  <string name="rivo_source_real">실제 차량 데이터</string>
+  <string name="rivo_growth_stage">성장 %1$d단계</string>
+  <string name="rivo_total_xp">%1$d XP</string>
+  <string name="rivo_growth_remaining">다음 성장까지 %1$d XP</string>
+  <string name="rivo_growth_final">마지막 성장 단계에 도착했어요</string>
+</resources>
