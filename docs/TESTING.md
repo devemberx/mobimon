@@ -50,21 +50,21 @@ prove. Current examples:
 
 ```text
 core/core-domain/
-  src/main/kotlin/com/devemberx/rivo/core/domain/RewardCalculator.kt
-  src/test/kotlin/com/devemberx/rivo/core/domain/RewardCalculatorTest.kt
+  src/main/kotlin/com/monsters/mobimon/core/domain/RewardCalculator.kt
+  src/test/kotlin/com/monsters/mobimon/core/domain/RewardCalculatorTest.kt
 
 feature/feature-quest/
-  src/main/java/com/devemberx/rivo/feature/quest/QuestViewModel.kt
-  src/test/java/com/devemberx/rivo/feature/quest/QuestViewModelTest.kt
-  src/main/java/com/devemberx/rivo/feature/quest/QuestScreen.kt
-  src/test/java/com/devemberx/rivo/feature/quest/QuestScreenTest.kt
+  src/main/java/com/monsters/mobimon/feature/quest/QuestViewModel.kt
+  src/test/java/com/monsters/mobimon/feature/quest/QuestViewModelTest.kt
+  src/main/java/com/monsters/mobimon/feature/quest/QuestScreen.kt
+  src/test/java/com/monsters/mobimon/feature/quest/QuestScreenTest.kt
 
 core/core-database/
-  src/main/java/com/devemberx/rivo/core/database/RoomCompanionRepository.kt
-  src/androidTest/java/com/devemberx/rivo/core/database/RoomCompanionRepositoryAndroidTest.kt
+  src/main/java/com/monsters/mobimon/core/database/RoomCompanionRepository.kt
+  src/androidTest/java/com/monsters/mobimon/core/database/RoomCompanionRepositoryAndroidTest.kt
 
 app/
-  src/test/java/com/devemberx/rivo/ui/RivoContentTest.kt
+  src/test/java/com/monsters/mobimon/ui/MobiMonContentTest.kt
 ```
 
 `QuestScreenTest` is a local Compose test with Robolectric, not a
@@ -90,7 +90,7 @@ When multiple source sets/modules need the same JVM-only helper, extract it to
 the planned `:core:core-testing` Kotlin/JVM library:
 
 ```text
-core/core-testing/src/main/kotlin/com/devemberx/rivo/core/testing/
+core/core-testing/src/main/kotlin/com/monsters/mobimon/core/testing/
   builders/       # vehicleSnapshot(), questRun(), petProfile()
   fake/           # FakeRewardRepository, FakeVehicleRepository, FakeAiGateway
                   # FakeMemoryRepository, FakeClock, deterministic IDs

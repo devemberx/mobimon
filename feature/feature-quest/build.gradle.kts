@@ -10,7 +10,7 @@ plugins {
 }
 
 android {
-    namespace = "com.devemberx.rivo.feature.quest"
+    namespace = "com.monsters.mobimon.feature.quest"
     compileSdk = 34
     defaultConfig {
         minSdk = 34

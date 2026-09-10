@@ -14,7 +14,7 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "RIVO"
+rootProject.name = "MobiMon"
 include(":app")
 
 include(":core:core-domain", ":core:core-database", ":core:core-vss", ":core:core-ui")

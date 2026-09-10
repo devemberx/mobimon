@@ -10,7 +10,7 @@ plugins {
 }
 
 android {
-    namespace = "com.devemberx.rivo.core.ui"
+    namespace = "com.monsters.mobimon.core.ui"
     compileSdk = 34
     defaultConfig {
         minSdk = 34

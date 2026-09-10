@@ -12,7 +12,8 @@ from urllib.request import Request, urlopen
 from validate_issue import validate
 
 
-MARKER = "<!-- rivo-issue-format:v1 -->"
+MARKER = "<!-- mobimon-issue-format:v1 -->"
+LEGACY_MARKERS = ("<!-- rivo-issue-format:v1 -->",)
 LABEL = "needs-info"
 
 
@@ -35,7 +36,7 @@ class GitHubAPI:
                 "Authorization": f"Bearer {self.token}",
                 "Accept": "application/vnd.github+json",
                 "Content-Type": "application/json",
-                "User-Agent": "RIVO-issue-format",
+                "User-Agent": "MobiMon-issue-format",
             },
         )
         try:
@@ -65,7 +66,10 @@ def sync_feedback(api, repository, number):
         comment = next((entry for entry in comments if (
             entry.get("user", {}).get("login") == "github-actions[bot]"
             and entry.get("user", {}).get("type") == "Bot"
-            and (entry.get("body") or "").startswith(MARKER + "\n")
+            and any(
+                (entry.get("body") or "").startswith(marker + "\n")
+                for marker in (MARKER, *LEGACY_MARKERS)
+            )
         )), None)
         if comment or len(comments) < 100:
             break

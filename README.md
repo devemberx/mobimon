@@ -1,15 +1,19 @@
-# RIVO
+# MobiMon
 
-RIVO is an Android companion app for a parked vehicle. The first native foundation
+MobiMon is an Android companion app for a parked vehicle. The first native foundation
 includes two home surfaces, a shared left drawer, a replaceable dog placeholder,
 appearance and display preferences, and a persistent first quest with an
 exactly-once 80 XP reward.
 
-Debug installs as `com.devemberx.rivo.demo` and uses clearly labeled simulated
+Debug installs as `com.monsters.mobimon.demo` and uses clearly labeled simulated
 vehicle data, a separate local profile, and a separate database. Start Q01 from
 Quest information, wait for the next vehicle update, then acknowledge the status
 card. Progress and preferences remain after restarting the app. If an unfinished
 quest spans an observation restart, cancel it and start a new run before confirming.
+
+The package rename makes MobiMon a separate Android app from earlier builds.
+Existing progress and preferences are not migrated; remove the earlier app
+separately if it is no longer needed.
 
 Release reports real vehicle data as unavailable until a supported adapter is
 connected. AI conversation, Q02/Q03, and a system overlay are not implemented yet.
@@ -95,7 +99,7 @@ its `platform-tools` directory to your `PATH` so that `adb` is available.
    location. If multiple targets are connected, use
    `adb -s SERIAL install -r "path/to/app.apk"`, replacing `SERIAL` with the value
    shown by `adb devices`.
-4. After `Success`, open **RIVO Demo** for Debug or **RIVO** for Release from the device's app launcher.
+4. After `Success`, open **MobiMon Demo** for Debug or **MobiMon** for Release from the device's app launcher.
 
 `-r` updates an existing installation while keeping its data when the signing
 certificate matches. For connection and installation details, see the
@@ -106,7 +110,7 @@ certificate matches. For connection and installation details, see the
 On a device that supports APK file installation, copy or download the signed APK
 to the device and open it in the file manager. If prompted, allow **Install
 unknown apps** for that file manager or browser, then select **Install** and open
-**RIVO**. USB debugging is not needed for this method.
+**MobiMon**. USB debugging is not needed for this method.
 See Android's [installation guidance](https://developer.android.com/distribute/marketing-tools/alternative-distribution).
 
 If an update fails because the signing certificate differs, use an APK signed
