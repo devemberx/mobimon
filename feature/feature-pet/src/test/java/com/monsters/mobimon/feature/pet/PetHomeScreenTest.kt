@@ -36,8 +36,8 @@ class PetHomeScreenTest {
     fun hiddenPetPreferenceRemovesConversationTargetOnlyOnVehiclePreview() {
         render(vehiclePreview = true, showOnVehicleHome = false)
 
-        compose.onNodeWithContentDescription("강아지와 대화하기").assertDoesNotExist()
-        compose.onNodeWithText("차량 홈에서 강아지를 숨겼어요").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithContentDescription("친구와 대화하기").assertDoesNotExist()
+        compose.onNodeWithText("차량 홈 미리보기에서 친구를 숨겼어요").performScrollTo().assertIsDisplayed()
     }
 
     private fun render(
@@ -47,8 +47,6 @@ class PetHomeScreenTest {
         compose.setContent {
             PetHomeScreen(
                 profile = PetProfile("profile"),
-                stage = 1,
-                xpUntilNextStage = 80,
                 snapshot =
                     VehicleSnapshot(
                         id = "unavailable",
@@ -66,6 +64,7 @@ class PetHomeScreenTest {
                 onOpenQuests = {},
                 onSwitchHome = {},
                 onPetClick = {},
+                onOpenAppearance = {},
                 vehiclePreview = vehiclePreview,
             )
         }

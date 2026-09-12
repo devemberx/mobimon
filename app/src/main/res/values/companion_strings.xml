@@ -6,11 +6,13 @@
     <string name="drawer_vehicle_info">차량 정보</string>
     <string name="drawer_appearance">캐릭터 선택</string>
     <string name="drawer_settings">설정</string>
-    <string name="drawer_back">메뉴로</string>
+    <string name="drawer_back">뒤로</string>
+    <string name="return_home">홈으로</string>
+    <string name="conversation_not_connected">AI 연결을 지원하는 환경이 확인되지 않아 대화를 시작할 수 없어요.</string>
     <string name="drawer_close">메뉴 전체 닫기</string>
     <string name="close">닫기</string>
     <string name="retry">다시 시도</string>
-    <string name="loading_companion">강아지를 만나러 가는 중이에요</string>
+    <string name="loading_companion">친구를 만나러 가는 중이에요</string>
     <string name="load_failed">저장된 정보를 읽지 못했어요. 다시 시도해 주세요.</string>
     <string name="save_failed">저장하지 못했어요. 현재 기록을 확인하고 다시 시도해 주세요.</string>
     <string name="quest_not_parked">주차 상태가 확인되면 진행할 수 있어요.</string>

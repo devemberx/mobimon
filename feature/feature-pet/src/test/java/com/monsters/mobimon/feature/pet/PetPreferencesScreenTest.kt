@@ -23,7 +23,7 @@ class PetPreferencesScreenTest {
     val compose = createComposeRule()
 
     @Test
-    fun appearanceSelectionKeepsCommittedChoiceUntilCallerUpdatesState() {
+    fun appearancePreviewDoesNotApplyUntilExplicitAction() {
         var requested: PetAppearance? = null
         compose.setContent {
             MaterialTheme {
@@ -33,8 +33,11 @@ class PetPreferencesScreenTest {
 
         compose.onNodeWithText("크림").performScrollTo().performClick()
 
+        assertEquals(null, requested)
+        compose.onNodeWithText("크림").performScrollTo().assertIsSelected()
+        compose.onNodeWithText("미리 보는 중").performScrollTo().assertExists()
+        compose.onNodeWithText("이 모습 적용").performScrollTo().performClick()
         assertEquals(PetAppearance.CREAM, requested)
-        compose.onNodeWithText("골든").performScrollTo().assertIsSelected()
     }
 
     @Test
@@ -50,10 +53,10 @@ class PetPreferencesScreenTest {
             }
         }
 
-        compose.onNodeWithText("차량 홈에 강아지 표시").performScrollTo().performClick()
+        compose.onNodeWithText("앱 내 차량 홈 미리보기에 친구 표시").performScrollTo().performClick()
 
         assertEquals(false, requested)
-        compose.onNodeWithText("차량 홈에 강아지 표시").assertIsOn()
+        compose.onNodeWithText("앱 내 차량 홈 미리보기에 친구 표시").assertIsOn()
     }
 
     @Test

@@ -5,12 +5,14 @@ import com.monsters.mobimon.core.domain.VehicleRepository
 /** Owns the single vehicle observation across every feature in this process. */
 class CompanionRuntime(
     private val vehicleRepository: VehicleRepository,
+    private val appUse: AppUseLifecycle,
 ) {
     private var running = false
 
     @Synchronized
     fun start() {
         if (!running) {
+            appUse.start()
             vehicleRepository.start()
             running = true
         }
@@ -20,6 +22,7 @@ class CompanionRuntime(
     fun stop() {
         if (running) {
             vehicleRepository.stop()
+            appUse.stop()
             running = false
         }
     }

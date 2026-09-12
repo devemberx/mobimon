@@ -3,7 +3,10 @@ package com.monsters.mobimon.core.database
 import android.database.sqlite.SQLiteConstraintException
 import android.database.sqlite.SQLiteException
 import androidx.room.withTransaction
+import com.monsters.mobimon.core.domain.AppUseState
 import com.monsters.mobimon.core.domain.Clock
+import com.monsters.mobimon.core.domain.CurrentAppUse
+import com.monsters.mobimon.core.domain.CurrentVehicleEvidence
 import com.monsters.mobimon.core.domain.IdGenerator
 import com.monsters.mobimon.core.domain.PetAppearance
 import com.monsters.mobimon.core.domain.PetProfile
@@ -34,6 +37,8 @@ class RoomCompanionRepository(
     private val clock: Clock,
     private val ids: IdGenerator,
     private val evaluator: QuestEvaluator,
+    private val currentVehicle: CurrentVehicleEvidence,
+    private val currentAppUse: CurrentAppUse,
 ) : PetRepository,
     QuestRepository,
     RewardRepository {
@@ -48,13 +53,24 @@ class RoomCompanionRepository(
         }
 
     override suspend fun initialize() {
-        dao.insertProfile(
-            PetProfileEntity(
-                id = identity.profileId,
-                appearance = PetAppearance.GOLDEN.name,
-                totalXp = 0,
-            ),
-        )
+        database.withTransaction {
+            dao.insertProfile(
+                PetProfileEntity(
+                    id = identity.profileId,
+                    appearance = PetAppearance.GOLDEN.name,
+                    totalXp = 0,
+                ),
+            )
+            val economy = database.economyDao()
+            economy.insertAccount(PointAccountEntity(identity.profileId, 0))
+            economy.insertItem(CosmeticItemEntity("friend:mobi", "FRIEND", 0, null))
+            economy.insertItem(CosmeticItemEntity("friend:luna", "FRIEND", 0, null))
+            economy.insertOwned(OwnedCosmeticEntity(identity.profileId, "friend:mobi"))
+            economy.insertOwned(OwnedCosmeticEntity(identity.profileId, "friend:luna"))
+            if (economy.equipped(identity.profileId, "FRIEND") == null) {
+                economy.putEquipped(EquippedCosmeticEntity(identity.profileId, "FRIEND", "friend:mobi"))
+            }
+        }
     }
 
     override suspend fun setAppearance(appearance: PetAppearance): WriteResult =
@@ -90,7 +106,7 @@ class RoomCompanionRepository(
                 }
 
                 val nowMillis = clock.nowMillis()
-                evaluator.validateSnapshot(snapshot, identity.source, nowMillis)?.let { rejection ->
+                validateCurrentEvidence(snapshot, nowMillis)?.let { rejection ->
                     return@withTransaction QuestCommandResult.Rejected(rejection)
                 }
                 val run =
@@ -133,7 +149,7 @@ class RoomCompanionRepository(
                 if (run.source != identity.source) {
                     return@withTransaction QuestCommandResult.Rejected(QuestRejection.WRONG_SOURCE)
                 }
-                evaluator.validateSnapshot(snapshot, identity.source, clock.nowMillis())?.let { rejection ->
+                validateCurrentEvidence(snapshot, clock.nowMillis())?.let { rejection ->
                     return@withTransaction QuestCommandResult.Rejected(rejection)
                 }
 
@@ -174,6 +190,9 @@ class RoomCompanionRepository(
                 }
 
                 val nowMillis = clock.nowMillis()
+                validateCurrentEvidence(snapshot, nowMillis)?.let { rejection ->
+                    return@withTransaction RewardResult.Rejected(rejection)
+                }
                 evaluator.evaluate(run, expectedRevision, snapshot, identity.source, nowMillis)?.let { rejection ->
                     return@withTransaction RewardResult.Rejected(rejection)
                 }
@@ -221,6 +240,19 @@ class RoomCompanionRepository(
         } catch (_: SQLiteException) {
             RewardResult.StorageFailure
         }
+
+    private fun validateCurrentEvidence(
+        supplied: VehicleSnapshot,
+        nowMillis: Long,
+    ): QuestRejection? {
+        if (currentAppUse.state() != AppUseState.ALLOWED) return QuestRejection.APP_USE_RESTRICTED
+        evaluator.validateSnapshot(supplied, identity.source, nowMillis)?.let { return it }
+        val latest = currentVehicle.snapshot()
+        evaluator.validateSnapshot(latest, identity.source, nowMillis)?.let { return it }
+        if (latest.epoch != supplied.epoch) return QuestRejection.WRONG_EPOCH
+        if (latest != supplied) return QuestRejection.RUN_CHANGED
+        return null
+    }
 
     private companion object {
         const val Q01_RULE_VERSION = 1

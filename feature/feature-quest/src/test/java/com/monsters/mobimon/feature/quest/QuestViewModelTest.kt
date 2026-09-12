@@ -143,6 +143,25 @@ class QuestViewModelTest {
         }
 
     @Test
+    fun nonParkedSnapshotFreshnessExpiresWithoutAnotherVehicleEmission() =
+        runModelTest {
+            val vm = subject()
+            val parked = vehicle.snapshots.value
+            for (state in listOf(DrivingState.MOVING, DrivingState.UNKNOWN)) {
+                vehicle.snapshots.value = parked.copy(drivingState = state)
+                runCurrent()
+                assertEquals(SignalQuality.VALID, vm.state.value.snapshot.quality)
+                now = 20_000
+                dispatcher.scheduler.advanceTimeBy(1_000)
+                runCurrent()
+                assertEquals(SignalQuality.STALE, vm.state.value.snapshot.quality)
+                now = 2_000
+                dispatcher.scheduler.advanceTimeBy(1_000)
+                runCurrent()
+            }
+        }
+
+    @Test
     fun failedObservationCanBeRetriedWithoutRecreatingViewModel() =
         runModelTest {
             local.failObservation = true

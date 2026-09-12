@@ -2,27 +2,37 @@ package com.monsters.mobimon.ui
 
 enum class HomeSurface { PET, VEHICLE }
 
-enum class DrawerDestination { CLOSED, MENU, PET_INFO, QUESTS, VEHICLE_INFO, APPEARANCE, SETTINGS }
+enum class AppRoute { HOME, QUESTS, VEHICLE_INFO, APPEARANCE, SETTINGS, CONVERSATION }
 
 data class ShellState(
     val home: HomeSurface = HomeSurface.PET,
-    val drawer: DrawerDestination = DrawerDestination.CLOSED,
-    val conversationUnavailable: Boolean = false,
+    val route: AppRoute = AppRoute.HOME,
+    val menuOpen: Boolean = false,
 ) {
     fun back(): ShellState =
-        when (drawer) {
-            DrawerDestination.CLOSED -> copy(conversationUnavailable = false)
-            DrawerDestination.MENU -> closeDrawer()
-            else -> copy(drawer = DrawerDestination.MENU)
+        when {
+            menuOpen -> copy(menuOpen = false)
+            route != AppRoute.HOME -> copy(route = AppRoute.HOME)
+            else -> this
         }
 
-    fun closeDrawer(): ShellState = copy(drawer = DrawerDestination.CLOSED)
+    fun openMenu(): ShellState = copy(menuOpen = true)
 
-    fun openDrawer(destination: DrawerDestination): ShellState =
-        copy(drawer = destination, conversationUnavailable = false)
+    fun navigate(destination: AppRoute): ShellState = copy(route = destination, menuOpen = false)
+
+    fun returnHome(): ShellState = copy(route = AppRoute.HOME, menuOpen = false)
 
     fun switchHome(): ShellState =
-        ShellState(
-            home = if (home == HomeSurface.PET) HomeSurface.VEHICLE else HomeSurface.PET,
+        copy(
+            home =
+                if (home ==
+                    HomeSurface.PET
+                ) {
+                    HomeSurface.VEHICLE
+                } else {
+                    HomeSurface.PET
+                },
+            route = AppRoute.HOME,
+            menuOpen = false,
         )
 }

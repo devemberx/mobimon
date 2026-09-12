@@ -21,15 +21,15 @@ import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 
-/** A scrollable content body; the shell supplies drawer navigation and its header. */
+/** A scrollable content body that reflows within the available window. */
 @Composable
 fun MobiMonContentColumn(
     modifier: Modifier = Modifier,
     content: @Composable ColumnScope.() -> Unit,
 ) {
     Column(
-        modifier = modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(20.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp),
+        modifier = modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(24.dp),
+        verticalArrangement = Arrangement.spacedBy(24.dp),
         content = content,
     )
 }
@@ -46,7 +46,7 @@ fun MobiMonSection(
         shape = RoundedCornerShape(24.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
     ) {
-        Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        Column(Modifier.padding(24.dp), verticalArrangement = Arrangement.spacedBy(24.dp)) {
             Text(title, style = MaterialTheme.typography.titleMedium)
             content()
         }
@@ -95,6 +95,25 @@ fun MobiMonGrowthSummary(
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
     }
+}
+
+/** Shows loading/failure distinctly from a committed zero-point balance. */
+@Composable
+fun MobiMonPointSummary(
+    balance: Long?,
+    failed: Boolean = false,
+    modifier: Modifier = Modifier,
+) {
+    Text(
+        text =
+            when {
+                failed -> stringResource(R.string.mobimon_points_failed)
+                balance == null -> stringResource(R.string.mobimon_points_loading)
+                else -> stringResource(R.string.mobimon_points_balance, balance)
+            },
+        modifier = modifier,
+        style = MaterialTheme.typography.titleLarge,
+    )
 }
 
 /** Announces a caller-provided failure or a local availability explanation. */

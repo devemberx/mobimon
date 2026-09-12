@@ -80,7 +80,10 @@ internal fun PetVehicleSummary(
             ),
             style = MaterialTheme.typography.titleMedium,
         )
-        val battery = snapshot.batteryPercent?.takeIf { valid && it in 0..100 }
+        val battery =
+            snapshot.batteryPercent?.takeIf {
+                (snapshot.batteryQuality ?: snapshot.quality) == SignalQuality.VALID && it in 0..100
+            }
         Text(
             if (battery == null) {
                 stringResource(R.string.pet_vehicle_unavailable)

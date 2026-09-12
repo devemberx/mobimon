@@ -13,14 +13,30 @@ class CompanionRuntimeTest {
     @Test
     fun repeatedForegroundNotificationsDoNotDuplicateConnection() {
         val vehicle = RecordingVehicleRepository()
-        val runtime = CompanionRuntime(vehicle)
+        val appUse = RecordingAppUse()
+        val runtime = CompanionRuntime(vehicle, appUse)
         repeat(5) { runtime.start() }
         assertEquals(1, vehicle.starts)
+        assertEquals(1, appUse.starts)
         repeat(5) { runtime.stop() }
         assertEquals(1, vehicle.stops)
+        assertEquals(1, appUse.stops)
         runtime.start()
         assertEquals(2, vehicle.starts)
         runtime.stop()
+    }
+
+    private class RecordingAppUse : AppUseLifecycle {
+        var starts = 0
+        var stops = 0
+
+        override fun start() {
+            starts++
+        }
+
+        override fun stop() {
+            stops++
+        }
     }
 
     private class RecordingVehicleRepository : VehicleRepository {

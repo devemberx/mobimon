@@ -40,6 +40,8 @@ interface SettingsRepository {
     suspend fun setShowOnVehicleHome(enabled: Boolean): WriteResult
 
     suspend fun setReducedMotion(enabled: Boolean): WriteResult
+
+    suspend fun setLauncherCharacterEnabled(enabled: Boolean): WriteResult
 }
 
 interface VehicleRepository {
@@ -48,4 +50,14 @@ interface VehicleRepository {
     fun start()
 
     fun stop()
+}
+
+fun interface CurrentVehicleEvidence {
+    fun snapshot(): VehicleSnapshot
+}
+
+enum class AppUseState { ALLOWED, RESTRICTED, UNAVAILABLE }
+
+fun interface CurrentAppUse {
+    fun state(): AppUseState
 }
