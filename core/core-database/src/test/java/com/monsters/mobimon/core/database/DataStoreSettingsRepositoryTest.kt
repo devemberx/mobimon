@@ -31,14 +31,16 @@ class DataStoreSettingsRepositoryTest {
             try {
                 var repository = DataStoreSettingsRepository(preferenceStore(file, scope))
                 assertEquals(CompanionSettings(), repository.settings.first())
+                assertEquals(WriteResult.Success, repository.setLauncherCharacterEnabled(true))
+                assertEquals(true, repository.settings.first().launcherCharacterEnabled)
                 assertEquals(WriteResult.Success, repository.setShowOnVehicleHome(false))
                 assertEquals(WriteResult.Success, repository.setReducedMotion(true))
-                assertEquals(CompanionSettings(false, true), repository.settings.first())
+                assertEquals(CompanionSettings(false, true, true), repository.settings.first())
                 scope.stopDataStore()
 
                 scope = dataStoreScope()
                 repository = DataStoreSettingsRepository(preferenceStore(file, scope))
-                assertEquals(CompanionSettings(false, true), repository.settings.first())
+                assertEquals(CompanionSettings(false, true, true), repository.settings.first())
             } finally {
                 scope.stopDataStore()
                 file.delete()

@@ -3,6 +3,7 @@ package com.monsters.mobimon.core.vss
 import com.monsters.mobimon.core.domain.DrivingState
 import com.monsters.mobimon.core.domain.SignalQuality
 import com.monsters.mobimon.core.domain.SignalSource
+import com.monsters.mobimon.core.domain.SignalUnavailableReason
 import com.monsters.mobimon.core.domain.VehicleRepository
 import com.monsters.mobimon.core.domain.VehicleSnapshot
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -20,6 +21,8 @@ class UnavailableVehicleRepository : VehicleRepository {
                 source = SignalSource.REAL,
                 drivingState = DrivingState.UNKNOWN,
                 quality = SignalQuality.UNAVAILABLE,
+                parkingUnavailableReason = SignalUnavailableReason.UNSUPPORTED,
+                batteryUnavailableReason = SignalUnavailableReason.UNSUPPORTED,
             ),
         )
 

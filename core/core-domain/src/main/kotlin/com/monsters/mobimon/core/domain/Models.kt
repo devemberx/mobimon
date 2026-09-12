@@ -6,6 +6,20 @@ enum class DrivingState { UNKNOWN, PARKED, MOVING }
 
 enum class SignalQuality { UNAVAILABLE, VALID, STALE }
 
+enum class SignalUnavailableReason { UNSUPPORTED, PERMISSION_DENIED, DISCONNECTED, NOT_REPORTED, INVALID }
+
+enum class WarningSeverity { NOTICE, CAUTION, CRITICAL }
+
+data class VehicleWarning(
+    val item: String,
+    val location: String? = null,
+    val severity: WarningSeverity,
+    val description: String,
+    val nextAction: String,
+    val observedAtMillis: Long,
+    val quality: SignalQuality = SignalQuality.VALID,
+)
+
 enum class PetAppearance { GOLDEN, CREAM }
 
 enum class QuestType { Q01, Q02, Q03 }
@@ -21,6 +35,14 @@ data class VehicleSnapshot(
     val drivingState: DrivingState,
     val quality: SignalQuality,
     val batteryPercent: Int? = null,
+    val batteryReceivedAtMillis: Long? = null,
+    val batteryQuality: SignalQuality? = null,
+    val parkingUnavailableReason: SignalUnavailableReason? = null,
+    val batteryUnavailableReason: SignalUnavailableReason? = null,
+    val warnings: List<VehicleWarning> = emptyList(),
+    /** Derived UI metadata; never used as quest evidence. */
+    val parkingAgeMillis: Long? = null,
+    val batteryAgeMillis: Long? = null,
 )
 
 data class PetProfile(
@@ -61,6 +83,7 @@ data class QuestProgress(
 data class CompanionSettings(
     val showOnVehicleHome: Boolean = true,
     val reducedMotion: Boolean = false,
+    val launcherCharacterEnabled: Boolean = false,
 )
 
 fun interface Clock {
@@ -86,6 +109,7 @@ enum class QuestRejection {
     RUN_CHANGED,
     UNSUPPORTED_QUEST,
     INVALID_SIGNAL,
+    APP_USE_RESTRICTED,
 }
 
 sealed interface WriteResult {

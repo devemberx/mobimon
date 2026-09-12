@@ -5,6 +5,7 @@ import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.monsters.mobimon.core.domain.Clock
+import com.monsters.mobimon.core.domain.CurrentVehicleEvidence
 import com.monsters.mobimon.core.domain.DrivingState
 import com.monsters.mobimon.core.domain.IdGenerator
 import com.monsters.mobimon.core.domain.PetAppearance
@@ -37,6 +38,8 @@ class RoomCompanionRepositoryAndroidTest {
     private lateinit var database: AppDatabase
     private lateinit var clock: AndroidMutableClock
     private lateinit var repository: RoomCompanionRepository
+    private lateinit var observed: VehicleSnapshot
+    private val currentVehicle = CurrentVehicleEvidence { observed }
 
     @Before
     fun setUp() {
@@ -47,7 +50,8 @@ class RoomCompanionRepositoryAndroidTest {
                 .allowMainThreadQueries()
                 .build()
         clock = AndroidMutableClock(10_000L)
-        repository = androidRepository(database, clock)
+        observed = rawAndroidSnapshot(10, 10_000L)
+        repository = androidRepository(database, clock, currentVehicle)
     }
 
     @After
@@ -65,7 +69,7 @@ class RoomCompanionRepositoryAndroidTest {
             clock.value = 11_000L
 
             val results =
-                listOf(repository, androidRepository(database, clock))
+                listOf(repository, androidRepository(database, clock, currentVehicle))
                     .map { candidate ->
                         async(Dispatchers.Default) {
                             candidate.complete(run.id, run.revision, androidSnapshot(11, 11_000L))
@@ -134,7 +138,7 @@ class RoomCompanionRepositoryAndroidTest {
                         .allowMainThreadQueries()
                         .build()
                 var fileClock = AndroidMutableClock(10_000L)
-                var fileRepository = androidRepository(fileDatabase, fileClock)
+                var fileRepository = androidRepository(fileDatabase, fileClock, currentVehicle)
                 fileRepository.initialize()
                 fileRepository.setAppearance(PetAppearance.CREAM)
                 val started = fileRepository.start(QuestType.Q01, androidSnapshot(10, 10_000L))
@@ -152,7 +156,7 @@ class RoomCompanionRepositoryAndroidTest {
                         .allowMainThreadQueries()
                         .build()
                 fileClock = AndroidMutableClock(12_000L)
-                fileRepository = androidRepository(fileDatabase, fileClock)
+                fileRepository = androidRepository(fileDatabase, fileClock, currentVehicle)
                 assertEquals(PetAppearance.CREAM, fileRepository.profile.first().appearance)
                 assertEquals(80, fileRepository.profile.first().totalXp)
                 assertEquals(
@@ -172,6 +176,11 @@ class RoomCompanionRepositoryAndroidTest {
                         .build()
             }
         }
+
+    private fun androidSnapshot(
+        sequence: Long,
+        receivedAtMillis: Long,
+    ): VehicleSnapshot = rawAndroidSnapshot(sequence, receivedAtMillis).also { observed = it }
 }
 
 private class AndroidMutableClock(
@@ -189,15 +198,20 @@ private class AndroidIds : IdGenerator {
 private fun androidRepository(
     database: AppDatabase,
     clock: Clock,
+    currentVehicle: CurrentVehicleEvidence,
 ) = RoomCompanionRepository(
     database = database,
     identity = ProgressionIdentity("android-profile", SignalSource.REAL),
     clock = clock,
     ids = AndroidIds(),
     evaluator = QuestEvaluator(15_000L),
+    currentVehicle = currentVehicle,
+    currentAppUse =
+        com.monsters.mobimon.core.domain
+            .CurrentAppUse { com.monsters.mobimon.core.domain.AppUseState.ALLOWED },
 )
 
-private fun androidSnapshot(
+private fun rawAndroidSnapshot(
     sequence: Long,
     receivedAtMillis: Long,
 ) = VehicleSnapshot(

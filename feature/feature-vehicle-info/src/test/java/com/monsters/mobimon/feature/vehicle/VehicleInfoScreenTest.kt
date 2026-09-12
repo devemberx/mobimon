@@ -12,6 +12,8 @@ import com.monsters.mobimon.core.domain.DrivingState
 import com.monsters.mobimon.core.domain.SignalQuality
 import com.monsters.mobimon.core.domain.SignalSource
 import com.monsters.mobimon.core.domain.VehicleSnapshot
+import com.monsters.mobimon.core.domain.VehicleWarning
+import com.monsters.mobimon.core.domain.WarningSeverity
 import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
@@ -43,10 +45,17 @@ class VehicleInfoScreenTest {
 
     @Test
     fun staleSnapshotCannotBeAcknowledged() {
-        render(snapshot(quality = SignalQuality.STALE))
+        render(
+            snapshot(quality = SignalQuality.STALE).copy(
+                parkingAgeMillis = 19_000,
+                batteryAgeMillis = 61_000,
+            ),
+        )
 
         compose.onNodeWithText("상태 확인 완료").performScrollTo().assertIsNotEnabled()
-        compose.onNodeWithText("배터리 정보 없음").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText("배터리 정보가 오래되었어요").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText("마지막 확인: 19초 전").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText("마지막 확인: 1분 전").performScrollTo().assertIsDisplayed()
     }
 
     @Test
@@ -54,6 +63,31 @@ class VehicleInfoScreenTest {
         render(snapshot(), canAcknowledge = false)
 
         compose.onNodeWithText("상태 확인 완료").performScrollTo().assertIsNotEnabled()
+    }
+
+    @Test
+    fun freshBatteryRemainsVisibleWhenParkingIsStale() {
+        render(snapshot(quality = SignalQuality.STALE).copy(batteryQuality = SignalQuality.VALID))
+
+        compose.onNodeWithText("배터리 67%").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText("상태 확인 완료").performScrollTo().assertIsNotEnabled()
+    }
+
+    @Test
+    fun staleWarningIsMarkedHistoricalAndDoesNotOfferCurrentAction() {
+        val warning =
+            VehicleWarning(
+                item = "앞바퀴",
+                location = "왼쪽",
+                severity = WarningSeverity.CAUTION,
+                description = "압력 기록",
+                nextAction = "지금 점검",
+                observedAtMillis = 100,
+                quality = SignalQuality.STALE,
+            )
+        render(snapshot().copy(warnings = listOf(warning)))
+        compose.onNodeWithText("이전 경고 · 주의 · 앞바퀴").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText("지금 점검").assertDoesNotExist()
     }
 
     @Test

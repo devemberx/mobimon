@@ -1,11 +1,16 @@
 <resources>
   <string name="mobimon_appearance_golden">골든</string>
   <string name="mobimon_appearance_cream">크림</string>
-  <string name="mobimon_pet_description">%1$s 강아지, 성장 %2$d단계</string>
+  <string name="mobimon_pet_description">%1$s 강아지</string>
+  <string name="mobimon_mobi_description">Mobi 강아지</string>
+  <string name="mobimon_luna_description">Luna 고양이</string>
   <string name="mobimon_source_simulated">시뮬레이션</string>
   <string name="mobimon_source_real">실제 차량 데이터</string>
   <string name="mobimon_growth_stage">성장 %1$d단계</string>
   <string name="mobimon_total_xp">%1$d XP</string>
   <string name="mobimon_growth_remaining">다음 성장까지 %1$d XP</string>
   <string name="mobimon_growth_final">마지막 성장 단계에 도착했어요</string>
+  <string name="mobimon_points_balance">포인트 %1$d P</string>
+  <string name="mobimon_points_loading">포인트 확인 중</string>
+  <string name="mobimon_points_failed">포인트를 확인할 수 없어요</string>
 </resources>

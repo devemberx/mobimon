@@ -13,4 +13,5 @@
   <string name="quest_other_active">진행 중인 퀘스트를 먼저 마치거나 취소해 주세요.</string>
   <string name="quest_parked_required">최신 차량 정보로 주차가 확인되면 시작하거나 취소할 수 있어요.</string>
   <string name="quest_saving">진행 상황을 저장하고 있어요.</string>
+  <string name="quest_catalog_pending">새 퀘스트와 포인트 보상을 준비하고 있어요. 기존 XP 기록은 보존돼요.</string>
 </resources>

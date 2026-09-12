@@ -6,8 +6,11 @@ import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import com.monsters.mobimon.core.database.AppDatabase
 import com.monsters.mobimon.core.database.RoomCompanionRepository
+import com.monsters.mobimon.core.domain.AppUseState
 import com.monsters.mobimon.core.domain.Clock
 import com.monsters.mobimon.core.domain.CompanionSettings
+import com.monsters.mobimon.core.domain.CurrentAppUse
+import com.monsters.mobimon.core.domain.CurrentVehicleEvidence
 import com.monsters.mobimon.core.domain.DrivingState
 import com.monsters.mobimon.core.domain.IdGenerator
 import com.monsters.mobimon.core.domain.ProgressionIdentity
@@ -47,6 +50,7 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.SQLiteMode
+import java.util.concurrent.CountDownLatch
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 
@@ -65,6 +69,8 @@ class Q01JourneyTest {
 
     @Volatile
     private var nowMillis = 10_000L
+
+    @Volatile private var appUse = AppUseState.ALLOWED
     private var nextId = 0
     private lateinit var database: AppDatabase
     private lateinit var repository: RoomCompanionRepository
@@ -87,6 +93,8 @@ class Q01JourneyTest {
                 Clock { nowMillis },
                 IdGenerator { "journey-${++nextId}" },
                 evaluator,
+                CurrentVehicleEvidence { vehicle.snapshots.value },
+                CurrentAppUse { appUse },
             )
     }
 
@@ -184,6 +192,97 @@ class Q01JourneyTest {
             }
         }
 
+    @Test
+    fun queuedRewardRejectsParkingEvidenceSupersededBeforeTheTransaction() =
+        runTest(dispatcher) {
+            val release = CountDownLatch(1)
+            val entered = CountDownLatch(1)
+            try {
+                val pet = petModel()
+                val quest = questModel()
+                pet.state.awaitState("profile initialized") { !it.isLoading && it.profile != null }
+                quest.state.awaitState("initial quest availability") { it.canManageQuest }
+                quest.start(QuestType.Q01)
+                quest.state.awaitState("run started") { it.progress.activeRun != null && !it.isBusy }
+
+                nowMillis = 11_000L
+                vehicle.snapshots.value =
+                    vehicle.snapshots.value.copy(id = "ready-card", sequence = 2, receivedAtMillis = nowMillis)
+                quest.state.awaitState("ready to acknowledge") { it.canAcknowledge }
+
+                databaseExecutor.execute {
+                    entered.countDown()
+                    release.await(5, TimeUnit.SECONDS)
+                }
+                assertTrue(withContext(Dispatchers.Default) { entered.await(5, TimeUnit.SECONDS) })
+                quest.acknowledge("ready-card")
+                runCurrent()
+                vehicle.snapshots.value =
+                    vehicle.snapshots.value.copy(
+                        quality = SignalQuality.UNAVAILABLE,
+                        drivingState = DrivingState.UNKNOWN,
+                    )
+                release.countDown()
+
+                quest.state.awaitState("superseded evidence rejected") {
+                    !it.isBusy && it.message == QuestMessage.NO_DATA
+                }
+                assertTrue(
+                    repository.progress
+                        .first()
+                        .completions
+                        .isEmpty(),
+                )
+                assertEquals(0, repository.profile.first().totalXp)
+            } finally {
+                release.countDown()
+                store.clear()
+                runCurrent()
+            }
+        }
+
+    @Test
+    fun queuedRewardRejectsUxRestrictionChangedBeforeTheTransaction() =
+        runTest(dispatcher) {
+            val release = CountDownLatch(1)
+            val entered = CountDownLatch(1)
+            try {
+                val pet = petModel()
+                val quest = questModel()
+                pet.state.awaitState("profile initialized") { !it.isLoading && it.profile != null }
+                quest.state.awaitState("initial quest availability") { it.canManageQuest }
+                quest.start(QuestType.Q01)
+                quest.state.awaitState("run started") { it.progress.activeRun != null && !it.isBusy }
+                nowMillis = 11_000L
+                vehicle.snapshots.value =
+                    vehicle.snapshots.value.copy(id = "ready-card", sequence = 2, receivedAtMillis = nowMillis)
+                quest.state.awaitState("ready to acknowledge") { it.canAcknowledge }
+
+                databaseExecutor.execute {
+                    entered.countDown()
+                    release.await(5, TimeUnit.SECONDS)
+                }
+                assertTrue(withContext(Dispatchers.Default) { entered.await(5, TimeUnit.SECONDS) })
+                quest.acknowledge("ready-card")
+                runCurrent()
+                appUse = AppUseState.RESTRICTED
+                release.countDown()
+
+                quest.state.awaitState("restriction rejected") { !it.isBusy && it.message != null }
+                assertTrue(
+                    repository.progress
+                        .first()
+                        .completions
+                        .isEmpty(),
+                )
+                assertEquals(0, repository.profile.first().totalXp)
+            } finally {
+                release.countDown()
+                store.clear()
+                runCurrent()
+            }
+        }
+
     private fun petModel() = PetViewModel(repository, settings).also { store.put("pet", it) }
 
     private fun questModel() =
@@ -233,6 +332,11 @@ class Q01JourneyTest {
 
         override suspend fun setReducedMotion(enabled: Boolean): WriteResult {
             settings.value = settings.value.copy(reducedMotion = enabled)
+            return WriteResult.Success
+        }
+
+        override suspend fun setLauncherCharacterEnabled(enabled: Boolean): WriteResult {
+            settings.value = settings.value.copy(launcherCharacterEnabled = enabled)
             return WriteResult.Success
         }
     }

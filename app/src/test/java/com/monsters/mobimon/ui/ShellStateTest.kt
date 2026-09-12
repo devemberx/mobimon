@@ -1,31 +1,39 @@
 package com.monsters.mobimon.ui
 
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
 import org.junit.Test
 
 class ShellStateTest {
     @Test
-    fun detailBackReturnsToMenuThenSameHome() {
-        val detail = ShellState(home = HomeSurface.VEHICLE, drawer = DrawerDestination.QUESTS)
-        assertEquals(DrawerDestination.MENU, detail.back().drawer)
-        assertEquals(ShellState(home = HomeSurface.VEHICLE), detail.back().back())
+    fun menuDestinationUsesFullScreenAndBackReturnsHome() {
+        val home = ShellState(home = HomeSurface.VEHICLE)
+        val destination = home.openMenu().navigate(AppRoute.QUESTS)
+        assertEquals(false, destination.menuOpen)
+        assertEquals(AppRoute.QUESTS, destination.route)
+        assertEquals(home, destination.back())
     }
 
     @Test
-    fun closeDismissesWholeDrawer() {
-        assertEquals(DrawerDestination.CLOSED, ShellState(drawer = DrawerDestination.SETTINGS).closeDrawer().drawer)
+    fun backDismissesMenuBeforeChangingRoute() {
+        val state = ShellState(route = AppRoute.SETTINGS).openMenu()
+        assertEquals(ShellState(route = AppRoute.SETTINGS), state.back())
+        assertEquals(ShellState(), state.back().back())
     }
 
     @Test
-    fun openingDrawerAndSwitchingHomeCloseConversation() {
-        val talking = ShellState(conversationUnavailable = true)
-        assertFalse(talking.openDrawer(DrawerDestination.MENU).conversationUnavailable)
-        assertEquals(ShellState(home = HomeSurface.VEHICLE), talking.switchHome())
+    fun homeSwitchClearsTransientNavigation() {
+        assertEquals(ShellState(home = HomeSurface.VEHICLE), ShellState(route = AppRoute.CONVERSATION).switchHome())
     }
 
     @Test
-    fun backClosesConversationBeforeLeavingHome() {
-        assertEquals(ShellState(), ShellState(conversationUnavailable = true).back())
+    fun oldDrawerSavedStateRestoresSafelyAfterNavigationUpgrade() {
+        assertEquals(
+            ShellState(home = HomeSurface.VEHICLE),
+            ShellSaver.restore(listOf("VEHICLE", "CLOSED")),
+        )
+        assertEquals(
+            ShellState(route = AppRoute.QUESTS),
+            ShellSaver.restore(listOf("PET", "QUESTS")),
+        )
     }
 }

@@ -14,6 +14,7 @@ plugins {
 android {
     namespace = "com.monsters.mobimon"
     compileSdk = 34
+    useLibrary("android.car")
 
     defaultConfig {
         applicationId = "com.monsters.mobimon"

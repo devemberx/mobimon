@@ -11,6 +11,7 @@ import com.monsters.mobimon.core.domain.DrivingState
 import com.monsters.mobimon.core.domain.ProgressionIdentity
 import com.monsters.mobimon.core.domain.SignalQuality
 import com.monsters.mobimon.core.domain.SignalSource
+import com.monsters.mobimon.core.domain.UtcClock
 import com.monsters.mobimon.core.domain.VehicleRepository
 import com.monsters.mobimon.core.domain.VehicleSnapshot
 import com.monsters.mobimon.di.AppEnvironment
@@ -41,6 +42,9 @@ import javax.inject.Singleton
 object JourneyTestModule {
     @Provides
     fun clock(): Clock = Clock { 10_000L }
+
+    @Provides
+    fun utcClock(): UtcClock = UtcClock { 1_800_000_000_000L }
 
     @Provides
     fun environment(): AppEnvironment =

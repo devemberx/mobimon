@@ -99,10 +99,10 @@ class Q01AppJourneyTest {
                     }
                 }
 
-            compose.onNodeWithText(text(R.string.close)).performClick()
-            assertHomeXp(80)
+            compose.onNodeWithText(text(R.string.return_home)).performClick()
+            assertHomePoints(0)
             scenario.recreate()
-            assertHomeXp(80)
+            assertHomePoints(0)
             openQuests()
             waitFor(hasText(text(QuestR.string.quest_reward_received, 80)))
             compose.onNodeWithText(text(QuestR.string.quest_start_q01)).assertDoesNotExist()
@@ -199,11 +199,11 @@ class Q01AppJourneyTest {
     private fun openQuests() {
         waitFor(hasContentDescription(text(PetR.string.pet_open_menu)))
         compose.onNodeWithContentDescription(text(PetR.string.pet_open_menu)).performScrollTo().performClick()
-        clickScrollable(R.string.drawer_quests)
+        compose.onNodeWithText(text(R.string.drawer_quests)).performClick()
     }
 
-    private fun assertHomeXp(xp: Int) {
-        val label = text(CoreUiR.string.mobimon_total_xp, xp)
+    private fun assertHomePoints(points: Long) {
+        val label = text(CoreUiR.string.mobimon_points_balance, points)
         waitFor(hasText(label))
         compose.onNodeWithText(label).performScrollTo().assertIsDisplayed()
     }
