@@ -48,8 +48,8 @@ python3 "$PWD/.agents/skills/ui-ux-pro-max/scripts/search.py" "keyboard focus mo
 python3 "$PWD/.agents/skills/ui-ux-pro-max/scripts/search.py" "accessibility semantics" --stack jetpack-compose
 ```
 
-Select the stack for the actual target: `jetpack-compose` for the Android app;
-review the HTML prototype as HTML. Treat generic web dimensions and animation
+Select `jetpack-compose` for the Android app and review the current Figma source
+linked in DESIGN.md for visual intent. Treat generic web dimensions and animation
 suggestions as recommendations that need platform-specific review. Preserve the
 [vehicle safety contracts](../../docs/ARCHITECTURE.md#state-and-lifecycle)
 and use the project's [verification requirements](../../.github/CONTRIBUTING.md#verification).

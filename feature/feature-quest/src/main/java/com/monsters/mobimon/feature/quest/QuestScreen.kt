@@ -16,7 +16,7 @@ import com.monsters.mobimon.core.ui.MobiMonContentColumn
 import com.monsters.mobimon.core.ui.MobiMonMessage
 import com.monsters.mobimon.core.ui.MobiMonSection
 
-/** Renders committed Q01 progression and forthcoming quests without issuing rewards itself. */
+/** Renders committed Q01 progression without issuing rewards itself. */
 @Composable
 fun QuestScreen(
     progress: QuestProgress,
@@ -74,30 +74,6 @@ fun QuestScreen(
                     }
                 }
             }
-        }
-        ForthcomingQuest(
-            title = stringResource(R.string.quest_q02_title),
-            description = stringResource(R.string.quest_q02_description),
-            actionLabel = stringResource(R.string.quest_q02_forthcoming),
-        )
-        ForthcomingQuest(
-            title = stringResource(R.string.quest_q03_title),
-            description = stringResource(R.string.quest_q03_description),
-            actionLabel = stringResource(R.string.quest_q03_forthcoming),
-        )
-    }
-}
-
-@Composable
-private fun ForthcomingQuest(
-    title: String,
-    description: String,
-    actionLabel: String,
-) {
-    MobiMonSection(title = title) {
-        Text(description)
-        OutlinedButton(onClick = {}, enabled = false, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)) {
-            Text(actionLabel)
         }
     }
 }

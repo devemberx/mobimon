@@ -1,9 +1,9 @@
 # Testing strategy
 
-Use this guide to choose tests and understand what they establish. Environment
-setup, required checks, dependency changes and PR reporting belong in
-[CONTRIBUTING.md](../.github/CONTRIBUTING.md#verification). Library versions are
-defined in the [version catalog](../gradle/libs.versions.toml).
+This document owns test strategy, coverage mapping and verification limits.
+Use [CONTRIBUTING.md](../.github/CONTRIBUTING.md#verification) for setup and required
+checks, [DESIGN.md](DESIGN.md) for UX, and [ARCHITECTURE.md](ARCHITECTURE.md) for
+technical contracts. Record test executions in the implementation issue or PR.
 
 ## Current setup and test locations
 
@@ -21,47 +21,37 @@ no percentage gate. Screenshot and system-UI automation are not configured.
 | `app/src/test/java`, `src/testDebug/java` | Runtime, shell, Q01 repository integration, branding and demo provider behavior |
 | `app/src/journeyTest/java` | Shared Q01 UI journeys through MainActivity, Hilt and Room; Robolectric and device |
 
-The shared journey directory is explicitly included in both test source sets by
-[app/build.gradle.kts](../app/build.gradle.kts). The instrumentation runner lives
-in `app/src/androidTest/java`; local host settings live in
-`app/src/testDebug/resources/robolectric.properties`. Other test directories are
-not automatically shared across source sets or modules.
+The journey source sets and instrumentation runner are configured in
+[app/build.gradle.kts](../app/build.gradle.kts); local host settings are in
+[robolectric.properties](../app/src/testDebug/resources/robolectric.properties).
+Other test directories are not automatically shared across source sets or modules.
 
 ## Writing tests
 
-- Put focused tests in the subject's module and package, using `SubjectTest`;
-  name integration tests after the behavior. Do not require one test file per
-  source file or tests that merely repeat implementation details.
-- Keep helpers module-local until sharing is needed. Use fresh, controllable
-  Fakes for external dependencies; production and demo APKs must not depend on
-  test helpers. Shared `core-testing` is not implemented or required.
-- Construct ordinary unit-test subjects directly. Reserve Hilt for integration
-  tests. A small Fake is preferred to a mocking framework when it can represent
-  success, failure, pending work and obsolete results.
-- Use `runTest`, one shared test scheduler and injected clocks. Install/reset
-  Main for local `viewModelScope` tests; retain real Main in instrumented tests.
-  Virtual coroutine time does not advance a separate clock. Avoid real sleeps.
-- Observe pending states before advancing time; collect subscription-driven
-  flows before emitting. Propagate cancellation and test late replies where
-  identity checks protect state. Close databases, cancel jobs and restore
-  dispatchers after each test.
-- Prove SQL constraints and rollback with real Room. Use disposable file-backed
-  databases for reopening and exported schemas for migration tests. Do not use
-  destructive migration for user progress.
-- Test Compose screens through state and callbacks using semantics; use
-  `testTag` when semantics are insufficient. Cover meaningful back, focus and
-  enabled-action behavior. Add screenshot baselines when visuals stabilize.
-
-See the official [coroutine testing](https://developer.android.com/kotlin/coroutines/test),
-[Room testing](https://developer.android.com/training/data-storage/room/testing-db),
-[Compose testing](https://developer.android.com/develop/ui/compose/testing) and
-[Hilt testing](https://developer.android.com/training/dependency-injection/hilt-testing)
-guides for API setup.
+- Place focused `SubjectTest` suites in the subject's module and package; name
+  integration tests after behavior. Test contracts, not one file per source file.
+- Construct unit-test subjects directly and reserve Hilt for integration tests.
+  Use fresh, controllable Fakes for external dependencies. Keep helpers
+  module-local and out of production/demo APKs; `core-testing` is not implemented.
+- Use `runTest`, a shared scheduler and injected clocks rather than real sleeps.
+  Virtual coroutine time does not advance a separate clock. Install/reset Main
+  for local `viewModelScope` tests; retain real Main on devices.
+- Observe pending states and start collectors before emitting. Cover cancellation
+  and late results, then close databases, cancel jobs and restore dispatchers.
+- Verify constraints and rollback with real Room, reopening with disposable
+  file-backed databases, and migrations with exported schemas. Do not replace
+  migration tests with destructive reset.
+- Exercise Compose state/callback contracts through semantics, including back,
+  focus and enabled actions. Use `testTag` when semantics are insufficient; add
+  screenshot baselines when visuals stabilize.
 
 ## Current requirement map
 
-Keep changed critical behavior mapped to an implemented suite. These links
-identify coverage; execution reports establish whether it passed at a revision.
+Map changed critical behavior to implemented suites. This map describes the
+legacy XP/drawer implementation; the target point economy has no tests yet.
+Future cases follow [DESIGN.md](DESIGN.md) and the
+[planned contracts](ARCHITECTURE.md#planned-features). Suite links identify
+coverage, not a passing result at a particular revision.
 
 | Requirement | Test suite | Scope |
 | --- | --- | --- |
@@ -70,6 +60,8 @@ identify coverage; execution reports establish whether it passed at a revision.
 | Committed appearance, XP and completion survive file reopening | Same Room suites | File persistence |
 | Old, invalid, wrong-source or wrong-epoch evidence is rejected | [QuestEvaluatorTest](../core/core-domain/src/test/kotlin/com/monsters/mobimon/core/domain/QuestEvaluatorTest.kt), [QuestViewModelTest](../feature/feature-quest/src/test/java/com/monsters/mobimon/feature/quest/QuestViewModelTest.kt) | JVM and ViewModel |
 | UI acknowledgment awards 80 XP once and retains it after Activity recreation | [Q01AppJourneyTest](../app/src/journeyTest/java/com/monsters/mobimon/Q01AppJourneyTest.kt) | Hilt, MainActivity and Room; local and device |
+| Quest screen offers Q01 without advertising legacy Q02/Q03 | [QuestScreenTest](../feature/feature-quest/src/test/java/com/monsters/mobimon/feature/quest/QuestScreenTest.kt) | Compose and Robolectric |
+| Settings screen does not promise personal memory management | [PetPreferencesScreenTest](../feature/feature-pet/src/test/java/com/monsters/mobimon/feature/pet/PetPreferencesScreenTest.kt) | Compose and Robolectric |
 | Unavailable, unknown or moving state blocks starting; parked recovery enables it | Same app journey suite | Local and device |
 | Failed settings/appearance saves preserve committed state; cancellation propagates | [PetViewModelTest](../feature/feature-pet/src/test/java/com/monsters/mobimon/feature/pet/PetViewModelTest.kt), [DataStoreSettingsRepositoryTest](../core/core-database/src/test/java/com/monsters/mobimon/core/database/DataStoreSettingsRepositoryTest.kt) | Local |
 | Detail back returns to menu; close dismisses the drawer | [MobiMonContentTest](../app/src/test/java/com/monsters/mobimon/ui/MobiMonContentTest.kt) | Compose and Robolectric |
@@ -91,10 +83,12 @@ persistence. Production Application lifecycle, process restart, Release behavior
 custom CSTD services and real vehicle/AI integration still require separate
 acceptance. APK assembly or a task with `NO-SOURCE` does not prove test execution.
 
-Define acceptance cases for future features in their implementation issues using
-the [planned design contracts](ARCHITECTURE.md#planned-features). Extend the map
-above when those tests exist. Device acceptance records should identify the
-image, signal source, scenario and outcome without credentials or private logs.
+Define future acceptance cases and record executions in their implementation
+issues/PRs; extend the map above when suites exist. Reports must identify the
+revision, executed layers, skipped checks and reasons. Device records also need
+the image, signal source, scenario and outcome, without credentials or private logs.
+Before enabling launcher character support, verify that new and existing installs
+start with launcher visibility off even when the in-app preview preference is on.
 
 ## Focused commands and reports
 
@@ -103,12 +97,6 @@ check sequence and connected-test command are in
 [CONTRIBUTING.md](../.github/CONTRIBUTING.md#verification).
 
 ```bash
-# Pure JVM modules.
-./gradlew :core:core-domain:test :core:core-vss:test
-
-# A feature's local tests.
-./gradlew :feature:feature-quest:testDebugUnitTest
-
 # Shared Q01 journeys on Robolectric.
 ./gradlew :app:testDebugUnitTest --tests com.monsters.mobimon.Q01AppJourneyTest
 
@@ -116,34 +104,30 @@ check sequence and connected-test command are in
 ./gradlew :app:koverHtmlReportDebug :app:koverXmlReportDebug
 ```
 
-An app test task does not run its library dependencies' tests. When adding
-modules, include their local tests, Lint and meaningful coverage in the build/CI.
+The filtered journey command does not run device tests. App test tasks do not
+run their library dependencies' tests or replace the required check sequence.
 
-[Android CI](../.github/workflows/android-ci.yml) uploads `local-reports-*` and
-`device-reports-*`, including on failure. Device artifacts include host properties,
-features and display metrics under `build/reports/aaos/`. Kover reports are
-generated on main pushes and cover local JVM tests only.
+[Android CI](../.github/workflows/android-ci.yml) defines report paths, upload
+conditions and retention for `local-reports-*` and `device-reports-*`. Device
+artifacts include host properties, features and display metrics. CI generates
+Kover reports on main pushes; they cover local JVM tests only.
 
 ### CI AAOS environment
 
-The workflow selects the official Google APIs image
-`system-images;android-34-ext9;android-automotive;x86_64`. Display and heap settings
-come from [cstd.ini](../.github/avd/cstd.ini); CPU, RAM and data partition settings
-are in the workflow. The required [host check](../scripts/check-aaos-environment.sh)
-verifies automotive support, API, ABI, resolution and density before device tests.
+The [workflow](../.github/workflows/android-ci.yml) defines the official Google
+APIs image, API extension, ABI and emulator resources; [cstd.ini](../.github/avd/cstd.ini)
+defines display and heap settings. The required
+[host check](../scripts/check-aaos-environment.sh) verifies automotive support,
+API, ABI, resolution and density before device tests.
 
-The supplied local `setting/cstd/x86_64/` metadata identifies the same API,
-extension and ABI at image revision 5. Its companion
-`setting/CSTDe_API_34.avd/config.ini` supplies the reference display/hardware
-settings. These files are not CI inputs. CI uses a disposable 6 GB data partition
-instead of the supplied 30 GB, headless software rendering, a fresh AVD and
-disabled animations. The SDK resolves the available image revision; matching
-metadata does not establish image binary or custom CSTD service equivalence.
+CI uses a fresh AVD with a disposable data partition, headless software rendering
+and disabled animations. Supplied local CSTD images and AVDs are separate inputs,
+not used by CI. Matching metadata does not establish identical image binaries or
+custom CSTD services; the SDK resolves the available image revision.
 
-To reproduce locally, install the image above with `sdkmanager`, use emulator
-35.1.9 or newer, and create an Automotive AVD with the settings from the workflow
-and `cstd.ini`. Boot the supplied AVD for CSTD-specific acceptance. With exactly
-the intended emulator connected, run `bash scripts/check-aaos-environment.sh`,
-then the connected-test command in CONTRIBUTING. On Windows, use Git Bash for
-the host check. Passing it identifies the host; connected-test results establish
-that the Room and app journeys ran.
+For local reproduction, install the workflow's image with `sdkmanager`, use
+emulator 35.1.9 or newer, and configure the AVD from the workflow and `cstd.ini`.
+Use the supplied AVD for CSTD-specific acceptance. With only the intended emulator
+connected, run `bash scripts/check-aaos-environment.sh` (Git Bash on Windows),
+then the connected-test command in CONTRIBUTING. Passing the host check identifies
+the environment; connected-test results establish that the Room and app journeys ran.

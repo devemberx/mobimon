@@ -21,8 +21,8 @@
 
 - Preserve the [module boundaries](docs/ARCHITECTURE.md#target-modules-and-dependencies): keep `core-domain` independent of Android, keep feature modules independent of each other and concrete data implementations, and assemble bindings in `app`.
 - Keep simulated providers in Debug/demo source sets with explicit labels and separate application IDs, profiles, and databases. Release must report unavailable vehicle data until a verified real adapter is connected; unknown driving state cannot authorize quest commands.
-- Route quest rewards through the repository's atomic Room transaction. Preserve evidence validation, ownership/revision checks, and completion uniqueness when extending progression; UI code must not award XP directly.
-- Keep character artwork replaceable through [PetAvatar](core/core-ui/src/main/java/com/monsters/mobimon/core/ui/PetAvatar.kt). Keep progression and interaction state outside the renderer, and limit placeholder artwork work while separate character assets are being prepared.
+- Route quest rewards through the repository's atomic Room transaction. Preserve evidence validation, ownership/revision checks, and completion uniqueness per reward occurrence; UI code must not award XP or points directly.
+- Keep character artwork replaceable through [PetAvatar](core/core-ui/src/main/java/com/monsters/mobimon/core/ui/PetAvatar.kt). Keep rewards, ownership, equipment and interaction state outside the renderer, and limit placeholder artwork work while separate character assets are being prepared.
 
 ## Documentation
 
