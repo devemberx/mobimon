@@ -60,6 +60,8 @@ coverage, not a passing result at a particular revision.
 | Committed appearance, XP and completion survive file reopening | Same Room suites | File persistence |
 | Old, invalid, wrong-source or wrong-epoch evidence is rejected | [QuestEvaluatorTest](../core/core-domain/src/test/kotlin/com/monsters/mobimon/core/domain/QuestEvaluatorTest.kt), [QuestViewModelTest](../feature/feature-quest/src/test/java/com/monsters/mobimon/feature/quest/QuestViewModelTest.kt) | JVM and ViewModel |
 | UI acknowledgment awards 80 XP once and retains it after Activity recreation | [Q01AppJourneyTest](../app/src/journeyTest/java/com/monsters/mobimon/Q01AppJourneyTest.kt) | Hilt, MainActivity and Room; local and device |
+| Quest screen offers Q01 without advertising legacy Q02/Q03 | [QuestScreenTest](../feature/feature-quest/src/test/java/com/monsters/mobimon/feature/quest/QuestScreenTest.kt) | Compose and Robolectric |
+| Settings screen does not promise personal memory management | [PetPreferencesScreenTest](../feature/feature-pet/src/test/java/com/monsters/mobimon/feature/pet/PetPreferencesScreenTest.kt) | Compose and Robolectric |
 | Unavailable, unknown or moving state blocks starting; parked recovery enables it | Same app journey suite | Local and device |
 | Failed settings/appearance saves preserve committed state; cancellation propagates | [PetViewModelTest](../feature/feature-pet/src/test/java/com/monsters/mobimon/feature/pet/PetViewModelTest.kt), [DataStoreSettingsRepositoryTest](../core/core-database/src/test/java/com/monsters/mobimon/core/database/DataStoreSettingsRepositoryTest.kt) | Local |
 | Detail back returns to menu; close dismisses the drawer | [MobiMonContentTest](../app/src/test/java/com/monsters/mobimon/ui/MobiMonContentTest.kt) | Compose and Robolectric |
@@ -85,6 +87,8 @@ Define future acceptance cases and record executions in their implementation
 issues/PRs; extend the map above when suites exist. Reports must identify the
 revision, executed layers, skipped checks and reasons. Device records also need
 the image, signal source, scenario and outcome, without credentials or private logs.
+Before enabling launcher character support, verify that new and existing installs
+start with launcher visibility off even when the in-app preview preference is on.
 
 ## Focused commands and reports
 

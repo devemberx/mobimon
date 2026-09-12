@@ -38,5 +38,4 @@
   <string name="pet_setting_motion">차분한 움직임</string>
   <string name="pet_setting_motion_description">반복 움직임을 줄여요. 현재 강아지는 움직이지 않아요.</string>
   <string name="pet_overlay_unavailable">다른 앱 위에 강아지를 표시하는 기능은 아직 지원하지 않아요.</string>
-  <string name="pet_memory_unavailable">대화와 기억 관리 기능을 준비하고 있어요.</string>
 </resources>

@@ -32,8 +32,9 @@ Migration to the product model in [DESIGN.md](DESIGN.md#concept) is not implemen
   belongs to the legacy implementation. Rewards, ownership, equipped appearance
   and interaction state stay outside the renderer.
 
-Q02/Q03 are visible legacy placeholders. Existing Q01-Q03 identifiers, rewards
-and completion records do not automatically map to the new quest catalog.
+Q02/Q03 remain legacy identifiers, but are no longer offered as forthcoming
+quests. Existing Q01-Q03 identifiers, rewards and completion records do not
+automatically map to the new quest catalog.
 Points, cosmetic inventory/purchases, AI conversation, a real vehicle SDK adapter
 and launcher character support remain unimplemented.
 
@@ -234,6 +235,11 @@ progress unverified until new evidence or trustworthy provider history permits
 resuming. Uninterrupted background tracking is not guaranteed.
 
 Launcher character support is conditional on a verified platform integration.
+The current `show_on_vehicle_home` DataStore preference defaults to true and only
+controls the in-app preview. It must not authorize launcher display. Add a
+separate launcher visibility preference that defaults to false, including for
+existing installations; require an explicit user opt-in before displaying the
+character there. Keep the preview preference and launcher preference independent.
 An overlay implementation uses a lifecycle-owned state holder, not an Activity
 ViewModel. Observe actual service/permission state separately from the saved
 visibility preference. Verify service restart, permission failures and parked

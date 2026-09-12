@@ -55,4 +55,19 @@ class PetPreferencesScreenTest {
         assertEquals(false, requested)
         compose.onNodeWithText("차량 홈에 강아지 표시").assertIsOn()
     }
+
+    @Test
+    fun settingsDoesNotAdvertisePersonalMemory() {
+        compose.setContent {
+            MaterialTheme {
+                SettingsScreen(
+                    settings = CompanionSettings(),
+                    onShowOnVehicleHomeChange = {},
+                    onReducedMotionChange = {},
+                )
+            }
+        }
+
+        compose.onNodeWithText("기억 관리", substring = true).assertDoesNotExist()
+    }
 }

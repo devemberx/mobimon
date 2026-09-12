@@ -204,7 +204,9 @@ on failure. Each preference is independent.
 ## Vehicle-home character
 
 The vehicle-home character is an optional companion on a supported vehicle
-launcher, off by default. It does not control the character inside MobiMon.
+launcher, off by default. The existing in-app vehicle-home preview setting does
+not opt the user in to launcher display. It does not control the character inside
+MobiMon.
 
 Separate the user's display preference from actual status: visible, permission
 needed, waiting for parking, unsupported or temporarily unavailable. Permission

@@ -50,7 +50,6 @@ fun SettingsScreen(
             onCheckedChange = onReducedMotionChange,
         )
         MobiMonMessage(stringResource(R.string.pet_overlay_unavailable))
-        MobiMonMessage(stringResource(R.string.pet_memory_unavailable))
     }
 }
 
