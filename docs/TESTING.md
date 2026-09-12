@@ -80,8 +80,8 @@ coverage, not a passing result at a particular revision.
 
 The app journeys use `HiltTestApplication`. Their
 [JourneyTestModule](../app/src/journeyTest/java/com/monsters/mobimon/testing/JourneyTestModule.kt)
-replaces platform and vehicle providers with a fixed clock, controllable
-simulated vehicle, in-memory Room and isolated DataStore. MainActivity, feature
+replaces platform, vehicle and AAOS use-state providers with a fixed clock, controllable
+simulated vehicle, an allowed app-use state, in-memory Room and isolated DataStore. MainActivity, feature
 ViewModels, repository bindings and reward transactions remain real.
 
 Activity recreation, file-backed database reopening and process restart prove

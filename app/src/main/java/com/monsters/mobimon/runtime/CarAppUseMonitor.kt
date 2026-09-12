@@ -7,6 +7,7 @@ import android.content.pm.PackageManager
 import com.monsters.mobimon.core.domain.AppUseState
 import com.monsters.mobimon.core.domain.CurrentAppUse
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
 interface AppUseLifecycle {
@@ -15,11 +16,16 @@ interface AppUseLifecycle {
     fun stop()
 }
 
+interface AppUseStateSource :
+    AppUseLifecycle,
+    CurrentAppUse {
+    val states: StateFlow<AppUseState>
+}
+
 /** Reads the current display's AAOS UX restrictions. Unknown AAOS state fails closed. */
 class CarAppUseMonitor(
     private val context: Context,
-) : AppUseLifecycle,
-    CurrentAppUse {
+) : AppUseStateSource {
     private val mutableState =
         MutableStateFlow(
             if (context.packageManager.hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE)) {
@@ -28,7 +34,7 @@ class CarAppUseMonitor(
                 AppUseState.ALLOWED
             },
         )
-    val states = mutableState.asStateFlow()
+    override val states = mutableState.asStateFlow()
     private var car: Car? = null
     private var manager: CarUxRestrictionsManager? = null
     private var running = false

@@ -6,6 +6,7 @@ import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import androidx.datastore.preferences.core.Preferences
 import androidx.room.Room
 import com.monsters.mobimon.core.database.AppDatabase
+import com.monsters.mobimon.core.domain.AppUseState
 import com.monsters.mobimon.core.domain.Clock
 import com.monsters.mobimon.core.domain.DrivingState
 import com.monsters.mobimon.core.domain.ProgressionIdentity
@@ -15,8 +16,10 @@ import com.monsters.mobimon.core.domain.UtcClock
 import com.monsters.mobimon.core.domain.VehicleRepository
 import com.monsters.mobimon.core.domain.VehicleSnapshot
 import com.monsters.mobimon.di.AppEnvironment
+import com.monsters.mobimon.di.AppUseModule
 import com.monsters.mobimon.di.PlatformModule
 import com.monsters.mobimon.di.VehicleProviderModule
+import com.monsters.mobimon.runtime.AppUseStateSource
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -27,6 +30,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.runBlocking
 import java.io.File
@@ -37,7 +41,7 @@ import javax.inject.Singleton
 @Module
 @TestInstallIn(
     components = [SingletonComponent::class],
-    replaces = [PlatformModule::class, VehicleProviderModule::class],
+    replaces = [PlatformModule::class, VehicleProviderModule::class, AppUseModule::class],
 )
 object JourneyTestModule {
     @Provides
@@ -54,11 +58,28 @@ object JourneyTestModule {
     fun vehicle(vehicle: JourneyVehicle): VehicleRepository = vehicle
 
     @Provides
+    fun appUseStateSource(appUse: JourneyAppUse): AppUseStateSource = appUse
+
+    @Provides
     fun database(storage: JourneyStorage): AppDatabase = storage.database
 
     @Provides
     fun preferences(storage: JourneyStorage): DataStore<Preferences> = storage.preferences
 }
+
+@Singleton
+class JourneyAppUse
+    @Inject
+    constructor() : AppUseStateSource {
+        private val mutableState = MutableStateFlow(AppUseState.ALLOWED)
+        override val states: StateFlow<AppUseState> = mutableState.asStateFlow()
+
+        override fun state(): AppUseState = states.value
+
+        override fun start() = Unit
+
+        override fun stop() = Unit
+    }
 
 @Singleton
 class JourneyVehicle

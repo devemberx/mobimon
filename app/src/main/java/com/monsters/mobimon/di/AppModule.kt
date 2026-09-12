@@ -1,6 +1,5 @@
 package com.monsters.mobimon.di
 
-import android.content.Context
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import com.monsters.mobimon.core.database.AppDatabase
@@ -22,12 +21,11 @@ import com.monsters.mobimon.core.domain.SettingsRepository
 import com.monsters.mobimon.core.domain.UtcClock
 import com.monsters.mobimon.core.domain.VehicleFreshnessPolicy
 import com.monsters.mobimon.core.domain.VehicleRepository
-import com.monsters.mobimon.runtime.CarAppUseMonitor
+import com.monsters.mobimon.runtime.AppUseStateSource
 import com.monsters.mobimon.runtime.CompanionRuntime
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
-import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import java.util.UUID
 import javax.inject.Inject
@@ -61,13 +59,7 @@ object AppModule {
         CurrentVehicleEvidence { vehicle.snapshots.value }
 
     @Provides
-    @Singleton
-    fun appUseMonitor(
-        @ApplicationContext context: Context,
-    ): CarAppUseMonitor = CarAppUseMonitor(context)
-
-    @Provides
-    fun currentAppUse(monitor: CarAppUseMonitor): CurrentAppUse = monitor
+    fun currentAppUse(appUse: AppUseStateSource): CurrentAppUse = appUse
 
     @Provides
     fun pointQuestCatalog(): PointQuestCatalog = PointQuestCatalog { null }
@@ -128,7 +120,7 @@ object AppModule {
     @Singleton
     fun runtime(
         vehicle: VehicleRepository,
-        appUse: CarAppUseMonitor,
+        appUse: AppUseStateSource,
     ): CompanionRuntime = CompanionRuntime(vehicle, appUse)
 }
 
@@ -146,5 +138,5 @@ class AppDependencies
         val evaluator: QuestEvaluator,
         val freshness: VehicleFreshnessPolicy,
         val points: PointEconomy,
-        val appUse: CarAppUseMonitor,
+        val appUse: AppUseStateSource,
     )
