@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
@@ -29,26 +30,45 @@ fun SettingsScreen(
     onShowOnVehicleHomeChange: (Boolean) -> Unit,
     onReducedMotionChange: (Boolean) -> Unit,
     modifier: Modifier = Modifier,
-    isSaving: Boolean = false,
-    errorMessage: String? = null,
+    visibilitySaving: Boolean = false,
+    visibilityError: String? = null,
+    motionSaving: Boolean = false,
+    motionError: String? = null,
+    settingsAvailable: Boolean = true,
+    settingsLoadFailed: Boolean = false,
+    onRetry: () -> Unit = {},
 ) {
     MobiMonContentColumn(modifier = modifier) {
-        if (isSaving) MobiMonMessage(stringResource(R.string.pet_saving))
-        errorMessage?.let { MobiMonMessage(it, isError = true) }
+        if (!settingsAvailable) {
+            MobiMonMessage(
+                stringResource(
+                    if (settingsLoadFailed) R.string.pet_settings_unavailable else R.string.pet_settings_loading,
+                ),
+                isError = settingsLoadFailed,
+            )
+            if (settingsLoadFailed) {
+                Button(onClick = onRetry) { Text(stringResource(R.string.pet_settings_retry)) }
+            }
+            return@MobiMonContentColumn
+        }
         SettingToggle(
             title = stringResource(R.string.pet_setting_visibility),
             description = stringResource(R.string.pet_setting_visibility_description),
             checked = settings.showOnVehicleHome,
-            enabled = !isSaving,
+            enabled = !visibilitySaving,
             onCheckedChange = onShowOnVehicleHomeChange,
         )
+        if (visibilitySaving) MobiMonMessage(stringResource(R.string.pet_saving))
+        visibilityError?.let { MobiMonMessage(it, isError = true) }
         SettingToggle(
             title = stringResource(R.string.pet_setting_motion),
             description = stringResource(R.string.pet_setting_motion_description),
             checked = settings.reducedMotion,
-            enabled = !isSaving,
+            enabled = !motionSaving,
             onCheckedChange = onReducedMotionChange,
         )
+        if (motionSaving) MobiMonMessage(stringResource(R.string.pet_saving))
+        motionError?.let { MobiMonMessage(it, isError = true) }
         MobiMonMessage(stringResource(R.string.pet_overlay_unavailable))
     }
 }
@@ -66,7 +86,7 @@ private fun SettingToggle(
             modifier =
                 Modifier
                     .fillMaxWidth()
-                    .heightIn(min = 48.dp)
+                    .heightIn(min = 76.dp)
                     .toggleable(value = checked, enabled = enabled, role = Role.Switch, onValueChange = onCheckedChange)
                     .padding(16.dp),
             verticalAlignment = Alignment.CenterVertically,

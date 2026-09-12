@@ -44,16 +44,19 @@ class DemoVehicleRepository(
         var sequence = 1L
 
         fun publish() {
+            val observedAt = clock.nowMillis()
             val snapshot =
                 VehicleSnapshot(
                     id = "$epoch-$sequence",
                     epoch = epoch,
                     sequence = sequence,
-                    receivedAtMillis = clock.nowMillis(),
+                    receivedAtMillis = observedAt,
                     source = SignalSource.SIMULATED,
                     drivingState = DrivingState.PARKED,
                     quality = SignalQuality.VALID,
                     batteryPercent = 72,
+                    batteryReceivedAtMillis = observedAt,
+                    batteryQuality = SignalQuality.VALID,
                 )
             synchronized(this) {
                 if (generation == currentGeneration) {
@@ -78,6 +81,10 @@ class DemoVehicleRepository(
         observation?.cancel()
         observation = null
         mutableSnapshots.value =
-            mutableSnapshots.value.copy(quality = SignalQuality.UNAVAILABLE, drivingState = DrivingState.UNKNOWN)
+            mutableSnapshots.value.copy(
+                quality = SignalQuality.UNAVAILABLE,
+                drivingState = DrivingState.UNKNOWN,
+                batteryQuality = SignalQuality.UNAVAILABLE,
+            )
     }
 }

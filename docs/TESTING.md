@@ -13,7 +13,7 @@ no percentage gate. Screenshot and system-UI automation are not configured.
 
 | Location | Scope and host |
 | --- | --- |
-| `core/core-domain/src/test/kotlin` | Growth and evidence rules; plain JVM |
+| `core/core-domain/src/test/kotlin` | Legacy reward rules, evidence and per-signal freshness; plain JVM |
 | `core/core-vss/src/test/kotlin` | Unavailable real vehicle contract; plain JVM |
 | `core/core-database/src/test/java` | Native SQLite constraints, transactions, concurrency, file reopening and DataStore; Robolectric |
 | `core/core-database/src/androidTest/java` | SQLite transaction and file-reopening counterparts; device |
@@ -47,9 +47,9 @@ Other test directories are not automatically shared across source sets or module
 
 ## Current requirement map
 
-Map changed critical behavior to implemented suites. This map describes the
-legacy XP/drawer implementation; the target point economy has no tests yet.
-Future cases follow [DESIGN.md](DESIGN.md) and the
+Map changed critical behavior to implemented suites. The point economy and
+full-screen shell now have tests; the production quest and paid-item catalogs
+remain undefined. Future cases follow [DESIGN.md](DESIGN.md) and the
 [planned contracts](ARCHITECTURE.md#planned-features). Suite links identify
 coverage, not a passing result at a particular revision.
 
@@ -59,12 +59,19 @@ coverage, not a passing result at a particular revision.
 | Concurrent completion awards once; failures roll back all reward writes | [RoomCompanionRepositoryTest](../core/core-database/src/test/java/com/monsters/mobimon/core/database/RoomCompanionRepositoryTest.kt), [device counterpart](../core/core-database/src/androidTest/java/com/monsters/mobimon/core/database/RoomCompanionRepositoryAndroidTest.kt) | Local SQLite and device |
 | Committed appearance, XP and completion survive file reopening | Same Room suites | File persistence |
 | Old, invalid, wrong-source or wrong-epoch evidence is rejected | [QuestEvaluatorTest](../core/core-domain/src/test/kotlin/com/monsters/mobimon/core/domain/QuestEvaluatorTest.kt), [QuestViewModelTest](../feature/feature-quest/src/test/java/com/monsters/mobimon/feature/quest/QuestViewModelTest.kt) | JVM and ViewModel |
+| Superseded parking or AAOS app-use restriction rejects queued reward writes | [Q01JourneyTest](../app/src/test/java/com/monsters/mobimon/Q01JourneyTest.kt) | Local Room transaction |
+| Parking and battery age are evaluated independently | [VehicleFreshnessPolicyTest](../core/core-domain/src/test/kotlin/com/monsters/mobimon/core/domain/VehicleFreshnessPolicyTest.kt), [VehicleInfoScreenTest](../feature/feature-vehicle-info/src/test/java/com/monsters/mobimon/feature/vehicle/VehicleInfoScreenTest.kt) | Domain and Compose |
+| Point migration preserves XP evidence without minting points | [PointEconomyMigrationTest](../core/core-database/src/test/java/com/monsters/mobimon/core/database/PointEconomyMigrationTest.kt) | File-backed v1 to v2 Room |
+| Purchases charge once, equipment is separate, and one-time/daily credits have unique occurrences | [PointEconomyRepositoryTest](../core/core-database/src/test/java/com/monsters/mobimon/core/database/PointEconomyRepositoryTest.kt) | Local SQLite |
+| A loading or failed point balance is distinct from saved zero | [PointBalanceViewModelTest](../app/src/test/java/com/monsters/mobimon/ui/PointBalanceViewModelTest.kt) | ViewModel |
+| Failed inventory observation can be retried without losing a saved selection | [CosmeticInventoryViewModelTest](../app/src/test/java/com/monsters/mobimon/ui/CosmeticInventoryViewModelTest.kt), [CustomizationScreenTest](../feature/feature-pet/src/test/java/com/monsters/mobimon/feature/pet/CustomizationScreenTest.kt) | ViewModel and Compose |
+| Previewing Luna does not apply her until the user confirms | [CustomizationScreenTest](../feature/feature-pet/src/test/java/com/monsters/mobimon/feature/pet/CustomizationScreenTest.kt) | Compose |
 | UI acknowledgment awards 80 XP once and retains it after Activity recreation | [Q01AppJourneyTest](../app/src/journeyTest/java/com/monsters/mobimon/Q01AppJourneyTest.kt) | Hilt, MainActivity and Room; local and device |
 | Quest screen offers Q01 without advertising legacy Q02/Q03 | [QuestScreenTest](../feature/feature-quest/src/test/java/com/monsters/mobimon/feature/quest/QuestScreenTest.kt) | Compose and Robolectric |
 | Settings screen does not promise personal memory management | [PetPreferencesScreenTest](../feature/feature-pet/src/test/java/com/monsters/mobimon/feature/pet/PetPreferencesScreenTest.kt) | Compose and Robolectric |
 | Unavailable, unknown or moving state blocks starting; parked recovery enables it | Same app journey suite | Local and device |
 | Failed settings/appearance saves preserve committed state; cancellation propagates | [PetViewModelTest](../feature/feature-pet/src/test/java/com/monsters/mobimon/feature/pet/PetViewModelTest.kt), [DataStoreSettingsRepositoryTest](../core/core-database/src/test/java/com/monsters/mobimon/core/database/DataStoreSettingsRepositoryTest.kt) | Local |
-| Detail back returns to menu; close dismisses the drawer | [MobiMonContentTest](../app/src/test/java/com/monsters/mobimon/ui/MobiMonContentTest.kt) | Compose and Robolectric |
+| Selecting a menu destination closes the overlay and uses a full-screen route; back returns home | [MobiMonContentTest](../app/src/test/java/com/monsters/mobimon/ui/MobiMonContentTest.kt), [ShellStateTest](../app/src/test/java/com/monsters/mobimon/ui/ShellStateTest.kt) | Compose and JVM |
 | Repeated foreground notifications do not duplicate a vehicle connection | [CompanionRuntimeTest](../app/src/test/java/com/monsters/mobimon/runtime/CompanionRuntimeTest.kt) | Runtime unit test |
 | Real progression rejects simulated evidence; real adapter reports unavailable | Room local suite, [UnavailableVehicleRepositoryTest](../core/core-vss/src/test/kotlin/com/monsters/mobimon/core/vss/UnavailableVehicleRepositoryTest.kt) | JVM and local SQLite |
 | Debug application ID and launcher label match MobiMon | [BrandingTest](../app/src/testDebug/java/com/monsters/mobimon/BrandingTest.kt) | Debug and Robolectric |
@@ -73,8 +80,8 @@ coverage, not a passing result at a particular revision.
 
 The app journeys use `HiltTestApplication`. Their
 [JourneyTestModule](../app/src/journeyTest/java/com/monsters/mobimon/testing/JourneyTestModule.kt)
-replaces platform and vehicle providers with a fixed clock, controllable
-simulated vehicle, in-memory Room and isolated DataStore. MainActivity, feature
+replaces platform, vehicle and AAOS use-state providers with a fixed clock, controllable
+simulated vehicle, an allowed app-use state, in-memory Room and isolated DataStore. MainActivity, feature
 ViewModels, repository bindings and reward transactions remain real.
 
 Activity recreation, file-backed database reopening and process restart prove
@@ -89,6 +96,12 @@ revision, executed layers, skipped checks and reasons. Device records also need
 the image, signal source, scenario and outcome, without credentials or private logs.
 Before enabling launcher character support, verify that new and existing installs
 start with launcher visibility off even when the in-app preview preference is on.
+The current DataStore test covers the separate off-by-default preference; it does
+not verify a launcher surface. `CarAppUseMonitor` uses the current display's UX
+restrictions, but its callbacks, system blocking behavior and reconnection must
+be tested on the target AAOS image. No Copilot SDK/CLI runtime or launcher OEM
+contract is connected, so these experiences remain unavailable and have no
+end-to-end acceptance result.
 
 ## Focused commands and reports
 

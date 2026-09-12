@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import com.monsters.mobimon.core.domain.Clock
+import com.monsters.mobimon.core.domain.CurrentVehicleEvidence
 import com.monsters.mobimon.core.domain.DrivingState
 import com.monsters.mobimon.core.domain.IdGenerator
 import com.monsters.mobimon.core.domain.PetAppearance
@@ -48,6 +49,8 @@ class RoomCompanionRepositoryTest {
     private lateinit var database: AppDatabase
     private lateinit var clock: MutableClock
     private lateinit var repository: RoomCompanionRepository
+    private lateinit var observed: VehicleSnapshot
+    private val currentVehicle = CurrentVehicleEvidence { observed }
 
     @Before
     fun setUp() {
@@ -58,7 +61,8 @@ class RoomCompanionRepositoryTest {
                 .allowMainThreadQueries()
                 .build()
         clock = MutableClock(10_000L)
-        repository = repository(database, REAL_PROFILE, SignalSource.REAL, clock)
+        observed = rawSnapshot(sequence = 10)
+        repository = repository(database, REAL_PROFILE, SignalSource.REAL, clock, currentVehicle)
     }
 
     @After
@@ -104,7 +108,7 @@ class RoomCompanionRepositoryTest {
         runBlocking {
             repository.initialize()
             val results =
-                listOf(repository, repository(database, REAL_PROFILE, SignalSource.REAL, clock))
+                listOf(repository, repository(database, REAL_PROFILE, SignalSource.REAL, clock, currentVehicle))
                     .map { candidate ->
                         async(Dispatchers.Default) {
                             candidate.start(QuestType.Q01, snapshot(sequence = 10))
@@ -124,7 +128,7 @@ class RoomCompanionRepositoryTest {
             val evidence = snapshot(sequence = 11, receivedAtMillis = 11_000L)
 
             val results =
-                listOf(repository, repository(database, REAL_PROFILE, SignalSource.REAL, clock))
+                listOf(repository, repository(database, REAL_PROFILE, SignalSource.REAL, clock, currentVehicle))
                     .map { candidate ->
                         async(Dispatchers.Default) {
                             candidate.complete(run.id, run.revision, evidence)
@@ -147,7 +151,7 @@ class RoomCompanionRepositoryTest {
     fun `cancel rejects stale revision and run owned by another profile`() =
         runBlocking {
             val run = startRun(sequence = 10)
-            val other = repository(database, "profile-other", SignalSource.REAL, clock)
+            val other = repository(database, "profile-other", SignalSource.REAL, clock, currentVehicle)
             other.initialize()
 
             assertEquals(
@@ -172,12 +176,14 @@ class RoomCompanionRepositoryTest {
         runBlocking {
             val run = startRun(sequence = 10)
             clock.value = 11_000L
+            val latest = snapshot(sequence = 0, receivedAtMillis = 11_000L).copy(epoch = "epoch-after-restart")
+            observed = latest
 
             val result =
                 repository.cancel(
                     run.id,
                     run.revision,
-                    snapshot(sequence = 0, receivedAtMillis = 11_000L).copy(epoch = "epoch-after-restart"),
+                    latest,
                 )
 
             assertEquals(QuestCommandResult.Cancelled, result)
@@ -194,7 +200,7 @@ class RoomCompanionRepositoryTest {
             val cancel = async(Dispatchers.Default) { repository.cancel(run.id, run.revision, evidence) }
             val complete =
                 async(Dispatchers.Default) {
-                    repository(database, REAL_PROFILE, SignalSource.REAL, clock)
+                    repository(database, REAL_PROFILE, SignalSource.REAL, clock, currentVehicle)
                         .complete(run.id, run.revision, evidence)
                 }
             val cancelResult = cancel.await()
@@ -311,7 +317,8 @@ class RoomCompanionRepositoryTest {
             try {
                 var fileDatabase = openFileDatabase(databaseName)
                 var fileClock = MutableClock(10_000L)
-                var fileRepository = repository(fileDatabase, REAL_PROFILE, SignalSource.REAL, fileClock)
+                var fileRepository =
+                    repository(fileDatabase, REAL_PROFILE, SignalSource.REAL, fileClock, currentVehicle)
                 fileRepository.initialize()
                 assertEquals(WriteResult.Success, fileRepository.setAppearance(PetAppearance.CREAM))
                 val started = fileRepository.start(QuestType.Q01, snapshot(sequence = 10))
@@ -329,7 +336,7 @@ class RoomCompanionRepositoryTest {
 
                 fileDatabase = openFileDatabase(databaseName)
                 fileClock = MutableClock(12_000L)
-                fileRepository = repository(fileDatabase, REAL_PROFILE, SignalSource.REAL, fileClock)
+                fileRepository = repository(fileDatabase, REAL_PROFILE, SignalSource.REAL, fileClock, currentVehicle)
 
                 assertEquals(PetAppearance.CREAM, fileRepository.profile.first().appearance)
                 assertEquals(80, fileRepository.profile.first().totalXp)
@@ -364,6 +371,12 @@ class RoomCompanionRepositoryTest {
             .databaseBuilder(context, AppDatabase::class.java, name)
             .allowMainThreadQueries()
             .build()
+
+    private fun snapshot(
+        sequence: Long,
+        receivedAtMillis: Long = 10_000L,
+        source: SignalSource = SignalSource.REAL,
+    ): VehicleSnapshot = rawSnapshot(sequence, receivedAtMillis, source).also { observed = it }
 }
 
 private const val REAL_PROFILE = "profile-real"
@@ -385,15 +398,20 @@ private fun repository(
     profileId: String,
     source: SignalSource,
     clock: Clock,
+    currentVehicle: CurrentVehicleEvidence,
 ) = RoomCompanionRepository(
     database = database,
     identity = ProgressionIdentity(profileId, source),
     clock = clock,
     ids = SequenceIds(),
     evaluator = QuestEvaluator(maxAgeMillis = 15_000L),
+    currentVehicle = currentVehicle,
+    currentAppUse =
+        com.monsters.mobimon.core.domain
+            .CurrentAppUse { com.monsters.mobimon.core.domain.AppUseState.ALLOWED },
 )
 
-private fun snapshot(
+private fun rawSnapshot(
     sequence: Long,
     receivedAtMillis: Long = 10_000L,
     source: SignalSource = SignalSource.REAL,

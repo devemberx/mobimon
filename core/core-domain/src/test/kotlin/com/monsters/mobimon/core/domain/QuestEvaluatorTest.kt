@@ -75,7 +75,21 @@ class QuestEvaluatorTest {
     }
 
     @Test
-    fun `snapshot validation rejects malformed identity time order and battery`() {
+    fun `expired non-parked snapshots are stale before quest eligibility is checked`() {
+        for (state in listOf(DrivingState.MOVING, DrivingState.UNKNOWN)) {
+            assertEquals(
+                QuestRejection.STALE,
+                evaluator.validateSnapshot(
+                    snapshot.copy(drivingState = state, receivedAtMillis = 4_999L),
+                    SignalSource.REAL,
+                    now,
+                ),
+            )
+        }
+    }
+
+    @Test
+    fun `snapshot validation rejects malformed parking evidence without coupling battery`() {
         val malformed =
             listOf(
                 snapshot.copy(id = ""),
@@ -83,13 +97,12 @@ class QuestEvaluatorTest {
                 snapshot.copy(sequence = -1),
                 snapshot.copy(receivedAtMillis = -1),
                 snapshot.copy(receivedAtMillis = now + 1),
-                snapshot.copy(batteryPercent = -1),
-                snapshot.copy(batteryPercent = 101),
             )
 
         malformed.forEach {
             assertEquals(QuestRejection.INVALID_SIGNAL, evaluator.validateSnapshot(it, SignalSource.REAL, now))
         }
+        assertNull(evaluator.validateSnapshot(snapshot.copy(batteryPercent = 101), SignalSource.REAL, now))
     }
 
     @Test

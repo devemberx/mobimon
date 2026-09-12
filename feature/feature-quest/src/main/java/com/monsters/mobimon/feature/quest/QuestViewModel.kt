@@ -37,6 +37,7 @@ enum class QuestMessage {
     ALREADY_ACTIVE,
     ALREADY_COMPLETED,
     STORAGE_FAILURE,
+    APP_USE_RESTRICTED,
 }
 
 data class QuestUiState(
@@ -230,4 +231,5 @@ private fun QuestRejection.message(): QuestMessage =
         QuestRejection.WRONG_EPOCH -> QuestMessage.OBSERVATION_CHANGED
         QuestRejection.BEFORE_START, QuestRejection.RUN_CHANGED -> QuestMessage.REFRESH_REQUIRED
         QuestRejection.UNSUPPORTED_QUEST -> QuestMessage.UNSUPPORTED
+        QuestRejection.APP_USE_RESTRICTED -> QuestMessage.APP_USE_RESTRICTED
     }

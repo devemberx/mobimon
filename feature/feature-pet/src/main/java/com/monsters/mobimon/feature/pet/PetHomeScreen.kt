@@ -34,8 +34,8 @@ import com.monsters.mobimon.core.domain.QuestType
 import com.monsters.mobimon.core.domain.SignalSource
 import com.monsters.mobimon.core.domain.VehicleSnapshot
 import com.monsters.mobimon.core.ui.MobiMonContentColumn
-import com.monsters.mobimon.core.ui.MobiMonGrowthSummary
 import com.monsters.mobimon.core.ui.MobiMonMessage
+import com.monsters.mobimon.core.ui.MobiMonPointSummary
 import com.monsters.mobimon.core.ui.MobiMonSection
 import com.monsters.mobimon.core.ui.MobiMonSourceBadge
 import com.monsters.mobimon.core.ui.MobiMonTheme
@@ -45,8 +45,6 @@ import com.monsters.mobimon.core.ui.PetAvatar
 @Composable
 fun PetHomeScreen(
     profile: PetProfile,
-    stage: Int,
-    xpUntilNextStage: Int?,
     snapshot: VehicleSnapshot,
     progress: QuestProgress,
     settings: CompanionSettings,
@@ -55,11 +53,18 @@ fun PetHomeScreen(
     onOpenQuests: () -> Unit,
     onSwitchHome: () -> Unit,
     onPetClick: () -> Unit,
+    onOpenAppearance: () -> Unit,
     modifier: Modifier = Modifier,
     vehiclePreview: Boolean = false,
-    showConversationUnavailable: Boolean = false,
+    pointBalance: Long? = null,
+    pointLoadFailed: Boolean = false,
+    legacyQuestVisible: Boolean = true,
+    friendId: String? = "friend:mobi",
+    interactionAllowed: Boolean = true,
+    profileObservationFailed: Boolean = false,
+    onRetryProfile: () -> Unit = {},
 ) {
-    MobiMonTheme(darkTheme = vehiclePreview) {
+    MobiMonTheme(darkTheme = true) {
         Surface(modifier = modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
             MobiMonContentColumn(modifier = Modifier.fillMaxSize()) {
                 HomeActions(vehiclePreview, onOpenMenu, onSwitchHome)
@@ -70,29 +75,40 @@ fun PetHomeScreen(
                 )
                 Text(stringResource(R.string.pet_home_subtitle), color = MaterialTheme.colorScheme.onSurfaceVariant)
                 if (vehiclePreview) MobiMonMessage(stringResource(R.string.pet_vehicle_preview_notice))
+                if (profileObservationFailed) {
+                    MobiMonMessage(stringResource(R.string.pet_profile_observation_failed), isError = true)
+                    Button(onClick = onRetryProfile, modifier = Modifier.fillMaxWidth().heightIn(min = 76.dp)) {
+                        Text(stringResource(R.string.pet_settings_retry))
+                    }
+                }
                 PetScene(
                     profile = profile,
-                    stage = stage,
+                    friendId = friendId,
                     visible = !vehiclePreview || settings.showOnVehicleHome,
                     onPetClick = onPetClick,
+                    interactionAllowed = interactionAllowed,
                 )
-                if (showConversationUnavailable) MobiMonMessage(stringResource(R.string.pet_conversation_unavailable))
-                MobiMonSection(title = stringResource(R.string.pet_growth_title)) {
-                    MobiMonGrowthSummary(profile.totalXp, stage, xpUntilNextStage)
+                MobiMonSection(title = stringResource(R.string.pet_customization_title)) {
+                    MobiMonPointSummary(pointBalance, failed = pointLoadFailed)
+                    OutlinedButton(
+                        onClick = onOpenAppearance,
+                        modifier = Modifier.fillMaxWidth().heightIn(min = 76.dp),
+                    ) { Text(stringResource(R.string.pet_customize)) }
                 }
                 MobiMonSection(title = stringResource(R.string.pet_vehicle_status_title)) {
                     PetVehicleSummary(snapshot)
                     OutlinedButton(
                         onClick = onOpenVehicleInfo,
-                        modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp),
+                        modifier = Modifier.fillMaxWidth().heightIn(min = 76.dp),
                     ) {
                         Text(stringResource(R.string.pet_vehicle_details))
                     }
                 }
-                Button(onClick = onOpenQuests, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)) {
+                Button(onClick = onOpenQuests, modifier = Modifier.fillMaxWidth().heightIn(min = 76.dp)) {
                     Text(
                         stringResource(
                             when {
+                                !legacyQuestVisible -> R.string.pet_quests
                                 progress.completions.any { it.type == QuestType.Q01 } -> R.string.pet_quest_history
                                 progress.activeRun != null -> R.string.pet_quest_continue
                                 else -> R.string.pet_quest_start
@@ -115,11 +131,11 @@ private fun HomeActions(
     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
         TextButton(
             onClick = onOpenMenu,
-            modifier = Modifier.heightIn(min = 48.dp).semantics { contentDescription = menuDescription },
+            modifier = Modifier.heightIn(min = 76.dp).semantics { contentDescription = menuDescription },
         ) {
             Text(stringResource(R.string.pet_menu))
         }
-        TextButton(onClick = onSwitchHome, modifier = Modifier.heightIn(min = 48.dp)) {
+        TextButton(onClick = onSwitchHome, modifier = Modifier.heightIn(min = 76.dp)) {
             Text(stringResource(if (vehiclePreview) R.string.pet_companion_home else R.string.pet_vehicle_home))
         }
     }
@@ -128,9 +144,10 @@ private fun HomeActions(
 @Composable
 private fun PetScene(
     profile: PetProfile,
-    stage: Int,
+    friendId: String?,
     visible: Boolean,
     onPetClick: () -> Unit,
+    interactionAllowed: Boolean,
 ) {
     Column(
         modifier =
@@ -142,26 +159,37 @@ private fun PetScene(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        if (visible) {
+        if (visible && friendId != null) {
+            Text(stringResource(if (friendId == "friend:luna") R.string.pet_friend_luna else R.string.pet_friend_mobi))
             val talkDescription = stringResource(R.string.pet_talk)
             Box(
                 modifier =
                     Modifier
                         .size(144.dp)
                         .clip(RoundedCornerShape(32.dp))
-                        .clickable(role = Role.Button, onClick = onPetClick)
-                        .semantics { contentDescription = talkDescription },
+                        .then(
+                            if (interactionAllowed) {
+                                Modifier
+                                    .clickable(role = Role.Button, onClick = onPetClick)
+                                    .semantics { contentDescription = talkDescription }
+                            } else {
+                                Modifier
+                            },
+                        ),
                 contentAlignment = Alignment.Center,
             ) {
-                PetAvatar(appearanceKey = profile.appearance.name, stage = stage)
+                PetAvatar(appearanceKey = profile.appearance.name, friendId = friendId)
             }
             Text(stringResource(R.string.pet_tap_hint), color = MaterialTheme.colorScheme.onPrimaryContainer)
-        } else {
+            if (!interactionAllowed) MobiMonMessage(stringResource(R.string.pet_interaction_restricted))
+        } else if (!visible) {
             Text(
                 stringResource(R.string.pet_hidden),
                 modifier = Modifier.padding(vertical = 36.dp),
                 color = MaterialTheme.colorScheme.onPrimaryContainer,
             )
+        } else {
+            Text(stringResource(R.string.pet_inventory_loading))
         }
     }
 }

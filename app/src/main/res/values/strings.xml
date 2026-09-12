@@ -1,4 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
   <string name="app_name">MobiMon</string>
+  <string name="app_use_restricted">차량의 화면 사용 제한이 해제되면 다시 시도해 주세요.</string>
+  <string name="app_use_paused">지금은 MobiMon 사용이 제한돼요</string>
+  <string name="drawer_conversation">대화</string>
 </resources>

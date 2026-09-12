@@ -18,8 +18,7 @@ class QuestEvaluator(
             snapshot.sequence < 0 ||
             snapshot.receivedAtMillis < 0 ||
             nowMillis < 0 ||
-            snapshot.receivedAtMillis > nowMillis ||
-            snapshot.batteryPercent?.let { it !in 0..100 } == true
+            snapshot.receivedAtMillis > nowMillis
         ) {
             return QuestRejection.INVALID_SIGNAL
         }
@@ -31,8 +30,8 @@ class QuestEvaluator(
             SignalQuality.VALID -> Unit
         }
 
-        if (snapshot.drivingState != DrivingState.PARKED) return QuestRejection.NOT_PARKED
         if (nowMillis - snapshot.receivedAtMillis > maxAgeMillis) return QuestRejection.STALE
+        if (snapshot.drivingState != DrivingState.PARKED) return QuestRejection.NOT_PARKED
 
         return null
     }

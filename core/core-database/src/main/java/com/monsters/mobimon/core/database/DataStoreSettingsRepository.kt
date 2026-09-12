@@ -20,6 +20,7 @@ class DataStoreSettingsRepository(
             CompanionSettings(
                 showOnVehicleHome = preferences[SHOW_ON_VEHICLE_HOME] ?: true,
                 reducedMotion = preferences[REDUCED_MOTION] ?: false,
+                launcherCharacterEnabled = preferences[LAUNCHER_CHARACTER_ENABLED] ?: false,
             )
         }
 
@@ -27,6 +28,9 @@ class DataStoreSettingsRepository(
         writePreference(SHOW_ON_VEHICLE_HOME, enabled)
 
     override suspend fun setReducedMotion(enabled: Boolean): WriteResult = writePreference(REDUCED_MOTION, enabled)
+
+    override suspend fun setLauncherCharacterEnabled(enabled: Boolean): WriteResult =
+        writePreference(LAUNCHER_CHARACTER_ENABLED, enabled)
 
     private suspend fun writePreference(
         key: Preferences.Key<Boolean>,
@@ -44,5 +48,6 @@ class DataStoreSettingsRepository(
     private companion object {
         val SHOW_ON_VEHICLE_HOME = booleanPreferencesKey("show_on_vehicle_home")
         val REDUCED_MOTION = booleanPreferencesKey("reduced_motion")
+        val LAUNCHER_CHARACTER_ENABLED = booleanPreferencesKey("launcher_character_enabled")
     }
 }

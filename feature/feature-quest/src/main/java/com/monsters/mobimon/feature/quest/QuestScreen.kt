@@ -14,6 +14,7 @@ import com.monsters.mobimon.core.domain.QuestProgress
 import com.monsters.mobimon.core.domain.QuestType
 import com.monsters.mobimon.core.ui.MobiMonContentColumn
 import com.monsters.mobimon.core.ui.MobiMonMessage
+import com.monsters.mobimon.core.ui.MobiMonPointSummary
 import com.monsters.mobimon.core.ui.MobiMonSection
 
 /** Renders committed Q01 progression without issuing rewards itself. */
@@ -27,10 +28,18 @@ fun QuestScreen(
     modifier: Modifier = Modifier,
     isBusy: Boolean = false,
     errorMessage: String? = null,
+    pointBalance: Long? = null,
+    pointLoadFailed: Boolean = false,
+    legacyVisible: Boolean = true,
 ) {
     val completion = progress.completions.firstOrNull { it.type == QuestType.Q01 }
     val active = progress.activeRun
     MobiMonContentColumn(modifier = modifier) {
+        MobiMonPointSummary(pointBalance, failed = pointLoadFailed)
+        if (!legacyVisible) {
+            MobiMonMessage(stringResource(R.string.quest_catalog_pending))
+            return@MobiMonContentColumn
+        }
         Text(stringResource(R.string.quest_intro), style = MaterialTheme.typography.bodyLarge)
         errorMessage?.let { MobiMonMessage(it, isError = true) }
         if (isBusy) MobiMonMessage(stringResource(R.string.quest_saving))
@@ -50,14 +59,14 @@ fun QuestScreen(
                     Text(stringResource(R.string.quest_active), style = MaterialTheme.typography.labelLarge)
                     Button(
                         onClick = onOpenVehicleInfo,
-                        modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp),
+                        modifier = Modifier.fillMaxWidth().heightIn(min = 76.dp),
                     ) {
                         Text(stringResource(R.string.quest_open_vehicle))
                     }
                     OutlinedButton(
                         onClick = onCancelQuest,
                         enabled = canManageQuest && !isBusy,
-                        modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp),
+                        modifier = Modifier.fillMaxWidth().heightIn(min = 76.dp),
                     ) {
                         Text(stringResource(R.string.quest_cancel))
                     }
@@ -68,7 +77,7 @@ fun QuestScreen(
                     Button(
                         onClick = { onStartQuest(QuestType.Q01) },
                         enabled = canManageQuest && !isBusy && active == null,
-                        modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp),
+                        modifier = Modifier.fillMaxWidth().heightIn(min = 76.dp),
                     ) {
                         Text(stringResource(R.string.quest_start_q01))
                     }

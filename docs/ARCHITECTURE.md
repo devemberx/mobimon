@@ -7,21 +7,25 @@ platform integration. [DESIGN.md](DESIGN.md) owns product and screen behavior,
 
 ## Current foundation
 
-The Android implementation has two in-app home surfaces, a fixed left drawer,
-appearance/settings persistence and the legacy Q01 quest with an XP reward.
-Migration to the product model in [DESIGN.md](DESIGN.md#concept) is not implemented.
+The Android implementation has two in-app home surfaces, a transient home menu,
+full-content destinations, persisted preferences and the legacy Q01 quest with
+an XP reward. The product migration is in progress; no point reward values or
+paid item catalog have been approved yet.
 
-- `MobiMonApp` composes feature-owned Pet/Quest ViewModel state;
-  `CompanionDrawer` owns the shared drawer frame.
-- Room stores a local profile, quest runs and completions. One repository
-  implements the pet/quest/reward interfaces and owns the reward transaction.
-  DataStore stores visibility and reduced-motion preferences.
+- `MobiMonApp` owns typed routes and composes independent Pet, Quest, vehicle,
+  point-balance and cosmetic-inventory ViewModel state. `CompanionMenu` is a
+  transient overlay; destinations use the full content area.
+- Room v2 stores the legacy profile, quest runs and completions, plus a separate
+  point account, ledger, point quest occurrences, cosmetic catalog, ownership
+  and equipment. DataStore stores independent preview, launcher and motion
+  preferences. The launcher preference defaults to off, including after v1
+  migration; the preview preference remains separate.
 - Hilt wiring lives in `app/di`: `AppModule` binds repositories,
   `PlatformModule` constructs clock/storage, and variant-specific
   `VehicleProviderModule` supplies vehicle data.
 - `CompanionRuntime` follows process foreground lifecycle and owns one vehicle
-  provider. Q01 completion is a user command; no background care tracker or
-  system overlay service exists.
+  provider and the AAOS UX restriction listener. Q01 completion is a user
+  command; no background care tracker or system overlay service exists.
 - Debug uses the simulated provider, `com.monsters.mobimon.demo`,
   `mobimon-demo.db` and `demo-profile`. Release uses the REAL unavailable
   provider, `mobimon.db` and `local-profile`. The demo freshness window is
@@ -35,8 +39,11 @@ Migration to the product model in [DESIGN.md](DESIGN.md#concept) is not implemen
 Q02/Q03 remain legacy identifiers, but are no longer offered as forthcoming
 quests. Existing Q01-Q03 identifiers, rewards and completion records do not
 automatically map to the new quest catalog.
-Points, cosmetic inventory/purchases, AI conversation, a real vehicle SDK adapter
-and launcher character support remain unimplemented.
+Point transactions and free Mobi/Luna ownership and equipment are implemented.
+The point quest catalog is intentionally empty until conditions and reward
+amounts are defined; no XP is converted or mapped to point quests. Paid items,
+AI conversation, a real vehicle SDK adapter and launcher display remain
+unavailable. The UI does not claim those capabilities work.
 
 ## Scope and decisions
 
@@ -94,17 +101,16 @@ call SDKs. ViewModels expose named actions and explicit phases where useful.
 Keep feature state independent rather than creating an app-wide mutable state
 container.
 
-The shell owns typed destinations, navigation state and cross-feature callbacks.
-Keep this ownership when replacing the current drawer with the navigation
-defined in [DESIGN.md](DESIGN.md).
+The shell owns typed destinations, transient menu state and cross-feature
+callbacks as defined in [DESIGN.md](DESIGN.md).
 
 | State | Owner and lifetime |
 | --- | --- |
 | Current profile, legacy XP, quest runs and completions | Room-backed repository; durable |
 | Visibility and reduced-motion preferences | DataStore-backed repository; durable |
-| Legacy growth stage | Currently derived from saved XP by `RewardCalculator`; removed in target |
+| Legacy growth stage | Historical XP can still be interpreted by `RewardCalculator`, but no growth stage is shown on the product home |
 | Vehicle snapshot availability and driving state | Derived from valid current signals |
-| Drawer/navigation position | Shell; restore appropriate non-sensitive UI state |
+| Route/menu position | Shell; restore route but not a transient open menu |
 | Coordinates, hover and animation progress | Renderer; not shared business state |
 
 Vehicle ownership belongs to `CompanionRuntime`, not individual screen
@@ -119,20 +125,23 @@ complete that run. Saved progress does not prove current vehicle state.
 Missing/stale data stays unavailable; preserve a last known warning only as
 historical information.
 
-For the target AAOS integration, interaction authorization requires both verified
-parked evidence and the current display's allowance from `CarUxRestrictionsManager`.
+Interaction authorization requires both verified parked evidence and the current
+display's allowance from `CarUxRestrictionsManager` on AAOS.
 [Parked-activity restrictions](https://developer.android.com/training/cars/parked/automotive-os#meet-driver-distraction-requirements)
 take precedence over assumptions based on gear or speed. Map platform restrictions
-through an adapter; keep Android APIs out of `core-domain`. Recheck current
-authorization before quest or point-purchase commits. Later restriction changes
-must preserve already committed records.
+through `CarAppUseMonitor`; Android APIs stay out of `core-domain`. The monitor
+fails closed on AAOS until it has a current reading. It returns to unavailable
+when the Car service disconnects, then reloads UX
+restrictions on reconnect before allowing an action. Quest, point award,
+purchase and equipment commands recheck current authorization in their Room
+transaction. Later restriction changes preserve already committed records.
 
 ## Domain and storage contracts
 
 [Models](../core/core-domain/src/main/kotlin/com/monsters/mobimon/core/domain/Models.kt)
 and [repository interfaces](../core/core-domain/src/main/kotlin/com/monsters/mobimon/core/domain/Repositories.kt)
-define the implemented legacy fields and outcomes. The point economy contracts
-are under [Planned features](#planned-features). Observations use `Flow`; write
+define legacy fields and outcomes. [Point economy contracts](../core/core-domain/src/main/kotlin/com/monsters/mobimon/core/domain/PointEconomy.kt)
+are separate from XP. Observations use `Flow`; write
 commands are suspending and distinguish rejected, duplicate and storage-failure
 outcomes. Coroutine cancellation propagates.
 
@@ -140,6 +149,10 @@ outcomes. Coroutine cancellation propagates.
   Real adapters must normalize units and define measurement time/order and
   freshness policies without mixing clock domains or reusing process-local
   monotonic timestamps after restart.
+- Parking, battery and each warning can carry separate quality and observation
+  time. The display freshness policy evaluates each independently; a fresh
+  battery cannot refresh stale parking, and an old warning is historical.
+  Unsupported, denied and disconnected reasons are explicit where known.
 - Pet repositories expose committed profiles and appearance changes, with no
   arbitrary reward-balance setter. Settings remain independent of rewards.
 - Quest runs fix profile/source ownership, rule version, reward and start
@@ -154,11 +167,19 @@ run ID and `(profileId, questType)`. Persist the evidence needed for a run/resul
 without adding full vehicle histories or chat transcripts.
 
 The current [Room schema](../core/core-database/src/main/java/com/monsters/mobimon/core/database/AppDatabase.kt)
-is version 1. [Entities](../core/core-database/src/main/java/com/monsters/mobimon/core/database/CompanionEntities.kt)
+is version 2. Legacy [entities](../core/core-database/src/main/java/com/monsters/mobimon/core/database/CompanionEntities.kt)
 store `totalXp`, `rewardXp` and `awardedXp`; Q01 awards 80 XP once per profile,
-while Q02/Q03 remain unsupported. `RewardCalculator` derives legacy growth from
-saved XP. These fields and values are current implementation facts, not target
+while Q02/Q03 remain unsupported. `RewardCalculator` can interpret historical
+saved XP but does not drive the product home. These fields and values are current implementation facts, not target
 point rewards or conversion rates.
+
+`MIGRATION_1_2` preserves all v1 profile, run and completion evidence. It
+creates zero-balance point accounts and grants the two free friends without
+creating historical point credits. The new point quest occurrence table has a
+unique `(profileId, questId, occurrenceKey)` index; a matching unique ledger
+reference protects each credit. Daily occurrence keys use each quest's defined
+reset zone, while one-time quests use a permanent key. The production catalog
+is empty pending product decisions.
 
 Current completion follows one atomic boundary:
 
@@ -180,11 +201,19 @@ be the only record of a granted reward.
 
 ## Planned features
 
-The contracts below describe unimplemented work. Product behavior and reward
-rules belong in [DESIGN.md](DESIGN.md). Verification belongs
+The contracts below include implemented foundations and remaining integration
+work. Product behavior and reward rules belong in [DESIGN.md](DESIGN.md). Verification belongs
 in [TESTING.md](TESTING.md); implementation breakdowns belong in feature issues.
 
 ### Points, cosmetics and quest occurrences
+
+Implemented: Room v2 accounts, ledger, occurrence uniqueness, purchases,
+ownership, equipment, free friends, and migration tests. The production quest
+and paid-item catalogs have no approved entries. The legacy Q01 is still an XP
+demo and does not grant points. Point awards require a trusted catalog entry,
+current matching vehicle evidence and app-use authorization. The current award
+API supports a displayed vehicle-card acknowledgment; additional quest
+conditions require dedicated evidence validators before catalog activation.
 
 Represent spendable points separately from legacy cumulative XP. Store the local
 balance, durable credit/debit ledger, owned cosmetic items and equipped selection
@@ -217,8 +246,10 @@ Migrate the versioned Room schema without destructive reset. Define how existing
 XP, appearance choices, active runs and Q01-Q03 completions map to the new catalog
 before adding a migration; no automatic 1:1 XP-to-point conversion or quest-ID
 mapping is assumed. Preserve historical reward evidence and use deterministic
-migration records so reopening cannot credit old rewards twice. Remove legacy
-growth calculation and UI with the native migration.
+migration records so reopening cannot credit old rewards twice. Legacy XP remains
+stored for historical evidence, while the visible home uses points and does not
+show growth stages. The legacy Q01 UI is available only with simulated Debug
+vehicle data until the new catalog is ready.
 
 ### Shared vehicle condition and overlay
 
@@ -236,10 +267,13 @@ resuming. Uninterrupted background tracking is not guaranteed.
 
 Launcher character support is conditional on a verified platform integration.
 The current `show_on_vehicle_home` DataStore preference defaults to true and only
-controls the in-app preview. It must not authorize launcher display. Add a
-separate launcher visibility preference that defaults to false, including for
-existing installations; require an explicit user opt-in before displaying the
+controls the in-app preview. It must not authorize launcher display. The
+separate launcher visibility preference defaults to false, including for
+existing installations. Require an explicit user opt-in before displaying the
 character there. Keep the preview preference and launcher preference independent.
+`launcher_character_enabled` is persisted separately with an off default;
+there is no launcher renderer or supported opt-in UI yet. The settings screen
+continues to report launcher display as unavailable.
 An overlay implementation uses a lifecycle-owned state holder, not an Activity
 ViewModel. Observe actual service/permission state separately from the saved
 visibility preference. Verify service restart, permission failures and parked
