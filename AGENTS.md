@@ -7,6 +7,7 @@
 - Inspect source and build configuration before assuming that a planned module, dependency, test task, or integration exists. Report only verification actually performed.
 - Read the relevant sections of [ARCHITECTURE.md](docs/ARCHITECTURE.md) before changing feature behavior or module boundaries.
 - Follow [DESIGN.md](docs/DESIGN.md) for UI changes and [TESTING.md](docs/TESTING.md) for behavior changes or tests.
+- Before using `ui-ux-pro-max`, read its [project integration rules](.agents/skills/README.md#uiux-design-guidance).
 - Mirror subject modules/packages for focused tests; do not require one test file per source file. Update the current requirement map in `TESTING.md` for changed critical behavior.
 
 ## Code Quality
