@@ -29,7 +29,7 @@ class QuestScreenTest {
     val compose = createComposeRule()
 
     @Test
-    fun firstQuestStartsQ01WhileFutureQuestsRemainDisabled() {
+    fun firstQuestStartsQ01WithoutAdvertisingLegacyFutureQuests() {
         var started: QuestType? = null
         compose.setContent {
             MaterialTheme {
@@ -39,8 +39,8 @@ class QuestScreenTest {
 
         compose.onNodeWithText("Q01 시작하기").performScrollTo().performClick()
         assertEquals(QuestType.Q01, started)
-        compose.onNodeWithText("Q02 준비 중").performScrollTo().assertIsNotEnabled()
-        compose.onNodeWithText("Q03 준비 중").performScrollTo().assertIsNotEnabled()
+        compose.onNodeWithText("Q02", substring = true).assertDoesNotExist()
+        compose.onNodeWithText("Q03", substring = true).assertDoesNotExist()
     }
 
     @Test

@@ -1,5 +1,5 @@
 <resources>
-  <string name="quest_intro">작은 약속을 하나씩, 함께 성장해요.</string>
+  <string name="quest_intro">작은 약속을 하나씩, 함께해요.</string>
   <string name="quest_q01_title">Q01 · 내 차와 첫 인사</string>
   <string name="quest_q01_description">주차된 내 차의 최신 상태를 살펴보고 확인해 주세요.</string>
   <string name="quest_reward">첫 완료 보상 · 80 XP</string>
@@ -13,10 +13,4 @@
   <string name="quest_other_active">진행 중인 퀘스트를 먼저 마치거나 취소해 주세요.</string>
   <string name="quest_parked_required">최신 차량 정보로 주차가 확인되면 시작하거나 취소할 수 있어요.</string>
   <string name="quest_saving">진행 상황을 저장하고 있어요.</string>
-  <string name="quest_q02_title">Q02 · 우리의 첫 약속</string>
-  <string name="quest_q02_description">이름과 말투를 정하는 경험을 준비하고 있어요.</string>
-  <string name="quest_q02_forthcoming">Q02 준비 중</string>
-  <string name="quest_q03_title">Q03 · 첫 돌봄</string>
-  <string name="quest_q03_description">실제 차량의 돌봄 활동을 함께 확인하는 기능을 준비하고 있어요.</string>
-  <string name="quest_q03_forthcoming">Q03 준비 중</string>
 </resources>
