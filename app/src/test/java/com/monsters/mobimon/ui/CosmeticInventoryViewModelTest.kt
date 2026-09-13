@@ -66,6 +66,7 @@ class CosmeticInventoryViewModelTest {
         override val inventory: Flow<CosmeticInventory>,
     ) : PointEconomy {
         override val wallet = flowOf(PointWallet(0))
+        override val catalog = flowOf(emptyList<com.monsters.mobimon.core.domain.CosmeticItem>())
 
         override suspend fun purchase(
             itemId: String,

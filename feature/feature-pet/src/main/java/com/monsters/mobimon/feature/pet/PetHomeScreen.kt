@@ -67,6 +67,7 @@ fun PetHomeScreen(
     pointLoadFailed: Boolean = false,
     legacyQuestVisible: Boolean = true,
     friendId: String? = "friend:mobi",
+    accessoryId: String? = null,
     interactionAllowed: Boolean = false,
     profileObservationFailed: Boolean = false,
     onRetryProfile: () -> Unit = {},
@@ -167,6 +168,7 @@ fun PetHomeScreen(
                                     modifier = Modifier.size(avatarSize),
                                     appearanceKey = profile.appearance.name,
                                     friendId = friendId,
+                                    accessoryId = accessoryId,
                                 )
                             }
                             inventoryLoadFailed -> Unit
