@@ -35,6 +35,28 @@ class MobiMonContentTest {
     @get:Rule val compose = createComposeRule()
 
     @Test
+    fun settingsConnectionShowsHonestUnavailableFeedbackAndReturnsToSettings() {
+        showHome(petState = PetUiState(profile = PetProfile("demo-profile"), isLoading = false, settingsLoaded = true))
+        compose.onNodeWithContentDescription("메뉴 열기").performClick()
+        compose.onNodeWithText("설정").performClick()
+        compose.onNodeWithText("GitHub Copilot").performScrollTo().performClick()
+        compose.onNodeWithText("QR로 연결하기").performScrollTo().performClick()
+        compose.onNodeWithText("아직 계정 연결을 이용할 수 없어요.", substring = true).assertExists()
+        compose.onNodeWithText("연결이 완료됐어요.").assertDoesNotExist()
+        compose.onNodeWithContentDescription("뒤로").performScrollTo().performClick()
+        compose.onNodeWithTag("settings-done").assertExists()
+    }
+
+    @Test
+    fun homeConversationOpensConnectionAndCancelReturnsHome() {
+        showHome()
+        compose.onNodeWithText("대화하기").performScrollTo().performClick()
+        compose.onNodeWithText("이야기를 시작할 준비").assertExists()
+        compose.onNodeWithText("나중에").performScrollTo().performClick()
+        compose.onNodeWithContentDescription("메뉴 열기").assertExists()
+    }
+
+    @Test
     @Config(qualifiers = "ko-rKR-w1792dp-h888dp")
     fun menuRemainsProportionalToTheHostWindow() {
         showHome()

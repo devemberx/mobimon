@@ -206,10 +206,49 @@ layout with 24dp gaps. Panel and control outlines use `#708C99` and `#748F9A`
 (3.28:1 and 3.04:1 against their respective surfaces), brighter than the reference
 outlines to retain the required non-text contrast.
 
-Current controls expose only the persisted in-app vehicle-home preview and
-reduced-motion preferences. Copilot, spoken replies and Do Not Disturb remain
-visibly unavailable until their contracts exist. Unknown parking disables
-preference changes, and app-use restrictions remain enforced by the app shell.
+Settings exposes the persisted in-app vehicle-home preview and reduced-motion
+preferences, plus the Copilot connection introduction. Spoken replies and Do Not
+Disturb remain visibly unavailable. Unknown parking disables preference changes
+and connection actions, and app-use restrictions remain enforced by the app shell.
+
+The Copilot presentation follows the current v4
+[connection group](https://www.figma.com/design/7tyb4oJsJAUc15KnU7H0F6?node-id=255-9688):
+P51 introduction, P52 QR approval, P52 C address help, P52 B expiry, P53 success,
+P54 reconnect, P56 access checks and P55 disconnect. A shared header and companion
+panel frame the content; fit the 2560:1268 safe area with 884-unit companion and
+1488-unit content panels separated by 44 units. Compact or enlarged-text windows
+scroll and stack controls, with at least 76dp touch targets. Use the shared
+`MobiMonConnectionColors` roles and bundled Noto Sans KR Regular/Bold, with zero
+letter spacing and fractional glyph advances when scaling the composition. The
+eight supplied SVGs provide the shared header, 48-unit panel corners, 656-unit
+character placement, screen-specific font metrics, layouts and original icon
+paths. Their identical original 1254×1254 transparent character
+PNG is preserved in [mobimon_mobi_v4.png](../core/core-ui/src/main/res/drawable-nodpi/mobimon_mobi_v4.png)
+and selected through `PetAvatar` for the default Mobi connection presentation.
+Other appearances retain the renderer's existing fallbacks. Reference layouts
+use the exported coordinates; compact, enlarged-text and additional feedback
+states reflow. The supplied QR pattern and example-account label are Debug-only
+review data. Apply the [final visual acceptance](TESTING.md#final-figma-visual-acceptance)
+separately from behavior verification.
+
+The UI is implemented before live authentication. Settings and the conversation
+entry open the introduction; Back and Later return to the originating screen.
+Requesting a QR currently explains that connection is not available. No sample
+account, working code or successful authentication is presented in the production route.
+The remaining states are state-driven components for future provider integration.
+The Debug-only **Copilot UI 체험** launcher connects all eight states using the
+same components, with a persistent simulation notice, a fixed sample timer,
+explicit expiry/reconnect/access scenarios, and labeled destination placeholders.
+It does not open GitHub or provide an operational service. Missing QR images
+fall back to the selectable GitHub address and code, and expiry hides the old code.
+
+Panel changes fade in over 180ms and out over 120ms, without moving the header
+or character. Countdown and pending-status updates retain the current panel.
+Outgoing controls cannot dispatch actions or retain accessibility targets.
+Expiry, access failures and lost parking replace the panel immediately; the
+persisted reduced-motion preference also removes transitions. Android's animation
+duration scale still applies. These timings are implementation choices following
+the motion guidance above; the supplied static SVGs contain no motion specification.
 
 Conversation uses the user's GitHub Copilot connection. When disconnected,
 vehicle information and customization remain available; starting conversation

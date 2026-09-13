@@ -85,7 +85,7 @@ including skipped device or integration checks and their reasons, in the PR.
 Regenerate and inspect lock state before running the normal verification commands:
 
 ```bash
-./gradlew :app:dependencies :core:core-domain:dependencies :core:core-database:dependencies :core:core-vss:dependencies :core:core-ui:dependencies :feature:feature-pet:dependencies :feature:feature-quest:dependencies :feature:feature-vehicle-info:dependencies --write-locks
+./gradlew :app:dependencies :core:core-domain:dependencies :core:core-database:dependencies :core:core-vss:dependencies :core:core-ui:dependencies :feature:feature-pet:dependencies :feature:feature-quest:dependencies :feature:feature-vehicle-info:dependencies :feature:feature-auth:dependencies --write-locks
 ```
 
 Add the corresponding `:<module>:dependencies` task when introducing a module.

@@ -15,6 +15,14 @@ paid item catalog have been approved yet.
 - `MobiMonApp` owns typed routes and composes independent Pet, Quest, vehicle,
   point-balance and cosmetic-inventory ViewModel state. `CompanionMenu` is a
   transient overlay; destinations use the full content area.
+- Settings and the Home conversation entry open the Copilot connection introduction.
+  The shell preserves its Home/Settings origin across recreation. The independent
+  `feature-auth` module renders the eight connection states from display data and
+  emits named actions; it contains no provider, credential store or authentication
+  work. The app currently returns explicit unavailable feedback when connection
+  is requested. Sample accounts and QR data exist only in Debug previews and tests.
+  The Debug-only `CopilotPreviewActivity` connects these same components in a
+  labeled, isolated rehearsal with no provider calls or account persistence.
 - Room v2 stores the legacy profile, quest runs and completions, plus a separate
   point account, ledger, point quest occurrences, cosmetic catalog, ownership
   and equipment. DataStore stores independent preview, launcher and motion
@@ -35,7 +43,9 @@ paid item catalog have been approved yet.
 - [PetAvatar](../core/core-ui/src/main/java/com/monsters/mobimon/core/ui/PetAvatar.kt)
   is the artwork replacement point. Mobi's default artwork uses the supplied
   `그림1.png` for v3 P01 letterbox Home (128:569), bundled unchanged as
-  `drawable-nodpi/mobimon_mobi_v3.png`. Home and customization share the renderer;
+  `drawable-nodpi/mobimon_mobi_v3.png`. The Copilot presentation selects the original
+  v4 artwork through `PetArtwork.COPILOT`; appearance and equipment state remain
+  outside the renderer. Home and customization share the renderer;
   Luna, legacy Cream and equipped-accessory variants still use placeholders. Preserve
   the compatibility signature `PetAvatar(modifier, appearanceKey, stage)`. `stage`
   belongs to the legacy implementation. Rewards, ownership, equipped appearance
@@ -77,6 +87,7 @@ Add planned modules with their first working behavior and tests. Use
 | `:feature:feature-pet` | Implemented | Home, appearance and display settings | `core-domain`, `core-ui` |
 | `:feature:feature-vehicle-info` | Implemented | Vehicle information and availability UI | `core-domain`, `core-ui` |
 | `:feature:feature-quest` | Implemented | Quest selection, progress and results | `core-domain`, `core-ui` |
+| `:feature:feature-auth` | Implemented, UI only | Copilot connection states, responsive screens and action contracts | `core-ui` |
 | `:core:core-ai` | Planned | AI client adapter and response parsing | `core-domain` |
 | `:feature:feature-overlay` | Planned | Overlay lifecycle and permissions | `core-domain`, `core-ui` |
 | `:feature:feature-chat` | Planned | Conversation and session | `core-domain`, `core-ui` |
@@ -293,6 +304,16 @@ visibility and placement. Do not assume a normal app knows when the launcher is
 foreground or where its unused space is.
 
 ### AI conversation and session
+
+The connection presentation is implemented in
+[CopilotConnectionScreen](../feature/feature-auth/src/main/java/com/monsters/mobimon/feature/auth/CopilotConnectionScreen.kt).
+Its display contract accepts a user-facing code, remaining seconds, account label,
+readiness issue and optional QR painter. It never accepts an access token or starts
+polling. A waiting state with no remaining time renders expiry and removes the old
+code. Provider integration must own cancellation, elapsed time, account validation
+and secret storage; the current app does not create a live connection. Only the
+introduction is connected to app navigation, while the remaining states are
+available to previews, tests and a future provider host.
 
 The target uses the user's personal Copilot connection. Keep its adapter behind
 the domain boundary and authenticate through a supported user credential flow;

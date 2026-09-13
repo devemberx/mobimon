@@ -19,3 +19,4 @@ include(":app")
 
 include(":core:core-domain", ":core:core-database", ":core:core-vss", ":core:core-ui")
 include(":feature:feature-pet", ":feature:feature-quest", ":feature:feature-vehicle-info")
+include(":feature:feature-auth")
