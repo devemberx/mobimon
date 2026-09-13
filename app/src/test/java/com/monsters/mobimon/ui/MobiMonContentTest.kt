@@ -1,10 +1,18 @@
 package com.monsters.mobimon.ui
 
 import android.app.Application
+import androidx.compose.ui.semantics.SemanticsActions
+import androidx.compose.ui.test.assertHeightIsAtLeast
+import androidx.compose.ui.test.assertIsFocused
+import androidx.compose.ui.test.assertWidthIsAtLeast
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.performSemanticsAction
+import androidx.compose.ui.unit.dp
 import com.monsters.mobimon.core.domain.AppUseState
 import com.monsters.mobimon.core.domain.DrivingState
 import com.monsters.mobimon.core.domain.PetProfile
@@ -13,6 +21,8 @@ import com.monsters.mobimon.core.domain.SignalSource
 import com.monsters.mobimon.core.domain.VehicleSnapshot
 import com.monsters.mobimon.feature.pet.PetUiState
 import com.monsters.mobimon.feature.quest.QuestUiState
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -25,11 +35,59 @@ class MobiMonContentTest {
     @get:Rule val compose = createComposeRule()
 
     @Test
+    @Config(qualifiers = "ko-rKR-w1792dp-h888dp")
+    fun menuRemainsProportionalToTheHostWindow() {
+        showHome()
+        compose.onNodeWithContentDescription("메뉴 열기").performClick()
+        val host = compose.onNodeWithTag("menu-host").fetchSemanticsNode().boundsInRoot
+        val panel = compose.onNodeWithTag("companion-menu").fetchSemanticsNode().boundsInRoot
+        assertTrue(panel.width <= host.width * 0.25f)
+        assertTrue(panel.height < host.height)
+        val scale = panel.width / 608f
+        assertEquals(576f * scale, panel.height, 2f)
+        val closeVisual =
+            compose
+                .onNodeWithTag(
+                    "menu-close-visual",
+                    useUnmergedTree = true,
+                ).fetchSemanticsNode()
+                .boundsInRoot
+        assertEquals(72f * scale, closeVisual.width, 2f)
+        assertEquals(72f * scale, closeVisual.height, 2f)
+        assertEquals(panel.left + 504f * scale, closeVisual.left, 2f)
+        assertEquals(panel.top + 34f * scale, closeVisual.top, 2f)
+        compose.onNodeWithContentDescription("닫기").assertWidthIsAtLeast(76.dp).assertHeightIsAtLeast(76.dp)
+        listOf(AppRoute.VEHICLE_INFO, AppRoute.QUESTS, AppRoute.SETTINGS).forEachIndexed { index, route ->
+            val visual =
+                compose
+                    .onNodeWithTag(
+                        "menu-item-visual-${route.name}",
+                        useUnmergedTree = true,
+                    ).fetchSemanticsNode()
+                    .boundsInRoot
+            assertEquals(544f * scale, visual.width, 2f)
+            assertEquals(104f * scale, visual.height, 2f)
+            assertEquals(panel.top + (136 + index * 128) * scale, visual.top, 2f)
+        }
+        val closeTouch = compose.onNodeWithContentDescription("닫기").fetchSemanticsNode().boundsInRoot
+        val firstTouch =
+            compose
+                .onNodeWithText("차량 상태")
+                .assertHeightIsAtLeast(76.dp)
+                .fetchSemanticsNode()
+                .boundsInRoot
+        assertTrue(closeTouch.bottom <= firstTouch.top)
+        val vehicleLabel = compose.onNodeWithText("차량 상태", useUnmergedTree = true).fetchSemanticsNode().boundsInRoot
+        assertEquals(panel.left + 320f * scale, vehicleLabel.center.x, 2f)
+        compose.onNodeWithText("차량 상태").assertIsFocused()
+    }
+
+    @Test
     fun menuDestinationClosesOverlayAndUsesFullScreenBeforeReturningHome() {
         showHome()
         compose.onNodeWithContentDescription("메뉴 열기").performClick()
-        compose.onNodeWithText("퀘스트 정보").performClick()
-        compose.onNodeWithText("닫기").assertDoesNotExist()
+        compose.onNodeWithText("퀘스트").performClick()
+        compose.onNodeWithContentDescription("닫기").assertDoesNotExist()
         compose.onNodeWithText("뒤로").performClick()
         compose.onNodeWithContentDescription("메뉴 열기").assertExists()
     }
@@ -38,17 +96,32 @@ class MobiMonContentTest {
     fun returnHomeSkipsMenuFromDestination() {
         showHome()
         compose.onNodeWithContentDescription("메뉴 열기").performClick()
-        compose.onNodeWithText("퀘스트 정보").performClick()
+        compose.onNodeWithText("퀘스트").performClick()
         compose.onNodeWithText("홈으로").performClick()
-        compose.onNodeWithText("닫기").assertDoesNotExist()
+        compose.onNodeWithContentDescription("닫기").assertDoesNotExist()
         compose.onNodeWithContentDescription("메뉴 열기").assertExists()
     }
 
     @Test
     fun menuCloseReturnsToHome() {
         showHome()
+        compose
+            .onNodeWithContentDescription(
+                "메뉴 열기",
+            ).performSemanticsAction(SemanticsActions.RequestFocus)
+            .performClick()
+        compose.onNodeWithText("차량 상태").assertIsFocused()
+        compose.onNodeWithContentDescription("닫기").performClick()
+        compose.onNodeWithContentDescription("메뉴 열기").assertIsFocused()
+    }
+
+    @Test
+    fun settingsDoneClosesTheScreenAndReturnsToHome() {
+        showHome(petState = PetUiState(profile = PetProfile("demo-profile"), isLoading = false, settingsLoaded = true))
         compose.onNodeWithContentDescription("메뉴 열기").performClick()
-        compose.onNodeWithText("닫기").performClick()
+        compose.onNodeWithText("설정").performClick()
+        compose.onNodeWithContentDescription("닫기").assertDoesNotExist()
+        compose.onNodeWithTag("settings-done").performScrollTo().performClick()
         compose.onNodeWithContentDescription("메뉴 열기").assertExists()
     }
 
