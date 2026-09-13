@@ -56,7 +56,7 @@ class MobiMonContentTest {
     fun questObservationFailureKeepsHomeAndVehicleDetailsReachable() {
         showHome(questState = defaultQuestState().copy(observationFailed = true))
         compose.onNodeWithContentDescription("메뉴 열기").assertExists()
-        compose.onNodeWithText("차량 정보 자세히 보기").assertExists()
+        compose.onNodeWithContentDescription("차량 정보 자세히 보기").assertExists()
     }
 
     @Test

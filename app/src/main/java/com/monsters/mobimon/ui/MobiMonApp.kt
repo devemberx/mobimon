@@ -9,8 +9,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Button
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -43,6 +41,7 @@ import com.monsters.mobimon.core.ui.MobiMonMessage
 import com.monsters.mobimon.core.ui.MobiMonTheme
 import com.monsters.mobimon.di.AppDependencies
 import com.monsters.mobimon.feature.pet.CustomizationScreen
+import com.monsters.mobimon.feature.pet.PetHomeLoadingScreen
 import com.monsters.mobimon.feature.pet.PetHomeScreen
 import com.monsters.mobimon.feature.pet.PetUiState
 import com.monsters.mobimon.feature.pet.PetViewModel
@@ -215,6 +214,8 @@ fun MobiMonContent(
                         interactionAllowed = interactionAllowed,
                         profileObservationFailed = petState.loadFailed,
                         onRetryProfile = actions.onRetry,
+                        inventoryLoaded = inventoryState.inventory != null,
+                        inventoryLoadFailed = inventoryState.loadFailed,
                     )
                 } else {
                     Column(Modifier.fillMaxSize()) {
@@ -315,19 +316,7 @@ private fun LoadingOrError(
     failed: Boolean,
     onRetry: () -> Unit,
 ) {
-    Column(
-        Modifier.fillMaxSize().padding(24.dp),
-        verticalArrangement = Arrangement.spacedBy(20.dp, Alignment.CenterVertically),
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
-        if (failed) {
-            Text(stringResource(R.string.load_failed))
-            Button(onClick = onRetry) { Text(stringResource(R.string.retry)) }
-        } else {
-            CircularProgressIndicator()
-            Text(stringResource(R.string.loading_companion))
-        }
-    }
+    PetHomeLoadingScreen(failed = failed, onRetry = onRetry)
 }
 
 @Composable
