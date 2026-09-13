@@ -1,5 +1,5 @@
 {
-  "description": "Validate pull-request merge commands.",
+  "description": "Validate pull-request content and merge commands.",
   "hooks": {
     "PreToolUse": [
       {
@@ -10,6 +10,12 @@
             "command": "python3 \"$(git rev-parse --show-toplevel)/scripts/validate_merge.py\"",
             "timeout": 30,
             "statusMessage": "Checking pull-request merge policy"
+          },
+          {
+            "type": "command",
+            "command": "python3 \"$(git rev-parse --show-toplevel)/.agents/hooks/validate_pr_command.py\"",
+            "timeout": 30,
+            "statusMessage": "Checking pull-request template"
           }
         ]
       }
