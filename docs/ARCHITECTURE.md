@@ -33,8 +33,10 @@ paid item catalog have been approved yet.
   Display freshness samples the clock on every snapshot or timer emission, so a
   new reading is never compared against a cached, older timer timestamp.
 - [PetAvatar](../core/core-ui/src/main/java/com/monsters/mobimon/core/ui/PetAvatar.kt)
-  is the artwork replacement point. Mobi's default artwork is exported from
-  Figma P01 letterbox Home (128:569); Luna and legacy Cream still use placeholders. Preserve
+  is the artwork replacement point. Mobi's default artwork uses the supplied
+  `그림1.png` for v3 P01 letterbox Home (128:569), bundled unchanged as
+  `drawable-nodpi/mobimon_mobi_v3.png`. Home and customization share the renderer;
+  Luna, legacy Cream and equipped-accessory variants still use placeholders. Preserve
   the compatibility signature `PetAvatar(modifier, appearanceKey, stage)`. `stage`
   belongs to the legacy implementation. Rewards, ownership, equipped appearance
   and interaction state stay outside the renderer.

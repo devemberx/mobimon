@@ -1,6 +1,8 @@
 <resources>
     <string name="simulation_label">시뮬레이션 · 개발용 차량 정보</string>
     <string name="drawer_menu">메뉴</string>
+    <string name="drawer_menu_vehicle">차량 상태</string>
+    <string name="drawer_menu_quests">퀘스트</string>
     <string name="drawer_pet_info">캐릭터 정보</string>
     <string name="drawer_quests">퀘스트 정보</string>
     <string name="drawer_vehicle_info">차량 정보</string>

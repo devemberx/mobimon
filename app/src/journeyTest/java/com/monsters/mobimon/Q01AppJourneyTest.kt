@@ -199,7 +199,7 @@ class Q01AppJourneyTest {
     private fun openQuests() {
         waitFor(hasContentDescription(text(PetR.string.pet_open_menu)))
         compose.onNodeWithContentDescription(text(PetR.string.pet_open_menu)).performScrollTo().performClick()
-        compose.onNodeWithText(text(R.string.drawer_quests)).performClick()
+        compose.onNodeWithText(text(R.string.drawer_menu_quests)).performClick()
     }
 
     private fun assertHomePoints(points: Long) {
