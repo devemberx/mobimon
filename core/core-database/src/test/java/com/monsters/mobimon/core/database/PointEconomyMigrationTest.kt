@@ -69,7 +69,7 @@ class PointEconomyMigrationTest {
                 val migrated =
                     Room
                         .databaseBuilder(context, AppDatabase::class.java, name)
-                        .addMigrations(MIGRATION_1_2)
+                        .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
                         .allowMainThreadQueries()
                         .build()
                 try {
