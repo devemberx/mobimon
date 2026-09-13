@@ -25,11 +25,12 @@ fun PetAvatar(
     appearanceKey: String = "GOLDEN",
     stage: Int = 1,
     friendId: String = "friend:mobi",
+    accessoryId: String? = null,
 ) {
     val cat = friendId == "friend:luna"
     val cream = appearanceKey == "CREAM"
     val description = stringResource(if (cat) R.string.mobimon_luna_description else R.string.mobimon_mobi_description)
-    if (!cat && !cream) {
+    if (!cat && !cream && accessoryId == null) {
         Image(
             painter = painterResource(R.drawable.mobimon_mobi),
             contentDescription = description,
@@ -76,6 +77,34 @@ fun PetAvatar(
             drawCircle(ear, radius * 0.48f, center + Offset(radius * 0.85f, -radius * 0.4f))
         }
         drawCircle(fur, radius, center)
+
+        if (accessoryId == "accessory:necklace") {
+            drawCircle(
+                Color(0xFF8B5A2B),
+                radius * 0.75f,
+                center + Offset(0f, radius * 0.4f),
+                style =
+                    androidx.compose.ui.graphics.drawscope
+                        .Stroke(width = 6f),
+            )
+            drawCircle(Color(0xFFFFD700), radius * 0.15f, center + Offset(0f, radius * 1.1f))
+        } else if (accessoryId == "accessory:mint_scarf") {
+            val scarfPath =
+                Path().apply {
+                    moveTo(center.x - radius * 0.7f, center.y + radius * 0.6f)
+                    quadraticBezierTo(
+                        center.x,
+                        center.y + radius * 1.3f,
+                        center.x + radius * 0.7f,
+                        center.y + radius * 0.6f,
+                    )
+                    lineTo(center.x + radius * 0.4f, center.y + radius * 1.1f)
+                    lineTo(center.x - radius * 0.4f, center.y + radius * 1.1f)
+                    close()
+                }
+            drawPath(scarfPath, Color(0xFF7FC1A5))
+        }
+
         drawCircle(Color(0xFF51402C), radius * 0.1f, center + Offset(0f, radius * 0.25f))
     }
 }

@@ -66,6 +66,9 @@ interface PointEconomyDao {
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insertItem(item: CosmeticItemEntity): Long
 
+    @Query("SELECT * FROM cosmetic_items")
+    fun observeAllItems(): Flow<List<CosmeticItemEntity>>
+
     @Query("SELECT * FROM cosmetic_items WHERE id = :itemId")
     suspend fun item(itemId: String): CosmeticItemEntity?
 
