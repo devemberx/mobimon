@@ -20,7 +20,7 @@ golden-image comparison and system-UI automation are not configured.
 | `core/core-database/src/androidTest/java` | SQLite transaction and file-reopening counterparts; device |
 | Feature `src/test/java` | Constructor-injected ViewModels and Compose state/callback contracts; JVM or Robolectric |
 | `app/src/test/java`, `src/testDebug/java` | Runtime, shell, Q01 repository integration, branding and demo provider behavior |
-| `app/src/journeyTest/java` | Shared quest and connection UI journeys through MainActivity, Hilt and Room; Robolectric and device |
+| `app/src/journeyTest/java` | MainActivity quest/connection journeys with Hilt and Room, plus isolated CopilotPreviewActivity journeys; Robolectric and device |
 
 The journey source sets and instrumentation runner are configured in
 [app/build.gradle.kts](../app/build.gradle.kts); local host settings are in
@@ -55,6 +55,11 @@ or with an overlay. Check original artwork, font family and weight, text size an
 baselines, wrapping, colors, panel proportions, spacing, alignment, corners, icons
 and button bounds. Fix discrepancies and repeat the comparison after the final
 code change; inspect compact and enlarged-text layouts separately for usability.
+Exclude the SVG's drawn system bars and any Debug review controls from the
+reference comparison. Inspect the actual device app window separately: its
+compatibility density and available height can select a different layout from a
+native Robolectric reference render. A rehearsal toolbar must not hide controls
+or inadvertently force the compact layout at the reference app window.
 
 Record the references, rendered images and remaining differences in the
 implementation issue or PR. Distinguish font antialiasing differences from layout
@@ -103,11 +108,16 @@ coverage, not a passing result at a particular revision.
 
 ## Integration boundaries
 
-The app journeys use `HiltTestApplication`. Their
+The MainActivity journeys use `HiltTestApplication`. Their
 [JourneyTestModule](../app/src/journeyTest/java/com/monsters/mobimon/testing/JourneyTestModule.kt)
 replaces platform, vehicle and AAOS use-state providers with a fixed clock, controllable
 simulated vehicle, an allowed app-use state, in-memory Room and isolated DataStore. MainActivity, feature
 ViewModels, repository bindings and reward transactions remain real.
+
+`CopilotPreviewJourneyTest` launches the plain Debug preview Activity without
+Hilt injection or Room interaction. It verifies presentation navigation and
+Activity recreation with sample data; it does not exercise the production
+connection host, vehicle authorization or an authentication provider.
 
 Activity recreation, file-backed database reopening and process restart prove
 different guarantees. The journeys cover recreation; the Room suites cover file
@@ -134,6 +144,8 @@ introduction and unavailable feedback until those integrations are implemented.
 The separate Debug launcher **Copilot UI 체험** is a manual UI rehearsal, with
 explicitly simulated accounts, a fixed timer and no network or credential storage.
 Its scenario controls and destination placeholders are outside the Figma design.
+Release manifest/resource inspection is evidence of packaging boundaries;
+it does not establish live authentication or Release runtime behavior.
 
 ## Focused commands and reports
 
@@ -144,6 +156,9 @@ check sequence and connected-test command are in
 ```bash
 # Shared Q01 journeys on Robolectric.
 ./gradlew :app:testDebugUnitTest --tests com.monsters.mobimon.Q01AppJourneyTest
+
+# Isolated Copilot rehearsal journeys on Robolectric.
+./gradlew :app:testDebugUnitTest --tests com.monsters.mobimon.preview.CopilotPreviewJourneyTest
 
 # Informational local coverage.
 ./gradlew :app:koverHtmlReportDebug :app:koverXmlReportDebug

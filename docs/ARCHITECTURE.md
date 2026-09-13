@@ -16,13 +16,9 @@ paid item catalog have been approved yet.
   point-balance and cosmetic-inventory ViewModel state. `CompanionMenu` is a
   transient overlay; destinations use the full content area.
 - Settings and the Home conversation entry open the Copilot connection introduction.
-  The shell preserves its Home/Settings origin across recreation. The independent
-  `feature-auth` module renders the eight connection states from display data and
-  emits named actions; it contains no provider, credential store or authentication
-  work. The app currently returns explicit unavailable feedback when connection
-  is requested. Sample accounts and QR data exist only in Debug previews and tests.
-  The Debug-only `CopilotPreviewActivity` connects these same components in a
-  labeled, isolated rehearsal with no provider calls or account persistence.
+  The shell preserves its Home/Settings origin across recreation. The
+  [connection UI boundary](#copilot-connection-ui) separates the unavailable
+  production integration from the eight-state Debug rehearsal.
 - Room v2 stores the legacy profile, quest runs and completions, plus a separate
   point account, ledger, point quest occurrences, cosmetic catalog, ownership
   and equipment. DataStore stores independent preview, launcher and motion
@@ -128,6 +124,36 @@ callbacks as defined in [DESIGN.md](DESIGN.md).
 | Vehicle snapshot availability and driving state | Derived from valid current signals |
 | Route/menu position | Shell; restore route but not a transient open menu |
 | Coordinates, hover and animation progress | Renderer; not shared business state |
+
+### Copilot connection UI
+
+The independent `feature-auth` module exposes
+[CopilotUiState and CopilotAction](../feature/feature-auth/src/main/java/com/monsters/mobimon/feature/auth/CopilotUiState.kt)
+through the stateless
+[CopilotConnectionScreen](../feature/feature-auth/src/main/java/com/monsters/mobimon/feature/auth/CopilotConnectionScreen.kt).
+The host supplies display data, an optional QR painter, interaction authorization,
+the reduced-motion preference and action handling. The screen accepts no access
+token, creates no account session and performs no provider calls or polling.
+It renders expiry instead of a waiting state with no remaining time. Rendering
+`Connected` is a presentation decision, not evidence of approval or Copilot readiness.
+
+[MobiMonApp](../app/src/main/java/com/monsters/mobimon/ui/MobiMonApp.kt) currently
+hosts only introduction/unavailable feedback, with saved route origin and feedback
+across Activity recreation. Its interaction guard combines parked verification
+and app-use allowance. The other states are reusable presentation components;
+production integration remains [planned](#ai-conversation-and-session).
+
+[CopilotPreviewActivity](../app/src/debug/java/com/monsters/mobimon/preview/CopilotPreviewActivity.kt)
+is a separate Debug-only launcher that connects those same components. Example
+accounts/codes, its fixed timer and scenario controls belong to the rehearsal,
+not a provider implementation. The Activity saves only its review state across
+recreation; simulated pending work runs while STARTED and is canceled when its
+step is left. Its motion toggle is local to the rehearsal, separate from the
+app's persisted setting. It neither verifies vehicle restrictions nor performs
+authentication or account persistence. Its launcher and sample QR resource are
+absent from Release.
+
+### Vehicle interaction authorization
 
 Vehicle ownership belongs to `CompanionRuntime`, not individual screen
 collectors. Reopening a route must not create another provider connection.
@@ -305,15 +331,11 @@ foreground or where its unused space is.
 
 ### AI conversation and session
 
-The connection presentation is implemented in
-[CopilotConnectionScreen](../feature/feature-auth/src/main/java/com/monsters/mobimon/feature/auth/CopilotConnectionScreen.kt).
-Its display contract accepts a user-facing code, remaining seconds, account label,
-readiness issue and optional QR painter. It never accepts an access token or starts
-polling. A waiting state with no remaining time renders expiry and removes the old
-code. Provider integration must own cancellation, elapsed time, account validation
-and secret storage; the current app does not create a live connection. Only the
-introduction is connected to app navigation, while the remaining states are
-available to previews, tests and a future provider host.
+The [connection UI](#copilot-connection-ui) is implemented; the live provider,
+credential store and conversation runtime are not. A future provider host must
+own cancellation, elapsed time, account validation and secret storage, and emit
+success only after both account approval and Copilot readiness are verified.
+The Debug rehearsal must not become the production source of connection state.
 
 The target uses the user's personal Copilot connection. Keep its adapter behind
 the domain boundary and authenticate through a supported user credential flow;

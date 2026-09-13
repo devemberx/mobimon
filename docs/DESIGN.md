@@ -69,6 +69,7 @@ character. Existing purchases, rewards, preferences and drafts remain intact.
 | Vehicle status | Available readings, specific warnings, freshness and connection status. |
 | Quests | Conditions, reward type, point reward, progress and the next available action. |
 | Customization | Friends, Outfits and accessories, and Backgrounds; preview, ownership and application states. |
+| Copilot connection | Account connection guidance, approval/help, expiry, readiness, reconnect and disconnect states; see the [current UI scope](#copilot-connection-ui). |
 | Conversation | Clearly identified speakers, conversation history, voice input and a text composer. |
 | Settings | AI connection, vehicle-home character, spoken replies, reduced motion and Do Not Disturb. |
 
@@ -211,6 +212,18 @@ preferences, plus the Copilot connection introduction. Spoken replies and Do Not
 Disturb remain visibly unavailable. Unknown parking disables preference changes
 and connection actions, and app-use restrictions remain enforced by the app shell.
 
+Settings take effect immediately. "Done" closes the screen rather than saving a
+batch of changes. Show pending or failed saves and retain the last saved value
+on failure. Each preference is independent.
+
+### Copilot connection UI
+
+The UI is implemented before live authentication. Settings and the conversation
+entry open the introduction; Back and Later return to the originating screen.
+Requesting a QR currently explains that connection is not available. No sample
+account, working code or successful authentication is presented in the production
+route. The remaining states are reusable components for future provider integration.
+
 The Copilot presentation follows the current v4
 [connection group](https://www.figma.com/design/7tyb4oJsJAUc15KnU7H0F6?node-id=255-9688):
 P51 introduction, P52 QR approval, P52 C address help, P52 B expiry, P53 success,
@@ -231,26 +244,28 @@ states reflow. The supplied QR pattern and example-account label are Debug-only
 review data. Apply the [final visual acceptance](TESTING.md#final-figma-visual-acceptance)
 separately from behavior verification.
 
-The UI is implemented before live authentication. Settings and the conversation
-entry open the introduction; Back and Later return to the originating screen.
-Requesting a QR currently explains that connection is not available. No sample
-account, working code or successful authentication is presented in the production route.
-The remaining states are state-driven components for future provider integration.
 The Debug-only **Copilot UI 체험** launcher connects all eight states using the
 same components, with a persistent simulation notice, a fixed sample timer,
 explicit expiry/reconnect/access scenarios, and labeled destination placeholders.
-It does not open GitHub or provide an operational service. Missing QR images
-fall back to the selectable GitHub address and code, and expiry hides the old code.
+Its local motion toggle does not change the saved app preference. Keep its review
+controls outside the design composition without forcing the reference viewport
+into the compact layout. It does not open GitHub or provide an operational service.
+Missing QR images fall back to the selectable GitHub address and code, and expiry
+hides the old code.
 
-Panel changes fade in over 180ms and out over 120ms, without moving the header
-or character. Countdown and pending-status updates retain the current panel.
+Eligible panel changes fade in over 180ms and out over 120ms, without moving the
+header or character. Countdown and pending-status updates retain the current panel.
 Outgoing controls cannot dispatch actions or retain accessibility targets.
-Expiry, access failures and lost parking replace the panel immediately; the
-persisted reduced-motion preference also removes transitions. Android's animation
+Expiry, reconnect, access checks and lost parking replace the panel immediately.
+The persisted reduced-motion preference also removes transitions. Android's animation
 duration scale still applies. These timings are implementation choices following
 the motion guidance above; the supplied static SVGs contain no motion specification.
 
-Conversation uses the user's GitHub Copilot connection. When disconnected,
+### Planned live connection
+
+The following behavior requires the
+[future provider integration](ARCHITECTURE.md#ai-conversation-and-session).
+Conversation will use the user's GitHub Copilot connection. When disconnected,
 vehicle information and customization remain available; starting conversation
 opens the connection flow.
 
@@ -263,10 +278,6 @@ reason instead of treating every error as an expired login.
 Disconnecting stops AI requests and removes the app's connection while
 preserving points and customization. Clearly distinguish it from canceling a
 Copilot subscription or revoking access at the provider.
-
-Settings take effect immediately. "Done" closes the screen rather than saving a
-batch of changes. Show pending or failed saves and retain the last saved value
-on failure. Each preference is independent.
 
 ## Vehicle-home character
 
