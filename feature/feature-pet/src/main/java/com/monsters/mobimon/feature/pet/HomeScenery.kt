@@ -11,46 +11,64 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.scale
+import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.graphics.vector.PathParser
 
 /** Static paths exported from Figma P01 (70:30131), scaled to the available window. */
 @Composable
-internal fun HomeScenery(modifier: Modifier = Modifier) {
+internal fun HomeScenery(
+    modifier: Modifier = Modifier,
+    insetReference: Boolean = false,
+) {
     val paths = remember { sceneryPaths.map { PathParser().parsePathString(it).toPath() } }
     Canvas(modifier) {
-        scale(size.width / 2560f, size.height / 1440f, pivot = Offset.Zero) {
-            drawPath(
-                paths[0],
-                Brush.verticalGradient(
-                    0f to Color(0xFF142A43),
-                    0.62f to Color(0xFF2A4657),
-                    1f to Color(0xFF496563),
-                    endY = 1440f,
-                ),
-            )
-            scale(1f, 0.72f, pivot = Offset(1280f, 760f)) {
-                drawCircle(
-                    Brush.radialGradient(
-                        listOf(Color(0x459BBBA7), Color(0x00577574)),
-                        center = Offset(1280f, 760f),
-                        radius = 1000f,
+        scale(size.width / 2560f, size.height / if (insetReference) 1268f else 1440f, pivot = Offset.Zero) {
+            translate(top = if (insetReference) -76f else 0f) {
+                drawPath(
+                    paths[0],
+                    Brush.verticalGradient(
+                        0f to Color(0xFF142A43),
+                        0.62f to Color(0xFF2A4657),
+                        1f to Color(0xFF496563),
+                        endY = 1440f,
                     ),
-                    1000f,
-                    Offset(1280f, 760f),
+                )
+                scale(1f, 0.72f, pivot = Offset(1280f, 760f)) {
+                    drawCircle(
+                        Brush.radialGradient(
+                            listOf(Color(0x459BBBA7), Color(0x00577574)),
+                            center = Offset(1280f, 760f),
+                            radius = 1000f,
+                        ),
+                        1000f,
+                        Offset(1280f, 760f),
+                    )
+                }
+                drawPath(paths[2], Color(0xFFDAD8BC), alpha = 0.65f)
+                drawPath(paths[3], Color(0xFF415F5E))
+                drawPath(
+                    paths[4],
+                    Brush.verticalGradient(
+                        listOf(Color(0xFF4F6D64), Color(0xFF2E494A)),
+                        startY = 848.179f,
+                        endY = 1440f,
+                    ),
+                )
+                drawPath(paths[5], Color(0xFF719084), alpha = 0.44f)
+                drawPath(paths[6], Color(0xFF89A492), alpha = 0.28f)
+                drawPath(paths[7], Color(0xFF759281))
+                drawPath(
+                    paths[8],
+                    Color(0xFF759281),
+                    style = Stroke(7f, cap = StrokeCap.Round, join = StrokeJoin.Round),
+                )
+                drawPath(paths[9], Color(0xFF769384))
+                drawPath(
+                    paths[10],
+                    Color(0xFF769384),
+                    style = Stroke(6f, cap = StrokeCap.Round, join = StrokeJoin.Round),
                 )
             }
-            drawPath(paths[2], Color(0xFFDAD8BC), alpha = 0.65f)
-            drawPath(paths[3], Color(0xFF415F5E))
-            drawPath(
-                paths[4],
-                Brush.verticalGradient(listOf(Color(0xFF4F6D64), Color(0xFF2E494A)), startY = 848.179f, endY = 1440f),
-            )
-            drawPath(paths[5], Color(0xFF719084), alpha = 0.44f)
-            drawPath(paths[6], Color(0xFF89A492), alpha = 0.28f)
-            drawPath(paths[7], Color(0xFF759281))
-            drawPath(paths[8], Color(0xFF759281), style = Stroke(7f, cap = StrokeCap.Round, join = StrokeJoin.Round))
-            drawPath(paths[9], Color(0xFF769384))
-            drawPath(paths[10], Color(0xFF769384), style = Stroke(6f, cap = StrokeCap.Round, join = StrokeJoin.Round))
         }
     }
 }

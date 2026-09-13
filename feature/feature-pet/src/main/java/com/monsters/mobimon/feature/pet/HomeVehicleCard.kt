@@ -2,11 +2,11 @@ package com.monsters.mobimon.feature.pet
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
@@ -31,36 +31,42 @@ import com.monsters.mobimon.core.domain.SignalQuality
 import com.monsters.mobimon.core.domain.SignalUnavailableReason
 import com.monsters.mobimon.core.domain.VehicleSnapshot
 import com.monsters.mobimon.core.domain.WarningSeverity
+import com.monsters.mobimon.core.ui.MobiMonHomeColors
 
 @Composable
 internal fun HomeParkingStatus(
     snapshot: VehicleSnapshot,
     modifier: Modifier = Modifier,
+    scale: Float = 1f,
 ) {
     val parked = snapshot.quality == SignalQuality.VALID && snapshot.drivingState == DrivingState.PARKED
+    val status =
+        stringResource(
+            when {
+                snapshot.quality != SignalQuality.VALID || snapshot.drivingState == DrivingState.UNKNOWN ->
+                    R.string.pet_driving_unknown
+                snapshot.drivingState == DrivingState.MOVING -> R.string.pet_driving_moving
+                else -> R.string.pet_driving_parked
+            },
+        )
     Surface(
-        modifier = modifier.semantics(mergeDescendants = true) {},
+        modifier =
+            modifier.heightIn(min = 76.dp * scale).semantics(mergeDescendants = true) {
+                contentDescription =
+                    status
+            },
         color = MaterialTheme.colorScheme.surface.copy(alpha = 0.82f),
-        contentColor = MaterialTheme.colorScheme.onSurface,
+        contentColor = MobiMonHomeColors.parking,
         shape = RoundedCornerShape(40.dp),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.24f)),
+        border = BorderStroke(2.dp * scale, MaterialTheme.colorScheme.outline.copy(alpha = 0.24f)),
     ) {
-        Row(
-            Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
+        Box(
+            Modifier.padding(horizontal = 24.dp * scale, vertical = 10.dp * scale),
+            contentAlignment = Alignment.Center,
         ) {
-            if (parked) Text(stringResource(R.string.pet_parking_symbol), color = MaterialTheme.colorScheme.secondary)
             Text(
-                stringResource(
-                    when {
-                        snapshot.quality != SignalQuality.VALID || snapshot.drivingState == DrivingState.UNKNOWN ->
-                            R.string.pet_driving_unknown
-                        snapshot.drivingState == DrivingState.MOVING -> R.string.pet_driving_moving
-                        else -> R.string.pet_driving_parked
-                    },
-                ),
-                style = MaterialTheme.typography.titleMedium,
+                if (parked) stringResource(R.string.pet_parking_compact) else status,
+                style = homeTextStyle(28f, scale),
             )
         }
     }
@@ -73,8 +79,6 @@ internal fun HomeVehicleCard(
     onOpenVehicleInfo: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val batteryQuality = snapshot.batteryQuality ?: snapshot.quality
-    val battery = snapshot.batteryPercent?.takeIf { batteryQuality == SignalQuality.VALID && it in 0..100 }
     val currentWarning =
         snapshot.warnings
             .filter {
@@ -137,44 +141,10 @@ internal fun HomeVehicleCard(
                         Text(currentWarning.nextAction)
                     }
                     Text(
-                        if (battery != null) {
-                            stringResource(R.string.pet_battery, battery)
-                        } else {
-                            stringResource(
-                                if (batteryQuality == SignalQuality.STALE) {
-                                    R.string.pet_battery_stale
-                                } else {
-                                    snapshot.batteryUnavailableReason.batteryDescription()
-                                },
-                            )
-                        },
+                        homeBatteryText(snapshot),
                         style = MaterialTheme.typography.titleMedium,
                     )
-                    if (batteryQuality == SignalQuality.STALE) {
-                        snapshot.batteryAgeMillis?.let {
-                            Text(
-                                lastChecked(it),
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                        }
-                    }
-                    if (snapshot.quality == SignalQuality.STALE) {
-                        Text(
-                            stringResource(R.string.pet_parking_stale),
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                        snapshot.parkingAgeMillis?.let {
-                            Text(
-                                lastChecked(it),
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                        }
-                    } else if (snapshot.quality == SignalQuality.UNAVAILABLE) {
-                        Text(
-                            stringResource(snapshot.parkingUnavailableReason.parkingDescription()),
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
+                    HomeSignalNotes(snapshot)
                     if (historicalWarning) {
                         Text(
                             stringResource(R.string.pet_warning_historical),
@@ -201,6 +171,39 @@ internal fun HomeVehicleCard(
                 }
             }
         }
+    }
+}
+
+@Composable
+internal fun homeBatteryText(snapshot: VehicleSnapshot): String {
+    val quality = snapshot.batteryQuality ?: snapshot.quality
+    val battery = snapshot.batteryPercent?.takeIf { quality == SignalQuality.VALID && it in 0..100 }
+    return if (battery != null) {
+        stringResource(R.string.pet_battery, battery)
+    } else {
+        stringResource(
+            if (quality ==
+                SignalQuality.STALE
+            ) {
+                R.string.pet_battery_stale
+            } else {
+                snapshot.batteryUnavailableReason.batteryDescription()
+            },
+        )
+    }
+}
+
+@Composable
+internal fun HomeSignalNotes(snapshot: VehicleSnapshot) {
+    val color = MaterialTheme.colorScheme.onSurfaceVariant
+    if ((snapshot.batteryQuality ?: snapshot.quality) == SignalQuality.STALE) {
+        snapshot.batteryAgeMillis?.let { Text(lastChecked(it), color = color) }
+    }
+    if (snapshot.quality == SignalQuality.STALE) {
+        Text(stringResource(R.string.pet_parking_stale), color = color)
+        snapshot.parkingAgeMillis?.let { Text(lastChecked(it), color = color) }
+    } else if (snapshot.quality == SignalQuality.UNAVAILABLE) {
+        Text(stringResource(snapshot.parkingUnavailableReason.parkingDescription()), color = color)
     }
 }
 

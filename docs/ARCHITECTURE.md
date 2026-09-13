@@ -30,9 +30,11 @@ paid item catalog have been approved yet.
   `mobimon-demo.db` and `demo-profile`. Release uses the REAL unavailable
   provider, `mobimon.db` and `local-profile`. The demo freshness window is
   15 seconds; a real adapter needs a verified provider-specific policy.
+  Display freshness samples the clock on every snapshot or timer emission, so a
+  new reading is never compared against a cached, older timer timestamp.
 - [PetAvatar](../core/core-ui/src/main/java/com/monsters/mobimon/core/ui/PetAvatar.kt)
   is the artwork replacement point. Mobi's default artwork is exported from
-  Figma P01 (70:30131); Luna and legacy Cream still use placeholders. Preserve
+  Figma P01 letterbox Home (128:569); Luna and legacy Cream still use placeholders. Preserve
   the compatibility signature `PetAvatar(modifier, appearanceKey, stage)`. `stage`
   belongs to the legacy implementation. Rewards, ownership, equipped appearance
   and interaction state stay outside the renderer.

@@ -1,8 +1,10 @@
 <resources>
+    <string name="pet_talk_action">대화하기</string>
+    <string name="pet_ai_connection_unavailable">AI 연결 불가</string>
     <string name="pet_vehicle_status">상태 보기</string>
   <string name="pet_brand">MobiMon</string>
   <string name="pet_home_greeting">함께 쉬어 가요.</string>
-  <string name="pet_parking_symbol">P</string>
+    <string name="pet_parking_compact">P · 주차 중</string>
   <string name="pet_talk_unavailable">대화하기 · 연결 불가</string>
   <string name="pet_ai_unavailable">AI 연결을 지원하지 않아 대화 기능을 사용할 수 없어요.</string>
   <string name="pet_no_friend">선택한 친구가 없어요. 꾸미기에서 친구를 골라 주세요.</string>

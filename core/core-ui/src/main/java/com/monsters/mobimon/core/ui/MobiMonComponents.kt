@@ -3,6 +3,7 @@ package com.monsters.mobimon.core.ui
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
@@ -19,6 +20,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
 
 /** A scrollable content body that reflows within the available window. */
@@ -58,6 +60,8 @@ fun MobiMonSection(
 fun MobiMonSourceBadge(
     simulated: Boolean,
     modifier: Modifier = Modifier,
+    textStyle: TextStyle = MaterialTheme.typography.labelLarge,
+    contentPadding: PaddingValues = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
 ) {
     Surface(
         modifier = modifier,
@@ -67,8 +71,8 @@ fun MobiMonSourceBadge(
     ) {
         Text(
             text = stringResource(if (simulated) R.string.mobimon_source_simulated else R.string.mobimon_source_real),
-            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-            style = MaterialTheme.typography.labelLarge,
+            modifier = Modifier.padding(contentPadding),
+            style = textStyle,
         )
     }
 }
@@ -103,6 +107,7 @@ fun MobiMonPointSummary(
     balance: Long?,
     failed: Boolean = false,
     modifier: Modifier = Modifier,
+    textStyle: TextStyle = MaterialTheme.typography.titleLarge,
 ) {
     Text(
         text =
@@ -112,7 +117,7 @@ fun MobiMonPointSummary(
                 else -> stringResource(R.string.mobimon_points_balance, balance)
             },
         modifier = modifier,
-        style = MaterialTheme.typography.titleLarge,
+        style = textStyle,
     )
 }
 

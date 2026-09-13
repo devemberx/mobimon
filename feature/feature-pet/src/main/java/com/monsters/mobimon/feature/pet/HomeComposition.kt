@@ -2,49 +2,55 @@ package com.monsters.mobimon.feature.pet
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.paddingFromBaseline
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedIconButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.monsters.mobimon.core.domain.PetProfile
+import com.monsters.mobimon.core.domain.SignalQuality
 import com.monsters.mobimon.core.domain.SignalSource
 import com.monsters.mobimon.core.domain.VehicleSnapshot
+import com.monsters.mobimon.core.ui.MobiMonHomeColors
 import com.monsters.mobimon.core.ui.MobiMonPointSummary
 import com.monsters.mobimon.core.ui.MobiMonSourceBadge
 import com.monsters.mobimon.core.ui.PetAvatar
 
-/** Proportional anchors follow P01; controls retain vehicle touch sizes in the available window. */
+/** P01 128:569 reserves 76/96 units for OS bars; fit the remaining 2560:1268 content without stretching. */
 @Composable
 internal fun HomeComposition(
     width: Dp,
@@ -60,137 +66,201 @@ internal fun HomeComposition(
     onPetClick: () -> Unit,
     supplementaryContent: @Composable () -> Unit,
 ) {
-    val scale = minOf(width.value / 2560f, height.value / 1440f)
-    val edge = (width * 0.025f).coerceAtLeast(24.dp)
+    val scale = minOf(width.value / 2560f, height.value / 1268f)
+    val colors = MaterialTheme.colorScheme
     Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState())) {
-        Box(Modifier.fillMaxWidth().height(height)) {
-            Row(
-                Modifier.fillMaxWidth().padding(horizontal = edge).offset(y = height * (64f / 1440f)),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(24.dp),
-            ) {
-                Row(
-                    Modifier.weight(1f),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy((36.dp * scale).coerceAtLeast(24.dp)),
-                ) {
-                    OutlinedIconButton(
-                        onClick = onOpenMenu,
-                        modifier = Modifier.size((104.dp * scale).coerceAtLeast(76.dp)),
-                        shape = RoundedCornerShape(32.dp * scale),
-                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.24f)),
-                        colors =
-                            androidx.compose.material3.IconButtonDefaults.outlinedIconButtonColors(
-                                containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.82f),
-                                contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                            ),
+        Box(Modifier.fillMaxWidth().height(height).background(Color.Black), contentAlignment = Alignment.Center) {
+            Box(Modifier.size(2560.dp * scale, 1268.dp * scale).clipToBounds().testTag("home-composition")) {
+                HomeScenery(Modifier.matchParentSize(), insetReference = true)
+                HomeReferenceLayout(scale) {
+                    HomeAction(
+                        104f,
+                        104f,
+                        32f,
+                        scale,
+                        onOpenMenu,
+                        Modifier.reference(64f, 140f, 104f, 104f, touch = true),
+                        description = stringResource(R.string.pet_open_menu),
                     ) {
                         Icon(
                             painterResource(R.drawable.pet_menu),
-                            stringResource(R.string.pet_open_menu),
-                            Modifier.size(
-                                40.dp * scale,
-                            ),
+                            null,
+                            Modifier.size(40.dp * scale),
+                            tint = colors.onSecondaryContainer,
                         )
                     }
-                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Text(
-                            stringResource(R.string.pet_brand),
-                            modifier = Modifier.semantics { heading() },
-                            style =
-                                MaterialTheme.typography.headlineMedium.copy(
-                                    fontSize = (48f * scale).coerceAtLeast(32f).sp,
+                    Text(
+                        stringResource(R.string.pet_brand),
+                        Modifier.referenceText(200f, 199.2f, 480f).semantics { heading() },
+                        style = homeTextStyle(48f, scale, FontWeight.Bold),
+                        color = MobiMonHomeColors.brand,
+                    )
+                    if (snapshot.source == SignalSource.SIMULATED) {
+                        MobiMonSourceBadge(
+                            true,
+                            Modifier.reference(200f, 220f, 190f, 42f),
+                            textStyle = homeTextStyle(20f, scale),
+                            contentPadding =
+                                PaddingValues(
+                                    horizontal =
+                                        12.dp * scale,
+                                    vertical = 4.dp * scale,
                                 ),
                         )
-                        if (snapshot.source == SignalSource.SIMULATED) MobiMonSourceBadge(simulated = true)
                     }
-                }
-                HomeParkingStatus(
-                    snapshot,
-                    Modifier.width((344.dp * scale).coerceAtLeast(208.dp)).heightIn(min = 76.dp * scale),
-                )
-                Row(
-                    Modifier.weight(1f),
-                    horizontalArrangement = Arrangement.spacedBy(24.dp, Alignment.End),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Box(Modifier.weight(1f), contentAlignment = Alignment.CenterEnd) {
-                        MobiMonPointSummary(pointBalance, failed = pointLoadFailed)
-                    }
-                    Button(
-                        onClick = onOpenAppearance,
-                        modifier =
-                            Modifier
-                                .width(
-                                    (296.dp * scale).coerceAtLeast(180.dp),
-                                ).heightIn(min = (104.dp * scale).coerceAtLeast(76.dp)),
-                        shape = RoundedCornerShape(36.dp * scale),
-                        colors =
-                            ButtonDefaults.buttonColors(
-                                containerColor = MaterialTheme.colorScheme.surfaceVariant,
-                                contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                            ),
-                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.24f)),
+                    HomeParkingStatus(snapshot, Modifier.reference(1108f, 154f, 344f, 76f), scale)
+                    MobiMonPointSummary(
+                        pointBalance,
+                        pointLoadFailed,
+                        Modifier.referenceText(1856f, 204f, 312f),
+                        textStyle =
+                            homeTextStyle(
+                                30f,
+                                scale,
+                                FontWeight.Bold,
+                                TextAlign.End,
+                            ).copy(color = MobiMonHomeColors.balance),
+                    )
+                    HomeAction(
+                        296f,
+                        104f,
+                        36f,
+                        scale,
+                        onOpenAppearance,
+                        Modifier.reference(2200f, 140f, 296f, 104f, touch = true),
+                        containerColor = colors.surfaceVariant,
+                        borderColor = colors.outlineVariant,
+                        borderWidth = 1.dp * scale,
                     ) {
-                        Icon(painterResource(R.drawable.pet_customize), null, Modifier.size(40.dp * scale))
-                        Text(stringResource(R.string.pet_customize), Modifier.padding(start = 16.dp))
+                        Box(Modifier.fillMaxSize()) {
+                            Icon(
+                                painterResource(R.drawable.pet_customize),
+                                null,
+                                Modifier.offset(28.dp * scale, 28.dp * scale).size(48.dp * scale),
+                                tint = colors.onSurfaceVariant,
+                            )
+                            Text(
+                                stringResource(R.string.pet_customize),
+                                Modifier.offset(x = 117.08.dp * scale).paddingFromBaseline(
+                                    top =
+                                        67.1.dp * scale,
+                                ),
+                                style = homeTextStyle(34f, scale, FontWeight.Bold),
+                                color = MobiMonHomeColors.customization,
+                            )
+                        }
                     }
+                    HomeGreeting(scale, Modifier.reference(864f, 300f, 832f, 137f))
+                    Text(
+                        stringResource(R.string.pet_home_greeting),
+                        Modifier.referenceText(864f, 372.8f, 832f),
+                        color = colors.secondaryContainer,
+                        style = homeTextStyle(42f, scale, align = TextAlign.Center),
+                    )
+                    PetAvatar(Modifier.reference(1030f, 430f, 500f, 500f), profile.appearance.name, friendId = friendId)
+                    Surface(
+                        Modifier.reference(616f, 1050f, 1328f, 112f).testTag("home-vehicle-summary"),
+                        shape = RoundedCornerShape(32.dp * scale),
+                        color = colors.surface.copy(alpha = 0.82f),
+                        border = BorderStroke(2.dp * scale, colors.outline.copy(alpha = 0.24f)),
+                    ) {}
+                    if ((snapshot.batteryQuality ?: snapshot.quality) == SignalQuality.VALID &&
+                        snapshot.batteryPercent?.let { it in 0..100 } == true
+                    ) {
+                        Icon(
+                            painterResource(R.drawable.pet_vehicle_checked),
+                            null,
+                            Modifier.reference(656f, 1086f, 40f, 40f),
+                            tint = colors.secondary,
+                        )
+                    }
+                    Text(
+                        homeBatteryText(snapshot),
+                        Modifier.referenceText(728f, 1119.8f, 880f),
+                        style = homeTextStyle(32f, scale),
+                        color = MobiMonHomeColors.vehicleSummary,
+                    )
+                    Canvas(Modifier.reference(1656f, 1082f, 2f, 48f)) {
+                        drawLine(
+                            MobiMonHomeColors.divider,
+                            Offset.Zero,
+                            Offset(0f, size.height),
+                            strokeWidth = size.width,
+                        )
+                    }
+                    val details = stringResource(R.string.pet_vehicle_details)
+                    Box(
+                        Modifier
+                            .reference(
+                                1656f,
+                                1050f,
+                                288f,
+                                112f,
+                                touch = true,
+                            ).clickable(role = Role.Button, onClick = onOpenVehicleInfo)
+                            .semantics { contentDescription = details },
+                    ) {
+                        Text(
+                            stringResource(R.string.pet_vehicle_status),
+                            Modifier.offset(x = 40.dp * scale).paddingFromBaseline(
+                                top =
+                                    70.dp * scale,
+                            ),
+                            color = colors.secondary,
+                            style = homeTextStyle(30f, scale, FontWeight.Bold),
+                        )
+                        Icon(
+                            painterResource(R.drawable.pet_chevron),
+                            null,
+                            Modifier
+                                .offset(
+                                    224.dp * scale,
+                                    41.dp * scale,
+                                ).size(32.dp * scale),
+                            tint = colors.secondary,
+                        )
+                    }
+                    val unavailable = stringResource(R.string.pet_ai_unavailable)
+                    HomeAction(
+                        544f,
+                        104f,
+                        52f,
+                        scale,
+                        onPetClick,
+                        Modifier.reference(1008f, 1192f, 544f, 104f, touch = true),
+                        enabled = false,
+                        description = unavailable,
+                        containerColor = colors.onPrimaryContainer,
+                        borderColor = Color.Transparent,
+                    ) {
+                        Box(Modifier.fillMaxSize()) {
+                            Icon(
+                                painterResource(R.drawable.pet_chat),
+                                null,
+                                Modifier
+                                    .offset(
+                                        166.dp * scale,
+                                        34.dp * scale,
+                                    ).size(40.dp * scale),
+                                tint = colors.primaryContainer,
+                            )
+                            Text(
+                                stringResource(R.string.pet_talk_action),
+                                Modifier.offset(x = 232.dp * scale).paddingFromBaseline(
+                                    top =
+                                        67.9.dp * scale,
+                                ),
+                                color = colors.primaryContainer,
+                                style = homeTextStyle(36f, scale, FontWeight.Bold),
+                            )
+                        }
+                    }
+                    Text(
+                        stringResource(R.string.pet_ai_connection_unavailable),
+                        Modifier.referenceText(1008f, 1332f, 544f),
+                        style = homeTextStyle(26f, scale, align = TextAlign.Center),
+                    )
                 }
-            }
-            HomeGreeting(
-                Modifier.align(Alignment.TopCenter).offset(y = height * (256f / 1440f)).width(width * 0.325f).height(
-                    137.dp * scale,
-                ),
-                scale,
-            )
-            PetAvatar(
-                modifier =
-                    Modifier.align(Alignment.TopCenter).offset(y = height * (400f / 1440f)).size(
-                        height * (660f / 1440f),
-                    ),
-                appearanceKey = profile.appearance.name,
-                friendId = friendId,
-            )
-            HomeVehicleCard(
-                snapshot,
-                onOpenVehicleInfo,
-                Modifier
-                    .align(
-                        Alignment.TopCenter,
-                    ).offset(y = height * (1104f / 1440f))
-                    .width(width * 0.51875f)
-                    .testTag("home-vehicle-summary"),
-            )
-            val unavailable = stringResource(R.string.pet_ai_unavailable)
-            Button(
-                onClick = onPetClick,
-                enabled = false,
-                modifier =
-                    Modifier
-                        .align(Alignment.TopCenter)
-                        .offset(y = height * (1272f / 1440f))
-                        .width(
-                            (
-                                width *
-                                    0.2125f
-                            ).coerceAtLeast(340.dp),
-                        ).heightIn(min = (104.dp * scale).coerceAtLeast(76.dp))
-                        .semantics {
-                            contentDescription =
-                                unavailable
-                        },
-                colors =
-                    ButtonDefaults.buttonColors(
-                        disabledContainerColor = MaterialTheme.colorScheme.primary,
-                        disabledContentColor = MaterialTheme.colorScheme.onPrimary,
-                    ),
-            ) {
-                Icon(painterResource(R.drawable.pet_chat), null, Modifier.size(32.dp))
-                Text(
-                    stringResource(R.string.pet_talk_unavailable),
-                    Modifier.padding(start = 12.dp),
-                    textAlign = TextAlign.Center,
-                )
             }
         }
         Column(
@@ -202,43 +272,63 @@ internal fun HomeComposition(
 }
 
 @Composable
-private fun HomeGreeting(
-    modifier: Modifier,
+private fun HomeAction(
+    width: Float,
+    height: Float,
+    radius: Float,
     scale: Float,
+    onClick: () -> Unit,
+    modifier: Modifier,
+    enabled: Boolean = true,
+    description: String? = null,
+    containerColor: Color = MaterialTheme.colorScheme.surface.copy(alpha = 0.82f),
+    borderColor: Color = MaterialTheme.colorScheme.outline.copy(alpha = 0.24f),
+    borderWidth: Dp = 2.dp * scale,
+    content: @Composable () -> Unit,
+) {
+    Box(
+        modifier.clickable(enabled = enabled, role = Role.Button, onClick = onClick).semantics {
+            description?.let { contentDescription = it }
+            if (!enabled && description != null) stateDescription = description
+        },
+        contentAlignment = Alignment.Center,
+    ) {
+        Surface(
+            Modifier.size(width.dp * scale, height.dp * scale),
+            shape = RoundedCornerShape(radius.dp * scale),
+            color = containerColor,
+            border = BorderStroke(borderWidth, borderColor),
+        ) {
+            Box(contentAlignment = Alignment.Center) { content() }
+        }
+    }
+}
+
+@Composable
+private fun HomeGreeting(
+    scale: Float,
+    modifier: Modifier,
 ) {
     val color = MaterialTheme.colorScheme.primary
-    Box(modifier) {
-        Canvas(Modifier.align(Alignment.BottomCenter).fillMaxWidth().height(28.dp * scale)) {
-            drawPath(
-                Path().apply {
-                    moveTo(size.width / 2 - 32.dp.toPx() * scale, 0f)
-                    lineTo(size.width / 2, size.height)
-                    lineTo(size.width / 2 + 32.dp.toPx() * scale, 0f)
-                    close()
-                },
-                color,
-            )
-        }
-        Surface(
-            Modifier.fillMaxWidth().padding(bottom = 25.dp * scale),
-            shape = RoundedCornerShape(56.dp * scale),
-            color = color,
-            contentColor = MaterialTheme.colorScheme.onPrimary,
-        ) {
-            Box(Modifier.height(112.dp * scale), contentAlignment = Alignment.Center) {
-                Text(
-                    stringResource(R.string.pet_home_greeting),
-                    style =
-                        MaterialTheme.typography.headlineMedium.copy(
-                            fontSize =
-                                (
-                                    42f *
-                                        scale
-                                ).coerceAtLeast(28f).sp,
-                        ),
-                    textAlign = TextAlign.Center,
-                )
-            }
-        }
+    Canvas(modifier) {
+        val factor = scale.dp.toPx()
+        drawRoundRect(
+            color,
+            size =
+                androidx.compose.ui.geometry
+                    .Size(size.width, 112f * factor),
+            cornerRadius =
+                androidx.compose.ui.geometry
+                    .CornerRadius(56f * factor),
+        )
+        drawPath(
+            Path().apply {
+                moveTo(384f * factor, 110f * factor)
+                lineTo(416f * factor, 137f * factor)
+                lineTo(448f * factor, 110f * factor)
+                close()
+            },
+            color,
+        )
     }
 }

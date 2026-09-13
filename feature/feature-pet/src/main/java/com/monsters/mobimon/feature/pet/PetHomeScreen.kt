@@ -41,7 +41,6 @@ import com.monsters.mobimon.core.domain.CompanionSettings
 import com.monsters.mobimon.core.domain.PetProfile
 import com.monsters.mobimon.core.domain.QuestProgress
 import com.monsters.mobimon.core.domain.QuestType
-import com.monsters.mobimon.core.domain.SignalQuality
 import com.monsters.mobimon.core.domain.SignalSource
 import com.monsters.mobimon.core.domain.VehicleSnapshot
 import com.monsters.mobimon.core.ui.MobiMonMessage
@@ -82,14 +81,14 @@ fun PetHomeScreen(
                 val composed =
                     maxWidth / fontScale >= 1400.dp &&
                         maxHeight / fontScale >= 800.dp &&
+                        fontScale <= 1.2f &&
                         !vehiclePreview &&
                         !profileObservationFailed &&
                         !inventoryLoadFailed &&
                         inventoryLoaded &&
+                        pointBalance != null &&
+                        !pointLoadFailed &&
                         friendId != null &&
-                        snapshot.quality == SignalQuality.VALID &&
-                        (snapshot.batteryQuality ?: snapshot.quality) == SignalQuality.VALID &&
-                        snapshot.batteryPercent?.let { it in 0..100 } == true &&
                         snapshot.warnings.isEmpty()
                 if (composed) {
                     HomeComposition(
@@ -105,6 +104,7 @@ fun PetHomeScreen(
                         onOpenVehicleInfo,
                         onPetClick,
                     ) {
+                        HomeSignalNotes(snapshot)
                         Text(stringResource(R.string.pet_ai_unavailable), textAlign = TextAlign.Center)
                         if (!interactionAllowed) {
                             Text(

@@ -9,6 +9,16 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 
+/** Fixed Home foreground roles from the letterbox design. */
+object MobiMonHomeColors {
+    val brand = Color(0xFFF2F1E9)
+    val parking = Color(0xFFC9DACC)
+    val balance = Color(0xFFEEE5CC)
+    val customization = Color(0xFFEDF2EA)
+    val vehicleSummary = Color(0xFFE3EBE6)
+    val divider = Color(0xFF688386)
+}
+
 private val VehicleColors =
     darkColorScheme(
         primary = Color(0xFFF2EFE5),

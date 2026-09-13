@@ -39,6 +39,12 @@ character. Existing purchases, rewards, preferences and drafts remain intact.
 - Treat the 2560 × 1440 landscape artboard as a composition reference. Respect
   system bars, cutouts and the available window; do not require fixed pixels or
   a single aspect ratio.
+- The [letterbox Home reference](https://www.figma.com/design/7tyb4oJsJAUc15KnU7H0F6?node-id=128-569)
+  reserves 76/96 artboard units for OS bars. Fit its 2560:1268 content inside the
+  actual safe window without stretching or duplicating system bars. Use bundled
+  Noto Sans KR Regular/Bold for this composition; keep enlarged-text and compact
+  windows scrollable. The [font license](../core/core-ui/src/main/assets/fonts/OFL-NotoSansKR.txt)
+  ships with the app.
 - Use at least 76 × 76 dp touch targets for primary controls, with 24 dp spacing
   and edge clearance where possible. Start with 32 sp main text and 24 sp
   secondary text, retaining readability with enlarged fonts. These are project

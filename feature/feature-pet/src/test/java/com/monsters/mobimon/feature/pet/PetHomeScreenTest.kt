@@ -1,6 +1,7 @@
 package com.monsters.mobimon.feature.pet
 
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.SemanticsActions
@@ -19,6 +20,7 @@ import androidx.compose.ui.test.performKeyInput
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.test.pressKey
+import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import com.monsters.mobimon.core.domain.CompanionSettings
@@ -38,6 +40,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
+import org.robolectric.annotation.GraphicsMode
 
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34], qualifiers = "ko-rKR-w1000dp-h700dp")
@@ -64,6 +67,30 @@ class PetHomeScreenTest {
         assertLandscapeComposition()
     }
 
+    @Test
+    @Config(qualifiers = "ko-rKR-w1600dp-h1200dp")
+    fun tallerWindowLetterboxesWithoutStretchingTheContent() {
+        assertLandscapeComposition()
+    }
+
+    @Test
+    @Config(qualifiers = "ko-rKR-w2560dp-h1440dp")
+    @GraphicsMode(GraphicsMode.Mode.NATIVE)
+    fun moderatelyEnlargedParkingTextFitsInsideTheBadge() {
+        render(snapshot = parkedSnapshot(), pointBalance = 0, fontScale = 1.2f)
+        compose.onNodeWithTag("home-composition").assertExists()
+        compose
+            .onNodeWithText("P · 주차 중", useUnmergedTree = true)
+            .performSemanticsAction(SemanticsActions.GetTextLayoutResult) {
+                val results = mutableListOf<TextLayoutResult>()
+                it(results)
+                val result = results.single()
+                assertEquals(1, result.lineCount)
+                assertTrue(result.multiParagraph.height <= result.layoutInput.constraints.maxHeight)
+                assertTrue(result.multiParagraph.width <= result.layoutInput.constraints.maxWidth)
+            }
+    }
+
     private fun assertLandscapeComposition() {
         val calls = mutableListOf<String>()
         render(
@@ -76,18 +103,58 @@ class PetHomeScreenTest {
         val window = compose.onRoot().fetchSemanticsNode().boundsInRoot
         val summary = compose.onNodeWithTag("home-vehicle-summary").fetchSemanticsNode().boundsInRoot
         val friend = compose.onNodeWithContentDescription("Mobi 강아지").fetchSemanticsNode().boundsInRoot
-        val parking = compose.onNodeWithText("주차 확인됨").fetchSemanticsNode().boundsInRoot
+        val parking = compose.onNodeWithContentDescription("주차 확인됨").fetchSemanticsNode().boundsInRoot
+        val content = compose.onNodeWithTag("home-composition").fetchSemanticsNode().boundsInRoot
         val customization = compose.onNodeWithText("꾸미기").fetchSemanticsNode().boundsInRoot
         assertTrue(summary.width < window.width * 0.56f)
         assertTrue(summary.height < window.height * 0.12f)
         assertEquals(window.center.x, friend.center.x, 2f)
+        assertEquals(2560f / 1268f, content.width / content.height, 0.01f)
+        assertEquals(friend.width, friend.height, 1f)
         assertTrue(friend.bottom < summary.top)
         assertTrue(parking.height < customization.height)
+        compose
+            .onNodeWithText(
+                "P · 주차 중",
+                useUnmergedTree = true,
+            ).performSemanticsAction(SemanticsActions.GetTextLayoutResult) {
+                val results = mutableListOf<TextLayoutResult>()
+                it(results)
+                val text = results.single().layoutInput
+                assertEquals(parking.width * 28f / 344f, text.style.fontSize.value * text.density.density, 1f)
+            }
         compose.onNodeWithContentDescription("메뉴 열기").assertHeightIsAtLeast(76.dp).performClick()
         compose.onNodeWithText("꾸미기").assertHeightIsAtLeast(76.dp).performClick()
         compose.onNodeWithText("상태 보기").assertHeightIsAtLeast(76.dp).performClick()
-        compose.onNodeWithText("대화하기 · 연결 불가").assertIsDisplayed().assertIsNotEnabled()
+        compose.onNodeWithText("대화하기").assertIsDisplayed().assertIsNotEnabled()
+        compose.onNodeWithText("AI 연결 불가").assertIsDisplayed()
         assertEquals(listOf("menu", "appearance", "details"), calls)
+    }
+
+    @Test
+    @Config(qualifiers = "ko-rKR-w1792dp-h888dp")
+    fun losingAndRecoveringVehicleDataKeepsHomeGeometryStable() {
+        val snapshot = mutableStateOf(parkedSnapshot())
+        render(pointBalance = 0, snapshotSource = { snapshot.value })
+        val friend = compose.onNodeWithContentDescription("Mobi 강아지").fetchSemanticsNode().boundsInRoot
+        val summary = compose.onNodeWithTag("home-vehicle-summary").fetchSemanticsNode().boundsInRoot
+        compose.runOnIdle {
+            snapshot.value =
+                snapshot.value.copy(
+                    quality = SignalQuality.UNAVAILABLE,
+                    batteryQuality = SignalQuality.UNAVAILABLE,
+                    drivingState = DrivingState.UNKNOWN,
+                )
+        }
+        assertEquals(friend, compose.onNodeWithContentDescription("Mobi 강아지").fetchSemanticsNode().boundsInRoot)
+        assertEquals(summary, compose.onNodeWithTag("home-vehicle-summary").fetchSemanticsNode().boundsInRoot)
+        compose.onNodeWithText("확인할 수 있는 배터리 정보가 없어요.").assertIsDisplayed()
+        compose.onNodeWithText("주차 여부 확인 불가").assertIsDisplayed()
+        compose.onNodeWithText("배터리 72%").assertDoesNotExist()
+        compose.onNodeWithText("대화하기").assertIsNotEnabled()
+        compose.runOnIdle { snapshot.value = parkedSnapshot() }
+        assertEquals(summary, compose.onNodeWithTag("home-vehicle-summary").fetchSemanticsNode().boundsInRoot)
+        compose.onNodeWithText("배터리 72%").assertIsDisplayed()
     }
 
     @Test
@@ -95,7 +162,7 @@ class PetHomeScreenTest {
         render(vehiclePreview = false, showOnVehicleHome = true)
 
         compose.onNodeWithText("주차 여부 확인 불가").performScrollTo().assertIsDisplayed()
-        compose.onNodeWithText("주차 확인됨").assertDoesNotExist()
+        compose.onNodeWithContentDescription("주차 확인됨").assertDoesNotExist()
     }
 
     @Test
@@ -135,7 +202,7 @@ class PetHomeScreenTest {
 
         compose.onNodeWithText("주차 여부 확인 불가").assertExists()
         compose.onNodeWithText("배터리 72%").performScrollTo().assertIsDisplayed()
-        compose.onNodeWithText("주차 확인됨").assertDoesNotExist()
+        compose.onNodeWithContentDescription("주차 확인됨").assertDoesNotExist()
         compose.onNodeWithText("주차 정보가 오래되어 현재 상태를 알 수 없어요.").assertExists()
     }
 
@@ -299,6 +366,7 @@ class PetHomeScreenTest {
         inventoryLoaded: Boolean = true,
         inventoryLoadFailed: Boolean = false,
         fontScale: Float = 1f,
+        snapshotSource: (() -> VehicleSnapshot)? = null,
         onRetry: () -> Unit = {},
         onMenu: () -> Unit = {},
         onDetails: () -> Unit = {},
@@ -310,7 +378,7 @@ class PetHomeScreenTest {
                 MobiMonTheme {
                     PetHomeScreen(
                         profile = PetProfile("profile"),
-                        snapshot = snapshot,
+                        snapshot = snapshotSource?.invoke() ?: snapshot,
                         progress = QuestProgress(),
                         settings = CompanionSettings(showOnVehicleHome = showOnVehicleHome),
                         onOpenMenu = onMenu,

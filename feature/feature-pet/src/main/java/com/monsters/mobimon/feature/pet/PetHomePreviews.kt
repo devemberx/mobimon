@@ -13,7 +13,7 @@ import com.monsters.mobimon.core.ui.MobiMonTheme
 
 // Include the head unit's smaller content window after system bars and AAOS app scaling.
 @Preview(name = "Head unit content - simulated ready", widthDp = 1792, heightDp = 888, locale = "ko")
-@Preview(name = "Expanded window - simulated ready", widthDp = 2560, heightDp = 1440, locale = "ko")
+@Preview(name = "AAOS content excluding OS bars", widthDp = 2560, heightDp = 1268, locale = "ko")
 @Preview(name = "Tall landscape window", widthDp = 1600, heightDp = 1200, locale = "ko")
 @Preview(name = "Compact - enlarged text", widthDp = 1000, heightDp = 700, fontScale = 1.5f, locale = "ko")
 @Composable
@@ -45,10 +45,17 @@ private fun HomeStalePreview() {
     HomePreview(stale = true)
 }
 
+@Preview(name = "Head unit - unavailable vehicle", widthDp = 1792, heightDp = 888, locale = "ko")
+@Composable
+private fun HomeUnavailablePreview() {
+    HomePreview(unavailable = true)
+}
+
 @Composable
 private fun HomePreview(
     empty: Boolean = false,
     stale: Boolean = false,
+    unavailable: Boolean = false,
 ) {
     MobiMonTheme {
         PetHomeScreen(
@@ -59,16 +66,16 @@ private fun HomePreview(
                     "preview",
                     1,
                     0,
-                    source = if (empty) SignalSource.REAL else SignalSource.SIMULATED,
-                    drivingState = if (empty) DrivingState.UNKNOWN else DrivingState.PARKED,
+                    source = if (empty || unavailable) SignalSource.REAL else SignalSource.SIMULATED,
+                    drivingState = if (empty || unavailable) DrivingState.UNKNOWN else DrivingState.PARKED,
                     quality =
                         when {
-                            empty -> SignalQuality.UNAVAILABLE
+                            empty || unavailable -> SignalQuality.UNAVAILABLE
                             stale -> SignalQuality.STALE
                             else -> SignalQuality.VALID
                         },
-                    batteryPercent = if (empty) null else 72,
-                    batteryQuality = if (empty) SignalQuality.UNAVAILABLE else SignalQuality.VALID,
+                    batteryPercent = if (empty || unavailable) null else 72,
+                    batteryQuality = if (empty || unavailable) SignalQuality.UNAVAILABLE else SignalQuality.VALID,
                     parkingAgeMillis = if (stale) 60_000 else null,
                 ),
             progress = QuestProgress(),
@@ -84,7 +91,7 @@ private fun HomePreview(
             pointBalance = if (empty) null else 0,
             pointLoadFailed = empty,
             legacyQuestVisible = !empty,
-            interactionAllowed = !empty && !stale,
+            interactionAllowed = !empty && !stale && !unavailable,
         )
     }
 }
