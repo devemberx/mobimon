@@ -60,6 +60,7 @@ class PointBalanceViewModelTest {
         override val wallet: Flow<PointWallet>,
     ) : PointEconomy {
         override val inventory = flowOf(CosmeticInventory(emptySet(), emptyMap()))
+        override val catalog = flowOf(emptyList<com.monsters.mobimon.core.domain.CosmeticItem>())
 
         override suspend fun purchase(
             itemId: String,

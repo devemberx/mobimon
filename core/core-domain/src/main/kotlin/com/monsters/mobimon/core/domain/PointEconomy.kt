@@ -103,6 +103,7 @@ sealed interface EquipResult {
 interface PointEconomy {
     val wallet: Flow<PointWallet>
     val inventory: Flow<CosmeticInventory>
+    val catalog: Flow<List<CosmeticItem>>
 
     suspend fun purchase(
         itemId: String,

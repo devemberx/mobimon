@@ -63,6 +63,11 @@ class PointEconomyRepository(
             }
         }.mapNotNull { it }
 
+    override val catalog =
+        dao.observeAllItems().mapNotNull { items ->
+            items.map { it.toDomain() }
+        }
+
     override suspend fun purchase(
         itemId: String,
         expectedPrice: Long,
@@ -231,3 +236,13 @@ private fun PointQuestSchedule.occurrenceKey(utcMillis: Long): String? =
                 null
             }
     }
+
+private fun CosmeticItemEntity.toDomain() =
+    com.monsters.mobimon.core.domain.CosmeticItem(
+        id = id,
+        slot =
+            com.monsters.mobimon.core.domain.CosmeticSlot
+                .valueOf(slot),
+        price = price,
+        compatibleFriendId = compatibleFriendId,
+    )

@@ -113,6 +113,9 @@ fun MobiMonApp(dependencies: AppDependencies) {
                 onCancelQuest = questViewModel::cancel,
                 onAcknowledge = questViewModel::acknowledge,
                 onEquipFriend = inventoryViewModel::equipFriend,
+                onSelectItem = inventoryViewModel::selectItem,
+                onPurchaseItem = inventoryViewModel::purchaseItem,
+                onEquipItem = inventoryViewModel::equipItem,
             ),
     )
 }
@@ -126,6 +129,9 @@ data class MobiMonActions(
     val onCancelQuest: () -> Unit,
     val onAcknowledge: (String) -> Unit,
     val onEquipFriend: (String) -> Unit = {},
+    val onSelectItem: (String?) -> Unit = {},
+    val onPurchaseItem: (String, Long) -> Unit = { _, _ -> },
+    val onEquipItem: (String) -> Unit = {},
 )
 
 internal val ShellSaver =
@@ -211,6 +217,7 @@ fun MobiMonContent(
                         pointLoadFailed = balanceFailed,
                         legacyQuestVisible = legacyQuestVisible,
                         friendId = inventoryState.equippedFriendId,
+                        accessoryId = inventoryState.equippedAccessoryId,
                         interactionAllowed = interactionAllowed,
                         profileObservationFailed = petState.loadFailed,
                         onRetryProfile = actions.onRetry,
@@ -243,6 +250,13 @@ fun MobiMonContent(
                                 AppRoute.APPEARANCE ->
                                     CustomizationScreen(
                                         inventory = inventoryState.inventory,
+                                        catalog = inventoryState.catalog,
+                                        selectedItemId = inventoryState.selectedItemId,
+                                        purchasing = inventoryState.purchasing,
+                                        purchaseFailed = inventoryState.purchaseFailed,
+                                        onSelectItem = actions.onSelectItem,
+                                        onPurchaseItem = actions.onPurchaseItem,
+                                        onEquipItem = actions.onEquipItem,
                                         onEquipFriend = actions.onEquipFriend,
                                         pointBalance = balance,
                                         pointLoadFailed = balanceFailed,
