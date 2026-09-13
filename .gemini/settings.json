@@ -10,6 +10,13 @@
             "description": "Validate pull-request merge commands.",
             "command": "python3 \"$(git rev-parse --show-toplevel)/scripts/validate_merge.py\"",
             "timeout": 30000
+          },
+          {
+            "type": "command",
+            "name": "validate-pr",
+            "description": "Validate pull-request content commands.",
+            "command": "python3 \"$(git rev-parse --show-toplevel)/.agents/hooks/validate_pr_command.py\"",
+            "timeout": 30000
           }
         ]
       }
