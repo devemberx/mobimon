@@ -1,19 +1,21 @@
 package com.monsters.mobimon.core.ui
 
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 
 /**
- * Renders a minimal pet placeholder; replace this body when character assets arrive.
+ * Renders the exported Mobi artwork, with placeholders for artwork not yet supplied.
  * [appearanceKey] accepts GOLDEN or CREAM without importing a domain model.
  * [stage] is retained only for source compatibility with the legacy renderer.
  */
@@ -27,6 +29,14 @@ fun PetAvatar(
     val cat = friendId == "friend:luna"
     val cream = appearanceKey == "CREAM"
     val description = stringResource(if (cat) R.string.mobimon_luna_description else R.string.mobimon_mobi_description)
+    if (!cat && !cream) {
+        Image(
+            painter = painterResource(R.drawable.mobimon_mobi),
+            contentDescription = description,
+            modifier = modifier.size(120.dp),
+        )
+        return
+    }
     val fur =
         if (cat) {
             Color(0xFFB9A8C4)

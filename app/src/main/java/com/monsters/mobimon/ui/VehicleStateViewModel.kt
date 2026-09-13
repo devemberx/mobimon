@@ -29,11 +29,11 @@ class VehicleStateViewModel(
             val ticks =
                 flow {
                     while (true) {
-                        emit(clock.nowMillis())
+                        emit(Unit)
                         delay(1_000)
                     }
                 }
-            combine(vehicle.snapshots, ticks) { snapshot, now -> displaySnapshot(snapshot, now) }
+            combine(vehicle.snapshots, ticks) { snapshot, _ -> displaySnapshot(snapshot, clock.nowMillis()) }
                 .collect { mutableState.value = it }
         }
     }

@@ -61,6 +61,35 @@ class VehicleStateViewModelTest {
     }
 
     @Test
+    fun freshReadingBetweenTimerTicksDoesNotBecomeUnavailable() =
+        runTest(dispatcher) {
+            try {
+                val model =
+                    VehicleStateViewModel(
+                        vehicle,
+                        ProgressionIdentity("profile", SignalSource.REAL),
+                        Clock { now },
+                        VehicleFreshnessPolicy(15_000),
+                    ).also { store.put("vehicle", it) }
+                runCurrent()
+                repeat(5) {
+                    now += 400
+                    vehicle.snapshots.value = vehicle.snapshots.value.copy(receivedAtMillis = now, sequence = it + 2L)
+                    runCurrent()
+                    assertEquals(SignalQuality.VALID, model.state.value.quality)
+                    assertEquals(SignalQuality.VALID, model.state.value.batteryQuality)
+                }
+                vehicle.snapshots.value = vehicle.snapshots.value.copy(receivedAtMillis = now + 1_000)
+                runCurrent()
+                assertEquals(SignalQuality.UNAVAILABLE, model.state.value.quality)
+                assertEquals(SignalQuality.UNAVAILABLE, model.state.value.batteryQuality)
+            } finally {
+                store.clear()
+                runCurrent()
+            }
+        }
+
+    @Test
     fun movingReadingExpiresIndependentlyOfQuestObservation() =
         runTest(dispatcher) {
             try {
