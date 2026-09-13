@@ -24,4 +24,6 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun companionDao(): CompanionDao
 
     abstract fun economyDao(): PointEconomyDao
+
+    abstract fun levelingDao(): LevelingDao
 }
