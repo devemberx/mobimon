@@ -5,7 +5,9 @@ import androidx.room.RoomDatabase
 
 @Database(
     entities = [
+        UserProfileEntity::class,
         PetProfileEntity::class,
+        DriveDailySummaryEntity::class,
         QuestRunEntity::class,
         QuestCompletionEntity::class,
         PointAccountEntity::class,
@@ -15,7 +17,7 @@ import androidx.room.RoomDatabase
         OwnedCosmeticEntity::class,
         EquippedCosmeticEntity::class,
     ],
-    version = 2,
+    version = 3,
     exportSchema = true,
 )
 abstract class AppDatabase : RoomDatabase() {
