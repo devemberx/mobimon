@@ -1,4 +1,28 @@
 <resources>
+    <string name="pet_vehicle_status">상태 보기</string>
+  <string name="pet_brand">MobiMon</string>
+  <string name="pet_home_greeting">함께 쉬어 가요.</string>
+  <string name="pet_parking_symbol">P</string>
+  <string name="pet_talk_unavailable">대화하기 · 연결 불가</string>
+  <string name="pet_ai_unavailable">AI 연결을 지원하지 않아 대화 기능을 사용할 수 없어요.</string>
+  <string name="pet_no_friend">선택한 친구가 없어요. 꾸미기에서 친구를 골라 주세요.</string>
+  <string name="pet_home_loading">친구를 불러오고 있어요.</string>
+  <string name="pet_home_load_failed">친구를 불러오지 못했어요. 다시 시도해 주세요.</string>
+  <string name="pet_warning_item">확인이 필요해요 · %1$s · %2$s</string>
+  <string name="pet_warning_notice">알림</string>
+  <string name="pet_warning_caution">주의</string>
+  <string name="pet_warning_critical">긴급</string>
+  <string name="pet_warning_historical">이전 경고가 있어요. 현재 상태는 차량 정보에서 확인해 주세요.</string>
+  <string name="pet_battery_stale">배터리 정보가 오래되어 현재 충전량을 알 수 없어요.</string>
+  <string name="pet_battery_unsupported">이 차량은 배터리 정보를 제공하지 않아요.</string>
+  <string name="pet_battery_permission">배터리 정보 접근 권한이 없어요.</string>
+  <string name="pet_battery_disconnected">차량 연결이 끊겨 배터리 정보를 확인할 수 없어요.</string>
+  <string name="pet_parking_stale">주차 정보가 오래되어 현재 상태를 알 수 없어요.</string>
+  <string name="pet_parking_unsupported">이 차량은 주차 정보를 제공하지 않아요.</string>
+  <string name="pet_parking_permission">주차 정보 접근 권한이 없어요.</string>
+  <string name="pet_parking_disconnected">차량 연결이 끊겨 주차 여부를 확인할 수 없어요.</string>
+  <string name="pet_parking_unavailable">현재 주차 정보를 확인할 수 없어요.</string>
+  <string name="pet_last_checked_seconds">마지막 확인: %1$d초 전</string>
   <string name="pet_retry">다시 시도</string>
   <string name="pet_home_heading">함께하는 오늘</string>
   <string name="pet_vehicle_heading">어디서든 함께</string>
@@ -10,7 +34,7 @@
   <string name="pet_vehicle_preview_notice">앱 안의 차량 홈 미리보기예요. 실제 차량 화면을 제어하지 않아요.</string>
   <string name="pet_talk">친구와 대화하기</string>
   <string name="pet_tap_hint">친구를 눌러 보세요</string>
-  <string name="pet_interaction_restricted">주차와 화면 사용 가능 상태가 확인되면 대화할 수 있어요.</string>
+  <string name="pet_interaction_restricted">현재는 상호작용이 제한돼요. 주차와 화면 사용 가능 상태를 확인해 주세요.</string>
   <string name="pet_hidden">차량 홈 미리보기에서 친구를 숨겼어요</string>
   <string name="pet_conversation_unavailable">대화 기능을 준비하고 있어요. 지금은 차량 상태를 살펴보고 첫 퀘스트를 함께할 수 있어요.</string>
   <string name="pet_growth_title">함께 쌓은 성장</string>

@@ -3,51 +3,34 @@ package com.monsters.mobimon.core.ui
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Typography
 import androidx.compose.material3.darkColorScheme
-import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 
-private val CompanionColors =
-    lightColorScheme(
-        primary = Color(0xFF536B4F),
-        onPrimary = Color(0xFFFFFFFF),
-        primaryContainer = Color(0xFFE0E8D7),
-        onPrimaryContainer = Color(0xFF30422D),
-        secondary = Color(0xFF78624A),
-        onSecondary = Color(0xFFFFFFFF),
-        secondaryContainer = Color(0xFFF0E4CE),
-        onSecondaryContainer = Color(0xFF51402C),
-        background = Color(0xFFFAF2E6),
-        onBackground = Color(0xFF514737),
-        surface = Color(0xFFFFFBF3),
-        onSurface = Color(0xFF514737),
-        surfaceVariant = Color(0xFFF0E8DA),
-        onSurfaceVariant = Color(0xFF665D50),
-        outline = Color(0xFF817665),
-        outlineVariant = Color(0xFFE5DAC7),
-    )
-
 private val VehicleColors =
     darkColorScheme(
-        primary = Color(0xFFBBCFB0),
-        onPrimary = Color(0xFF263A24),
-        primaryContainer = Color(0xFF455441),
-        onPrimaryContainer = Color(0xFFE0ECD6),
-        secondary = Color(0xFFDCC6A4),
-        onSecondary = Color(0xFF3E3324),
-        secondaryContainer = Color(0xFF574D3D),
-        onSecondaryContainer = Color(0xFFF1E4CB),
-        background = Color(0xFF152830),
-        onBackground = Color(0xFFE6E9DF),
-        surface = Color(0xFF263941),
-        onSurface = Color(0xFFE6E9DF),
-        surfaceVariant = Color(0xFF34484C),
-        onSurfaceVariant = Color(0xFFD1D6CA),
-        outline = Color(0xFFA3AD9C),
-        outlineVariant = Color(0xFF5C675B),
+        primary = Color(0xFFF2EFE5),
+        onPrimary = Color(0xFF253443),
+        primaryContainer = Color(0xFF29484B),
+        onPrimaryContainer = Color(0xFFEEF2EA),
+        secondary = Color(0xFFB9DDC6),
+        onSecondary = Color(0xFF253443),
+        secondaryContainer = Color(0xFF2B4249),
+        onSecondaryContainer = Color(0xFFD7E3DC),
+        tertiary = Color(0xFF89A492),
+        onTertiary = Color(0xFF111F32),
+        tertiaryContainer = Color(0xFF415F5E),
+        onTertiaryContainer = Color(0xFFEEF2EA),
+        background = Color(0xFF111F32),
+        onBackground = Color(0xFFEEF2EA),
+        surface = Color(0xFF173144),
+        onSurface = Color(0xFFEEF2EA),
+        surfaceVariant = Color(0xFF294353),
+        onSurfaceVariant = Color(0xFFD3E3DF),
+        outline = Color(0xFFA8C0C6),
+        outlineVariant = Color(0xFF5D7885),
     )
 
 private val CarTypography =
@@ -60,14 +43,11 @@ private val CarTypography =
         labelLarge = TextStyle(fontSize = 22.sp, lineHeight = 30.sp, fontWeight = FontWeight.Medium),
     )
 
-/** Applies paired companion or in-app vehicle-preview colors to [content]. */
+/** Applies the fixed vehicle-display palette, independent of the system theme. */
 @Composable
-fun MobiMonTheme(
-    darkTheme: Boolean = true,
-    content: @Composable () -> Unit,
-) {
+fun MobiMonTheme(content: @Composable () -> Unit) {
     MaterialTheme(
-        colorScheme = if (darkTheme) VehicleColors else CompanionColors,
+        colorScheme = VehicleColors,
         typography = CarTypography,
         content = content,
     )

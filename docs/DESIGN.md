@@ -28,6 +28,8 @@ character. Existing purchases, rewards, preferences and drafts remain intact.
 - Use a deep navy setting, muted green scenery, cream speech bubbles and primary
   buttons, rounded panels and restrained decoration. Alternate backgrounds keep
   the same meanings for selection, warning and action colors.
+- Use one fixed in-app vehicle-display palette through the shared MobiMonTheme;
+  system light/dark preferences do not switch the app palette.
 - Give the character visual priority on the home screen. Place navigation and
   parking status above it, with a vehicle summary and conversation action below.
   Point balance is secondary information beside the customization entry.
