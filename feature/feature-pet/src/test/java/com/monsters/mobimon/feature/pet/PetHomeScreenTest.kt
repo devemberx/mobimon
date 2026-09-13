@@ -105,12 +105,15 @@ class PetHomeScreenTest {
         val friend = compose.onNodeWithContentDescription("Mobi 강아지").fetchSemanticsNode().boundsInRoot
         val parking = compose.onNodeWithContentDescription("주차 확인됨").fetchSemanticsNode().boundsInRoot
         val content = compose.onNodeWithTag("home-composition").fetchSemanticsNode().boundsInRoot
+        val greeting = compose.onNodeWithTag("home-greeting").fetchSemanticsNode().boundsInRoot
         val customization = compose.onNodeWithText("꾸미기").fetchSemanticsNode().boundsInRoot
         assertTrue(summary.width < window.width * 0.56f)
         assertTrue(summary.height < window.height * 0.12f)
         assertEquals(window.center.x, friend.center.x, 2f)
         assertEquals(2560f / 1268f, content.width / content.height, 0.01f)
         assertEquals(friend.width, friend.height, 1f)
+        assertEquals(content.width * 580f / 2560f, friend.width, 1f)
+        assertEquals(content.width * 12f / 2560f, friend.top - greeting.bottom, 1f)
         assertTrue(friend.bottom < summary.top)
         assertTrue(parking.height < customization.height)
         compose

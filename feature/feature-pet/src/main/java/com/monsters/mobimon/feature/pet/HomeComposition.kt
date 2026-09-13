@@ -150,14 +150,14 @@ internal fun HomeComposition(
                             )
                         }
                     }
-                    HomeGreeting(scale, Modifier.reference(864f, 300f, 832f, 137f))
+                    HomeGreeting(scale, Modifier.reference(864f, 300f, 832f, 136f).testTag("home-greeting"))
                     Text(
                         stringResource(R.string.pet_home_greeting),
                         Modifier.referenceText(864f, 372.8f, 832f),
                         color = colors.secondaryContainer,
                         style = homeTextStyle(42f, scale, align = TextAlign.Center),
                     )
-                    PetAvatar(Modifier.reference(1030f, 430f, 500f, 500f), profile.appearance.name, friendId = friendId)
+                    PetAvatar(Modifier.reference(990f, 448f, 580f, 580f), profile.appearance.name, friendId = friendId)
                     Surface(
                         Modifier.reference(616f, 1050f, 1328f, 112f).testTag("home-vehicle-summary"),
                         shape = RoundedCornerShape(32.dp * scale),
@@ -323,9 +323,10 @@ private fun HomeGreeting(
         )
         drawPath(
             Path().apply {
-                moveTo(384f * factor, 110f * factor)
-                lineTo(416f * factor, 137f * factor)
-                lineTo(448f * factor, 110f * factor)
+                moveTo(374f * factor, 110f * factor)
+                cubicTo(390f * factor, 110f * factor, 402f * factor, 122f * factor, 412f * factor, 134f * factor)
+                quadraticBezierTo(416f * factor, 138f * factor, 420f * factor, 134f * factor)
+                cubicTo(430f * factor, 122f * factor, 442f * factor, 110f * factor, 458f * factor, 110f * factor)
                 close()
             },
             color,
