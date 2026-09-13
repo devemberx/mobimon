@@ -19,6 +19,21 @@ object MobiMonHomeColors {
     val divider = Color(0xFF688386)
 }
 
+/** Fixed settings and menu roles measured from the P05/P02 Figma frames. */
+object MobiMonSettingsColors {
+    val sky = Color(0xFF1C2C43)
+    val ground = Color(0xFF35524F)
+    val hill = Color(0xFF456260)
+    val row = Color(0xFF1B2E3D)
+    val menu = Color(0xFF223B4C)
+    val menuControlBorder = Color(0xFF748F9A)
+    val border = Color(0xFF708C99)
+    val text = Color(0xFFEDF2EA)
+    val muted = Color(0xFFC0CFCD)
+    val selected = Color(0xFF526B5B)
+    val selectedThumb = Color(0xFFC3DDC7)
+}
+
 private val VehicleColors =
     darkColorScheme(
         primary = Color(0xFFF2EFE5),
@@ -45,12 +60,36 @@ private val VehicleColors =
 
 private val CarTypography =
     Typography(
-        headlineMedium = TextStyle(fontSize = 32.sp, lineHeight = 40.sp, fontWeight = FontWeight.SemiBold),
-        titleLarge = TextStyle(fontSize = 28.sp, lineHeight = 36.sp, fontWeight = FontWeight.SemiBold),
-        titleMedium = TextStyle(fontSize = 24.sp, lineHeight = 32.sp, fontWeight = FontWeight.Medium),
-        bodyLarge = TextStyle(fontSize = 24.sp, lineHeight = 34.sp),
-        bodyMedium = TextStyle(fontSize = 24.sp, lineHeight = 34.sp),
-        labelLarge = TextStyle(fontSize = 22.sp, lineHeight = 30.sp, fontWeight = FontWeight.Medium),
+        headlineMedium =
+            TextStyle(
+                fontFamily = MobiMonFontFamily,
+                fontSize = 32.sp,
+                lineHeight = 40.sp,
+                fontWeight = FontWeight.SemiBold,
+            ),
+        titleLarge =
+            TextStyle(
+                fontFamily = MobiMonFontFamily,
+                fontSize = 28.sp,
+                lineHeight = 36.sp,
+                fontWeight = FontWeight.SemiBold,
+            ),
+        titleMedium =
+            TextStyle(
+                fontFamily = MobiMonFontFamily,
+                fontSize = 24.sp,
+                lineHeight = 32.sp,
+                fontWeight = FontWeight.Medium,
+            ),
+        bodyLarge = TextStyle(fontFamily = MobiMonFontFamily, fontSize = 24.sp, lineHeight = 34.sp),
+        bodyMedium = TextStyle(fontFamily = MobiMonFontFamily, fontSize = 24.sp, lineHeight = 34.sp),
+        labelLarge =
+            TextStyle(
+                fontFamily = MobiMonFontFamily,
+                fontSize = 22.sp,
+                lineHeight = 30.sp,
+                fontWeight = FontWeight.Medium,
+            ),
     )
 
 /** Applies the fixed vehicle-display palette, independent of the system theme. */
