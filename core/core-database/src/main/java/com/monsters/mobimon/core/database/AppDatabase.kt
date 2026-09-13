@@ -18,7 +18,7 @@ import androidx.room.RoomDatabase
         EquippedCosmeticEntity::class,
     ],
     version = 3,
-    exportSchema = true,
+    exportSchema = false,
 )
 abstract class AppDatabase : RoomDatabase() {
     abstract fun companionDao(): CompanionDao
