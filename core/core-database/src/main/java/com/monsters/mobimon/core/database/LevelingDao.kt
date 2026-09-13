@@ -20,9 +20,14 @@ interface LevelingDao {
     @Query(
         "UPDATE user_profiles " +
             "SET totalPoints = :totalPoints, currentLevel = :currentLevel, totalDistanceKm = :totalDistanceKm " +
-            "WHERE id = :id"
+            "WHERE id = :id",
     )
-    suspend fun updateUserProgress(id: String, totalPoints: Long, currentLevel: Int, totalDistanceKm: Float)
+    suspend fun updateUserProgress(
+        id: String,
+        totalPoints: Long,
+        currentLevel: Int,
+        totalDistanceKm: Float,
+    )
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertDriveSummary(summary: DriveDailySummaryEntity)
