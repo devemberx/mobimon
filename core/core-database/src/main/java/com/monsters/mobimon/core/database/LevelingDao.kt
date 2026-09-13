@@ -22,7 +22,7 @@ interface LevelingDao {
         UPDATE user_profiles
         SET totalPoints = :totalPoints, currentLevel = :currentLevel, totalDistanceKm = :totalDistanceKm
         WHERE id = :id
-        """,
+        """
     )
     suspend fun updateUserProgress(id: String, totalPoints: Long, currentLevel: Int, totalDistanceKm: Float)
 
