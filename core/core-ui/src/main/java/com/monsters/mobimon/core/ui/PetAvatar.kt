@@ -15,7 +15,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 
 /**
- * Renders the exported Mobi artwork, with placeholders for artwork not yet supplied.
+ * Renders the supplied v3 Mobi artwork, with placeholders for artwork not yet supplied.
  * [appearanceKey] accepts GOLDEN or CREAM without importing a domain model.
  * [stage] is retained only for source compatibility with the legacy renderer.
  */
@@ -32,7 +32,7 @@ fun PetAvatar(
     val description = stringResource(if (cat) R.string.mobimon_luna_description else R.string.mobimon_mobi_description)
     if (!cat && !cream && accessoryId == null) {
         Image(
-            painter = painterResource(R.drawable.mobimon_mobi),
+            painter = painterResource(R.drawable.mobimon_mobi_v3),
             contentDescription = description,
             modifier = modifier.size(120.dp),
         )

@@ -224,6 +224,23 @@ fun MobiMonContent(
                         inventoryLoaded = inventoryState.inventory != null,
                         inventoryLoadFailed = inventoryState.loadFailed,
                     )
+                } else if (shell.route == AppRoute.SETTINGS) {
+                    SettingsScreen(
+                        petState.settings,
+                        actions.onVehicleVisibilityChange,
+                        actions.onReducedMotionChange,
+                        visibilitySaving = petState.visibilitySaving,
+                        visibilityError = visibilitySaveError,
+                        motionSaving = petState.reducedMotionSaving,
+                        motionError = motionSaveError,
+                        settingsAvailable = petState.settingsLoaded,
+                        settingsLoadFailed = petState.settingsLoadFailed,
+                        onRetry = actions.onRetry,
+                        onBack = { shell = shell.back() },
+                        onDone = { shell = shell.returnHome() },
+                        parkedVerified = interactionAllowed,
+                        simulatedVehicle = vehicleSnapshot.source == SignalSource.SIMULATED,
+                    )
                 } else {
                     Column(Modifier.fillMaxSize()) {
                         Row(
@@ -265,19 +282,7 @@ fun MobiMonContent(
                                         saveFailed = inventoryState.saveFailed,
                                         onRetry = actions.onRetry,
                                     )
-                                AppRoute.SETTINGS ->
-                                    SettingsScreen(
-                                        petState.settings,
-                                        actions.onVehicleVisibilityChange,
-                                        actions.onReducedMotionChange,
-                                        visibilitySaving = petState.visibilitySaving,
-                                        visibilityError = visibilitySaveError,
-                                        motionSaving = petState.reducedMotionSaving,
-                                        motionError = motionSaveError,
-                                        settingsAvailable = petState.settingsLoaded,
-                                        settingsLoadFailed = petState.settingsLoadFailed,
-                                        onRetry = actions.onRetry,
-                                    )
+                                AppRoute.SETTINGS -> Unit
                                 AppRoute.QUESTS ->
                                     QuestScreen(
                                         questState.progress,

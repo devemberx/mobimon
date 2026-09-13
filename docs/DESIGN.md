@@ -191,6 +191,26 @@ unavailable reading as zero or an unchecked item as normal.
 
 ## AI connection and settings
 
+The current Settings and menu composition follows v3: [P05 Settings](https://www.figma.com/design/7tyb4oJsJAUc15KnU7H0F6?node-id=128-1030)
+and [P02 Menu](https://www.figma.com/design/7tyb4oJsJAUc15KnU7H0F6?node-id=128-642).
+Settings fits the same 2560:1268 safe content reference as Home. Artboard rows
+start at (352, 300), measure 1856×144 and have 24-unit gaps; Done is
+(800, 1192), 960×104. Row titles use Noto Sans KR Regular 40/52 and descriptions
+32/44, with zero letter spacing. The target AAOS image reports a physical
+160dpi display but applies approximately 229dpi compatibility density to this
+app (about 1792×888dp of content); previews use that app window, not pixel counts.
+Smaller or enlarged-text windows reflow and scroll. At the reference viewport,
+the menu preserves its measured visual bounds while expanding transparent hit
+areas to at least 76dp. When these areas would overlap, it uses a scrolling
+layout with 24dp gaps. Panel and control outlines use `#708C99` and `#748F9A`
+(3.28:1 and 3.04:1 against their respective surfaces), brighter than the reference
+outlines to retain the required non-text contrast.
+
+Current controls expose only the persisted in-app vehicle-home preview and
+reduced-motion preferences. Copilot, spoken replies and Do Not Disturb remain
+visibly unavailable until their contracts exist. Unknown parking disables
+preference changes, and app-use restrictions remain enforced by the app shell.
+
 Conversation uses the user's GitHub Copilot connection. When disconnected,
 vehicle information and customization remain available; starting conversation
 opens the connection flow.
