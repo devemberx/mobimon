@@ -48,6 +48,11 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Popup
 import androidx.compose.ui.window.PopupProperties
 import com.monsters.mobimon.R
+import com.monsters.mobimon.core.navigation.AiRoute
+import com.monsters.mobimon.core.navigation.AppRoute
+import com.monsters.mobimon.core.navigation.CompanionRoute
+import com.monsters.mobimon.core.navigation.QuestRoute
+import com.monsters.mobimon.core.navigation.VehicleRoute
 import com.monsters.mobimon.core.ui.CompanionIcon
 import com.monsters.mobimon.core.ui.MobiMonFontFamily
 import com.monsters.mobimon.core.ui.MobiMonSettingsColors
@@ -134,9 +139,9 @@ private fun ReferenceMenu(
             Modifier.offset(540.dp * scale - 38.dp, 70.dp * scale - 38.dp),
         )
         listOf(
-            Triple(R.string.drawer_menu_vehicle, CompanionIcon.VEHICLE, AppRoute.VEHICLE_INFO),
-            Triple(R.string.drawer_menu_quests, CompanionIcon.QUEST, AppRoute.QUESTS),
-            Triple(R.string.drawer_settings, CompanionIcon.SETTINGS, AppRoute.SETTINGS),
+            Triple(R.string.drawer_menu_vehicle, CompanionIcon.VEHICLE, VehicleRoute.VEHICLE_INFO),
+            Triple(R.string.drawer_menu_quests, CompanionIcon.QUEST, QuestRoute.QUESTS),
+            Triple(R.string.drawer_settings, CompanionIcon.SETTINGS, CompanionRoute.SETTINGS),
         ).forEachIndexed { index, (title, icon, route) ->
             MenuDestination(
                 title,
@@ -187,7 +192,7 @@ private fun ScrollingMenu(
             MenuDestination(
                 R.string.drawer_menu_vehicle,
                 CompanionIcon.VEHICLE,
-                AppRoute.VEHICLE_INFO,
+                VehicleRoute.VEHICLE_INFO,
                 scale,
                 Modifier.focusRequester(first),
                 onNavigate,
@@ -195,14 +200,14 @@ private fun ScrollingMenu(
             MenuDestination(
                 R.string.drawer_menu_quests,
                 CompanionIcon.QUEST,
-                AppRoute.QUESTS,
+                QuestRoute.QUESTS,
                 scale,
                 onNavigate = onNavigate,
             )
             MenuDestination(
                 R.string.drawer_settings,
                 CompanionIcon.SETTINGS,
-                AppRoute.SETTINGS,
+                CompanionRoute.SETTINGS,
                 scale,
                 onNavigate = onNavigate,
             )
@@ -312,11 +317,11 @@ private fun MenuPreview() {
 
 internal fun AppRoute.title(): Int =
     when (this) {
-        AppRoute.HOME -> R.string.drawer_menu
-        AppRoute.QUESTS -> R.string.drawer_quests
-        AppRoute.VEHICLE_INFO -> R.string.drawer_vehicle_info
-        AppRoute.APPEARANCE -> R.string.drawer_appearance
-        AppRoute.SETTINGS -> R.string.drawer_settings
-        AppRoute.CONVERSATION -> R.string.drawer_conversation
-        AppRoute.COPILOT -> com.monsters.mobimon.feature.auth.R.string.copilot_title
+        CompanionRoute.HOME -> R.string.drawer_menu
+        QuestRoute.QUESTS -> R.string.drawer_quests
+        VehicleRoute.VEHICLE_INFO -> R.string.drawer_vehicle_info
+        CompanionRoute.APPEARANCE -> R.string.drawer_appearance
+        CompanionRoute.SETTINGS -> R.string.drawer_settings
+        AiRoute.CONVERSATION -> R.string.drawer_conversation
+        AiRoute.COPILOT -> R.string.drawer_conversation
     }

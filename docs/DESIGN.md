@@ -2,7 +2,7 @@
 
 MobiMon is a calm in-car companion for time spent parked. It combines a friendly
 character, understandable vehicle information, conversation and personal
-expression. The [Figma design](https://www.figma.com/design/7tyb4oJsJAUc15KnU7H0F6?node-id=6-3347)
+expression. The [Figma design](https://www.figma.com/design/7tyb4oJsJAUc15KnU7H0F6?node-id=231-1176)
 is the visual reference; this document defines the product experience.
 Technical contracts belong in [ARCHITECTURE.md](ARCHITECTURE.md), and verification
 belongs in [TESTING.md](TESTING.md).
@@ -59,6 +59,50 @@ character. Existing purchases, rewards, preferences and drafts remain intact.
 - Keep motion brief and quiet. Reduced motion replaces decorative movement with
   a static expression. A successful connection may trigger one silent,
   character-appropriate greeting; it must not delay the next action.
+
+## Reusable Compose library and asset handoff
+
+The stateless library lives in [core-ui](../core/core-ui/src/main/java/com/monsters/mobimon/core/ui).
+Use these components before adding a feature-local equivalent:
+
+| API | Use |
+| --- | --- |
+| `MobiMonTheme`, `MobiMonTwilightColors` | Bundled typography and semantic v4 Night/Surface/Cream/Sky/Mint roles |
+| `MobiMonDimensions` | Shared 76dp target, content spacing and panel/message corners |
+| `MobiMonDestination` | Back/Home header and a slot for the full-content feature body |
+| `MobiMonContentColumn`, `MobiMonSection` | Scrollable content and titled groups |
+| `MobiMonButton` | Caller-owned enabled state and a label/icon slot with a 76dp minimum target |
+| `MobiMonMessage`, `MobiMonSourceBadge` | Accessible feedback and explicit simulated/real labels |
+| `MobiMonPointSummary` | Loading, failed, zero and committed balances |
+| `PetAvatar`, `CompanionIcon` | Replaceable character artwork and shared icon rendering |
+
+Each component and palette family has its own file. Production Quest, Vehicle,
+Companion and AI routes use these APIs. `ComponentGallery` provides normal and
+enlarged-text previews and a Debug-only **MobiMon UI Catalog · Demo** launcher;
+it has no repository or provider. AI's rehearsal implementation, sample strings,
+QR and manifest now live entirely in `feature-auth/src/debug`.
+
+For new v4 screens, wrap the feature body with
+`MobiMonTheme(colorScheme = MobiMonTwilightColors) { ... }`. The default palette
+preserves existing screens during staged migration. The v4 color roles match the
+shared UI rules in the supplied Figma file and the already exported Copilot
+palette. Keep fixed artboard coordinates and screen-specific styling inside the
+feature until a second consumer establishes a reusable component. Do not shrink
+touch targets to match an artboard pixel measurement.
+
+Import original Figma exports into the owning feature's resources, with a
+feature-specific prefix. Shared fonts and character artwork belong in `core-ui`;
+keep original raster bytes in `drawable-nodpi` and font licenses alongside fonts.
+Record the node link in the relevant design section when adopting an asset.
+Use Figma **Copy/Paste as SVG** for exact geometry, then retain the original
+vector paths during Android conversion. Do not commit temporary MCP asset URLs,
+whole-screen SVGs as UI, invented icon replacements, or duplicated shared artwork.
+Remove superseded assets only after checking all variants, previews and tests.
+
+This library is a migration foundation, not a claim that every screen matches
+v4. Exact screen acceptance still requires the
+[final visual comparison](TESTING.md#final-figma-visual-acceptance); unavailable
+exports or unresolved differences must remain explicit in the implementation PR.
 
 ## Screens and navigation
 

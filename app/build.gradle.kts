@@ -78,6 +78,10 @@ dependencyLocking {
 }
 
 dependencies {
+    implementation(project(":core:core-navigation"))
+    implementation(project(":core:core-presentation"))
+    kover(project(":core:core-navigation"))
+    kover(project(":core:core-presentation"))
     implementation(project(":core:core-domain"))
     implementation(project(":core:core-database"))
     implementation(project(":core:core-vss"))

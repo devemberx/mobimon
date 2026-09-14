@@ -1,14 +1,18 @@
 package com.monsters.mobimon.ui
 
+import com.monsters.mobimon.core.navigation.AiRoute
+import com.monsters.mobimon.core.navigation.CompanionRoute
+import com.monsters.mobimon.core.navigation.HomeSurface
+import com.monsters.mobimon.core.navigation.QuestRoute
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
 class ShellStateTest {
     @Test
     fun copilotBackReturnsToItsOriginIncludingAfterRestoration() {
-        listOf(AppRoute.HOME, AppRoute.SETTINGS).forEach { origin ->
+        listOf(CompanionRoute.HOME, CompanionRoute.SETTINGS).forEach { origin ->
             val state = ShellState(route = origin).openCopilot()
-            assertEquals(AppRoute.COPILOT, state.route)
+            assertEquals(AiRoute.COPILOT, state.route)
             assertEquals(origin, state.back().route)
             assertEquals(origin, ShellSaver.restore(listOf("PET", "COPILOT", origin.name))?.back()?.route)
         }
@@ -16,28 +20,28 @@ class ShellStateTest {
 
     @Test
     fun invalidConnectionOriginCannotRestoreAnArbitraryDestination() {
-        assertEquals(AppRoute.HOME, ShellSaver.restore(listOf("PET", "COPILOT", "QUESTS"))?.back()?.route)
+        assertEquals(CompanionRoute.HOME, ShellSaver.restore(listOf("PET", "COPILOT", "QUESTS"))?.back()?.route)
     }
 
     @Test
     fun menuDestinationUsesFullScreenAndBackReturnsHome() {
         val home = ShellState(home = HomeSurface.VEHICLE)
-        val destination = home.openMenu().navigate(AppRoute.QUESTS)
+        val destination = home.openMenu().navigate(QuestRoute.QUESTS)
         assertEquals(false, destination.menuOpen)
-        assertEquals(AppRoute.QUESTS, destination.route)
+        assertEquals(QuestRoute.QUESTS, destination.route)
         assertEquals(home, destination.back())
     }
 
     @Test
     fun backDismissesMenuBeforeChangingRoute() {
-        val state = ShellState(route = AppRoute.SETTINGS).openMenu()
-        assertEquals(ShellState(route = AppRoute.SETTINGS), state.back())
+        val state = ShellState(route = CompanionRoute.SETTINGS).openMenu()
+        assertEquals(ShellState(route = CompanionRoute.SETTINGS), state.back())
         assertEquals(ShellState(), state.back().back())
     }
 
     @Test
     fun homeSwitchClearsTransientNavigation() {
-        assertEquals(ShellState(home = HomeSurface.VEHICLE), ShellState(route = AppRoute.CONVERSATION).switchHome())
+        assertEquals(ShellState(home = HomeSurface.VEHICLE), ShellState(route = AiRoute.CONVERSATION).switchHome())
     }
 
     @Test
@@ -47,7 +51,7 @@ class ShellStateTest {
             ShellSaver.restore(listOf("VEHICLE", "CLOSED")),
         )
         assertEquals(
-            ShellState(route = AppRoute.QUESTS),
+            ShellState(route = QuestRoute.QUESTS),
             ShellSaver.restore(listOf("PET", "QUESTS")),
         )
     }

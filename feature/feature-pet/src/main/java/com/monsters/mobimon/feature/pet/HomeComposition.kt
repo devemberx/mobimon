@@ -112,8 +112,8 @@ internal fun HomeComposition(
                     HomeParkingStatus(snapshot, Modifier.reference(1108f, 154f, 344f, 76f), scale)
                     MobiMonPointSummary(
                         pointBalance,
-                        pointLoadFailed,
-                        Modifier.referenceText(1856f, 204f, 312f),
+                        modifier = Modifier.referenceText(1856f, 204f, 312f),
+                        failed = pointLoadFailed,
                         textStyle =
                             homeTextStyle(
                                 30f,

@@ -1,5 +1,6 @@
 package com.monsters.mobimon.core.ui
 
+import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Typography
 import androidx.compose.material3.darkColorScheme
@@ -8,47 +9,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
-
-/** Fixed Home foreground roles from the letterbox design. */
-object MobiMonHomeColors {
-    val brand = Color(0xFFF2F1E9)
-    val parking = Color(0xFFC9DACC)
-    val balance = Color(0xFFEEE5CC)
-    val customization = Color(0xFFEDF2EA)
-    val vehicleSummary = Color(0xFFE3EBE6)
-    val divider = Color(0xFF688386)
-}
-
-/** Fixed settings and menu roles measured from the P05/P02 Figma frames. */
-object MobiMonSettingsColors {
-    val sky = Color(0xFF1C2C43)
-    val ground = Color(0xFF35524F)
-    val hill = Color(0xFF456260)
-    val row = Color(0xFF1B2E3D)
-    val menu = Color(0xFF223B4C)
-    val menuControlBorder = Color(0xFF748F9A)
-    val border = Color(0xFF708C99)
-    val text = Color(0xFFEDF2EA)
-    val muted = Color(0xFFC0CFCD)
-    val selected = Color(0xFF526B5B)
-    val selectedThumb = Color(0xFFC3DDC7)
-}
-
-/** Colors exported from the Copilot v4 Figma frames. */
-object MobiMonConnectionColors {
-    val background = Color(0xFF091525)
-    val panel = Color(0xFF142A42)
-    val raised = Color(0xFF203C58)
-    val text = Color(0xFFF4F7FC)
-    val muted = Color(0xFFB9CADD)
-    val accent = Color(0xFF87DAF5)
-    val success = Color(0xFF71E5C5)
-    val warning = Color(0xFFFFD18A)
-    val destructive = Color(0xFFFFA79F)
-    val border = Color(0xFF64839F)
-    val button = Color(0xFFF7F2E8)
-    val onButton = Color(0xFF10243A)
-}
 
 private val VehicleColors =
     darkColorScheme(
@@ -110,9 +70,12 @@ private val CarTypography =
 
 /** Applies the fixed vehicle-display palette, independent of the system theme. */
 @Composable
-fun MobiMonTheme(content: @Composable () -> Unit) {
+fun MobiMonTheme(
+    colorScheme: ColorScheme = VehicleColors,
+    content: @Composable () -> Unit,
+) {
     MaterialTheme(
-        colorScheme = VehicleColors,
+        colorScheme = colorScheme,
         typography = CarTypography,
         content = content,
     )

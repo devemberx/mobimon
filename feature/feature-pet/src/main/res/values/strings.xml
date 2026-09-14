@@ -126,4 +126,6 @@
   <string name="pet_settings_off">꺼짐</string>
   <string name="pet_settings_done">완료</string>
   <string name="pet_settings_back">뒤로</string>
+    <string name="pet_route_save_failed">저장하지 못했어요. 현재 기록을 확인하고 다시 시도해 주세요.</string>
+    <string name="pet_destination_title">캐릭터 선택</string>
 </resources>

@@ -13,4 +13,6 @@
   <string name="mobimon_points_balance">포인트 %1$d P</string>
   <string name="mobimon_points_loading">포인트 확인 중</string>
   <string name="mobimon_points_failed">포인트를 확인할 수 없어요</string>
+    <string name="mobimon_back">뒤로</string>
+    <string name="mobimon_home">홈으로</string>
 </resources>
