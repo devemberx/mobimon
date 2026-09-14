@@ -9,7 +9,8 @@ technical contracts. Record test executions in the implementation issue or PR.
 
 The project uses JUnit 4, coroutines-test, Robolectric, Compose Testing, Hilt
 integration tests and Room device tests. Kover reports local JVM coverage with
-no percentage gate. Screenshot and system-UI automation are not configured.
+no percentage gate. Copilot UI tests generate native Robolectric review images;
+golden-image comparison and system-UI automation are not configured.
 
 | Location | Scope and host |
 | --- | --- |
@@ -19,7 +20,7 @@ no percentage gate. Screenshot and system-UI automation are not configured.
 | `core/core-database/src/androidTest/java` | SQLite transaction and file-reopening counterparts; device |
 | Feature `src/test/java` | Constructor-injected ViewModels and Compose state/callback contracts; JVM or Robolectric |
 | `app/src/test/java`, `src/testDebug/java` | Runtime, shell, Q01 repository integration, branding and demo provider behavior |
-| `app/src/journeyTest/java` | Shared Q01 UI journeys through MainActivity, Hilt and Room; Robolectric and device |
+| `app/src/journeyTest/java` | MainActivity quest/connection journeys with Hilt and Room, plus isolated CopilotPreviewActivity journeys; Robolectric and device |
 
 The journey source sets and instrumentation runner are configured in
 [app/build.gradle.kts](../app/build.gradle.kts); local host settings are in
@@ -45,6 +46,27 @@ Other test directories are not automatically shared across source sets or module
   focus and enabled actions. Use `testTag` when semantics are insufficient; add
   screenshot baselines when visuals stabilize.
 
+## Final Figma visual acceptance
+
+After completing the Copilot UI, compare every reference state listed in
+[DESIGN.md](DESIGN.md) with its full-resolution Figma export. Match the app content
+area, display scale, font scale and displayed data before comparing side by side
+or with an overlay. Check original artwork, font family and weight, text size and
+baselines, wrapping, colors, panel proportions, spacing, alignment, corners, icons
+and button bounds. Fix discrepancies and repeat the comparison after the final
+code change; inspect compact and enlarged-text layouts separately for usability.
+Exclude the SVG's drawn system bars and any Debug review controls from the
+reference comparison. Inspect the actual device app window separately: its
+compatibility density and available height can select a different layout from a
+native Robolectric reference render. A rehearsal toolbar must not hide controls
+or inadvertently force the compact layout at the reference app window.
+
+Record the references, rendered images and remaining differences in the
+implementation issue or PR. Distinguish font antialiasing differences from layout
+or styling errors. Passing builds, behavior tests or generating review images
+does not establish visual parity. Do not report an exact match while any screen
+lacks a full-resolution reference or still has an unresolved visual difference.
+
 ## Current requirement map
 
 Map changed critical behavior to implemented suites. The point economy and
@@ -64,7 +86,7 @@ coverage, not a passing result at a particular revision.
 | Point migration preserves XP evidence without minting points | [PointEconomyMigrationTest](../core/core-database/src/test/java/com/monsters/mobimon/core/database/PointEconomyMigrationTest.kt) | File-backed v1 to v2 Room |
 | Purchases charge once, equipment is separate, and one-time/daily credits have unique occurrences | [PointEconomyRepositoryTest](../core/core-database/src/test/java/com/monsters/mobimon/core/database/PointEconomyRepositoryTest.kt) | Local SQLite |
 | A loading or failed point balance is distinct from saved zero | [PointBalanceViewModelTest](../app/src/test/java/com/monsters/mobimon/ui/PointBalanceViewModelTest.kt) | ViewModel |
-| Home preserves point loading/failure, independent vehicle freshness, warning severity and history, and simulated labels without changing composition when vehicle data is lost or recovered; unavailable conversation cannot be activated | [PetHomeScreenTest](../feature/feature-pet/src/test/java/com/monsters/mobimon/feature/pet/PetHomeScreenTest.kt) | Compose and Robolectric |
+| Home preserves point loading/failure, independent vehicle freshness, warning severity and history, and simulated labels without changing composition when vehicle data is lost or recovered; conversation stays disabled without a connection destination | [PetHomeScreenTest](../feature/feature-pet/src/test/java/com/monsters/mobimon/feature/pet/PetHomeScreenTest.kt) | Compose and Robolectric |
 | Fresh readings arriving between timer ticks stay valid, genuine future timestamps remain unavailable, and readings still expire | [VehicleStateViewModelTest](../app/src/test/java/com/monsters/mobimon/ui/VehicleStateViewModelTest.kt) | Coroutine virtual time and controllable clock |
 | Home forwards navigation and retry callbacks, distinguishes profile loading/failure and loading/empty/failed inventory, keeps primary targets reachable with enlarged text and keyboard focus, and preserves letterbox aspect ratio, proportional parking typography without clipping at 1.2x text scale, compact summary, and accessible companion without a visible name caption | Same Home suite | Compose, semantics, text layout and layout/touch target bounds |
 | Failed inventory observation can be retried without losing a saved selection | [CosmeticInventoryViewModelTest](../app/src/test/java/com/monsters/mobimon/ui/CosmeticInventoryViewModelTest.kt), [CustomizationScreenTest](../feature/feature-pet/src/test/java/com/monsters/mobimon/feature/pet/CustomizationScreenTest.kt) | ViewModel and Compose |
@@ -75,17 +97,27 @@ coverage, not a passing result at a particular revision.
 | Unavailable, unknown or moving state blocks starting; parked recovery enables it | Same app journey suite | Local and device |
 | Failed settings/appearance saves preserve committed state; cancellation propagates | [PetViewModelTest](../feature/feature-pet/src/test/java/com/monsters/mobimon/feature/pet/PetViewModelTest.kt), [DataStoreSettingsRepositoryTest](../core/core-database/src/test/java/com/monsters/mobimon/core/database/DataStoreSettingsRepositoryTest.kt) | Local |
 | Menu preserves reference visual proportions with non-overlapping 76dp touch targets, takes initial focus, restores trigger focus on close, and closes after navigation; Settings Done and destination back return home | [MobiMonContentTest](../app/src/test/java/com/monsters/mobimon/ui/MobiMonContentTest.kt), [ShellStateTest](../app/src/test/java/com/monsters/mobimon/ui/ShellStateTest.kt) | Compose and JVM |
+| Settings and Home open the connection introduction, restore its origin and unavailable feedback across Activity recreation, and disable connection after parking becomes unknown | Shell and content suites, [CopilotConnectionJourneyTest](../app/src/journeyTest/java/com/monsters/mobimon/CopilotConnectionJourneyTest.kt) | JVM and shared MainActivity journeys on Robolectric/device |
+| Copilot states expose approval/help/recheck/cancel and disconnect actions, hide expired codes, disable repeated pending actions, distinguish access failures from account approval, and keep large-text controls keyboard-operable | [CopilotConnectionScreenTest](../feature/feature-auth/src/test/java/com/monsters/mobimon/feature/auth/CopilotConnectionScreenTest.kt) | Compose and Robolectric |
+| The eight Copilot reference states retain panel proportions, expose working action callbacks and render 2560×1268 review images in `feature/feature-auth/build/reports/copilot-ui` | Same connection suite | Native Robolectric graphics; review artifacts, not golden baselines |
+| Panel transitions suppress outgoing actions, preserve countdown content identity and remove expired content immediately; reduced motion bypasses fades | [CopilotPanelTransitionTest](../feature/feature-auth/src/test/java/com/monsters/mobimon/feature/auth/CopilotPanelTransitionTest.kt) | Compose with controlled animation clock |
+| The isolated Debug rehearsal connects approval help, recreation, success, destination placeholders, disconnect, expiry, reconnect and access review | [CopilotPreviewJourneyTest](../app/src/journeyTest/java/com/monsters/mobimon/preview/CopilotPreviewJourneyTest.kt) | Shared preview Activity journeys on Robolectric/device |
 | Repeated foreground notifications do not duplicate a vehicle connection | [CompanionRuntimeTest](../app/src/test/java/com/monsters/mobimon/runtime/CompanionRuntimeTest.kt) | Runtime unit test |
 | Real progression rejects simulated evidence; real adapter reports unavailable | Room local suite, [UnavailableVehicleRepositoryTest](../core/core-vss/src/test/kotlin/com/monsters/mobimon/core/vss/UnavailableVehicleRepositoryTest.kt) | JVM and local SQLite |
 | Debug application ID and launcher label match MobiMon | [BrandingTest](../app/src/testDebug/java/com/monsters/mobimon/BrandingTest.kt) | Debug and Robolectric |
 
 ## Integration boundaries
 
-The app journeys use `HiltTestApplication`. Their
+The MainActivity journeys use `HiltTestApplication`. Their
 [JourneyTestModule](../app/src/journeyTest/java/com/monsters/mobimon/testing/JourneyTestModule.kt)
 replaces platform, vehicle and AAOS use-state providers with a fixed clock, controllable
 simulated vehicle, an allowed app-use state, in-memory Room and isolated DataStore. MainActivity, feature
 ViewModels, repository bindings and reward transactions remain real.
+
+`CopilotPreviewJourneyTest` launches the plain Debug preview Activity without
+Hilt injection or Room interaction. It verifies presentation navigation and
+Activity recreation with sample data; it does not exercise the production
+connection host, vehicle authorization or an authentication provider.
 
 Activity recreation, file-backed database reopening and process restart prove
 different guarantees. The journeys cover recreation; the Room suites cover file
@@ -105,6 +137,15 @@ restrictions, but its callbacks, system blocking behavior and reconnection must
 be tested on the target AAOS image. No Copilot SDK/CLI runtime or launcher OEM
 contract is connected, so these experiences remain unavailable and have no
 end-to-end acceptance result.
+Copilot connection UI tests use explicit display states and Debug-only examples.
+They do not execute GitHub OAuth, QR approval, provider polling, token storage,
+Copilot readiness checks or real disconnect. The production route shows only the
+introduction and unavailable feedback until those integrations are implemented.
+The separate Debug launcher **Copilot UI 체험** is a manual UI rehearsal, with
+explicitly simulated accounts, a fixed timer and no network or credential storage.
+Its scenario controls and destination placeholders are outside the Figma design.
+Release manifest/resource inspection is evidence of packaging boundaries;
+it does not establish live authentication or Release runtime behavior.
 
 ## Focused commands and reports
 
@@ -115,6 +156,9 @@ check sequence and connected-test command are in
 ```bash
 # Shared Q01 journeys on Robolectric.
 ./gradlew :app:testDebugUnitTest --tests com.monsters.mobimon.Q01AppJourneyTest
+
+# Isolated Copilot rehearsal journeys on Robolectric.
+./gradlew :app:testDebugUnitTest --tests com.monsters.mobimon.preview.CopilotPreviewJourneyTest
 
 # Informational local coverage.
 ./gradlew :app:koverHtmlReportDebug :app:koverXmlReportDebug

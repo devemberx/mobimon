@@ -56,7 +56,7 @@ import com.monsters.mobimon.core.ui.MobiMonMessage
 import com.monsters.mobimon.core.ui.MobiMonSettingsColors
 import com.monsters.mobimon.core.ui.MobiMonTheme
 
-/** Figma P05 settings; unsupported service controls remain visibly unavailable. */
+/** Figma P05 settings with an optional app-owned Copilot connection destination. */
 @Composable
 fun SettingsScreen(
     settings: CompanionSettings,
@@ -74,6 +74,7 @@ fun SettingsScreen(
     onDone: () -> Unit = {},
     parkedVerified: Boolean = false,
     simulatedVehicle: Boolean = false,
+    onOpenCopilot: (() -> Unit)? = null,
 ) {
     Box(modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
         SettingsScenery(Modifier.matchParentSize())
@@ -112,6 +113,7 @@ fun SettingsScreen(
                                 motionError,
                                 Modifier.offset(352.dp * scale, 224.dp * scale).width(1856.dp * scale),
                                 reference = true,
+                                onOpenCopilot = onOpenCopilot,
                             )
                             Text(
                                 stringResource(R.string.pet_settings_parked_notice),
@@ -154,6 +156,7 @@ fun SettingsScreen(
                             0.75f,
                             visibilityError,
                             motionError,
+                            onOpenCopilot = onOpenCopilot,
                         )
                         if (settingsLoadFailed) SettingsUnavailable(true, onRetry)
                         Text(stringResource(R.string.pet_settings_parked_notice), color = MobiMonSettingsColors.muted)
@@ -250,14 +253,21 @@ private fun SettingsRows(
     motionError: String?,
     modifier: Modifier = Modifier,
     reference: Boolean = false,
+    onOpenCopilot: (() -> Unit)? = null,
 ) {
     Column(modifier, verticalArrangement = Arrangement.spacedBy(24.dp * scale)) {
         SettingsRow(
             R.string.pet_settings_ai_title,
-            R.string.pet_settings_ai_unavailable,
-            R.string.pet_settings_unavailable_label,
+            if (onOpenCopilot == null) {
+                R.string.pet_settings_ai_unavailable
+            } else {
+                R.string.pet_settings_ai_connect_description
+            },
+            if (onOpenCopilot == null) R.string.pet_settings_unavailable_label else R.string.pet_settings_ai_connect,
             scale,
             reference = reference,
+            enabled = parkedVerified,
+            onClick = onOpenCopilot,
         )
         SettingsRow(
             R.string.pet_setting_visibility,
@@ -314,9 +324,12 @@ private fun SettingsRow(
     feedback: String? = null,
     isError: Boolean = false,
     reference: Boolean = false,
+    onClick: (() -> Unit)? = null,
 ) {
     val control =
-        if (checked != null) {
+        if (onClick != null) {
+            Modifier.clickable(enabled = enabled, role = Role.Button, onClick = onClick)
+        } else if (checked != null) {
             Modifier.toggleable(checked, enabled = enabled, role = Role.Switch, onValueChange = onCheckedChange)
         } else {
             Modifier.semantics(mergeDescendants = true) { disabled() }
