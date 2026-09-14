@@ -2,11 +2,11 @@
   "formatVersion": 1,
   "database": {
     "version": 3,
-    "identityHash": "f5771c60079963c549ad6469f9b36b5d",
+    "identityHash": "d9187b4df633f116a0226950f7d92f99",
     "entities": [
       {
         "tableName": "user_profiles",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `totalPoints` INTEGER NOT NULL, `currentLevel` INTEGER NOT NULL, `totalDistanceKm` REAL NOT NULL, `selectedPetId` TEXT NOT NULL, PRIMARY KEY(`id`))",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `totalPoints` INTEGER NOT NULL, `currentLevel` INTEGER NOT NULL, `totalDistanceKm` REAL NOT NULL, `selectedPetId` TEXT NOT NULL, `safeDriveDaysTotal` INTEGER NOT NULL, `safeDriveDaysCount` INTEGER NOT NULL, `tutorialClearFlag` INTEGER NOT NULL, PRIMARY KEY(`id`))",
         "fields": [
           {
             "fieldPath": "id",
@@ -36,6 +36,24 @@
             "fieldPath": "selectedPetId",
             "columnName": "selectedPetId",
             "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "safeDriveDaysTotal",
+            "columnName": "safeDriveDaysTotal",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "safeDriveDaysCount",
+            "columnName": "safeDriveDaysCount",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "tutorialClearFlag",
+            "columnName": "tutorialClearFlag",
+            "affinity": "INTEGER",
             "notNull": true
           }
         ],
@@ -82,7 +100,7 @@
       },
       {
         "tableName": "drive_daily_summaries",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`date` TEXT NOT NULL, `distanceKm` REAL NOT NULL, `safeBeltMinutes` INTEGER NOT NULL, `hardBrakeCount` INTEGER NOT NULL, `hardAccelCount` INTEGER NOT NULL, `overspeedCount` INTEGER NOT NULL, `earnedPoints` INTEGER NOT NULL, `bonusPoints` INTEGER NOT NULL, PRIMARY KEY(`date`))",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`date` TEXT NOT NULL, `distanceKm` REAL NOT NULL, `safeBeltMinutes` INTEGER NOT NULL, `hardBrakeCount` INTEGER NOT NULL, `hardAccelCount` INTEGER NOT NULL, `overspeedCount` INTEGER NOT NULL, `earnedPoints` INTEGER NOT NULL, `bonusPoints` INTEGER NOT NULL, `safeDriveScore` INTEGER NOT NULL, `turnSignalOnCount` INTEGER NOT NULL, PRIMARY KEY(`date`))",
         "fields": [
           {
             "fieldPath": "date",
@@ -129,6 +147,18 @@
           {
             "fieldPath": "bonusPoints",
             "columnName": "bonusPoints",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "safeDriveScore",
+            "columnName": "safeDriveScore",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "turnSignalOnCount",
+            "columnName": "turnSignalOnCount",
             "affinity": "INTEGER",
             "notNull": true
           }
@@ -732,7 +762,7 @@
     "views": [],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'f5771c60079963c549ad6469f9b36b5d')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'd9187b4df633f116a0226950f7d92f99')"
     ]
   }
 }
