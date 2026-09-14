@@ -7,6 +7,6 @@ object MobiMonDimensions {
     val touchTarget = 76.dp
     val contentPadding = 24.dp
     val contentGap = 24.dp
-    val panelCorner = 24.dp
-    val messageCorner = 16.dp
+    val panelCorner = 48.dp
+    val messageCorner = 32.dp
 }

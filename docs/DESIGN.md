@@ -2,7 +2,7 @@
 
 MobiMon is a calm in-car companion for time spent parked. It combines a friendly
 character, understandable vehicle information, conversation and personal
-expression. The [Figma design](https://www.figma.com/design/7tyb4oJsJAUc15KnU7H0F6?node-id=231-1176)
+expression. The v4 [Figma design](https://www.figma.com/design/7tyb4oJsJAUc15KnU7H0F6?node-id=231-1176)
 is the visual reference; this document defines the product experience.
 Technical contracts belong in [ARCHITECTURE.md](ARCHITECTURE.md), and verification
 belongs in [TESTING.md](TESTING.md).
@@ -11,7 +11,10 @@ belongs in [TESTING.md](TESTING.md).
 
 The core loop is **complete quests → earn points → buy accessories → personalize
 your companion**. Points are spendable rewards, not experience. There are no
-growth stages, levels, evolution or driving scores.
+growth stages, levels, evolution or driving scores. XP/LEVEL/growth labels still
+visible in Figma are obsolete annotations, not implementation requirements.
+Historical XP records remain a storage compatibility concern; do not convert
+them into points or infer new reward amounts from those examples.
 
 Users choose Mobi the dog or Luna the cat. Their choice expresses personality
 and does not change quest rewards. The companion's expression reflects available
@@ -25,8 +28,8 @@ character. Existing purchases, rewards, preferences and drafts remain intact.
 
 ## Visual language
 
-- Use a deep navy setting, muted green scenery, cream speech bubbles and primary
-  buttons, rounded panels and restrained decoration. Alternate backgrounds keep
+- Use the v4 Twilight palette: Night backgrounds, Surface panels, Cream primary
+  actions, Sky selection/focus, Mint success and rounded panels. Alternate backgrounds keep
   the same meanings for selection, warning and action colors.
 - Use one fixed in-app vehicle-display palette through the shared MobiMonTheme;
   system light/dark preferences do not switch the app palette.
@@ -39,11 +42,10 @@ character. Existing purchases, rewards, preferences and drafts remain intact.
 - Treat the 2560 × 1440 landscape artboard as a composition reference. Respect
   system bars, cutouts and the available window; do not require fixed pixels or
   a single aspect ratio.
-- The [letterbox Home reference](https://www.figma.com/design/7tyb4oJsJAUc15KnU7H0F6?node-id=128-569)
-  reserves 76/96 artboard units for OS bars. Fit its 2560:1268 content inside the
-  actual safe window without stretching or duplicating system bars. Use bundled
-  Noto Sans KR Regular/Bold for this composition; keep enlarged-text and compact
-  windows scrollable. The [font license](../core/core-ui/src/main/assets/fonts/OFL-NotoSansKR.txt)
+- The v4 artboards reserve 76/96 units for the drawn OS bars. Compare the
+  2560:1268 app content area, respecting actual system insets without drawing a
+  second set of bars. Use bundled Noto Sans KR Regular/Bold; reflow or scroll
+  compact and enlarged-text windows. The [font license](../core/core-ui/src/main/assets/fonts/OFL-NotoSansKR.txt)
   ships with the app.
 - Use at least 76 × 76 dp touch targets for primary controls, with 24 dp spacing
   and edge clearance where possible. Start with 32 sp main text and 24 sp
@@ -67,11 +69,14 @@ Use these components before adding a feature-local equivalent:
 
 | API | Use |
 | --- | --- |
-| `MobiMonTheme`, `MobiMonTwilightColors` | Bundled typography and semantic v4 Night/Surface/Cream/Sky/Mint roles |
+| `MobiMonTheme`, `MobiMonColors`, `MobiMonTwilightColors` | Bundled typography and semantic v4 Night/Surface/Cream/Sky/Mint roles |
 | `MobiMonDimensions` | Shared 76dp target, content spacing and panel/message corners |
 | `MobiMonDestination` | Back/Home header and a slot for the full-content feature body |
 | `MobiMonContentColumn`, `MobiMonSection` | Scrollable content and titled groups |
-| `MobiMonButton` | Caller-owned enabled state and a label/icon slot with a 76dp minimum target |
+| `MobiMonButton`, `MobiMonButtonStyle` | Primary, secondary and destructive actions; explicit enabled state, visible focus and 76dp minimum targets |
+| `MobiMonPanel`, `MobiMonListItem` | Information panels and aligned leading/headline/supporting/trailing slots; compact rows reflow |
+| `MobiMonTabs`, `MobiMonTab`, `MobiMonSelectionCard` | Wrapping categories and selectable previews; caller-owned selection, enabled state and callbacks |
+| `MobiMonStatusBadge` | Labelled informational, success, warning and error states without granting authorization |
 | `MobiMonMessage`, `MobiMonSourceBadge` | Accessible feedback and explicit simulated/real labels |
 | `MobiMonPointSummary` | Loading, failed, zero and committed balances |
 | `PetAvatar`, `CompanionIcon` | Replaceable character artwork and shared icon rendering |
@@ -82,13 +87,17 @@ enlarged-text previews and a Debug-only **MobiMon UI Catalog · Demo** launcher;
 it has no repository or provider. AI's rehearsal implementation, sample strings,
 QR and manifest now live entirely in `feature-auth/src/debug`.
 
-For new v4 screens, wrap the feature body with
-`MobiMonTheme(colorScheme = MobiMonTwilightColors) { ... }`. The default palette
-preserves existing screens during staged migration. The v4 color roles match the
-shared UI rules in the supplied Figma file and the already exported Copilot
-palette. Keep fixed artboard coordinates and screen-specific styling inside the
-feature until a second consumer establishes a reusable component. Do not shrink
-touch targets to match an artboard pixel measurement.
+`MobiMonTheme` uses v4 by default across production, Debug and previews. There
+is no separate Home/Settings palette or older-design opt-in. Shared components
+accept display values, slots and callbacks, never repositories or ViewModels.
+Selection is separate from purchase/equip/claim actions; pending and disabled
+states are caller-owned. Use native controls and labels for accessibility and
+keep 76dp targets even where an artboard's scaled pixels would be smaller.
+
+Build shared primitives before parallel screen work. Feature owners compose
+them into final layouts and own feature-specific dialogs, cards and state.
+Keep fixed artboard coordinates inside a feature when needed for its reference
+layout; do not expand a shared API with unrelated screen-specific flags.
 
 Import original Figma exports into the owning feature's resources, with a
 feature-specific prefix. Shared fonts and character artwork belong in `core-ui`;
@@ -99,23 +108,42 @@ vector paths during Android conversion. Do not commit temporary MCP asset URLs,
 whole-screen SVGs as UI, invented icon replacements, or duplicated shared artwork.
 Remove superseded assets only after checking all variants, previews and tests.
 
-Home's default Mobi artwork is the supplied `그림1.png` for P01 (128:569),
-bundled unchanged as `drawable-nodpi/mobimon_mobi_v3.png`. Copilot selects the
-original v4 artwork through `PetArtwork.COPILOT`, as described in its
-[connection composition](#copilot-connection-ui). Luna, legacy Cream and
-equipped-accessory variants still use placeholders.
+Default, unequipped Mobi uses the original v4 PNG through `PetAvatar`; the retired
+character PNG and drawn scenery are removed. Luna, historical Cream and
+equipped accessory presentations remain explicit temporary renderer fallbacks until approved
+assets are supplied. They are not additional product appearance choices.
+Artwork replacement must not change rewards, ownership or equipment.
 
-This library is a migration foundation, not a claim that every screen matches
-v4. Exact screen acceptance still requires the
-[final visual comparison](TESTING.md#final-figma-visual-acceptance); unavailable
-exports or unresolved differences must remain explicit in the implementation PR.
+The shared library is implemented independently of full-screen migration.
+Home, Menu, Settings and Shop currently combine these primitives with existing
+behavior; their final v4 compositions remain feature work. Conversation and
+expanded Vehicle/Quest layouts are also pending. Do not require all feature
+screens to be finished in a shared-component integration change. Each owner
+must perform [final visual acceptance](TESTING.md#final-figma-visual-acceptance)
+for their completed screens; unavailable exports and differences remain explicit.
+
+## V4 reference ownership
+
+Only the current v4 page is a visual target; earlier pages and superseded
+coordinate specifications must not guide new implementation. This table links
+the authoritative groups without duplicating each frame's geometry here.
+
+| Area | V4 reference | Implementation boundary |
+| --- | --- | --- |
+| Shared rules and assets | [UI rules](https://www.figma.com/design/7tyb4oJsJAUc15KnU7H0F6?node-id=243-6341), [artwork](https://www.figma.com/design/7tyb4oJsJAUc15KnU7H0F6?node-id=231-4243) | `core-ui` tokens and reusable primitives |
+| Home, Menu, Settings | [01 group](https://www.figma.com/design/7tyb4oJsJAUc15KnU7H0F6?node-id=255-9686) | Companion UI and app-owned menu navigation |
+| Connection | [02 group](https://www.figma.com/design/7tyb4oJsJAUc15KnU7H0F6?node-id=255-9688) | AI presentation; real adapter remains separate |
+| Conversation | [03 group](https://www.figma.com/design/7tyb4oJsJAUc15KnU7H0F6?node-id=255-9690) | AI feature |
+| Customization and Shop | [04 group](https://www.figma.com/design/7tyb4oJsJAUc15KnU7H0F6?node-id=255-9692) | Companion feature, committed points/ownership |
+| Vehicle | [05 group](https://www.figma.com/design/7tyb4oJsJAUc15KnU7H0F6?node-id=255-9694) | Vehicle feature; unavailable values stay unavailable |
+| Quest | [06 group](https://www.figma.com/design/7tyb4oJsJAUc15KnU7H0F6?node-id=255-9696) | Quest feature; exclude obsolete XP/progression and reconcile retained flows with points rules |
 
 ## Screens and navigation
 
 | Screen | Purpose and primary content |
 | --- | --- |
 | Home | Selected companion and background, parking status, vehicle summary, point balance, conversation and customization entries. |
-| Menu | A small overlay with Vehicle status, Quests and Settings. |
+| Menu | V4 target: companion panel and entries for conversation, customization, Vehicle, Quest, Settings and Home. |
 | Vehicle status | Available readings, specific warnings, freshness and connection status. |
 | Quests | Conditions, reward type, point reward, progress and the next available action. |
 | Customization | Friends, Outfits and accessories, and Backgrounds; preview, ownership and application states. |
@@ -123,8 +151,10 @@ exports or unresolved differences must remain explicit in the implementation PR.
 | Conversation | Clearly identified speakers, conversation history, voice input and a text composer. |
 | Settings | AI connection, vehicle-home character, spoken replies, reduced motion and Do Not Disturb. |
 
-The menu opens over home. Its destinations, conversation and customization use
-the full content area. Entering a menu destination closes the menu.
+The current menu preserves its three existing actions in a v4-styled popup;
+the six-entry composition above is a target, not a claim of completion.
+Its destinations, conversation and customization use the full content area.
+Entering a menu destination closes the menu.
 
 Back closes the keyboard first, then an open dialog or menu, then returns to the
 previous screen. Menu destinations return to home; settings subpages return to
@@ -242,20 +272,9 @@ unavailable reading as zero or an unchecked item as normal.
 
 ## AI connection and settings
 
-The current Settings and menu composition follows v3: [P05 Settings](https://www.figma.com/design/7tyb4oJsJAUc15KnU7H0F6?node-id=128-1030)
-and [P02 Menu](https://www.figma.com/design/7tyb4oJsJAUc15KnU7H0F6?node-id=128-642).
-Settings fits the same 2560:1268 safe content reference as Home. Artboard rows
-start at (352, 300), measure 1856×144 and have 24-unit gaps; Done is
-(800, 1192), 960×104. Row titles use Noto Sans KR Regular 40/52 and descriptions
-32/44, with zero letter spacing. The target AAOS image reports a physical
-160dpi display but applies approximately 229dpi compatibility density to this
-app (about 1792×888dp of content); previews use that app window, not pixel counts.
-Smaller or enlarged-text windows reflow and scroll. At the reference viewport,
-the menu preserves its measured visual bounds while expanding transparent hit
-areas to at least 76dp. When these areas would overlap, it uses a scrolling
-layout with 24dp gaps. Panel and control outlines use `#708C99` and `#748F9A`
-(3.28:1 and 3.04:1 against their respective surfaces), brighter than the reference
-outlines to retain the required non-text contrast.
+Settings uses shared information rows and action/status components. Its
+supported behavior below remains independent of final screen composition.
+The fixed-coordinate specification for the retired design is not retained.
 
 Settings exposes the persisted in-app vehicle-home preview and reduced-motion
 preferences, plus the Copilot connection introduction. Spoken replies and Do Not
@@ -287,7 +306,7 @@ P54 reconnect, P56 access checks and P55 disconnect. A shared header and compani
 panel frame the content; fit the 2560:1268 safe area with 884-unit companion and
 1488-unit content panels separated by 44 units. Compact or enlarged-text windows
 scroll and stack controls, with at least 76dp touch targets. Use the shared
-`MobiMonConnectionColors` roles and bundled Noto Sans KR Regular/Bold, with zero
+`MobiMonColors` roles and bundled Noto Sans KR Regular/Bold, with zero
 letter spacing and fractional glyph advances when scaling the composition. The
 eight supplied SVGs provide the shared header, 48-unit panel corners, 656-unit
 character placement, screen-specific font metrics, layouts and original icon
@@ -295,7 +314,8 @@ paths. Their identical original 1254×1254 transparent character
 PNG is preserved in [mobimon_mobi_v4.png](../core/core-ui/src/main/res/drawable-nodpi/mobimon_mobi_v4.png)
 and selected through `PetAvatar` for the default Mobi connection presentation.
 Other appearances retain the renderer's existing fallbacks. Reference layouts
-use the exported coordinates; compact, enlarged-text and additional feedback
+use the exported coordinates, except the account row uses shared centered layout
+to correct the source reference's raised username; compact, enlarged-text and additional feedback
 states reflow. The supplied QR pattern and example-account label are Debug-only
 review data. Apply the [final visual acceptance](TESTING.md#final-figma-visual-acceptance)
 separately from behavior verification.

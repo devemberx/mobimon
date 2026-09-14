@@ -10,7 +10,7 @@ import androidx.compose.ui.tooling.preview.Preview
 @Preview(name = "Components · enlarged text", widthDp = 800, heightDp = 900, fontScale = 1.5f, locale = "ko")
 @Composable
 internal fun ComponentGallery() {
-    MobiMonTheme(colorScheme = MobiMonTwilightColors) {
+    MobiMonTheme {
         Surface {
             MobiMonDestination(title = "MobiMon UI", onBack = {}, onHome = {}) {
                 MobiMonContentColumn {
@@ -20,7 +20,20 @@ internal fun ComponentGallery() {
                         MobiMonPointSummary(balance = 0)
                         MobiMonPointSummary(balance = null, failed = true)
                         MobiMonButton(onClick = {}) { Text("Continue") }
+                        MobiMonButton(onClick = {}, style = MobiMonButtonStyle.SECONDARY) { Text("Back") }
+                        MobiMonButton(onClick = {}, style = MobiMonButtonStyle.DESTRUCTIVE) { Text("Disconnect") }
                         MobiMonButton(onClick = {}, enabled = false) { Text("Unavailable") }
+                    }
+                    MobiMonSection("Selection and information") {
+                        MobiMonTabs {
+                            MobiMonTab(selected = true, onClick = {}) { Text("Friends") }
+                            MobiMonTab(selected = false, onClick = {}) { Text("Backgrounds") }
+                        }
+                        MobiMonSelectionCard(selected = true, onClick = {}) { Text("Selected preview") }
+                        MobiMonListItem(
+                            supporting = { Text("Committed preference") },
+                            trailing = { MobiMonStatusBadge(tone = MobiMonStatusTone.SUCCESS) { Text("Available") } },
+                        ) { Text("Status") }
                     }
                     MobiMonMessage("Availability message")
                     MobiMonMessage("Retryable failure", isError = true)

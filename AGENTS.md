@@ -22,7 +22,8 @@
 - Preserve the [module boundaries](docs/ARCHITECTURE.md#target-modules-and-dependencies): keep `core-domain` independent of Android, keep feature modules independent of each other and concrete data implementations, and assemble bindings in `app`.
 - Keep simulated providers in Debug/demo source sets with explicit labels and separate application IDs, profiles, and databases. Release must report unavailable vehicle data until a verified real adapter is connected; unknown driving state cannot authorize quest commands.
 - Keep example accounts, codes and simulated connection results in Debug/test sources. Follow the [connection UI boundary](docs/ARCHITECTURE.md#copilot-connection-ui); a rendered success state does not verify a provider connection.
-- Route quest rewards through the repository's atomic Room transaction. Preserve evidence validation, ownership/revision checks, and completion uniqueness per reward occurrence; UI code must not award XP or points directly.
+- Route quest rewards through the repository's atomic Room transaction. Preserve evidence validation, ownership/revision checks, and completion uniqueness per reward occurrence; UI code must not grant rewards directly.
+- Use only the current v4 visual specification and shared `core-ui` primitives. Feature owners finish their own screens; shared-component readiness does not mean full-screen visual acceptance. Do not restore XP/progression UI from obsolete Figma labels.
 - Keep character artwork replaceable through [PetAvatar](core/core-ui/src/main/java/com/monsters/mobimon/core/ui/PetAvatar.kt). Keep rewards, ownership, equipment and interaction state outside the renderer, and limit placeholder artwork work while separate character assets are being prepared.
 
 ## Documentation

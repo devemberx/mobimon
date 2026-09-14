@@ -3,39 +3,63 @@ package com.monsters.mobimon.core.ui
 import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Typography
-import androidx.compose.material3.darkColorScheme
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 
-private val VehicleColors =
-    darkColorScheme(
-        primary = Color(0xFFF2EFE5),
-        onPrimary = Color(0xFF253443),
-        primaryContainer = Color(0xFF29484B),
-        onPrimaryContainer = Color(0xFFEEF2EA),
-        secondary = Color(0xFFB9DDC6),
-        onSecondary = Color(0xFF253443),
-        secondaryContainer = Color(0xFF2B4249),
-        onSecondaryContainer = Color(0xFFD7E3DC),
-        tertiary = Color(0xFF89A492),
-        onTertiary = Color(0xFF111F32),
-        tertiaryContainer = Color(0xFF415F5E),
-        onTertiaryContainer = Color(0xFFEEF2EA),
-        background = Color(0xFF111F32),
-        onBackground = Color(0xFFEEF2EA),
-        surface = Color(0xFF173144),
-        onSurface = Color(0xFFEEF2EA),
-        surfaceVariant = Color(0xFF294353),
-        onSurfaceVariant = Color(0xFFD3E3DF),
-        outline = Color(0xFFA8C0C6),
-        outlineVariant = Color(0xFF5D7885),
-    )
-
 private val CarTypography =
     Typography(
+        displayLarge =
+            TextStyle(
+                fontFamily = MobiMonFontFamily,
+                fontSize = 72.sp,
+                lineHeight = 96.sp,
+                fontWeight = FontWeight.Bold,
+            ),
+        displayMedium =
+            TextStyle(
+                fontFamily = MobiMonFontFamily,
+                fontSize = 56.sp,
+                lineHeight = 72.sp,
+                fontWeight = FontWeight.Bold,
+            ),
+        displaySmall =
+            TextStyle(
+                fontFamily = MobiMonFontFamily,
+                fontSize = 48.sp,
+                lineHeight = 64.sp,
+                fontWeight = FontWeight.Bold,
+            ),
+        headlineLarge =
+            TextStyle(
+                fontFamily = MobiMonFontFamily,
+                fontSize = 40.sp,
+                lineHeight = 56.sp,
+                fontWeight = FontWeight.Bold,
+            ),
+        headlineSmall =
+            TextStyle(
+                fontFamily = MobiMonFontFamily,
+                fontSize = 28.sp,
+                lineHeight = 40.sp,
+                fontWeight = FontWeight.Bold,
+            ),
+        titleSmall =
+            TextStyle(
+                fontFamily = MobiMonFontFamily,
+                fontSize = 24.sp,
+                lineHeight = 36.sp,
+                fontWeight = FontWeight.Bold,
+            ),
+        bodySmall =
+            TextStyle(
+                fontFamily = MobiMonFontFamily,
+                fontSize = 24.sp,
+                lineHeight = 36.sp,
+            ),
+        labelMedium = TextStyle(fontFamily = MobiMonFontFamily, fontSize = 24.sp, lineHeight = 36.sp),
+        labelSmall = TextStyle(fontFamily = MobiMonFontFamily, fontSize = 24.sp, lineHeight = 36.sp),
         headlineMedium =
             TextStyle(
                 fontFamily = MobiMonFontFamily,
@@ -71,7 +95,7 @@ private val CarTypography =
 /** Applies the fixed vehicle-display palette, independent of the system theme. */
 @Composable
 fun MobiMonTheme(
-    colorScheme: ColorScheme = VehicleColors,
+    colorScheme: ColorScheme = MobiMonTwilightColors,
     content: @Composable () -> Unit,
 ) {
     MaterialTheme(

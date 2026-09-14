@@ -11,11 +11,12 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.sizeIn
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 
 /** A full-content destination with accessible Back and Home actions.
@@ -36,7 +37,8 @@ fun MobiMonDestination(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(MobiMonDimensions.contentGap),
         ) {
-            TextButton(
+            MobiMonButton(
+                style = MobiMonButtonStyle.SECONDARY,
                 onClick = onBack,
                 modifier =
                     Modifier.sizeIn(
@@ -46,8 +48,9 @@ fun MobiMonDestination(
             ) {
                 Text(stringResource(R.string.mobimon_back))
             }
-            Text(title, Modifier.weight(1f), style = MaterialTheme.typography.headlineMedium)
-            TextButton(
+            Text(title, Modifier.weight(1f).semantics { heading() }, style = MaterialTheme.typography.headlineMedium)
+            MobiMonButton(
+                style = MobiMonButtonStyle.SECONDARY,
                 onClick = onHome,
                 modifier =
                     Modifier.sizeIn(

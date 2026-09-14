@@ -2,8 +2,8 @@ package com.monsters.mobimon.core.ui
 
 import androidx.compose.ui.graphics.Color
 
-/** Colors exported from the Copilot v4 Figma frames. */
-object MobiMonConnectionColors {
+/** Semantic colors from the v4 shared UI rules, used by every feature. */
+object MobiMonColors {
     val background = Color(0xFF091525)
     val panel = Color(0xFF142A42)
     val raised = Color(0xFF203C58)

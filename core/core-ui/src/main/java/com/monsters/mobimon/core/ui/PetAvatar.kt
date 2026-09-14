@@ -17,24 +17,20 @@ import androidx.compose.ui.unit.dp
 /**
  * Renders supplied Mobi artwork, with placeholders for artwork not yet supplied.
  * [appearanceKey] accepts GOLDEN or CREAM without importing a domain model.
- * [stage] is retained only for source compatibility with the legacy renderer.
  */
 @Composable
 fun PetAvatar(
     modifier: Modifier = Modifier,
     appearanceKey: String = "GOLDEN",
-    stage: Int = 1,
     friendId: String = "friend:mobi",
     accessoryId: String? = null,
-    artwork: PetArtwork = PetArtwork.HOME,
 ) {
     val cat = friendId == "friend:luna"
     val cream = appearanceKey == "CREAM"
     val description = stringResource(if (cat) R.string.mobimon_luna_description else R.string.mobimon_mobi_description)
     if (!cat && !cream && accessoryId == null) {
-        val image = if (artwork == PetArtwork.COPILOT) R.drawable.mobimon_mobi_v4 else R.drawable.mobimon_mobi_v3
         Image(
-            painter = painterResource(image),
+            painter = painterResource(R.drawable.mobimon_mobi_v4),
             contentDescription = description,
             modifier = modifier.size(120.dp),
         )
@@ -110,5 +106,3 @@ fun PetAvatar(
         drawCircle(Color(0xFF51402C), radius * 0.1f, center + Offset(0f, radius * 0.25f))
     }
 }
-
-enum class PetArtwork { HOME, COPILOT }

@@ -2,9 +2,7 @@ package com.monsters.mobimon.feature.quest
 
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
-import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -12,6 +10,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.monsters.mobimon.core.domain.QuestProgress
 import com.monsters.mobimon.core.domain.QuestType
+import com.monsters.mobimon.core.ui.MobiMonButton
+import com.monsters.mobimon.core.ui.MobiMonButtonStyle
 import com.monsters.mobimon.core.ui.MobiMonContentColumn
 import com.monsters.mobimon.core.ui.MobiMonMessage
 import com.monsters.mobimon.core.ui.MobiMonPointSummary
@@ -57,13 +57,14 @@ fun QuestScreen(
                 }
                 active?.type == QuestType.Q01 -> {
                     Text(stringResource(R.string.quest_active), style = MaterialTheme.typography.labelLarge)
-                    Button(
+                    MobiMonButton(
                         onClick = onOpenVehicleInfo,
                         modifier = Modifier.fillMaxWidth().heightIn(min = 76.dp),
                     ) {
                         Text(stringResource(R.string.quest_open_vehicle))
                     }
-                    OutlinedButton(
+                    MobiMonButton(
+                        style = MobiMonButtonStyle.SECONDARY,
                         onClick = onCancelQuest,
                         enabled = canManageQuest && !isBusy,
                         modifier = Modifier.fillMaxWidth().heightIn(min = 76.dp),
@@ -74,7 +75,7 @@ fun QuestScreen(
                 else -> {
                     Text(stringResource(R.string.quest_reward), style = MaterialTheme.typography.labelLarge)
                     if (active != null) Text(stringResource(R.string.quest_other_active))
-                    Button(
+                    MobiMonButton(
                         onClick = { onStartQuest(QuestType.Q01) },
                         enabled = canManageQuest && !isBusy && active == null,
                         modifier = Modifier.fillMaxWidth().heightIn(min = 76.dp),

@@ -1,6 +1,5 @@
 package com.monsters.mobimon.feature.pet
 
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -19,14 +18,10 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -43,6 +38,8 @@ import com.monsters.mobimon.core.domain.QuestProgress
 import com.monsters.mobimon.core.domain.QuestType
 import com.monsters.mobimon.core.domain.SignalSource
 import com.monsters.mobimon.core.domain.VehicleSnapshot
+import com.monsters.mobimon.core.ui.MobiMonButton
+import com.monsters.mobimon.core.ui.MobiMonButtonStyle
 import com.monsters.mobimon.core.ui.MobiMonMessage
 import com.monsters.mobimon.core.ui.MobiMonPointSummary
 import com.monsters.mobimon.core.ui.MobiMonSourceBadge
@@ -79,51 +76,7 @@ fun PetHomeScreen(
     val talkText = if (connectionAvailable) R.string.pet_talk_action else R.string.pet_talk_unavailable
     Surface(modifier = modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
         Box {
-            HomeScenery(Modifier.matchParentSize())
             BoxWithConstraints(Modifier.fillMaxSize().safeDrawingPadding()) {
-                val fontScale = LocalDensity.current.fontScale
-                val composed =
-                    maxWidth / fontScale >= 1400.dp &&
-                        maxHeight / fontScale >= 800.dp &&
-                        fontScale <= 1.2f &&
-                        !vehiclePreview &&
-                        !profileObservationFailed &&
-                        !inventoryLoadFailed &&
-                        inventoryLoaded &&
-                        pointBalance != null &&
-                        !pointLoadFailed &&
-                        friendId != null &&
-                        snapshot.warnings.isEmpty()
-                if (composed) {
-                    HomeComposition(
-                        maxWidth,
-                        maxHeight,
-                        profile,
-                        snapshot,
-                        requireNotNull(friendId),
-                        pointBalance,
-                        pointLoadFailed,
-                        onOpenMenu,
-                        onOpenAppearance,
-                        onOpenVehicleInfo,
-                        onPetClick,
-                        connectionAvailable && interactionAllowed,
-                    ) {
-                        HomeSignalNotes(snapshot)
-                        Text(
-                            stringResource(connectionText),
-                            textAlign = TextAlign.Center,
-                        )
-                        if (!interactionAllowed) {
-                            Text(
-                                stringResource(R.string.pet_interaction_restricted),
-                                textAlign = TextAlign.Center,
-                            )
-                        }
-                        HomeSecondaryActions(vehiclePreview, legacyQuestVisible, progress, onSwitchHome, onOpenQuests)
-                    }
-                    return@BoxWithConstraints
-                }
                 val edge = (maxWidth * 0.025f).coerceIn(24.dp, 64.dp)
                 val sceneHeight = (maxHeight * 0.4f).coerceIn(300.dp, 800.dp)
                 val avatarSize = (maxHeight * 0.32f).coerceIn(200.dp, 620.dp)
@@ -197,7 +150,7 @@ fun PetHomeScreen(
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.spacedBy(12.dp),
                     ) {
-                        Button(
+                        MobiMonButton(
                             onClick = onPetClick,
                             enabled = connectionAvailable && interactionAllowed,
                             modifier =
@@ -207,11 +160,6 @@ fun PetHomeScreen(
                                         max = 540.dp,
                                     ).fillMaxWidth()
                                     .heightIn(min = 76.dp),
-                            colors =
-                                ButtonDefaults.buttonColors(
-                                    disabledContainerColor = MaterialTheme.colorScheme.primary,
-                                    disabledContentColor = MaterialTheme.colorScheme.onPrimary,
-                                ),
                         ) {
                             Text(stringResource(talkText))
                         }
@@ -262,13 +210,13 @@ private fun HomeHeader(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(24.dp),
             ) {
-                OutlinedButton(
+                MobiMonButton(
+                    style = MobiMonButtonStyle.SECONDARY,
                     onClick = onOpenMenu,
                     modifier =
                         Modifier
                             .sizeIn(minWidth = 76.dp, minHeight = 76.dp)
                             .semantics { contentDescription = menuDescription },
-                    shape = RoundedCornerShape(24.dp),
                 ) { Text(stringResource(R.string.pet_menu)) }
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text(
@@ -288,16 +236,10 @@ private fun HomeHeader(
                 Box(Modifier.heightIn(min = 76.dp), contentAlignment = Alignment.Center) {
                     MobiMonPointSummary(pointBalance, failed = pointLoadFailed)
                 }
-                Button(
+                MobiMonButton(
+                    style = MobiMonButtonStyle.SECONDARY,
                     onClick = onOpenAppearance,
                     modifier = Modifier.heightIn(min = 76.dp),
-                    shape = RoundedCornerShape(24.dp),
-                    colors =
-                        ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.surfaceVariant,
-                            contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                        ),
-                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
                 ) { Text(stringResource(R.string.pet_customize)) }
             }
         }
@@ -317,11 +259,19 @@ private fun HomeSecondaryActions(
         horizontalArrangement = Arrangement.spacedBy(24.dp, Alignment.CenterHorizontally),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        TextButton(onClick = onSwitchHome, modifier = Modifier.heightIn(min = 76.dp)) {
+        MobiMonButton(
+            style = MobiMonButtonStyle.SECONDARY,
+            onClick = onSwitchHome,
+            modifier = Modifier.heightIn(min = 76.dp),
+        ) {
             Text(stringResource(if (vehiclePreview) R.string.pet_companion_home else R.string.pet_vehicle_home))
         }
         if (legacyQuestVisible) {
-            TextButton(onClick = onOpenQuests, modifier = Modifier.heightIn(min = 76.dp)) {
+            MobiMonButton(
+                style = MobiMonButtonStyle.SECONDARY,
+                onClick = onOpenQuests,
+                modifier = Modifier.heightIn(min = 76.dp),
+            ) {
                 Text(
                     stringResource(
                         when {
@@ -343,13 +293,13 @@ private fun HomeFailure(
 ) {
     Column(Modifier.widthIn(max = 1320.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         MobiMonMessage(message, isError = true)
-        Button(onClick = onRetry, modifier = Modifier.heightIn(min = 76.dp)) {
+        MobiMonButton(onClick = onRetry, modifier = Modifier.heightIn(min = 76.dp)) {
             Text(stringResource(R.string.pet_retry))
         }
     }
 }
 
-/** Initial profile loading and failure use the same fixed Home setting. */
+/** Initial profile loading and failure use the same Home theme. */
 @Composable
 fun PetHomeLoadingScreen(
     failed: Boolean,
@@ -358,7 +308,6 @@ fun PetHomeLoadingScreen(
 ) {
     Surface(modifier = modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
         Box {
-            HomeScenery(Modifier.matchParentSize())
             Column(
                 Modifier
                     .fillMaxSize()

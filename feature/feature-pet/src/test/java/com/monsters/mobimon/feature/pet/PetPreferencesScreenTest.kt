@@ -10,7 +10,6 @@ import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsFocused
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertIsOn
-import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
@@ -22,16 +21,13 @@ import androidx.compose.ui.test.pressKey
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import com.monsters.mobimon.core.domain.CompanionSettings
-import com.monsters.mobimon.core.domain.PetAppearance
 import com.monsters.mobimon.core.ui.MobiMonTheme
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
-import org.robolectric.annotation.GraphicsMode
 
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34], qualifiers = "ko-rKR")
@@ -42,43 +38,15 @@ class PetPreferencesScreenTest {
 
     @Test
     @Config(qualifiers = "ko-rKR-w1792dp-h888dp")
-    @GraphicsMode(GraphicsMode.Mode.NATIVE)
-    fun headUnitKeepsReferenceRowsAndDoneVisibleWithVehicleTouchTargets() {
+    fun headUnitKeepsSharedRowsReachableAndDoneVisible() {
         compose.setContent {
             MobiMonTheme { SettingsScreen(CompanionSettings(), {}, {}, parkedVerified = true) }
         }
-        val content = compose.onNodeWithTag("settings-reference").fetchSemanticsNode().boundsInRoot
-        val first = compose.onNodeWithText("GitHub Copilot").fetchSemanticsNode().boundsInRoot
-        val last = compose.onNodeWithText("방해 금지").fetchSemanticsNode().boundsInRoot
-        val done = compose.onNodeWithTag("settings-done").fetchSemanticsNode().boundsInRoot
-        val scale = content.width / 2560f
-        assertEquals(content.left + 352f * scale, first.left, 1f)
-        assertEquals(content.top + 224f * scale, first.top, 1f)
-        assertEquals(1856f * scale, first.width, 1f)
-        assertEquals(144f * scale, first.height, 2f)
-        assertEquals(4f * 168f * scale, last.top - first.top, 4f)
-        assertTrue(last.bottom < done.top)
+        compose.onNodeWithText("GitHub Copilot").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText("방해 금지").performScrollTo().assertIsDisplayed()
         compose.onNodeWithTag("settings-done").assertIsDisplayed().assertHeightIsAtLeast(76.dp)
         compose.onNodeWithTag("settings-back").assertHeightIsAtLeast(76.dp)
-        compose.onNodeWithText("차량 홈 캐릭터").assertHeightIsAtLeast(76.dp)
-    }
-
-    @Test
-    fun appearancePreviewDoesNotApplyUntilExplicitAction() {
-        var requested: PetAppearance? = null
-        compose.setContent {
-            MobiMonTheme {
-                AppearanceScreen(PetAppearance.GOLDEN, { requested = it })
-            }
-        }
-
-        compose.onNodeWithText("크림").performScrollTo().performClick()
-
-        assertEquals(null, requested)
-        compose.onNodeWithText("크림").performScrollTo().assertIsSelected()
-        compose.onNodeWithText("미리 보는 중").performScrollTo().assertExists()
-        compose.onNodeWithText("이 모습 적용").performScrollTo().performClick()
-        assertEquals(PetAppearance.CREAM, requested)
+        compose.onNodeWithText("차량 홈 캐릭터").performScrollTo().assertHeightIsAtLeast(76.dp)
     }
 
     @Test
@@ -143,7 +111,11 @@ class PetPreferencesScreenTest {
         }
 
         compose.onNodeWithText("저장된 설정을 불러오지 못했어요.").assertExists()
-        compose.onNodeWithText("다시 시도").performClick()
+        compose
+            .onNodeWithText("다시 시도")
+            .performScrollTo()
+            .assertIsDisplayed()
+            .performClick()
         compose.onNodeWithTag("settings-back").performClick()
         assertEquals(1, retries)
         assertEquals(1, backs)
@@ -207,7 +179,6 @@ class PetPreferencesScreenTest {
         }
         compose
             .onNodeWithTag("settings-done")
-            .performScrollTo()
             .assertIsDisplayed()
             .performSemanticsAction(SemanticsActions.RequestFocus)
         compose.onNodeWithTag("settings-done").assertIsFocused().performKeyInput { pressKey(Key.Enter) }

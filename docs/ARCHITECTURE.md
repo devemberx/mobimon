@@ -39,9 +39,8 @@ paid item catalog have been approved yet.
   Display freshness samples the clock on every snapshot or timer emission, so a
   new reading is never compared against a cached, older timer timestamp.
 - [PetAvatar](../core/core-ui/src/main/java/com/monsters/mobimon/core/ui/PetAvatar.kt)
-  is the artwork replacement point for Home, customization and Copilot. Preserve
-  the compatibility signature `PetAvatar(modifier, appearanceKey, stage)`; `stage`
-  belongs to the legacy implementation. Rewards, ownership, equipped appearance
+  is the artwork replacement point for Home, customization and Copilot. The renderer accepts appearance/character/equipment display inputs, without
+  a growth-stage parameter. Rewards, ownership, equipped appearance
   and interaction state stay outside the renderer. Asset provenance and fallback
   artwork belong in the [design guidance](DESIGN.md#reusable-compose-library-and-asset-handoff).
 
@@ -154,7 +153,10 @@ currently displayed snapshot; only Quest dispatches acknowledgment to the reward
 repository.
 
 The shell owns transient menu state and cross-feature callbacks as defined in
-[DESIGN.md](DESIGN.md). Shared component APIs never accept repositories or ViewModels.
+[DESIGN.md](DESIGN.md). Shared component APIs never accept repositories or ViewModels. All features use
+the v4 theme by default. Reusable panels, rows, actions, status badges and
+selection controls live in `core-ui`; feature entries keep business state and
+compose their own final layouts. See the [UI contracts](DESIGN.md#reusable-compose-library-and-asset-handoff).
 
 | State | Owner and lifetime |
 | --- | --- |
