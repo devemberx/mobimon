@@ -318,4 +318,5 @@ internal fun AppRoute.title(): Int =
         AppRoute.APPEARANCE -> R.string.drawer_appearance
         AppRoute.SETTINGS -> R.string.drawer_settings
         AppRoute.CONVERSATION -> R.string.drawer_conversation
+        AppRoute.COPILOT -> com.monsters.mobimon.feature.auth.R.string.copilot_title
     }

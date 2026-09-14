@@ -73,7 +73,10 @@ fun PetHomeScreen(
     onRetryProfile: () -> Unit = {},
     inventoryLoaded: Boolean = true,
     inventoryLoadFailed: Boolean = false,
+    connectionAvailable: Boolean = false,
 ) {
+    val connectionText = if (connectionAvailable) R.string.pet_connection_description else R.string.pet_ai_unavailable
+    val talkText = if (connectionAvailable) R.string.pet_talk_action else R.string.pet_talk_unavailable
     Surface(modifier = modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
         Box {
             HomeScenery(Modifier.matchParentSize())
@@ -104,9 +107,13 @@ fun PetHomeScreen(
                         onOpenAppearance,
                         onOpenVehicleInfo,
                         onPetClick,
+                        connectionAvailable && interactionAllowed,
                     ) {
                         HomeSignalNotes(snapshot)
-                        Text(stringResource(R.string.pet_ai_unavailable), textAlign = TextAlign.Center)
+                        Text(
+                            stringResource(connectionText),
+                            textAlign = TextAlign.Center,
+                        )
                         if (!interactionAllowed) {
                             Text(
                                 stringResource(R.string.pet_interaction_restricted),
@@ -192,7 +199,7 @@ fun PetHomeScreen(
                     ) {
                         Button(
                             onClick = onPetClick,
-                            enabled = false,
+                            enabled = connectionAvailable && interactionAllowed,
                             modifier =
                                 Modifier
                                     .widthIn(
@@ -205,9 +212,11 @@ fun PetHomeScreen(
                                     disabledContainerColor = MaterialTheme.colorScheme.primary,
                                     disabledContentColor = MaterialTheme.colorScheme.onPrimary,
                                 ),
-                        ) { Text(stringResource(R.string.pet_talk_unavailable)) }
+                        ) {
+                            Text(stringResource(talkText))
+                        }
                         Text(
-                            stringResource(R.string.pet_ai_unavailable),
+                            stringResource(connectionText),
                             style = MaterialTheme.typography.bodyMedium,
                             textAlign = TextAlign.Center,
                         )

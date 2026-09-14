@@ -85,6 +85,7 @@ dependencies {
     implementation(project(":feature:feature-pet"))
     implementation(project(":feature:feature-quest"))
     implementation(project(":feature:feature-vehicle-info"))
+    implementation(project(":feature:feature-auth"))
     implementation(libs.hilt.android)
     ksp(libs.hilt.compiler)
     implementation(libs.androidx.lifecycle.runtime.compose)
@@ -116,6 +117,7 @@ dependencies {
     kover(project(":feature:feature-pet"))
     kover(project(":feature:feature-quest"))
     kover(project(":feature:feature-vehicle-info"))
+    kover(project(":feature:feature-auth"))
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.activity.compose)

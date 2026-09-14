@@ -5,6 +5,21 @@ import org.junit.Test
 
 class ShellStateTest {
     @Test
+    fun copilotBackReturnsToItsOriginIncludingAfterRestoration() {
+        listOf(AppRoute.HOME, AppRoute.SETTINGS).forEach { origin ->
+            val state = ShellState(route = origin).openCopilot()
+            assertEquals(AppRoute.COPILOT, state.route)
+            assertEquals(origin, state.back().route)
+            assertEquals(origin, ShellSaver.restore(listOf("PET", "COPILOT", origin.name))?.back()?.route)
+        }
+    }
+
+    @Test
+    fun invalidConnectionOriginCannotRestoreAnArbitraryDestination() {
+        assertEquals(AppRoute.HOME, ShellSaver.restore(listOf("PET", "COPILOT", "QUESTS"))?.back()?.route)
+    }
+
+    @Test
     fun menuDestinationUsesFullScreenAndBackReturnsHome() {
         val home = ShellState(home = HomeSurface.VEHICLE)
         val destination = home.openMenu().navigate(AppRoute.QUESTS)

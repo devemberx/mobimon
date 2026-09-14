@@ -64,6 +64,7 @@ internal fun HomeComposition(
     onOpenAppearance: () -> Unit,
     onOpenVehicleInfo: () -> Unit,
     onPetClick: () -> Unit,
+    connectionEnabled: Boolean,
     supplementaryContent: @Composable () -> Unit,
 ) {
     val scale = minOf(width.value / 2560f, height.value / 1268f)
@@ -220,7 +221,10 @@ internal fun HomeComposition(
                             tint = colors.secondary,
                         )
                     }
-                    val unavailable = stringResource(R.string.pet_ai_unavailable)
+                    val connectionDescription =
+                        stringResource(
+                            if (connectionEnabled) R.string.pet_connection_description else R.string.pet_ai_unavailable,
+                        )
                     HomeAction(
                         544f,
                         104f,
@@ -228,8 +232,8 @@ internal fun HomeComposition(
                         scale,
                         onPetClick,
                         Modifier.reference(1008f, 1192f, 544f, 104f, touch = true),
-                        enabled = false,
-                        description = unavailable,
+                        enabled = connectionEnabled,
+                        description = connectionDescription,
                         containerColor = colors.onPrimaryContainer,
                         borderColor = Color.Transparent,
                     ) {

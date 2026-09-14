@@ -1,0 +1,314 @@
+package com.monsters.mobimon.feature.auth
+
+import android.graphics.Bitmap
+import android.graphics.Canvas
+import android.view.View
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.semantics.SemanticsActions
+import androidx.compose.ui.test.ExperimentalTestApi
+import androidx.compose.ui.test.assertHeightIsAtLeast
+import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsEnabled
+import androidx.compose.ui.test.assertIsFocused
+import androidx.compose.ui.test.assertIsNotEnabled
+import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onNodeWithContentDescription
+import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performKeyInput
+import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.performSemanticsAction
+import androidx.compose.ui.test.pressKey
+import androidx.compose.ui.text.TextLayoutResult
+import androidx.compose.ui.unit.Density
+import androidx.compose.ui.unit.dp
+import com.monsters.mobimon.core.ui.MobiMonTheme
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
+import org.junit.Rule
+import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
+import org.robolectric.annotation.GraphicsMode
+import java.io.File
+
+@RunWith(RobolectricTestRunner::class)
+@Config(sdk = [34], qualifiers = "ko-rKR-w1000dp-h800dp")
+@OptIn(ExperimentalTestApi::class)
+class CopilotConnectionScreenTest {
+    @get:Rule val compose = createComposeRule()
+
+    @Test
+    fun introductionExplainsSharingAndRequestsConnectionWithoutInventingAnAccount() {
+        val actions = mutableListOf<CopilotAction>()
+        show(CopilotUiState.Introduction(), actions::add)
+        compose.onNodeWithText("입력한 대화가 GitHub Copilot으로 전송돼요.", substring = true).assertExists()
+        click("QR로 연결하기")
+        assertEquals(listOf(CopilotAction.REQUEST_CODE), actions)
+        compose.onNodeWithText("연결이 완료됐어요.").assertDoesNotExist()
+        click("나중에")
+        assertEquals(CopilotAction.CANCEL, actions.last())
+    }
+
+    @Test
+    fun unknownParkingBlocksConnectionButKeepsExitAvailable() {
+        val actions = mutableListOf<CopilotAction>()
+        show(CopilotUiState.Introduction(), actions::add, allowed = false)
+        compose
+            .onNodeWithText("QR로 연결하기")
+            .performScrollTo()
+            .assertIsNotEnabled()
+            .performClick()
+        compose.onNodeWithContentDescription("뒤로").performScrollTo().performClick()
+        assertEquals(listOf(CopilotAction.BACK), actions)
+    }
+
+    @Test
+    fun waitingOffersQrHelpAndManualRecheckWithoutClaimingApproval() {
+        val actions = mutableListOf<CopilotAction>()
+        show(CopilotUiState.Waiting("TEST · CODE", 272), actions::add)
+        compose.onNodeWithContentDescription("GitHub 계정 연결 QR 코드").assertExists()
+        compose.onNodeWithText("04:32").assertExists()
+        compose.onNodeWithText("TEST · CODE").assertExists()
+        click("QR 스캔이 어려워요")
+        click("승인했어요")
+        compose.onNodeWithContentDescription("계정 연결 닫기").performScrollTo().performClick()
+        assertEquals(listOf(CopilotAction.SHOW_ADDRESS, CopilotAction.RECHECK, CopilotAction.CANCEL), actions)
+        compose.onNodeWithText("연결이 완료됐어요.").assertDoesNotExist()
+    }
+
+    @Test
+    fun missingQrFallsBackToReadableAddressAndCode() {
+        show(CopilotUiState.Waiting("TEST · CODE", 120), qr = false)
+        compose.onNodeWithText("github.com/login/device").assertExists()
+        compose.onNodeWithText("TEST · CODE").assertExists()
+        compose.onNodeWithContentDescription("GitHub 계정 연결 QR 코드").assertDoesNotExist()
+    }
+
+    @Test
+    fun addressHelpRetainsApprovalDataAndReturnsToQr() {
+        val actions = mutableListOf<CopilotAction>()
+        show(CopilotUiState.Waiting("TEST · CODE", 272, showAddress = true), actions::add)
+        compose.onNodeWithText("github.com/login/device").assertExists()
+        click("QR로 돌아가기")
+        assertEquals(listOf(CopilotAction.SHOW_QR), actions)
+    }
+
+    @Test
+    fun checkingDisablesRepeatedRechecksAndExpiryRemovesTheOldCode() {
+        var state: CopilotUiState by mutableStateOf(CopilotUiState.Waiting("OLD · CODE", 1, checking = true))
+        val actions = mutableListOf<CopilotAction>()
+        compose.setContent { MobiMonTheme { CopilotConnectionScreen(state, actions::add, interactionAllowed = true) } }
+        compose
+            .onNodeWithText("승인했어요")
+            .performScrollTo()
+            .assertIsNotEnabled()
+            .performClick()
+        assertTrue(actions.isEmpty())
+        compose.runOnIdle { state = CopilotUiState.Waiting("OLD · CODE", 0) }
+        compose.onNodeWithText("OLD · CODE").assertDoesNotExist()
+        compose.onNodeWithText("승인했어요").assertDoesNotExist()
+        click("새 QR 받기")
+        assertEquals(listOf(CopilotAction.REQUEST_CODE), actions)
+    }
+
+    @Test
+    fun accessProblemsKeepTheApprovedIdentityAndReportSpecificReasons() {
+        var state by mutableStateOf(CopilotUiState.AccessCheck("@test-user", CopilotAccessIssue.PERMISSION))
+        compose.setContent { MobiMonTheme { CopilotConnectionScreen(state, {}, interactionAllowed = true) } }
+        val messages =
+            mapOf(
+                CopilotAccessIssue.PERMISSION to "이 계정의 Copilot 이용 권한을 확인해 주세요.",
+                CopilotAccessIssue.SUBSCRIPTION to "이 계정의 Copilot 요금제를 확인해 주세요.",
+                CopilotAccessIssue.USAGE_LIMIT to "Copilot 사용량 한도에 도달했어요.",
+                CopilotAccessIssue.SERVICE_UNAVAILABLE to "지금은 Copilot 서비스를 확인할 수 없어요.",
+            )
+        messages.forEach { (issue, message) ->
+            compose.runOnIdle { state = state.copy(reason = issue) }
+            compose.onNodeWithText(message).assertExists()
+            compose.onNodeWithText("@test-user").assertExists()
+            compose.onNodeWithText("연결이 완료됐어요.").assertDoesNotExist()
+        }
+    }
+
+    @Test
+    fun connectedAccountStartsOnlyOnUserActionAndCanReturnToSettings() {
+        val actions = mutableListOf<CopilotAction>()
+        show(CopilotUiState.Connected("@test-user"), actions::add)
+        assertTrue(actions.isEmpty())
+        compose.onNodeWithText("@test-user").assertExists()
+        click("모비와 대화하기")
+        click("설정으로")
+        assertEquals(listOf(CopilotAction.START_CONVERSATION, CopilotAction.OPEN_SETTINGS), actions)
+    }
+
+    @Test
+    fun failedDisconnectKeepsTheAccountAndPendingDisconnectCannotRepeat() {
+        var state by mutableStateOf(CopilotUiState.Disconnect("@test-user", error = "연결을 해제하지 못했어요."))
+        val actions = mutableListOf<CopilotAction>()
+        compose.setContent { MobiMonTheme { CopilotConnectionScreen(state, actions::add, interactionAllowed = true) } }
+        compose.onNodeWithText("@test-user").assertExists()
+        compose.onNodeWithText("연결을 해제하지 못했어요.").assertExists()
+        click("연결 유지")
+        click("연결 해제")
+        assertEquals(listOf(CopilotAction.KEEP_CONNECTION, CopilotAction.DISCONNECT), actions)
+        compose.runOnIdle { state = state.copy(disconnecting = true, error = null) }
+        compose
+            .onNodeWithText("연결 해제")
+            .performScrollTo()
+            .assertIsNotEnabled()
+            .performClick()
+        assertEquals(2, actions.size)
+    }
+
+    @Test
+    @Config(qualifiers = "ko-rKR-w600dp-h800dp")
+    fun compactLargeTextKeepsActionsReachableAndKeyboardOperable() {
+        val actions = mutableListOf<CopilotAction>()
+        compose.setContent {
+            CompositionLocalProvider(LocalDensity provides Density(LocalDensity.current.density, 1.5f)) {
+                MobiMonTheme {
+                    CopilotConnectionScreen(
+                        CopilotUiState.Introduction(),
+                        actions::add,
+                        interactionAllowed = true,
+                    )
+                }
+            }
+        }
+        compose
+            .onNodeWithText("QR로 연결하기")
+            .performScrollTo()
+            .assertIsDisplayed()
+            .assertHeightIsAtLeast(76.dp)
+            .performSemanticsAction(SemanticsActions.RequestFocus)
+        compose.onNodeWithText("QR로 연결하기").assertIsFocused().performKeyInput { pressKey(Key.Enter) }
+        assertEquals(listOf(CopilotAction.REQUEST_CODE), actions)
+        compose
+            .onNodeWithText("나중에")
+            .performScrollTo()
+            .assertIsDisplayed()
+            .assertIsEnabled()
+    }
+
+    @Test
+    @Config(qualifiers = "ko-rKR-w600dp-h800dp")
+    @GraphicsMode(GraphicsMode.Mode.NATIVE)
+    fun largeTextLabelsRenderWithoutClipping() {
+        compose.setContent {
+            CompositionLocalProvider(LocalDensity provides Density(LocalDensity.current.density, 1.5f)) {
+                MobiMonTheme { CopilotConnectionScreen(CopilotUiState.Introduction(), {}, interactionAllowed = true) }
+            }
+        }
+        listOf("QR로 연결하기", "나중에", "GitHub Copilot").forEach { label ->
+            compose.onNodeWithText(label).performScrollTo().assertIsDisplayed()
+            val layout = mutableListOf<TextLayoutResult>()
+            compose
+                .onNodeWithText(label, useUnmergedTree = true)
+                .performSemanticsAction(SemanticsActions.GetTextLayoutResult) { it(layout) }
+            val result = layout.single()
+            assertFalse("Clipped height: $label", result.didOverflowHeight)
+            repeat(result.lineCount) { line ->
+                assertFalse("Ellipsized label: $label", result.isLineEllipsized(line))
+                val lineWidth = result.getLineRight(line) - result.getLineLeft(line)
+                assertTrue(
+                    "Clipped width: $label ($lineWidth > ${result.size.width})",
+                    lineWidth <= result.size.width + 1,
+                )
+            }
+        }
+    }
+
+    @Test
+    @Config(qualifiers = "ko-rKR-w2560dp-h1332dp-mdpi")
+    @GraphicsMode(GraphicsMode.Mode.NATIVE)
+    fun referenceScreensKeepPanelProportionsAndProduceReviewImages() {
+        var state: CopilotUiState by mutableStateOf(CopilotUiState.Introduction())
+        val actions = mutableListOf<CopilotAction>()
+        val referenceActions =
+            mapOf(
+                "P51-introduction" to listOf("QR로 연결하기" to CopilotAction.REQUEST_CODE, "나중에" to CopilotAction.CANCEL),
+                "P52-waiting" to listOf("QR 스캔이 어려워요" to CopilotAction.SHOW_ADDRESS, "승인했어요" to CopilotAction.RECHECK),
+                "P52C-address" to listOf("QR로 돌아가기" to CopilotAction.SHOW_QR, "승인했어요" to CopilotAction.RECHECK),
+                "P52B-expired" to listOf("새 QR 받기" to CopilotAction.REQUEST_CODE),
+                "P53-connected" to
+                    listOf("모비와 대화하기" to CopilotAction.START_CONVERSATION, "설정으로" to CopilotAction.OPEN_SETTINGS),
+                "P54-reconnect" to listOf("QR로 다시 연결" to CopilotAction.REQUEST_CODE, "나중에" to CopilotAction.CANCEL),
+                "P56-access" to listOf("GitHub에서 확인" to CopilotAction.REVIEW_ACCESS, "다시 확인" to CopilotAction.RECHECK),
+                "P55-disconnect" to
+                    listOf("연결 유지" to CopilotAction.KEEP_CONNECTION, "연결 해제" to CopilotAction.DISCONNECT),
+            )
+        lateinit var view: View
+        compose.setContent {
+            val currentView = LocalView.current
+            SideEffect { view = currentView }
+            MobiMonTheme {
+                CopilotConnectionScreen(
+                    state,
+                    actions::add,
+                    interactionAllowed = true,
+                    qrCode = painterResource(R.drawable.copilot_preview_qr),
+                )
+            }
+        }
+        val directory = File("build/reports/copilot-ui").apply { mkdirs() }
+        copilotPreviewStates.forEach { (name, sample) ->
+            compose.runOnIdle { state = sample }
+            val reference = compose.onNodeWithTag("copilot-reference").fetchSemanticsNode().boundsInRoot
+            val companion = compose.onNodeWithTag("copilot-companion").fetchSemanticsNode().boundsInRoot
+            val panel = compose.onNodeWithTag("copilot-panel").fetchSemanticsNode().boundsInRoot
+            assertEquals(2560f / 1268f, reference.width / reference.height, 0.01f)
+            assertEquals(884f / 2560f, companion.width / reference.width, 0.01f)
+            assertTrue(panel.right <= reference.right)
+            assertTrue(panel.bottom <= reference.bottom)
+            compose.runOnIdle {
+                val bitmap = Bitmap.createBitmap(view.width, view.height, Bitmap.Config.ARGB_8888)
+                view.draw(Canvas(bitmap))
+                File(directory, "$name.png").outputStream().use {
+                    assertTrue(bitmap.compress(Bitmap.CompressFormat.PNG, 100, it))
+                }
+                bitmap.recycle()
+            }
+            referenceActions.getValue(name).forEach { (label, action) ->
+                compose
+                    .onNodeWithText(label)
+                    .assertIsDisplayed()
+                    .assertHeightIsAtLeast(76.dp)
+                    .performClick()
+                assertEquals(action, actions.last())
+            }
+        }
+    }
+
+    private fun show(
+        state: CopilotUiState,
+        action: (CopilotAction) -> Unit = {
+        },
+        allowed: Boolean = true,
+        qr: Boolean = true,
+    ) {
+        compose.setContent {
+            MobiMonTheme {
+                CopilotConnectionScreen(
+                    state,
+                    action,
+                    interactionAllowed = allowed,
+                    qrCode = if (qr) painterResource(R.drawable.copilot_preview_qr) else null,
+                )
+            }
+        }
+    }
+
+    private fun click(text: String) = compose.onNodeWithText(text).performScrollTo().performClick()
+}

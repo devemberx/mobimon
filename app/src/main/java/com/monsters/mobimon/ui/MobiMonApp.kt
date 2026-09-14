@@ -40,6 +40,9 @@ import com.monsters.mobimon.core.ui.MobiMonContentColumn
 import com.monsters.mobimon.core.ui.MobiMonMessage
 import com.monsters.mobimon.core.ui.MobiMonTheme
 import com.monsters.mobimon.di.AppDependencies
+import com.monsters.mobimon.feature.auth.CopilotAction
+import com.monsters.mobimon.feature.auth.CopilotConnectionScreen
+import com.monsters.mobimon.feature.auth.CopilotUiState
 import com.monsters.mobimon.feature.pet.CustomizationScreen
 import com.monsters.mobimon.feature.pet.PetHomeLoadingScreen
 import com.monsters.mobimon.feature.pet.PetHomeScreen
@@ -136,11 +139,19 @@ data class MobiMonActions(
 
 internal val ShellSaver =
     listSaver<ShellState, String>(
-        save = { listOf(it.home.name, it.route.name) },
+        save = { listOf(it.home.name, it.route.name, it.connectionOrigin.name) },
         restore = { saved ->
             ShellState(
                 home = HomeSurface.entries.firstOrNull { it.name == saved.getOrNull(0) } ?: HomeSurface.PET,
                 route = AppRoute.entries.firstOrNull { it.name == saved.getOrNull(1) } ?: AppRoute.HOME,
+                connectionOrigin =
+                    if (saved.getOrNull(2) ==
+                        AppRoute.SETTINGS.name
+                    ) {
+                        AppRoute.SETTINGS
+                    } else {
+                        AppRoute.HOME
+                    },
             )
         },
     )
@@ -210,7 +221,7 @@ fun MobiMonContent(
                         onOpenVehicleInfo = { shell = shell.navigate(AppRoute.VEHICLE_INFO) },
                         onOpenQuests = { shell = shell.navigate(AppRoute.QUESTS) },
                         onSwitchHome = { shell = shell.switchHome() },
-                        onPetClick = { shell = shell.navigate(AppRoute.CONVERSATION) },
+                        onPetClick = { if (interactionAllowed) shell = shell.openCopilot() },
                         onOpenAppearance = { shell = shell.navigate(AppRoute.APPEARANCE) },
                         vehiclePreview = shell.home == HomeSurface.VEHICLE,
                         pointBalance = balance,
@@ -219,6 +230,7 @@ fun MobiMonContent(
                         friendId = inventoryState.equippedFriendId,
                         accessoryId = inventoryState.equippedAccessoryId,
                         interactionAllowed = interactionAllowed,
+                        connectionAvailable = true,
                         profileObservationFailed = petState.loadFailed,
                         onRetryProfile = actions.onRetry,
                         inventoryLoaded = inventoryState.inventory != null,
@@ -240,6 +252,25 @@ fun MobiMonContent(
                         onDone = { shell = shell.returnHome() },
                         parkedVerified = interactionAllowed,
                         simulatedVehicle = vehicleSnapshot.source == SignalSource.SIMULATED,
+                        onOpenCopilot = { if (interactionAllowed) shell = shell.openCopilot() },
+                    )
+                } else if (shell.route == AppRoute.COPILOT) {
+                    var unavailable by rememberSaveable { mutableStateOf(false) }
+                    CopilotConnectionScreen(
+                        state = CopilotUiState.Introduction(connectionUnavailable = unavailable),
+                        reducedMotion = petState.settings.reducedMotion,
+                        onAction = { action ->
+                            when (action) {
+                                CopilotAction.BACK, CopilotAction.CANCEL -> shell = shell.back()
+                                CopilotAction.REQUEST_CODE -> if (interactionAllowed) unavailable = true
+                                else -> Unit
+                            }
+                        },
+                        interactionAllowed = interactionAllowed,
+                        simulatedVehicle = vehicleSnapshot.source == SignalSource.SIMULATED,
+                        friendId = inventoryState.equippedFriendId ?: "friend:mobi",
+                        appearanceKey = profile.appearance.name,
+                        accessoryId = inventoryState.equippedAccessoryId,
                     )
                 } else {
                     Column(Modifier.fillMaxSize()) {
@@ -282,7 +313,7 @@ fun MobiMonContent(
                                         saveFailed = inventoryState.saveFailed,
                                         onRetry = actions.onRetry,
                                     )
-                                AppRoute.SETTINGS -> Unit
+                                AppRoute.SETTINGS, AppRoute.COPILOT -> Unit
                                 AppRoute.QUESTS ->
                                     QuestScreen(
                                         questState.progress,
