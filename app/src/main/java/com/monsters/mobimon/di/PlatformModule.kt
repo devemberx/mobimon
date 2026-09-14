@@ -10,6 +10,7 @@ import androidx.room.Room
 import com.monsters.mobimon.core.database.AppDatabase
 import com.monsters.mobimon.core.database.MIGRATION_1_2
 import com.monsters.mobimon.core.database.MIGRATION_2_3
+import com.monsters.mobimon.core.database.MIGRATION_3_4
 import com.monsters.mobimon.core.domain.Clock
 import com.monsters.mobimon.core.domain.UtcClock
 import dagger.Module
@@ -38,7 +39,7 @@ object PlatformModule {
     ): AppDatabase =
         Room
             .databaseBuilder(context, AppDatabase::class.java, environment.databaseName)
-            .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
+            .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
             .build()
 
     @Provides

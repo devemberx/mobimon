@@ -24,6 +24,7 @@ shared library; missing future screens do not invalidate a tested primitive.
 | `core/core-vss/src/test/kotlin` | Unavailable real vehicle contract; plain JVM |
 | `core/core-database/src/test/java` | Native SQLite constraints, transactions, concurrency, file reopening and DataStore; Robolectric |
 | `core/core-database/src/androidTest/java` | SQLite transaction and file-reopening counterparts; device |
+| `core/core-database/src/migrationTest/java` | Shared v3 upgrade and persistence contracts; local and device wrappers in the database module |
 | Feature `src/test/java` | Constructor-injected ViewModels and Compose state/callback contracts; JVM or Robolectric |
 | `app/src/test/java`, `src/testDebug/java` | Runtime, shell, Q01 repository integration, branding and demo provider behavior |
 | `app/src/journeyTest/java` | MainActivity quest/connection journeys with Hilt and Room, plus isolated CopilotPreviewActivity journeys; Robolectric and device |
@@ -96,7 +97,8 @@ coverage, not a passing result at a particular revision.
 | Old, invalid, wrong-source or wrong-epoch evidence is rejected | [QuestEvaluatorTest](../core/core-domain/src/test/kotlin/com/monsters/mobimon/core/domain/QuestEvaluatorTest.kt), [QuestViewModelTest](../feature/feature-quest/src/test/java/com/monsters/mobimon/feature/quest/QuestViewModelTest.kt) | JVM and ViewModel |
 | Superseded parking or AAOS app-use restriction rejects queued reward writes | [Q01JourneyTest](../app/src/test/java/com/monsters/mobimon/Q01JourneyTest.kt) | Local Room transaction |
 | Parking and battery age are evaluated independently | [VehicleFreshnessPolicyTest](../core/core-domain/src/test/kotlin/com/monsters/mobimon/core/domain/VehicleFreshnessPolicyTest.kt), [VehicleInfoScreenTest](../feature/feature-vehicle-info/src/test/java/com/monsters/mobimon/feature/vehicle/VehicleInfoScreenTest.kt) | Domain and Compose |
-| Point migration preserves XP evidence without minting points | [PointEconomyMigrationTest](../core/core-database/src/test/java/com/monsters/mobimon/core/database/PointEconomyMigrationTest.kt) | Hand-built, file-backed v1 fixture to current v3 through both migrations |
+| Point migration preserves XP evidence without minting points | [PointEconomyMigrationTest](../core/core-database/src/test/java/com/monsters/mobimon/core/database/PointEconomyMigrationTest.kt) | Hand-built, file-backed v1 fixture to current v4 through the full migration chain |
+| Original and expanded v3 databases upgrade without losing leveling values, XP evidence, wallet/ledger, point occurrences or equipped ownership; missing fields default to zero and records survive reopening | [LevelingMigrationContract](../core/core-database/src/migrationTest/java/com/monsters/mobimon/core/database/LevelingMigrationContract.kt), [local wrapper](../core/core-database/src/test/java/com/monsters/mobimon/core/database/LevelingMigrationTest.kt), [device wrapper](../core/core-database/src/androidTest/java/com/monsters/mobimon/core/database/LevelingMigrationAndroidTest.kt) | Frozen exported v3 schemas, populated file-backed SQLite fixtures, real Room upgrade and reopen; local and device |
 | Purchases charge once, equipment is separate, and one-time/daily credits have unique occurrences | [PointEconomyRepositoryTest](../core/core-database/src/test/java/com/monsters/mobimon/core/database/PointEconomyRepositoryTest.kt) | Local SQLite |
 | A loading or failed point balance is distinct from saved zero | [PointBalanceViewModelTest](../core/core-presentation/src/test/java/com/monsters/mobimon/core/presentation/PointBalanceViewModelTest.kt) | ViewModel |
 | Home preserves point loading/failure, independent vehicle freshness, warning severity and history, and simulated labels when vehicle data is lost or recovered; conversation stays disabled without a connection destination | [PetHomeScreenTest](../feature/feature-pet/src/test/java/com/monsters/mobimon/feature/pet/PetHomeScreenTest.kt) | Compose and Robolectric |
@@ -121,12 +123,19 @@ coverage, not a passing result at a particular revision.
 
 ## Integration boundaries
 
-`PointEconomyMigrationTest` builds its v1 fixture directly with SQL; it does not
-load exported schemas with `MigrationTestHelper`. It exercises `MIGRATION_1_2`
-and `MIGRATION_2_3` together, not a separate populated v2 fixture or an earlier
-development v3 database. Schema exports and successful fresh creation do not
-prove those historical upgrade paths. Add fixtures for supported versions when
-implementing the required versioned migration; preserve historical records.
+`PointEconomyMigrationTest` builds its v1 fixture directly with SQL and exercises
+the complete v1-to-v4 chain. `LevelingMigrationContract` creates populated v3
+files from frozen exports, including their Room identity hashes, then opens and
+reopens them through the current Room builder. Its
+[original v3 fixture](../core/core-database/src/migrationTest/assets/legacy-v3.json)
+comes from commit `ef2fa07`, before the leveling fields were added; the
+[expanded v3 export](../core/core-database/schemas/com.monsters.mobimon.core.database.AppDatabase/3.json)
+checks that nonzero values are retained. The tests read every affected record
+through DAOs after migration and reopening. Their shared source and test-only
+schema assets are configured in
+[the database build](../core/core-database/build.gradle.kts).
+These suites do not use `MigrationTestHelper` or exercise a separately populated
+v2 fixture. Fresh creation and exports alone do not establish upgrade coverage.
 
 The MainActivity journeys use `HiltTestApplication`. Their
 [JourneyTestModule](../app/src/journeyTest/java/com/monsters/mobimon/testing/JourneyTestModule.kt)

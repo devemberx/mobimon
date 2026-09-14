@@ -3,7 +3,24 @@ plugins {
     alias(libs.plugins.ksp)
 }
 
-android { namespace = "com.monsters.mobimon.core.database" }
+android {
+    namespace = "com.monsters.mobimon.core.database"
+    sourceSets {
+        listOf("test", "androidTest").forEach { sourceSet ->
+            getByName(sourceSet) {
+                assets.srcDirs("schemas", "src/migrationTest/assets")
+            }
+        }
+    }
+}
+
+kotlin {
+    sourceSets {
+        listOf("test", "androidTest").forEach { sourceSet ->
+            getByName(sourceSet).kotlin.srcDir("src/migrationTest/java")
+        }
+    }
+}
 
 ksp { arg("room.schemaLocation", "$projectDir/schemas") }
 

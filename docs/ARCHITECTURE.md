@@ -20,9 +20,9 @@ paid item catalog have been approved yet.
   The shell preserves its Home/Settings origin across recreation. The
   [connection UI boundary](#copilot-connection-ui) separates the unavailable
   production integration from the eight-state Debug rehearsal.
-- Room v3 stores the legacy profile, quest runs and completions, plus a separate
+- Room v4 stores the legacy profile, quest runs and completions, plus a separate
   point account, ledger, point quest occurrences, cosmetic catalog, ownership
-  and equipment. V3 also contains the separate, currently unused leveling tables.
+  and equipment, alongside separate, currently unused leveling tables.
   DataStore stores independent preview, launcher and motion
   preferences. The launcher preference defaults to off, including after v1
   migration; the preview preference remains separate.
@@ -251,7 +251,7 @@ run ID and `(profileId, questType)`. Persist the evidence needed for a run/resul
 without adding full vehicle histories or chat transcripts.
 
 The current [Room schema](../core/core-database/src/main/java/com/monsters/mobimon/core/database/AppDatabase.kt)
-is version 3, with exported schema snapshots. V3 adds `user_profiles` and
+is version 4, with exported schema snapshots. V3 added `user_profiles` and
 `drive_daily_summaries`; those tables do not replace the point wallet or authorize
 new reward behavior. Legacy [entities](../core/core-database/src/main/java/com/monsters/mobimon/core/database/CompanionEntities.kt)
 store `totalXp`, `rewardXp` and `awardedXp`; Q01 awards 80 XP once per profile,
@@ -259,11 +259,12 @@ while Q02/Q03 remain unsupported. `RewardCalculator` can interpret historical
 saved XP but does not drive the product home. These fields and values are current implementation facts, not target
 point rewards or conversion rates.
 
-Earlier development v3 databases predate fields now present in the entities and
-export. They need a new versioned, non-destructive migration before upgrades can
-be supported; updating the v3 export alone does not migrate those installations.
-The [migration coverage](TESTING.md#integration-boundaries) does not establish
-that upgrade path.
+`MIGRATION_3_4` supports both original v3 leveling tables and the expanded v3
+schema introduced before the version bump. It adds only missing fields with
+zero defaults, preserving existing field values and all reward, wallet and
+cosmetic records. The app registers the complete migration chain; upgrading
+does not require clearing app data. See the
+[migration coverage](TESTING.md#integration-boundaries) for tested fixtures.
 
 `MIGRATION_1_2` preserves all v1 profile, run and completion evidence. It
 creates zero-balance point accounts and grants the two free friends without
