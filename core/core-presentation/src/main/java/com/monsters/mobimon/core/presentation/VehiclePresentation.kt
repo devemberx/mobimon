@@ -1,0 +1,38 @@
+package com.monsters.mobimon.core.presentation
+
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.lifecycle.viewmodel.initializer
+import androidx.lifecycle.viewmodel.viewModelFactory
+import com.monsters.mobimon.core.domain.Clock
+import com.monsters.mobimon.core.domain.DrivingState
+import com.monsters.mobimon.core.domain.ProgressionIdentity
+import com.monsters.mobimon.core.domain.SignalQuality
+import com.monsters.mobimon.core.domain.VehicleFreshnessPolicy
+import com.monsters.mobimon.core.domain.VehicleRepository
+import com.monsters.mobimon.core.domain.VehicleSnapshot
+
+/** All routes share one display ViewModel in the Activity's store, never a provider connection. */
+class VehiclePresentation(
+    private val vehicle: VehicleRepository,
+    private val identity: ProgressionIdentity,
+    private val clock: Clock,
+    private val freshness: VehicleFreshnessPolicy,
+) {
+    @Composable
+    fun snapshot(): VehicleSnapshot {
+        val factory =
+            remember(this) {
+                viewModelFactory { initializer { VehicleStateViewModel(vehicle, identity, clock, freshness) } }
+            }
+        val model: VehicleStateViewModel = viewModel(factory = factory)
+        val snapshot by model.state.collectAsStateWithLifecycle()
+        return snapshot
+    }
+}
+
+val VehicleSnapshot.parkedVerified: Boolean
+    get() = quality == SignalQuality.VALID && drivingState == DrivingState.PARKED

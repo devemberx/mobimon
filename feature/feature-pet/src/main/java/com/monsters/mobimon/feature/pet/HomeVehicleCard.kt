@@ -2,7 +2,6 @@ package com.monsters.mobimon.feature.pet
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
@@ -10,18 +9,15 @@ import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -31,13 +27,15 @@ import com.monsters.mobimon.core.domain.SignalQuality
 import com.monsters.mobimon.core.domain.SignalUnavailableReason
 import com.monsters.mobimon.core.domain.VehicleSnapshot
 import com.monsters.mobimon.core.domain.WarningSeverity
-import com.monsters.mobimon.core.ui.MobiMonHomeColors
+import com.monsters.mobimon.core.ui.MobiMonButton
+import com.monsters.mobimon.core.ui.MobiMonButtonStyle
+import com.monsters.mobimon.core.ui.MobiMonStatusBadge
+import com.monsters.mobimon.core.ui.MobiMonStatusTone
 
 @Composable
 internal fun HomeParkingStatus(
     snapshot: VehicleSnapshot,
     modifier: Modifier = Modifier,
-    scale: Float = 1f,
 ) {
     val parked = snapshot.quality == SignalQuality.VALID && snapshot.drivingState == DrivingState.PARKED
     val status =
@@ -49,26 +47,14 @@ internal fun HomeParkingStatus(
                 else -> R.string.pet_driving_parked
             },
         )
-    Surface(
-        modifier =
-            modifier.heightIn(min = 76.dp * scale).semantics(mergeDescendants = true) {
-                contentDescription =
-                    status
-            },
-        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.82f),
-        contentColor = MobiMonHomeColors.parking,
-        shape = RoundedCornerShape(40.dp),
-        border = BorderStroke(2.dp * scale, MaterialTheme.colorScheme.outline.copy(alpha = 0.24f)),
+    MobiMonStatusBadge(
+        modifier.semantics(mergeDescendants = true) { contentDescription = status },
+        tone = if (parked) MobiMonStatusTone.SUCCESS else MobiMonStatusTone.INFORMATION,
     ) {
-        Box(
-            Modifier.padding(horizontal = 24.dp * scale, vertical = 10.dp * scale),
-            contentAlignment = Alignment.Center,
-        ) {
-            Text(
-                if (parked) stringResource(R.string.pet_parking_compact) else status,
-                style = homeTextStyle(28f, scale),
-            )
-        }
+        Text(
+            if (parked) stringResource(R.string.pet_parking_compact) else status,
+            style = MaterialTheme.typography.labelLarge,
+        )
     }
 }
 
@@ -87,8 +73,8 @@ internal fun HomeVehicleCard(
     val historicalWarning = snapshot.warnings.any { it.quality != SignalQuality.VALID }
     val fontScale = LocalDensity.current.fontScale
     Surface(
-        modifier = modifier,
-        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.82f),
+        modifier = modifier.testTag("home-vehicle-summary"),
+        color = MaterialTheme.colorScheme.surface,
         contentColor = MaterialTheme.colorScheme.onSurface,
         shape = RoundedCornerShape(24.dp),
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.24f)),
@@ -153,7 +139,8 @@ internal fun HomeVehicleCard(
                     }
                 }
                 val detailsDescription = stringResource(R.string.pet_vehicle_details)
-                TextButton(
+                MobiMonButton(
+                    style = MobiMonButtonStyle.SECONDARY,
                     onClick = onOpenVehicleInfo,
                     modifier =
                         (if (wide) Modifier else Modifier.fillMaxWidth())
@@ -162,12 +149,6 @@ internal fun HomeVehicleCard(
                             .align(Alignment.CenterVertically),
                 ) {
                     Text(stringResource(R.string.pet_vehicle_status), color = MaterialTheme.colorScheme.secondary)
-                    Icon(
-                        painterResource(R.drawable.pet_chevron),
-                        null,
-                        Modifier.padding(start = 12.dp).size(24.dp),
-                        tint = MaterialTheme.colorScheme.secondary,
-                    )
                 }
             }
         }

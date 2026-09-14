@@ -15,8 +15,9 @@ import androidx.test.core.app.ActivityScenario
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.monsters.mobimon.core.domain.DrivingState
+import com.monsters.mobimon.core.domain.PetRepository
+import com.monsters.mobimon.core.domain.QuestRepository
 import com.monsters.mobimon.core.domain.SignalQuality
-import com.monsters.mobimon.di.AppDependencies
 import com.monsters.mobimon.testing.JourneyStorage
 import com.monsters.mobimon.testing.JourneyVehicle
 import dagger.hilt.android.testing.HiltAndroidRule
@@ -37,7 +38,6 @@ import javax.inject.Inject
 import com.monsters.mobimon.core.ui.R as CoreUiR
 import com.monsters.mobimon.feature.pet.R as PetR
 import com.monsters.mobimon.feature.quest.R as QuestR
-import com.monsters.mobimon.feature.vehicle.R as VehicleR
 
 @HiltAndroidTest
 @RunWith(AndroidJUnit4::class)
@@ -52,7 +52,9 @@ class Q01AppJourneyTest {
 
     @Inject lateinit var storage: JourneyStorage
 
-    @Inject lateinit var dependencies: AppDependencies
+    @Inject lateinit var pets: PetRepository
+
+    @Inject lateinit var quests: QuestRepository
 
     private val context get() = InstrumentationRegistry.getInstrumentation().targetContext
 
@@ -74,24 +76,24 @@ class Q01AppJourneyTest {
             clickScrollable(QuestR.string.quest_start_q01)
             waitFor(hasText(text(QuestR.string.quest_open_vehicle)))
             clickScrollable(QuestR.string.quest_open_vehicle)
-            waitFor(hasText(text(VehicleR.string.vehicle_q01_waiting)))
-            compose.onNodeWithText(text(VehicleR.string.vehicle_acknowledge)).assertIsNotEnabled()
+            waitFor(hasText(text(QuestR.string.quest_vehicle_q01_waiting)))
+            compose.onNodeWithText(text(QuestR.string.quest_vehicle_acknowledge)).assertIsNotEnabled()
 
             vehicle.publish()
             val evidenceId = vehicle.snapshots.value.id
-            waitFor(hasText(text(VehicleR.string.vehicle_acknowledge)) and isEnabled())
-            clickScrollable(VehicleR.string.vehicle_acknowledge)
-            waitFor(hasText(text(VehicleR.string.vehicle_q01_completed)))
-            compose.onNodeWithText(text(VehicleR.string.vehicle_acknowledge)).assertIsNotEnabled()
+            waitFor(hasText(text(QuestR.string.quest_vehicle_acknowledge)) and isEnabled())
+            clickScrollable(QuestR.string.quest_vehicle_acknowledge)
+            waitFor(hasText(text(QuestR.string.quest_vehicle_q01_completed)))
+            compose.onNodeWithText(text(QuestR.string.quest_vehicle_acknowledge)).assertIsNotEnabled()
             val completion =
                 runBlocking(Dispatchers.IO) {
                     withTimeout(5_000) {
-                        val progress = dependencies.quests.progress.first()
+                        val progress = quests.progress.first()
                         assertNull(progress.activeRun)
                         assertEquals(1, progress.completions.size)
                         assertEquals(
                             80,
-                            dependencies.pets.profile
+                            pets.profile
                                 .first()
                                 .totalXp,
                         )
@@ -99,7 +101,7 @@ class Q01AppJourneyTest {
                     }
                 }
 
-            compose.onNodeWithText(text(R.string.return_home)).performClick()
+            compose.onNodeWithText(text(CoreUiR.string.mobimon_home)).performClick()
             assertHomePoints(0)
             scenario.recreate()
             assertHomePoints(0)
@@ -111,13 +113,13 @@ class Q01AppJourneyTest {
                 withTimeout(5_000) {
                     assertEquals(
                         listOf(completion),
-                        dependencies.quests.progress
+                        quests.progress
                             .first()
                             .completions,
                     )
                     assertEquals(
                         80,
-                        dependencies.pets.profile
+                        pets.profile
                             .first()
                             .totalXp,
                     )
@@ -154,19 +156,19 @@ class Q01AppJourneyTest {
             runBlocking(Dispatchers.IO) {
                 withTimeout(5_000) {
                     assertNull(
-                        dependencies.quests.progress
+                        quests.progress
                             .first()
                             .activeRun,
                     )
                     assertTrue(
-                        dependencies.quests.progress
+                        quests.progress
                             .first()
                             .completions
                             .isEmpty(),
                     )
                     assertEquals(
                         0,
-                        dependencies.pets.profile
+                        pets.profile
                             .first()
                             .totalXp,
                     )
@@ -180,14 +182,14 @@ class Q01AppJourneyTest {
                 withTimeout(5_000) {
                     assertEquals(
                         "journey-profile",
-                        dependencies.quests.progress
+                        quests.progress
                             .first()
                             .activeRun
                             ?.profileId,
                     )
                     assertEquals(
                         0,
-                        dependencies.pets.profile
+                        pets.profile
                             .first()
                             .totalXp,
                     )

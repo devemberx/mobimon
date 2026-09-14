@@ -1,16 +1,19 @@
 package com.monsters.mobimon.feature.pet
 
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.performScrollToIndex
 import com.monsters.mobimon.core.domain.CosmeticInventory
 import com.monsters.mobimon.core.domain.CosmeticItem
 import com.monsters.mobimon.core.domain.CosmeticSlot
+import com.monsters.mobimon.core.ui.MobiMonTheme
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -37,7 +40,7 @@ class CustomizationScreenTest {
 
         compose.setContent {
             var selectedId by androidx.compose.runtime.remember { mutableStateOf<String?>(null) }
-            MaterialTheme {
+            MobiMonTheme {
                 CustomizationScreen(
                     inventory = inventory,
                     catalog = catalog,
@@ -54,19 +57,28 @@ class CustomizationScreenTest {
             }
         }
 
-        // Switch tab to friend tab if needed, wait, our default tab is ACCESSORY. Let's click the Friend tab first!
         compose.onNodeWithText("친구 바꾸기").performClick()
 
-        compose.onNodeWithText("Luna · 고양이").performClick()
+        compose.onNodeWithTag("shop-items").performScrollTo().performScrollToIndex(1)
+        compose
+            .onNodeWithText("Luna · 고양이")
+            .performScrollTo()
+            .assertIsDisplayed()
+            .performClick()
         compose.onNodeWithText("Luna · 고양이 · 착용 미리보기").assertExists()
-        compose.onNodeWithText("이 모습 적용").performClick()
+        org.junit.Assert.assertNull(applied)
+        compose
+            .onNodeWithText("이 모습 적용")
+            .performScrollTo()
+            .assertIsDisplayed()
+            .performClick()
         org.junit.Assert.assertEquals("friend:luna", applied)
     }
 
     @Test fun failedInventoryOffersRetry() {
         var retries = 0
         compose.setContent {
-            MaterialTheme {
+            MobiMonTheme {
                 CustomizationScreen(
                     inventory = null,
                     catalog = emptyList(),

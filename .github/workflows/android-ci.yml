@@ -36,6 +36,7 @@ jobs:
       - name: Check and build
         run: |
           ./gradlew --no-daemon --stacktrace \
+            verifyModuleBoundaries \
             ktlintCheck \
             lintDebug \
             testDebugUnitTest \

@@ -28,7 +28,6 @@ import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
 import java.util.UUID
-import javax.inject.Inject
 import javax.inject.Singleton
 
 data class AppEnvironment(
@@ -123,20 +122,3 @@ object AppModule {
         appUse: AppUseStateSource,
     ): CompanionRuntime = CompanionRuntime(vehicle, appUse)
 }
-
-/** App-owned assembly; feature constructors remain usable without a DI framework. */
-class AppDependencies
-    @Inject
-    constructor(
-        val pets: PetRepository,
-        val settings: SettingsRepository,
-        val quests: QuestRepository,
-        val rewards: RewardRepository,
-        val vehicle: VehicleRepository,
-        val identity: ProgressionIdentity,
-        val clock: Clock,
-        val evaluator: QuestEvaluator,
-        val freshness: VehicleFreshnessPolicy,
-        val points: PointEconomy,
-        val appUse: AppUseStateSource,
-    )
