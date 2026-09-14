@@ -1,7 +1,9 @@
 package com.monsters.mobimon.ui
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -68,31 +70,40 @@ fun MobiMonContent(
     val registry = remember(entries) { FeatureRegistry(entries) }
     var shell by rememberSaveable(stateSaver = ShellSaver) { mutableStateOf(ShellState()) }
     val stateHolder = rememberSaveableStateHolder()
+    val navigator =
+        FeatureNavigator(
+            home = shell.home,
+            navigate = { route ->
+                shell =
+                    if (route == AiRoute.COPILOT) shell.openCopilot() else shell.navigate(route)
+            },
+            back = { shell = shell.back() },
+            returnHome = { shell = shell.returnHome() },
+            openMenu = { shell = shell.openMenu() },
+            switchHome = { shell = shell.switchHome() },
+        )
     MobiMonTheme {
         Surface(modifier = modifier.fillMaxSize()) {
-            if (appUseState != AppUseState.ALLOWED) {
-                MobiMonContentColumn {
-                    Text(stringResource(R.string.app_use_paused), style = MaterialTheme.typography.headlineMedium)
-                    MobiMonMessage(stringResource(R.string.app_use_restricted))
+            Box(Modifier.fillMaxSize()) {
+                Box(Modifier.fillMaxSize().safeDrawingPadding()) {
+                    if (appUseState != AppUseState.ALLOWED) {
+                        MobiMonContentColumn {
+                            Text(
+                                stringResource(R.string.app_use_paused),
+                                style = MaterialTheme.typography.headlineMedium,
+                            )
+                            MobiMonMessage(stringResource(R.string.app_use_restricted))
+                        }
+                    } else {
+                        BackHandler(enabled = shell.menuOpen || shell.route != CompanionRoute.HOME) {
+                            shell = shell.back()
+                        }
+                        stateHolder.SaveableStateProvider(shell.route.name) {
+                            registry[shell.route].Content(shell.route, navigator, Modifier)
+                        }
+                    }
                 }
-            } else {
-                BackHandler(enabled = shell.menuOpen || shell.route != CompanionRoute.HOME) { shell = shell.back() }
-                val navigator =
-                    FeatureNavigator(
-                        home = shell.home,
-                        navigate = { route ->
-                            shell =
-                                if (route == AiRoute.COPILOT) shell.openCopilot() else shell.navigate(route)
-                        },
-                        back = { shell = shell.back() },
-                        returnHome = { shell = shell.returnHome() },
-                        openMenu = { shell = shell.openMenu() },
-                        switchHome = { shell = shell.switchHome() },
-                    )
-                stateHolder.SaveableStateProvider(shell.route.name) {
-                    registry[shell.route].Content(shell.route, navigator, Modifier)
-                }
-                if (shell.menuOpen) {
+                if (appUseState == AppUseState.ALLOWED && shell.menuOpen) {
                     CompanionMenu(onClose = navigator.back, onNavigate = navigator.navigate)
                 }
             }
