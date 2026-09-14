@@ -1,5 +1,12 @@
 package com.monsters.mobimon.feature.auth
 
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -7,6 +14,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -27,6 +35,7 @@ import com.monsters.mobimon.core.presentation.parkedVerified
 import com.monsters.mobimon.core.ui.MobiMonButton
 import com.monsters.mobimon.core.ui.MobiMonContentColumn
 import com.monsters.mobimon.core.ui.MobiMonDestination
+import com.monsters.mobimon.core.ui.MobiMonDimensions
 import com.monsters.mobimon.core.ui.MobiMonMessage
 
 /** AI-owned routes. A real connection adapter is deliberately not inferred from UI state. */
@@ -69,6 +78,7 @@ class AiFeature(
                         stringResource(
                             if (companion.failed) R.string.ai_context_failed else R.string.ai_context_loading,
                         ),
+                        isError = companion.failed,
                     )
                     if (companion.failed) {
                         MobiMonButton(
@@ -79,22 +89,38 @@ class AiFeature(
             }
             return
         }
-        CopilotConnectionScreen(
-            state = CopilotUiState.Introduction(connectionUnavailable = unavailable),
-            onAction = { action ->
-                when (action) {
-                    CopilotAction.BACK, CopilotAction.CANCEL -> navigator.back()
-                    CopilotAction.REQUEST_CODE -> if (snapshot.parkedVerified) unavailable = true
-                    else -> Unit
+        Column(modifier.fillMaxSize()) {
+            if (companion.failed) {
+                Row(
+                    Modifier.fillMaxWidth().safeDrawingPadding().padding(MobiMonDimensions.contentPadding),
+                    horizontalArrangement = Arrangement.spacedBy(MobiMonDimensions.contentGap),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    MobiMonMessage(
+                        stringResource(R.string.ai_context_update_failed),
+                        Modifier.weight(1f),
+                        isError = true,
+                    )
+                    MobiMonButton(onClick = model::retry) { Text(stringResource(R.string.ai_retry)) }
                 }
-            },
-            modifier = modifier,
-            reducedMotion = companion.settings.reducedMotion,
-            interactionAllowed = snapshot.parkedVerified,
-            simulatedVehicle = snapshot.source == SignalSource.SIMULATED,
-            friendId = companion.inventory?.equippedItemIds?.get(CosmeticSlot.FRIEND) ?: "friend:mobi",
-            appearanceKey = profile.appearance.name,
-            accessoryId = companion.inventory?.equippedItemIds?.get(CosmeticSlot.ACCESSORY),
-        )
+            }
+            CopilotConnectionScreen(
+                state = CopilotUiState.Introduction(connectionUnavailable = unavailable),
+                onAction = { action ->
+                    when (action) {
+                        CopilotAction.BACK, CopilotAction.CANCEL -> navigator.back()
+                        CopilotAction.REQUEST_CODE -> if (snapshot.parkedVerified) unavailable = true
+                        else -> Unit
+                    }
+                },
+                modifier = Modifier.weight(1f),
+                reducedMotion = companion.settings.reducedMotion,
+                interactionAllowed = snapshot.parkedVerified,
+                simulatedVehicle = snapshot.source == SignalSource.SIMULATED,
+                friendId = companion.inventory?.equippedItemIds?.get(CosmeticSlot.FRIEND) ?: "friend:mobi",
+                appearanceKey = profile.appearance.name,
+                accessoryId = companion.inventory?.equippedItemIds?.get(CosmeticSlot.ACCESSORY),
+            )
+        }
     }
 }

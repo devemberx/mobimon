@@ -99,6 +99,12 @@ vector paths during Android conversion. Do not commit temporary MCP asset URLs,
 whole-screen SVGs as UI, invented icon replacements, or duplicated shared artwork.
 Remove superseded assets only after checking all variants, previews and tests.
 
+Home's default Mobi artwork is the supplied `그림1.png` for P01 (128:569),
+bundled unchanged as `drawable-nodpi/mobimon_mobi_v3.png`. Copilot selects the
+original v4 artwork through `PetArtwork.COPILOT`, as described in its
+[connection composition](#copilot-connection-ui). Luna, legacy Cream and
+equipped-accessory variants still use placeholders.
+
 This library is a migration foundation, not a claim that every screen matches
 v4. Exact screen acceptance still requires the
 [final visual comparison](TESTING.md#final-figma-visual-acceptance); unavailable
@@ -267,6 +273,12 @@ entry open the introduction; Back and Later return to the originating screen.
 Requesting a QR currently explains that connection is not available. No sample
 account, working code or successful authentication is presented in the production
 route. The remaining states are reusable components for future provider integration.
+
+If companion context cannot be loaded, show a failure message and Retry. If an
+observation fails after loading, keep the last committed companion visible and
+offer Retry alongside the failure. Replace retained data when observation
+recovers. A retained companion does not imply that its data is still updating or
+that connection is available.
 
 The Copilot presentation follows the current v4
 [connection group](https://www.figma.com/design/7tyb4oJsJAUc15KnU7H0F6?node-id=255-9688):

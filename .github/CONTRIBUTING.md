@@ -96,8 +96,8 @@ verification with `--write-locks`.
 ## Parallel feature development
 
 Use a separate checkout/worktree and topic branch for each task. Do not run four
-agents or developers against one mutable working directory. Integrate this
-structural migration before rebasing feature branches; keep subsequent moves
+agents or developers against one mutable working directory. Integrate structural
+migrations before rebasing dependent feature branches; keep file moves
 separate from visual or behavioral changes so Git can detect renames.
 
 Work inside the feature's source, resources, tests and route declaration. The

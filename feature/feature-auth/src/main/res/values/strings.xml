@@ -80,5 +80,6 @@
     <string name="conversation_title">대화</string>
     <string name="ai_context_loading">친구 정보를 불러오는 중이에요.</string>
     <string name="ai_context_failed">친구 정보를 불러오지 못했어요.</string>
+    <string name="ai_context_update_failed">친구 정보를 갱신하지 못했어요. 마지막으로 불러온 정보를 표시해요.</string>
     <string name="ai_retry">다시 시도</string>
 </resources>

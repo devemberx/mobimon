@@ -80,9 +80,10 @@ coverage, not a passing result at a particular revision.
 
 | Requirement | Test suite | Scope |
 | --- | --- | --- |
-| Features have no sibling/data-implementation dependencies and domain has no Android imports | `verifyModuleBoundaries` in [root build](../build.gradle.kts) | Actual Gradle project dependency graph and domain source |
+| Declared feature project dependencies stay within allowed core modules; selected domain platform imports are rejected | `verifyModuleBoundaries` in [root build](../build.gradle.kts) | Configured project declarations and main Kotlin imports; [audit limits](ARCHITECTURE.md#state-and-lifecycle) apply |
 | Missing/duplicate routes cannot silently render an arbitrary feature | [FeatureRegistryTest](../core/core-navigation/src/test/java/com/monsters/mobimon/core/navigation/FeatureRegistryTest.kt) | JVM |
 | AI observes committed companion context independently; failed observation retains it and supports retry without duplicate observers; cancellation propagates | [AiCompanionViewModelTest](../feature/feature-auth/src/test/java/com/monsters/mobimon/feature/auth/AiCompanionViewModelTest.kt) | ViewModel |
+| AI route exposes initial and later observation failures, retains the displayed companion across revisits, and retries to current equipment without duplicate observers or authorizing unknown parking | [AiFeatureTest](../feature/feature-auth/src/test/java/com/monsters/mobimon/feature/auth/AiFeatureTest.kt) | Production feature entry, real ViewModels and fake repositories on Robolectric; includes enlarged-text and keyboard retry |
 | Shared actions have 76dp targets and disabled callbacks cannot dispatch | [MobiMonComponentsTest](../core/core-ui/src/test/java/com/monsters/mobimon/core/ui/MobiMonComponentsTest.kt) | Compose and Robolectric |
 | Quest-owned acknowledgment blocks moving/stale/unknown state and forwards the displayed snapshot ID | [QuestVehicleCardTest](../feature/feature-quest/src/test/java/com/monsters/mobimon/feature/quest/QuestVehicleCardTest.kt), shared Q01 journey | Compose and app integration |
 | Fixed XP growth boundaries | [RewardCalculatorTest](../core/core-domain/src/test/kotlin/com/monsters/mobimon/core/domain/RewardCalculatorTest.kt) | JVM |
@@ -91,7 +92,7 @@ coverage, not a passing result at a particular revision.
 | Old, invalid, wrong-source or wrong-epoch evidence is rejected | [QuestEvaluatorTest](../core/core-domain/src/test/kotlin/com/monsters/mobimon/core/domain/QuestEvaluatorTest.kt), [QuestViewModelTest](../feature/feature-quest/src/test/java/com/monsters/mobimon/feature/quest/QuestViewModelTest.kt) | JVM and ViewModel |
 | Superseded parking or AAOS app-use restriction rejects queued reward writes | [Q01JourneyTest](../app/src/test/java/com/monsters/mobimon/Q01JourneyTest.kt) | Local Room transaction |
 | Parking and battery age are evaluated independently | [VehicleFreshnessPolicyTest](../core/core-domain/src/test/kotlin/com/monsters/mobimon/core/domain/VehicleFreshnessPolicyTest.kt), [VehicleInfoScreenTest](../feature/feature-vehicle-info/src/test/java/com/monsters/mobimon/feature/vehicle/VehicleInfoScreenTest.kt) | Domain and Compose |
-| Point migration preserves XP evidence without minting points | [PointEconomyMigrationTest](../core/core-database/src/test/java/com/monsters/mobimon/core/database/PointEconomyMigrationTest.kt) | File-backed v1 to v2 Room |
+| Point migration preserves XP evidence without minting points | [PointEconomyMigrationTest](../core/core-database/src/test/java/com/monsters/mobimon/core/database/PointEconomyMigrationTest.kt) | Hand-built, file-backed v1 fixture to current v3 through both migrations |
 | Purchases charge once, equipment is separate, and one-time/daily credits have unique occurrences | [PointEconomyRepositoryTest](../core/core-database/src/test/java/com/monsters/mobimon/core/database/PointEconomyRepositoryTest.kt) | Local SQLite |
 | A loading or failed point balance is distinct from saved zero | [PointBalanceViewModelTest](../core/core-presentation/src/test/java/com/monsters/mobimon/core/presentation/PointBalanceViewModelTest.kt) | ViewModel |
 | Home preserves point loading/failure, independent vehicle freshness, warning severity and history, and simulated labels without changing composition when vehicle data is lost or recovered; conversation stays disabled without a connection destination | [PetHomeScreenTest](../feature/feature-pet/src/test/java/com/monsters/mobimon/feature/pet/PetHomeScreenTest.kt) | Compose and Robolectric |
@@ -115,6 +116,13 @@ coverage, not a passing result at a particular revision.
 | Debug application ID and launcher label match MobiMon | [BrandingTest](../app/src/testDebug/java/com/monsters/mobimon/BrandingTest.kt) | Debug and Robolectric |
 
 ## Integration boundaries
+
+`PointEconomyMigrationTest` builds its v1 fixture directly with SQL; it does not
+load exported schemas with `MigrationTestHelper`. It exercises `MIGRATION_1_2`
+and `MIGRATION_2_3` together, not a separate populated v2 fixture or an earlier
+development v3 database. Schema exports and successful fresh creation do not
+prove those historical upgrade paths. Add fixtures for supported versions when
+implementing the required versioned migration; preserve historical records.
 
 The MainActivity journeys use `HiltTestApplication`. Their
 [JourneyTestModule](../app/src/journeyTest/java/com/monsters/mobimon/testing/JourneyTestModule.kt)

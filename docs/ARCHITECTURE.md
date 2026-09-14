@@ -39,15 +39,11 @@ paid item catalog have been approved yet.
   Display freshness samples the clock on every snapshot or timer emission, so a
   new reading is never compared against a cached, older timer timestamp.
 - [PetAvatar](../core/core-ui/src/main/java/com/monsters/mobimon/core/ui/PetAvatar.kt)
-  is the artwork replacement point. Mobi's default artwork uses the supplied
-  `그림1.png` for v3 P01 letterbox Home (128:569), bundled unchanged as
-  `drawable-nodpi/mobimon_mobi_v3.png`. The Copilot presentation selects the original
-  v4 artwork through `PetArtwork.COPILOT`; appearance and equipment state remain
-  outside the renderer. Home and customization share the renderer;
-  Luna, legacy Cream and equipped-accessory variants still use placeholders. Preserve
-  the compatibility signature `PetAvatar(modifier, appearanceKey, stage)`. `stage`
+  is the artwork replacement point for Home, customization and Copilot. Preserve
+  the compatibility signature `PetAvatar(modifier, appearanceKey, stage)`; `stage`
   belongs to the legacy implementation. Rewards, ownership, equipped appearance
-  and interaction state stay outside the renderer.
+  and interaction state stay outside the renderer. Asset provenance and fallback
+  artwork belong in the [design guidance](DESIGN.md#reusable-compose-library-and-asset-handoff).
 
 Q02/Q03 remain legacy identifiers, but are no longer offered as forthcoming
 quests. Existing Q01-Q03 identifiers, rewards and completion records do not
@@ -128,8 +124,12 @@ Destination enums are separate files in `core-navigation`: `CompanionRoute`,
 change the shell registry. Each `FeatureEntry` supplies its own destination
 content. `FeatureRegistry` rejects duplicate or missing registrations and duplicate
 saved route names across teams; Gradle's
-`verifyModuleBoundaries` checks actual project dependencies, including convention
-plugin dependencies, and prevents platform imports in `core-domain`.
+`verifyModuleBoundaries` checks declared `ProjectDependency` entries in every
+configuration, including those added by convention plugins. It also rejects the
+Android library plugin and selected import prefixes in `core-domain/src/main`
+Kotlin files. This is a guardrail, not a complete dependency audit: resolved
+transitive libraries, other source sets, generated code, fully qualified type
+references and SDK DTO types still require review against the boundaries above.
 
 The current shell preserves the existing single-level navigation and Copilot
 origin contract; `AppRoute.parent` supports an explicit parent for new screens.
@@ -144,10 +144,14 @@ require a separately verified navigation integration.
 `PointPresentation` and `VehiclePresentation` share only independently observed
 read state. Home reads quest summaries through `QuestRepository`; AI reads
 committed companion context through domain interfaces. Neither imports another
-feature's ViewModel. The Quest-owned `QuestVehicleCard` implements a
+feature's ViewModel. AI retains its last committed context if observation fails;
+the route exposes that failure and an explicit retry even after a profile has
+loaded. Retry reconnects the combined observation without duplicating active jobs.
+The Quest-owned `QuestFeature` implements a
 `VehicleDetailContribution` assembled in `app/di/features/QuestFeatureModule`.
-Vehicle renders that slot with the currently displayed snapshot, and only Quest
-dispatches acknowledgment to the reward repository.
+It renders the stateless `QuestVehicleCard` inside Vehicle's slot with the
+currently displayed snapshot; only Quest dispatches acknowledgment to the reward
+repository.
 
 The shell owns transient menu state and cross-feature callbacks as defined in
 [DESIGN.md](DESIGN.md). Shared component APIs never accept repositories or ViewModels.
@@ -182,10 +186,10 @@ production integration remains [planned](#ai-conversation-and-session).
 [CopilotPreviewActivity](../feature/feature-auth/src/debug/java/com/monsters/mobimon/feature/auth/preview/CopilotPreviewActivity.kt)
 is a separate Debug-only launcher that connects those same components. Example
 accounts/codes, its fixed timer and scenario controls belong to the rehearsal,
-not a provider implementation. The Activity saves only its review state across
+not a provider implementation; its UI behavior is defined in
+[DESIGN.md](DESIGN.md#copilot-connection-ui). The Activity saves only its review state across
 recreation; simulated pending work runs while STARTED and is canceled when its
-step is left. Its motion toggle is local to the rehearsal, separate from the
-app's persisted setting. It neither verifies vehicle restrictions nor performs
+step is left. It neither verifies vehicle restrictions nor performs
 authentication or account persistence. Its launcher and sample QR resource are
 absent from Release.
 
@@ -253,6 +257,12 @@ while Q02/Q03 remain unsupported. `RewardCalculator` can interpret historical
 saved XP but does not drive the product home. These fields and values are current implementation facts, not target
 point rewards or conversion rates.
 
+Earlier development v3 databases predate fields now present in the entities and
+export. They need a new versioned, non-destructive migration before upgrades can
+be supported; updating the v3 export alone does not migrate those installations.
+The [migration coverage](TESTING.md#integration-boundaries) does not establish
+that upgrade path.
+
 `MIGRATION_1_2` preserves all v1 profile, run and completion evidence. It
 creates zero-balance point accounts and grants the two free friends without
 creating historical point credits. The new point quest occurrence table has a
@@ -287,9 +297,10 @@ in [TESTING.md](TESTING.md); implementation breakdowns belong in feature issues.
 
 ### Points, cosmetics and quest occurrences
 
-Implemented: Room v2 accounts, ledger, occurrence uniqueness, purchases,
-ownership, equipment, free friends, and migration tests. The production quest
-and paid-item catalogs have no approved entries. The legacy Q01 is still an XP
+Implemented: accounts, ledger, occurrence uniqueness, purchases, ownership,
+equipment and free friends were introduced in Room v2 and remain in current v3.
+See the [test requirement map](TESTING.md#current-requirement-map) for coverage.
+The production quest and paid-item catalogs have no approved entries. The legacy Q01 is still an XP
 demo and does not grant points. Point awards require a trusted catalog entry,
 current matching vehicle evidence and app-use authorization. The current award
 API supports a displayed vehicle-card acknowledgment; additional quest
@@ -300,11 +311,14 @@ balance, durable credit/debit ledger, owned cosmetic items and equipped selectio
 in Room. Use stable quest/item identifiers and keep catalog data, ownership and
 equipment distinct.
 
-Quest awards retain the evidence, ownership, revision and source checks above.
-Atomically insert the unique completion and its ledger credit, finish the run
-and update the point balance. Link each award to one completion occurrence so
-retrying or replaying an event cannot credit it again. UI code and AI replies
-cannot directly change balances or grant items.
+All quest awards must preserve the applicable ownership, revision, evidence and
+source checks in the [storage contract](#domain-and-storage-contracts). The current
+vehicle-card point API validates a catalog entry and current vehicle evidence,
+then atomically inserts the occurrence, credits its ledger and updates the
+balance. It has no run handle and must not be used for run-based rules. A
+run-based point extension must recheck the run and finish it inside that same
+reward transaction. UI code and AI replies cannot directly change balances or
+grant items.
 
 Support one-time and repeat reward categories. One-time rewards remain unique
 per profile and quest. Repeat rewards require an explicit occurrence key and a

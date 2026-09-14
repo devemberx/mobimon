@@ -2,9 +2,6 @@
     <string name="drawer_menu">메뉴</string>
     <string name="drawer_menu_vehicle">차량 상태</string>
     <string name="drawer_menu_quests">퀘스트</string>
-    <string name="drawer_quests">퀘스트 정보</string>
-    <string name="drawer_vehicle_info">차량 정보</string>
-    <string name="drawer_appearance">캐릭터 선택</string>
     <string name="drawer_settings">설정</string>
     <string name="close">닫기</string>
 </resources>
