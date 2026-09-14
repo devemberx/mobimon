@@ -10,6 +10,9 @@ data class UserProfileEntity(
     val currentLevel: Int,
     val totalDistanceKm: Float,
     val selectedPetId: String,
+    val safeDriveDaysTotal: Int = 0,
+    val safeDriveDaysCount: Int = 0,
+    val tutorialClearFlag: Boolean = false,
 )
 
 @Entity(tableName = "drive_daily_summaries")
@@ -22,4 +25,6 @@ data class DriveDailySummaryEntity(
     val overspeedCount: Int,
     val earnedPoints: Long,
     val bonusPoints: Long,
+    val safeDriveScore: Int = 0,
+    val turnSignalOnCount: Int = 0,
 )
