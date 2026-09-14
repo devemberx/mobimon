@@ -11,7 +11,8 @@ import androidx.compose.ui.test.performScrollTo
 import androidx.test.core.app.ActivityScenario
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
-import com.monsters.mobimon.R
+import com.monsters.mobimon.feature.auth.R
+import com.monsters.mobimon.feature.auth.preview.CopilotPreviewActivity
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith

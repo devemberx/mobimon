@@ -37,7 +37,8 @@ import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.monsters.mobimon.core.ui.CompanionIcon
-import com.monsters.mobimon.core.ui.MobiMonConnectionColors as Colors
+import com.monsters.mobimon.core.ui.MobiMonListItem
+import com.monsters.mobimon.core.ui.MobiMonColors as Colors
 
 @Composable
 internal fun CopilotPanel(
@@ -556,16 +557,10 @@ private fun AccountCard(
     detail: String?,
     scale: Float,
 ) {
-    Column(
-        Modifier.fillMaxWidth().background(Colors.raised, RoundedCornerShape(24.dp * scale)).padding(32.dp * scale),
-        verticalArrangement =
-            Arrangement.spacedBy(
-                8.dp * scale,
-            ),
-    ) {
-        Text(account, style = copilotStyle(36f, scale, true))
-        if (detail != null) Text(detail, style = copilotStyle(28f, scale), color = Colors.muted)
-    }
+    MobiMonListItem(
+        Modifier.fillMaxWidth(),
+        supporting = detail?.let { text -> { Text(text, style = copilotStyle(28f, scale), color = Colors.muted) } },
+    ) { Text(account, style = copilotStyle(36f, scale, true)) }
 }
 
 @Composable

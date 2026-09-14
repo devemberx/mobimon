@@ -1,141 +1,43 @@
 package com.monsters.mobimon.ui
 
 import androidx.activity.compose.BackHandler
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.listSaver
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.lifecycle.viewmodel.initializer
-import androidx.lifecycle.viewmodel.viewModelFactory
 import com.monsters.mobimon.R
 import com.monsters.mobimon.core.domain.AppUseState
-import com.monsters.mobimon.core.domain.DrivingState
-import com.monsters.mobimon.core.domain.PetAppearance
-import com.monsters.mobimon.core.domain.QuestType
-import com.monsters.mobimon.core.domain.SignalQuality
-import com.monsters.mobimon.core.domain.SignalSource
-import com.monsters.mobimon.core.domain.VehicleSnapshot
+import com.monsters.mobimon.core.navigation.AiRoute
+import com.monsters.mobimon.core.navigation.AppRoute
+import com.monsters.mobimon.core.navigation.CompanionRoute
+import com.monsters.mobimon.core.navigation.FeatureEntry
+import com.monsters.mobimon.core.navigation.FeatureNavigator
+import com.monsters.mobimon.core.navigation.FeatureRegistry
+import com.monsters.mobimon.core.navigation.HomeSurface
 import com.monsters.mobimon.core.ui.MobiMonContentColumn
 import com.monsters.mobimon.core.ui.MobiMonMessage
 import com.monsters.mobimon.core.ui.MobiMonTheme
-import com.monsters.mobimon.di.AppDependencies
-import com.monsters.mobimon.feature.auth.CopilotAction
-import com.monsters.mobimon.feature.auth.CopilotConnectionScreen
-import com.monsters.mobimon.feature.auth.CopilotUiState
-import com.monsters.mobimon.feature.pet.CustomizationScreen
-import com.monsters.mobimon.feature.pet.PetHomeLoadingScreen
-import com.monsters.mobimon.feature.pet.PetHomeScreen
-import com.monsters.mobimon.feature.pet.PetUiState
-import com.monsters.mobimon.feature.pet.PetViewModel
-import com.monsters.mobimon.feature.pet.SettingsScreen
-import com.monsters.mobimon.feature.quest.QuestMessage
-import com.monsters.mobimon.feature.quest.QuestScreen
-import com.monsters.mobimon.feature.quest.QuestUiState
-import com.monsters.mobimon.feature.quest.QuestViewModel
-import com.monsters.mobimon.feature.vehicle.VehicleInfoScreen
+import com.monsters.mobimon.runtime.AppUseStateSource
 
 @Composable
-fun MobiMonApp(dependencies: AppDependencies) {
-    val factory =
-        remember(dependencies) {
-            viewModelFactory {
-                initializer { PetViewModel(dependencies.pets, dependencies.settings) }
-                initializer { PointBalanceViewModel(dependencies.points) }
-                initializer { CosmeticInventoryViewModel(dependencies.points) }
-                initializer {
-                    VehicleStateViewModel(
-                        dependencies.vehicle,
-                        dependencies.identity,
-                        dependencies.clock,
-                        dependencies.freshness,
-                    )
-                }
-                initializer {
-                    QuestViewModel(
-                        dependencies.quests,
-                        dependencies.rewards,
-                        dependencies.vehicle,
-                        dependencies.identity,
-                        dependencies.clock,
-                        dependencies.evaluator,
-                    )
-                }
-            }
-        }
-    val petViewModel: PetViewModel = viewModel(factory = factory)
-    val questViewModel: QuestViewModel = viewModel(factory = factory)
-    val vehicleViewModel: VehicleStateViewModel = viewModel(factory = factory)
-    val pointsViewModel: PointBalanceViewModel = viewModel(factory = factory)
-    val inventoryViewModel: CosmeticInventoryViewModel = viewModel(factory = factory)
-    val petState by petViewModel.state.collectAsStateWithLifecycle()
-    val questState by questViewModel.state.collectAsStateWithLifecycle()
-    val vehicleSnapshot by vehicleViewModel.state.collectAsStateWithLifecycle()
-    val pointBalance by pointsViewModel.state.collectAsStateWithLifecycle()
-    val inventoryState by inventoryViewModel.state.collectAsStateWithLifecycle()
-    val appUseState by dependencies.appUse.states.collectAsStateWithLifecycle()
-    MobiMonContent(
-        petState = petState,
-        questState = questState,
-        vehicleSnapshot = vehicleSnapshot,
-        pointBalance = pointBalance,
-        inventoryState = inventoryState,
-        appUseState = appUseState,
-        actions =
-            MobiMonActions(
-                onRetry = {
-                    petViewModel.retry()
-                    questViewModel.retry()
-                    pointsViewModel.retry()
-                    inventoryViewModel.retry()
-                },
-                onAppearanceChange = petViewModel::setAppearance,
-                onVehicleVisibilityChange = petViewModel::setShowOnVehicleHome,
-                onReducedMotionChange = petViewModel::setReducedMotion,
-                onStartQuest = questViewModel::start,
-                onCancelQuest = questViewModel::cancel,
-                onAcknowledge = questViewModel::acknowledge,
-                onEquipFriend = inventoryViewModel::equipFriend,
-                onSelectItem = inventoryViewModel::selectItem,
-                onPurchaseItem = inventoryViewModel::purchaseItem,
-                onEquipItem = inventoryViewModel::equipItem,
-            ),
-    )
+fun MobiMonApp(
+    entries: Set<FeatureEntry>,
+    appUse: AppUseStateSource,
+) {
+    val state by appUse.states.collectAsStateWithLifecycle()
+    MobiMonContent(entries = entries, appUseState = state)
 }
-
-data class MobiMonActions(
-    val onRetry: () -> Unit,
-    val onAppearanceChange: (PetAppearance) -> Unit,
-    val onVehicleVisibilityChange: (Boolean) -> Unit,
-    val onReducedMotionChange: (Boolean) -> Unit,
-    val onStartQuest: (QuestType) -> Unit,
-    val onCancelQuest: () -> Unit,
-    val onAcknowledge: (String) -> Unit,
-    val onEquipFriend: (String) -> Unit = {},
-    val onSelectItem: (String?) -> Unit = {},
-    val onPurchaseItem: (String, Long) -> Unit = { _, _ -> },
-    val onEquipItem: (String) -> Unit = {},
-)
 
 internal val ShellSaver =
     listSaver<ShellState, String>(
@@ -143,248 +45,57 @@ internal val ShellSaver =
         restore = { saved ->
             ShellState(
                 home = HomeSurface.entries.firstOrNull { it.name == saved.getOrNull(0) } ?: HomeSurface.PET,
-                route = AppRoute.entries.firstOrNull { it.name == saved.getOrNull(1) } ?: AppRoute.HOME,
+                route = AppRoute.entries.firstOrNull { it.name == saved.getOrNull(1) } ?: CompanionRoute.HOME,
                 connectionOrigin =
                     if (saved.getOrNull(2) ==
-                        AppRoute.SETTINGS.name
+                        CompanionRoute.SETTINGS.name
                     ) {
-                        AppRoute.SETTINGS
+                        CompanionRoute.SETTINGS
                     } else {
-                        AppRoute.HOME
+                        CompanionRoute.HOME
                     },
             )
         },
     )
 
+/** App shell owns only navigation, restoration, menu and the global AAOS restriction gate. */
 @Composable
 fun MobiMonContent(
-    petState: PetUiState,
-    questState: QuestUiState,
-    actions: MobiMonActions,
+    entries: Set<FeatureEntry>,
     modifier: Modifier = Modifier,
-    vehicleSnapshot: VehicleSnapshot = questState.snapshot,
-    pointBalance: PointBalanceState = PointBalanceState.Loading,
-    inventoryState: CosmeticInventoryUiState = CosmeticInventoryUiState(),
-    appUseState: AppUseState = AppUseState.ALLOWED,
+    appUseState: AppUseState = AppUseState.UNAVAILABLE,
 ) {
+    val registry = remember(entries) { FeatureRegistry(entries) }
     var shell by rememberSaveable(stateSaver = ShellSaver) { mutableStateOf(ShellState()) }
+    val stateHolder = rememberSaveableStateHolder()
     MobiMonTheme {
         Surface(modifier = modifier.fillMaxSize()) {
-            val profile = petState.profile
-            if (profile == null && petState.loadFailed) {
-                LoadingOrError(failed = true, onRetry = actions.onRetry)
-            } else if (profile == null || petState.isLoading) {
-                LoadingOrError(failed = false, onRetry = actions.onRetry)
-            } else if (appUseState != AppUseState.ALLOWED) {
+            if (appUseState != AppUseState.ALLOWED) {
                 MobiMonContentColumn {
                     Text(stringResource(R.string.app_use_paused), style = MaterialTheme.typography.headlineMedium)
                     MobiMonMessage(stringResource(R.string.app_use_restricted))
                 }
             } else {
-                BackHandler(enabled = shell.menuOpen || shell.route != AppRoute.HOME) { shell = shell.back() }
-                val balance = (pointBalance as? PointBalanceState.Ready)?.balance
-                val balanceFailed = pointBalance == PointBalanceState.Failed
-                val legacyQuestVisible = vehicleSnapshot.source == SignalSource.SIMULATED
-                val interactionAllowed =
-                    appUseState == AppUseState.ALLOWED &&
-                        vehicleSnapshot.quality == SignalQuality.VALID &&
-                        vehicleSnapshot.drivingState == DrivingState.PARKED
-                val visibilitySaveError =
-                    if (petState.visibilitySaveFailed) {
-                        stringResource(
-                            R.string.save_failed,
-                        )
-                    } else {
-                        null
-                    }
-                val motionSaveError =
-                    if (petState.reducedMotionSaveFailed) {
-                        stringResource(
-                            R.string.save_failed,
-                        )
-                    } else {
-                        null
-                    }
-                val observationChanged =
-                    questState.progress.activeRun?.let { it.startEpoch != questState.snapshot.epoch } == true
-                val questError =
-                    questErrorText(
-                        questState.message ?: if (observationChanged) QuestMessage.OBSERVATION_CHANGED else null,
-                    )
-                if (shell.route == AppRoute.HOME) {
-                    PetHomeScreen(
-                        profile,
-                        vehicleSnapshot,
-                        questState.progress,
-                        petState.settings,
-                        onOpenMenu = { shell = shell.openMenu() },
-                        onOpenVehicleInfo = { shell = shell.navigate(AppRoute.VEHICLE_INFO) },
-                        onOpenQuests = { shell = shell.navigate(AppRoute.QUESTS) },
-                        onSwitchHome = { shell = shell.switchHome() },
-                        onPetClick = { if (interactionAllowed) shell = shell.openCopilot() },
-                        onOpenAppearance = { shell = shell.navigate(AppRoute.APPEARANCE) },
-                        vehiclePreview = shell.home == HomeSurface.VEHICLE,
-                        pointBalance = balance,
-                        pointLoadFailed = balanceFailed,
-                        legacyQuestVisible = legacyQuestVisible,
-                        friendId = inventoryState.equippedFriendId,
-                        accessoryId = inventoryState.equippedAccessoryId,
-                        interactionAllowed = interactionAllowed,
-                        connectionAvailable = true,
-                        profileObservationFailed = petState.loadFailed,
-                        onRetryProfile = actions.onRetry,
-                        inventoryLoaded = inventoryState.inventory != null,
-                        inventoryLoadFailed = inventoryState.loadFailed,
-                    )
-                } else if (shell.route == AppRoute.SETTINGS) {
-                    SettingsScreen(
-                        petState.settings,
-                        actions.onVehicleVisibilityChange,
-                        actions.onReducedMotionChange,
-                        visibilitySaving = petState.visibilitySaving,
-                        visibilityError = visibilitySaveError,
-                        motionSaving = petState.reducedMotionSaving,
-                        motionError = motionSaveError,
-                        settingsAvailable = petState.settingsLoaded,
-                        settingsLoadFailed = petState.settingsLoadFailed,
-                        onRetry = actions.onRetry,
-                        onBack = { shell = shell.back() },
-                        onDone = { shell = shell.returnHome() },
-                        parkedVerified = interactionAllowed,
-                        simulatedVehicle = vehicleSnapshot.source == SignalSource.SIMULATED,
-                        onOpenCopilot = { if (interactionAllowed) shell = shell.openCopilot() },
-                    )
-                } else if (shell.route == AppRoute.COPILOT) {
-                    var unavailable by rememberSaveable { mutableStateOf(false) }
-                    CopilotConnectionScreen(
-                        state = CopilotUiState.Introduction(connectionUnavailable = unavailable),
-                        reducedMotion = petState.settings.reducedMotion,
-                        onAction = { action ->
-                            when (action) {
-                                CopilotAction.BACK, CopilotAction.CANCEL -> shell = shell.back()
-                                CopilotAction.REQUEST_CODE -> if (interactionAllowed) unavailable = true
-                                else -> Unit
-                            }
+                BackHandler(enabled = shell.menuOpen || shell.route != CompanionRoute.HOME) { shell = shell.back() }
+                val navigator =
+                    FeatureNavigator(
+                        home = shell.home,
+                        navigate = { route ->
+                            shell =
+                                if (route == AiRoute.COPILOT) shell.openCopilot() else shell.navigate(route)
                         },
-                        interactionAllowed = interactionAllowed,
-                        simulatedVehicle = vehicleSnapshot.source == SignalSource.SIMULATED,
-                        friendId = inventoryState.equippedFriendId ?: "friend:mobi",
-                        appearanceKey = profile.appearance.name,
-                        accessoryId = inventoryState.equippedAccessoryId,
+                        back = { shell = shell.back() },
+                        returnHome = { shell = shell.returnHome() },
+                        openMenu = { shell = shell.openMenu() },
+                        switchHome = { shell = shell.switchHome() },
                     )
-                } else {
-                    Column(Modifier.fillMaxSize()) {
-                        Row(
-                            Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 8.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(24.dp),
-                        ) {
-                            TextButton(
-                                onClick = { shell = shell.back() },
-                                modifier = Modifier.heightIn(min = 76.dp),
-                            ) { Text(stringResource(R.string.drawer_back)) }
-                            Text(
-                                stringResource(shell.route.title()),
-                                modifier = Modifier.weight(1f),
-                                style = MaterialTheme.typography.headlineMedium,
-                            )
-                            TextButton(
-                                onClick = { shell = shell.returnHome() },
-                                modifier = Modifier.heightIn(min = 76.dp),
-                            ) { Text(stringResource(R.string.return_home)) }
-                        }
-                        Box(Modifier.weight(1f).fillMaxWidth()) {
-                            when (shell.route) {
-                                AppRoute.APPEARANCE ->
-                                    CustomizationScreen(
-                                        inventory = inventoryState.inventory,
-                                        catalog = inventoryState.catalog,
-                                        selectedItemId = inventoryState.selectedItemId,
-                                        purchasing = inventoryState.purchasing,
-                                        purchaseFailed = inventoryState.purchaseFailed,
-                                        onSelectItem = actions.onSelectItem,
-                                        onPurchaseItem = actions.onPurchaseItem,
-                                        onEquipItem = actions.onEquipItem,
-                                        onEquipFriend = actions.onEquipFriend,
-                                        pointBalance = balance,
-                                        pointLoadFailed = balanceFailed,
-                                        saving = inventoryState.saving,
-                                        loadFailed = inventoryState.loadFailed,
-                                        saveFailed = inventoryState.saveFailed,
-                                        onRetry = actions.onRetry,
-                                    )
-                                AppRoute.SETTINGS, AppRoute.COPILOT -> Unit
-                                AppRoute.QUESTS ->
-                                    QuestScreen(
-                                        questState.progress,
-                                        questState.canManageQuest && interactionAllowed,
-                                        actions.onStartQuest,
-                                        actions.onCancelQuest,
-                                        onOpenVehicleInfo = { shell = shell.navigate(AppRoute.VEHICLE_INFO) },
-                                        isBusy = questState.isBusy,
-                                        errorMessage = questError,
-                                        pointBalance = balance,
-                                        pointLoadFailed = balanceFailed,
-                                        legacyVisible = legacyQuestVisible,
-                                    )
-                                AppRoute.VEHICLE_INFO ->
-                                    VehicleInfoScreen(
-                                        snapshot = vehicleSnapshot,
-                                        questActive = questState.progress.activeRun != null,
-                                        questCompleted =
-                                            questState.progress.completions.any {
-                                                it.type == QuestType.Q01
-                                            },
-                                        canAcknowledge = questState.canAcknowledge && interactionAllowed,
-                                        onAcknowledge = actions.onAcknowledge,
-                                        isBusy = questState.isBusy,
-                                        errorMessage = questError,
-                                        legacyQuestVisible = legacyQuestVisible,
-                                    )
-                                AppRoute.CONVERSATION ->
-                                    MobiMonContentColumn {
-                                        MobiMonMessage(stringResource(R.string.conversation_not_connected))
-                                    }
-                                AppRoute.HOME -> Unit
-                            }
-                        }
-                    }
+                stateHolder.SaveableStateProvider(shell.route.name) {
+                    registry[shell.route].Content(shell.route, navigator, Modifier)
                 }
                 if (shell.menuOpen) {
-                    CompanionMenu(
-                        onClose = { shell = shell.back() },
-                        onNavigate = { shell = shell.navigate(it) },
-                    )
+                    CompanionMenu(onClose = navigator.back, onNavigate = navigator.navigate)
                 }
             }
         }
     }
 }
-
-@Composable
-private fun LoadingOrError(
-    failed: Boolean,
-    onRetry: () -> Unit,
-) {
-    PetHomeLoadingScreen(failed = failed, onRetry = onRetry)
-}
-
-@Composable
-private fun questErrorText(message: QuestMessage?): String? =
-    message?.let {
-        stringResource(
-            when (it) {
-                QuestMessage.NOT_PARKED -> R.string.quest_not_parked
-                QuestMessage.NO_DATA -> R.string.quest_no_data
-                QuestMessage.STALE -> R.string.quest_stale
-                QuestMessage.WRONG_SOURCE -> R.string.quest_wrong_source
-                QuestMessage.OBSERVATION_CHANGED -> R.string.quest_observation_changed
-                QuestMessage.REFRESH_REQUIRED -> R.string.quest_refresh_required
-                QuestMessage.UNSUPPORTED -> R.string.quest_unsupported
-                QuestMessage.ALREADY_ACTIVE -> R.string.quest_already_active
-                QuestMessage.ALREADY_COMPLETED -> R.string.quest_already_completed
-                QuestMessage.STORAGE_FAILURE -> R.string.save_failed
-                QuestMessage.APP_USE_RESTRICTED -> R.string.app_use_restricted
-            },
-        )
-    }

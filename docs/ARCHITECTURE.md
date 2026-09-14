@@ -12,16 +12,18 @@ full-content destinations, persisted preferences and the legacy Q01 quest with
 an XP reward. The product migration is in progress; no point reward values or
 paid item catalog have been approved yet.
 
-- `MobiMonApp` owns typed routes and composes independent Pet, Quest, vehicle,
-  point-balance and cosmetic-inventory ViewModel state. `CompanionMenu` is a
-  transient overlay; destinations use the full content area.
+- `MobiMonApp` owns navigation, saved route state, the transient menu and the
+  global AAOS restriction gate. A Hilt multibinding assembles independent
+  `FeatureEntry` implementations; feature routes create and collect their own
+  ViewModels. The shell has no feature action container or feature UI state.
 - Settings and the Home conversation entry open the Copilot connection introduction.
   The shell preserves its Home/Settings origin across recreation. The
   [connection UI boundary](#copilot-connection-ui) separates the unavailable
   production integration from the eight-state Debug rehearsal.
-- Room v2 stores the legacy profile, quest runs and completions, plus a separate
+- Room v4 stores the legacy profile, quest runs and completions, plus a separate
   point account, ledger, point quest occurrences, cosmetic catalog, ownership
-  and equipment. DataStore stores independent preview, launcher and motion
+  and equipment, alongside separate, currently unused leveling tables.
+  DataStore stores independent preview, launcher and motion
   preferences. The launcher preference defaults to off, including after v1
   migration; the preview preference remains separate.
 - Hilt wiring lives in `app/di`: `AppModule` binds repositories,
@@ -37,15 +39,10 @@ paid item catalog have been approved yet.
   Display freshness samples the clock on every snapshot or timer emission, so a
   new reading is never compared against a cached, older timer timestamp.
 - [PetAvatar](../core/core-ui/src/main/java/com/monsters/mobimon/core/ui/PetAvatar.kt)
-  is the artwork replacement point. Mobi's default artwork uses the supplied
-  `그림1.png` for v3 P01 letterbox Home (128:569), bundled unchanged as
-  `drawable-nodpi/mobimon_mobi_v3.png`. The Copilot presentation selects the original
-  v4 artwork through `PetArtwork.COPILOT`; appearance and equipment state remain
-  outside the renderer. Home and customization share the renderer;
-  Luna, legacy Cream and equipped-accessory variants still use placeholders. Preserve
-  the compatibility signature `PetAvatar(modifier, appearanceKey, stage)`. `stage`
-  belongs to the legacy implementation. Rewards, ownership, equipped appearance
-  and interaction state stay outside the renderer.
+  is the artwork replacement point for Home, customization and Copilot. The renderer accepts appearance/character/equipment display inputs, without
+  a growth-stage parameter. Rewards, ownership, equipped appearance
+  and interaction state stay outside the renderer. Asset provenance and fallback
+  artwork belong in the [design guidance](DESIGN.md#reusable-compose-library-and-asset-handoff).
 
 Q02/Q03 remain legacy identifiers, but are no longer offered as forthcoming
 quests. Existing Q01-Q03 identifiers, rewards and completion records do not
@@ -73,28 +70,36 @@ adapters; simulated providers do not establish platform support.
 Add planned modules with their first working behavior and tests. Use
 `com.monsters.mobimon` as the package root with feature/core subpackages.
 
-| Gradle module | Status | Responsibility | Allowed internal dependencies |
-| --- | --- | --- | --- |
-| `:app` | Implemented | Entry points, composition, shell and runtime | Features and core implementations |
-| `:core:core-domain` | Implemented | Models, repository interfaces and rules | None; Kotlin and coroutines only |
-| `:core:core-database` | Implemented | Room, DataStore and local transactions | `core-domain` |
-| `:core:core-vss` | Implemented | Vehicle boundary; currently unavailable real provider | `core-domain` |
-| `:core:core-ui` | Implemented | Theme, shared renderer and controls | No feature modules |
-| `:feature:feature-pet` | Implemented | Home, appearance and display settings | `core-domain`, `core-ui` |
-| `:feature:feature-vehicle-info` | Implemented | Vehicle information and availability UI | `core-domain`, `core-ui` |
-| `:feature:feature-quest` | Implemented | Quest selection, progress and results | `core-domain`, `core-ui` |
-| `:feature:feature-auth` | Implemented, UI only | Copilot connection states, responsive screens and action contracts | `core-ui` |
-| `:core:core-ai` | Planned | AI client adapter and response parsing | `core-domain` |
-| `:feature:feature-overlay` | Planned | Overlay lifecycle and permissions | `core-domain`, `core-ui` |
-| `:feature:feature-chat` | Planned | Conversation and session | `core-domain`, `core-ui` |
-| `:core:core-testing` | Optional, unimplemented | Shared JVM test helpers | `core-domain`; test consumers only |
+| Gradle module | Responsibility | Allowed internal dependencies |
+| --- | --- | --- |
+| `:app` | Entry points, shell, process runtime, platform bindings and [feature registration](../app/src/main/java/com/monsters/mobimon/di/features) | Features and core implementations |
+| `:core:core-domain` | Plain Kotlin models, narrow repository interfaces and business rules, split by subject | None |
+| `:core:core-database` | One Room database, DataStore, migrations and atomic transactions | `core-domain` |
+| `:core:core-vss` | Unavailable real vehicle adapter | `core-domain` |
+| `:core:core-ui` | Stateless Compose components, palette roles, fonts and replaceable `PetAvatar` | None |
+| `:core:core-navigation` | Typed destinations, feature entry and navigation callbacks; no feature state | None |
+| `:core:core-presentation` | Shared wallet observation, vehicle display freshness, and vehicle contribution contract | `core-domain` |
+| `:feature:feature-pet` | Companion workspace: Home, Shop/customization, Settings, inventory state and [PetFeature](../feature/feature-pet/src/main/java/com/monsters/mobimon/feature/pet/PetFeature.kt) | `core-domain`, `core-ui`, `core-navigation`, `core-presentation` |
+| `:feature:feature-quest` | Quest workspace: commands, progress, rewards UI and [QuestFeature](../feature/feature-quest/src/main/java/com/monsters/mobimon/feature/quest/QuestFeature.kt) | Same four core modules |
+| `:feature:feature-vehicle-info` | Vehicle workspace: readings, availability and [VehicleFeature](../feature/feature-vehicle-info/src/main/java/com/monsters/mobimon/feature/vehicle/VehicleFeature.kt) | Same four core modules |
+| `:feature:feature-auth` | AI workspace: Copilot UI, conversation entry, AI context and [AiFeature](../feature/feature-auth/src/main/java/com/monsters/mobimon/feature/auth/AiFeature.kt); provider unavailable | Same four core modules |
+
+Existing feature paths remain stable for in-flight branches. `feature-auth`
+includes the AI entry; a separate Chat module is unnecessary while the same team
+owns both and no independent conversation runtime exists. `core-ai` and overlay
+integration remain planned; no production adapter or overlay module is present.
+Shared test helpers remain module-local; no `core-testing` production dependency
+is introduced.
 
 ```mermaid
 flowchart TD
-    app[app: composition and lifecycle] --> feature[feature modules]
-    app --> data[core-database / core-vss / planned core-ai]
-    feature --> domain[core-domain: contracts and rules]
-    feature --> ui[core-ui]
+    app[app: shell and per-feature Hilt registrations] --> features[Pet / Quest / Vehicle / Auth]
+    app --> data[core-database / core-vss]
+    features --> nav[core-navigation: entries and typed callbacks]
+    features --> presentation[core-presentation: shared read state and slots]
+    features --> ui[core-ui: stateless design components]
+    features --> domain[core-domain: contracts and rules]
+    presentation --> domain
     data --> domain
 ```
 
@@ -113,8 +118,45 @@ call SDKs. ViewModels expose named actions and explicit phases where useful.
 Keep feature state independent rather than creating an app-wide mutable state
 container.
 
-The shell owns typed destinations, transient menu state and cross-feature
-callbacks as defined in [DESIGN.md](DESIGN.md).
+Destination enums are separate files in `core-navigation`: `CompanionRoute`,
+`QuestRoute`, `VehicleRoute`, and `AiRoute`. Extending an existing enum does not
+change the shell registry. Each `FeatureEntry` supplies its own destination
+content. `FeatureRegistry` rejects duplicate or missing registrations and duplicate
+saved route names across teams; Gradle's
+`verifyModuleBoundaries` checks declared `ProjectDependency` entries in every
+configuration, including those added by convention plugins. It also rejects the
+Android library plugin and selected import prefixes in `core-domain/src/main`
+Kotlin files. This is a guardrail, not a complete dependency audit: resolved
+transitive libraries, other source sets, generated code, fully qualified type
+references and SDK DTO types still require review against the boundaries above.
+
+The current shell preserves the existing single-level navigation and Copilot
+origin contract; `AppRoute.parent` supports an explicit parent for new screens.
+Saved names remain compatible with the old enum values. A saveable-state holder
+retains local screen state, and route ViewModels use the Activity's ViewModel
+store, so navigation does not restart a pending command. Flows are collected with
+the lifecycle; the process runtime remains the only owner of provider start/stop.
+This is not a Navigation 3 migration: the pinned Compose/SDK toolchain and existing
+Back behavior are retained. Multiple back stacks, route arguments or deep links
+require a separately verified navigation integration.
+
+`PointPresentation` and `VehiclePresentation` share only independently observed
+read state. Home reads quest summaries through `QuestRepository`; AI reads
+committed companion context through domain interfaces. Neither imports another
+feature's ViewModel. AI retains its last committed context if observation fails;
+the route exposes that failure and an explicit retry even after a profile has
+loaded. Retry reconnects the combined observation without duplicating active jobs.
+The Quest-owned `QuestFeature` implements a
+`VehicleDetailContribution` assembled in `app/di/features/QuestFeatureModule`.
+It renders the stateless `QuestVehicleCard` inside Vehicle's slot with the
+currently displayed snapshot; only Quest dispatches acknowledgment to the reward
+repository.
+
+The shell owns transient menu state and cross-feature callbacks as defined in
+[DESIGN.md](DESIGN.md). Shared component APIs never accept repositories or ViewModels. All features use
+the v4 theme by default. Reusable panels, rows, actions, status badges and
+selection controls live in `core-ui`; feature entries keep business state and
+compose their own final layouts. See the [UI contracts](DESIGN.md#reusable-compose-library-and-asset-handoff).
 
 | State | Owner and lifetime |
 | --- | --- |
@@ -137,19 +179,19 @@ token, creates no account session and performs no provider calls or polling.
 It renders expiry instead of a waiting state with no remaining time. Rendering
 `Connected` is a presentation decision, not evidence of approval or Copilot readiness.
 
-[MobiMonApp](../app/src/main/java/com/monsters/mobimon/ui/MobiMonApp.kt) currently
-hosts only introduction/unavailable feedback, with saved route origin and feedback
-across Activity recreation. Its interaction guard combines parked verification
+[AiFeature](../feature/feature-auth/src/main/java/com/monsters/mobimon/feature/auth/AiFeature.kt)
+hosts introduction/unavailable feedback. The shell saves route origin, and the
+AI route saves feedback across Activity recreation. Its interaction guard combines parked verification
 and app-use allowance. The other states are reusable presentation components;
 production integration remains [planned](#ai-conversation-and-session).
 
-[CopilotPreviewActivity](../app/src/debug/java/com/monsters/mobimon/preview/CopilotPreviewActivity.kt)
+[CopilotPreviewActivity](../feature/feature-auth/src/debug/java/com/monsters/mobimon/feature/auth/preview/CopilotPreviewActivity.kt)
 is a separate Debug-only launcher that connects those same components. Example
 accounts/codes, its fixed timer and scenario controls belong to the rehearsal,
-not a provider implementation. The Activity saves only its review state across
+not a provider implementation; its UI behavior is defined in
+[DESIGN.md](DESIGN.md#copilot-connection-ui). The Activity saves only its review state across
 recreation; simulated pending work runs while STARTED and is canceled when its
-step is left. Its motion toggle is local to the rehearsal, separate from the
-app's persisted setting. It neither verifies vehicle restrictions nor performs
+step is left. It neither verifies vehicle restrictions nor performs
 authentication or account persistence. Its launcher and sample QR resource are
 absent from Release.
 
@@ -180,8 +222,8 @@ transaction. Later restriction changes preserve already committed records.
 
 ## Domain and storage contracts
 
-[Models](../core/core-domain/src/main/kotlin/com/monsters/mobimon/core/domain/Models.kt)
-and [repository interfaces](../core/core-domain/src/main/kotlin/com/monsters/mobimon/core/domain/Repositories.kt)
+[Quest models](../core/core-domain/src/main/kotlin/com/monsters/mobimon/core/domain/QuestModels.kt)
+and [repository interfaces](../core/core-domain/src/main/kotlin/com/monsters/mobimon/core/domain/QuestRepository.kt)
 define legacy fields and outcomes. [Point economy contracts](../core/core-domain/src/main/kotlin/com/monsters/mobimon/core/domain/PointEconomy.kt)
 are separate from XP. Observations use `Flow`; write
 commands are suspending and distinguish rejected, duplicate and storage-failure
@@ -209,11 +251,20 @@ run ID and `(profileId, questType)`. Persist the evidence needed for a run/resul
 without adding full vehicle histories or chat transcripts.
 
 The current [Room schema](../core/core-database/src/main/java/com/monsters/mobimon/core/database/AppDatabase.kt)
-is version 2. Legacy [entities](../core/core-database/src/main/java/com/monsters/mobimon/core/database/CompanionEntities.kt)
+is version 4, with exported schema snapshots. V3 added `user_profiles` and
+`drive_daily_summaries`; those tables do not replace the point wallet or authorize
+new reward behavior. Legacy [entities](../core/core-database/src/main/java/com/monsters/mobimon/core/database/CompanionEntities.kt)
 store `totalXp`, `rewardXp` and `awardedXp`; Q01 awards 80 XP once per profile,
 while Q02/Q03 remain unsupported. `RewardCalculator` can interpret historical
 saved XP but does not drive the product home. These fields and values are current implementation facts, not target
 point rewards or conversion rates.
+
+`MIGRATION_3_4` supports both original v3 leveling tables and the expanded v3
+schema introduced before the version bump. It adds only missing fields with
+zero defaults, preserving existing field values and all reward, wallet and
+cosmetic records. The app registers the complete migration chain; upgrading
+does not require clearing app data. See the
+[migration coverage](TESTING.md#integration-boundaries) for tested fixtures.
 
 `MIGRATION_1_2` preserves all v1 profile, run and completion evidence. It
 creates zero-balance point accounts and grants the two free friends without
@@ -249,9 +300,10 @@ in [TESTING.md](TESTING.md); implementation breakdowns belong in feature issues.
 
 ### Points, cosmetics and quest occurrences
 
-Implemented: Room v2 accounts, ledger, occurrence uniqueness, purchases,
-ownership, equipment, free friends, and migration tests. The production quest
-and paid-item catalogs have no approved entries. The legacy Q01 is still an XP
+Implemented: accounts, ledger, occurrence uniqueness, purchases, ownership,
+equipment and free friends were introduced in Room v2 and remain in current v3.
+See the [test requirement map](TESTING.md#current-requirement-map) for coverage.
+The production quest and paid-item catalogs have no approved entries. The legacy Q01 is still an XP
 demo and does not grant points. Point awards require a trusted catalog entry,
 current matching vehicle evidence and app-use authorization. The current award
 API supports a displayed vehicle-card acknowledgment; additional quest
@@ -262,11 +314,14 @@ balance, durable credit/debit ledger, owned cosmetic items and equipped selectio
 in Room. Use stable quest/item identifiers and keep catalog data, ownership and
 equipment distinct.
 
-Quest awards retain the evidence, ownership, revision and source checks above.
-Atomically insert the unique completion and its ledger credit, finish the run
-and update the point balance. Link each award to one completion occurrence so
-retrying or replaying an event cannot credit it again. UI code and AI replies
-cannot directly change balances or grant items.
+All quest awards must preserve the applicable ownership, revision, evidence and
+source checks in the [storage contract](#domain-and-storage-contracts). The current
+vehicle-card point API validates a catalog entry and current vehicle evidence,
+then atomically inserts the occurrence, credits its ledger and updates the
+balance. It has no run handle and must not be used for run-based rules. A
+run-based point extension must recheck the run and finish it inside that same
+reward transaction. UI code and AI replies cannot directly change balances or
+grant items.
 
 Support one-time and repeat reward categories. One-time rewards remain unique
 per profile and quest. Repeat rewards require an explicit occurrence key and a

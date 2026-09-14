@@ -69,10 +69,11 @@ class PointEconomyMigrationTest {
                 val migrated =
                     Room
                         .databaseBuilder(context, AppDatabase::class.java, name)
-                        .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
+                        .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
                         .allowMainThreadQueries()
                         .build()
                 try {
+                    assertEquals(4, migrated.openHelper.writableDatabase.version)
                     assertEquals(80, migrated.companionDao().profile("profile")?.totalXp)
                     assertNotNull(migrated.companionDao().completionForRun("run"))
                     assertEquals(0L, migrated.economyDao().account("profile")?.balance)

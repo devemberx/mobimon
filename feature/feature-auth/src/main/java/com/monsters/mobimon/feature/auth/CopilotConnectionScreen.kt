@@ -59,9 +59,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.monsters.mobimon.core.ui.CompanionIcon
 import com.monsters.mobimon.core.ui.MobiMonFontFamily
-import com.monsters.mobimon.core.ui.PetArtwork
 import com.monsters.mobimon.core.ui.PetAvatar
-import com.monsters.mobimon.core.ui.MobiMonConnectionColors as Colors
+import com.monsters.mobimon.core.ui.MobiMonColors as Colors
 
 /** Figma P51–P56. The host owns navigation, countdowns and all connection work. */
 @Composable
@@ -152,7 +151,6 @@ fun CopilotConnectionScreen(
                             appearanceKey,
                             friendId = friendId,
                             accessoryId = accessoryId,
-                            artwork = PetArtwork.COPILOT,
                         )
                         Text(
                             stringResource(R.string.copilot_friend_heading, friend),
@@ -370,7 +368,6 @@ private fun CompanionPanel(
             appearanceKey,
             friendId = friendId,
             accessoryId = accessoryId,
-            artwork = PetArtwork.COPILOT,
         )
         Box(
             Modifier

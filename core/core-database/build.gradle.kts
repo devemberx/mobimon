@@ -1,44 +1,26 @@
-import org.gradle.api.artifacts.dsl.LockMode
-import org.jetbrains.kotlin.gradle.dsl.JvmTarget
-
 plugins {
-    alias(libs.plugins.android.library)
-    alias(libs.plugins.kotlin.android)
+    id("mobimon.android.library")
     alias(libs.plugins.ksp)
-    alias(libs.plugins.ktlint)
-    alias(libs.plugins.kover)
 }
 
 android {
     namespace = "com.monsters.mobimon.core.database"
-    compileSdk = 34
-    defaultConfig {
-        minSdk = 34
-        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+    sourceSets {
+        listOf("test", "androidTest").forEach { sourceSet ->
+            getByName(sourceSet) {
+                assets.srcDirs("schemas", "src/migrationTest/assets")
+            }
+        }
     }
-    compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_17
-        targetCompatibility = JavaVersion.VERSION_17
-    }
-    testOptions { unitTests.isIncludeAndroidResources = true }
-    lint { abortOnError = true }
 }
+
 kotlin {
-    jvmToolchain(17)
-    compilerOptions { jvmTarget.set(JvmTarget.JVM_17) }
-}
-
-ktlint { version.set(libs.versions.ktlint.engine) }
-
-configurations.configureEach {
-    if (name.endsWith("CompileClasspath") ||
-        name.endsWith("RuntimeClasspath") ||
-        name in listOf("compileClasspath", "runtimeClasspath", "testCompileClasspath", "testRuntimeClasspath")
-    ) {
-        resolutionStrategy.activateDependencyLocking()
+    sourceSets {
+        listOf("test", "androidTest").forEach { sourceSet ->
+            getByName(sourceSet).kotlin.srcDir("src/migrationTest/java")
+        }
     }
 }
-dependencyLocking { lockMode.set(LockMode.STRICT) }
 
 ksp { arg("room.schemaLocation", "$projectDir/schemas") }
 

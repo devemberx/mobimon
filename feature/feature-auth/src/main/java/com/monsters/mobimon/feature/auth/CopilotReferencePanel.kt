@@ -10,7 +10,9 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.selection.SelectionContainer
+import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -32,7 +34,8 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import com.monsters.mobimon.core.ui.MobiMonConnectionColors as Colors
+import com.monsters.mobimon.core.ui.MobiMonListItem
+import com.monsters.mobimon.core.ui.MobiMonColors as Colors
 
 internal fun CopilotUiState.hasReferenceLayout(
     interactionAllowed: Boolean,
@@ -147,12 +150,21 @@ internal fun CopilotReferencePanel(
                         32f,
                         color = Colors.muted,
                     )
-                    rect(1064f, 628f, 1352f, 132f, 32f)
-                    icon(R.drawable.copilot_account, 1112f, 669f, 46f)
-                    text(state.account, 1190f, 684f, 38f, bold = true)
-                    state.accountLabel?.let {
-                        text(it, 2180f, 703f, 26f, color = Colors.accent, centeredWidth = 188f)
-                    }
+                    MobiMonListItem(
+                        modifier = position(1064f, 628f).size(1352.dp * scale, 132.dp * scale),
+                        leading = {
+                            Icon(
+                                painterResource(R.drawable.copilot_account),
+                                null,
+                                Modifier.size(46.dp * scale),
+                                tint = Colors.accent,
+                            )
+                        },
+                        trailing =
+                            state.accountLabel?.let { label ->
+                                { Text(label, style = copilotStyle(26f, scale), color = Colors.accent) }
+                            },
+                    ) { Text(state.account, style = copilotStyle(38f, scale, true)) }
                     lines(R.string.copilot_connected_note, 1088f, 843f, 34f, 66f)
                     action(
                         R.string.copilot_chat,
