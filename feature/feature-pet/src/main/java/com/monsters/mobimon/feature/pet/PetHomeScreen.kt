@@ -11,7 +11,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.sizeIn
 import androidx.compose.foundation.layout.widthIn
@@ -76,7 +75,7 @@ fun PetHomeScreen(
     val talkText = if (connectionAvailable) R.string.pet_talk_action else R.string.pet_talk_unavailable
     Surface(modifier = modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
         Box {
-            BoxWithConstraints(Modifier.fillMaxSize().safeDrawingPadding()) {
+            BoxWithConstraints(Modifier.fillMaxSize()) {
                 val edge = (maxWidth * 0.025f).coerceIn(24.dp, 64.dp)
                 val sceneHeight = (maxHeight * 0.4f).coerceIn(300.dp, 800.dp)
                 val avatarSize = (maxHeight * 0.32f).coerceIn(200.dp, 620.dp)
@@ -311,7 +310,6 @@ fun PetHomeLoadingScreen(
             Column(
                 Modifier
                     .fillMaxSize()
-                    .safeDrawingPadding()
                     .verticalScroll(rememberScrollState())
                     .padding(24.dp),
                 verticalArrangement = Arrangement.spacedBy(24.dp, Alignment.CenterVertically),
