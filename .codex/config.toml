@@ -1,0 +1,3 @@
+[mcp_servers.figma-bridge]
+command = "node"
+args = ["D:\\Hackathon\\figma-mcp-bridge\\server\\dist\\index.js"]

@@ -15,3 +15,6 @@ __pycache__/
 
 # Local agent planning and design documents
 /docs/superpowers/
+
+# Antigravity local skills (personal use)
+.agents/

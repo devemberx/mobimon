@@ -26,15 +26,17 @@ data class PetUiState(
     val appearanceSaveFailed: Boolean = false,
     val reducedMotionSaving: Boolean = false,
     val reducedMotionSaveFailed: Boolean = false,
+    val debugModeSaving: Boolean = false,
+    val debugModeSaveFailed: Boolean = false,
 ) {
     val isSaving: Boolean
-        get() = appearanceSaving || reducedMotionSaving
+        get() = appearanceSaving || reducedMotionSaving || debugModeSaving
 
     val saveFailed: Boolean
-        get() = appearanceSaveFailed || reducedMotionSaveFailed
+        get() = appearanceSaveFailed || reducedMotionSaveFailed || debugModeSaveFailed
 }
 
-private enum class SaveOperation { APPEARANCE, REDUCED_MOTION }
+private enum class SaveOperation { APPEARANCE, REDUCED_MOTION, DEBUG_MODE }
 
 class PetViewModel(
     private val pets: PetRepository,
@@ -93,6 +95,9 @@ class PetViewModel(
     fun setReducedMotion(enabled: Boolean) =
         save(SaveOperation.REDUCED_MOTION) { preferences.setReducedMotion(enabled) }
 
+    fun setDebugMode(enabled: Boolean) =
+        save(SaveOperation.DEBUG_MODE) { preferences.setLauncherCharacterEnabled(enabled) }
+
     private fun save(
         operation: SaveOperation,
         write: suspend () -> WriteResult,
@@ -118,6 +123,7 @@ private fun PetUiState.isSaving(operation: SaveOperation): Boolean =
     when (operation) {
         SaveOperation.APPEARANCE -> appearanceSaving
         SaveOperation.REDUCED_MOTION -> reducedMotionSaving
+        SaveOperation.DEBUG_MODE -> debugModeSaving
     }
 
 private fun PetUiState.withSave(
@@ -130,4 +136,6 @@ private fun PetUiState.withSave(
             copy(appearanceSaving = saving, appearanceSaveFailed = failed ?: appearanceSaveFailed)
         SaveOperation.REDUCED_MOTION ->
             copy(reducedMotionSaving = saving, reducedMotionSaveFailed = failed ?: reducedMotionSaveFailed)
+        SaveOperation.DEBUG_MODE ->
+            copy(debugModeSaving = saving, debugModeSaveFailed = failed ?: debugModeSaveFailed)
     }

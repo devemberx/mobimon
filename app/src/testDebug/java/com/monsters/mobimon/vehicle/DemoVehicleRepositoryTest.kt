@@ -23,6 +23,26 @@ import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
 
+import com.monsters.mobimon.core.domain.SettingsRepository
+import com.monsters.mobimon.core.domain.CompanionSettings
+import com.monsters.mobimon.core.domain.WriteResult
+import com.monsters.mobimon.debug.DebugVssProvider
+import com.monsters.mobimon.debug.DebugVssState
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+
+class FakeSettingsRepository : SettingsRepository {
+    override val settings: Flow<CompanionSettings> = MutableStateFlow(CompanionSettings())
+    override suspend fun setShowOnVehicleHome(enabled: Boolean): WriteResult = WriteResult.Success
+    override suspend fun setReducedMotion(enabled: Boolean): WriteResult = WriteResult.Success
+    override suspend fun setLauncherCharacterEnabled(enabled: Boolean): WriteResult = WriteResult.Success
+}
+
+class FakeDebugStore : DebugVssProvider {
+    override val state: StateFlow<DebugVssState> = MutableStateFlow(DebugVssState())
+}
+
 @OptIn(ExperimentalCoroutinesApi::class)
 class DemoVehicleRepositoryTest {
     @Test
@@ -33,6 +53,8 @@ class DemoVehicleRepositoryTest {
                 DemoVehicleRepository(
                     Clock { testScheduler.currentTime },
                     IdGenerator { "id-${++id}" },
+                    FakeSettingsRepository(),
+                    FakeDebugStore(),
                     backgroundScope,
                 )
             repository.start()
@@ -78,6 +100,8 @@ class DemoVehicleRepositoryTest {
                         scheduler.currentTime
                     },
                 ids = IdGenerator { "epoch" },
+                settingsRepository = FakeSettingsRepository(),
+                debugStore = FakeDebugStore(),
                 scope = scope,
             )
 

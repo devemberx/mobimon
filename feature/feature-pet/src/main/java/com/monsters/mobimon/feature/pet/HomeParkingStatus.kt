@@ -18,22 +18,28 @@ internal fun HomeParkingStatus(
     snapshot: VehicleSnapshot,
     modifier: Modifier = Modifier,
 ) {
-    val parked = snapshot.quality == SignalQuality.VALID && snapshot.drivingState == DrivingState.PARKED
+    val isCharging = snapshot.quality == SignalQuality.VALID && snapshot.isCharging == true
+    val parked = !isCharging && snapshot.quality == SignalQuality.VALID && snapshot.drivingState == DrivingState.PARKED
     val status =
         stringResource(
             when {
                 snapshot.quality != SignalQuality.VALID || snapshot.drivingState == DrivingState.UNKNOWN ->
                     R.string.pet_driving_unknown
+                isCharging -> R.string.pet_charging_compact
                 snapshot.drivingState == DrivingState.MOVING -> R.string.pet_driving_moving
                 else -> R.string.pet_driving_parked
             },
         )
     MobiMonStatusBadge(
         modifier.semantics(mergeDescendants = true) { contentDescription = status },
-        tone = if (parked) MobiMonStatusTone.SUCCESS else MobiMonStatusTone.INFORMATION,
+        tone = if (isCharging || parked) MobiMonStatusTone.SUCCESS else MobiMonStatusTone.INFORMATION,
     ) {
         Text(
-            if (parked) stringResource(R.string.pet_parking_compact) else status,
+            when {
+                isCharging -> stringResource(R.string.pet_charging_compact)
+                parked -> stringResource(R.string.pet_parking_compact)
+                else -> status
+            },
             style = MaterialTheme.typography.labelLarge,
         )
     }
