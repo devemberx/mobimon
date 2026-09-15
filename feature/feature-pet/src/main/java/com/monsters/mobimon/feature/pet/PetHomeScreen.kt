@@ -50,9 +50,8 @@ import com.monsters.mobimon.core.ui.MobiMonMessage
 import com.monsters.mobimon.core.ui.MobiMonPointSummary
 import com.monsters.mobimon.core.ui.MobiMonSourceBadge
 import com.monsters.mobimon.core.ui.PetAvatar
-import com.monsters.mobimon.core.ui.R as CoreUiR
 
-/** Displays either in-app home from committed state; navigation belongs to the shell. */
+/** Displays the in-app Home from committed state; navigation belongs to the shell. */
 @Composable
 fun PetHomeScreen(
     profile: PetProfile,
@@ -81,7 +80,7 @@ fun PetHomeScreen(
     Surface(modifier = modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
         BoxWithConstraints(Modifier.fillMaxSize()) {
             Image(
-                painter = painterResource(CoreUiR.drawable.bg_main),
+                painter = painterResource(R.drawable.pet_home_background_v4),
                 contentDescription = null,
                 contentScale = ContentScale.Crop,
                 modifier = Modifier.fillMaxSize(),
@@ -138,6 +137,7 @@ fun PetHomeScreen(
                                     .align(Alignment.Center),
                         )
                         HomeArtworkActions(
+                            progress = progress,
                             onOpenVehicleInfo = onOpenVehicleInfo,
                             onOpenQuests = onOpenQuests,
                             showQuest = legacyQuestVisible,
@@ -155,6 +155,7 @@ fun PetHomeScreen(
                         modifier = Modifier.fillMaxWidth().heightIn(min = sceneHeight),
                     )
                     HomeArtworkActions(
+                        progress = progress,
                         onOpenVehicleInfo = onOpenVehicleInfo,
                         onOpenQuests = onOpenQuests,
                         showQuest = false,
@@ -250,6 +251,7 @@ private fun HomeCompanionScene(
 
 @Composable
 private fun HomeArtworkActions(
+    progress: QuestProgress,
     onOpenVehicleInfo: () -> Unit,
     onOpenQuests: () -> Unit,
     showQuest: Boolean,
@@ -264,7 +266,7 @@ private fun HomeArtworkActions(
         if (showQuest) {
             HomeArtworkButton(
                 image = R.drawable.pet_home_quest_v4,
-                description = stringResource(R.string.pet_quest_start),
+                description = stringResource(questActionLabel(progress)),
                 onClick = onOpenQuests,
             )
         }
@@ -425,18 +427,19 @@ private fun HomeSecondaryActions(
                 modifier = Modifier.heightIn(min = 76.dp),
             ) {
                 Text(
-                    stringResource(
-                        when {
-                            progress.completions.any { it.type == QuestType.Q01 } -> R.string.pet_quest_history
-                            progress.activeRun != null -> R.string.pet_quest_continue
-                            else -> R.string.pet_quest_start
-                        },
-                    ),
+                    stringResource(questActionLabel(progress)),
                 )
             }
         }
     }
 }
+
+private fun questActionLabel(progress: QuestProgress) =
+    when {
+        progress.completions.any { it.type == QuestType.Q01 } -> R.string.pet_quest_history
+        progress.activeRun != null -> R.string.pet_quest_continue
+        else -> R.string.pet_quest_start
+    }
 
 @Composable
 private fun HomeFailure(
