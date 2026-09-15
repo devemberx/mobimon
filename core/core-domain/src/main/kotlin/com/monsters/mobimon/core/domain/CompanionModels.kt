@@ -11,6 +11,7 @@ data class PetProfile(
 data class CompanionSettings(
     val reducedMotion: Boolean = false,
     val launcherCharacterEnabled: Boolean = false,
+    val debugModeEnabled: Boolean = false,
 )
 
 sealed interface WriteResult {

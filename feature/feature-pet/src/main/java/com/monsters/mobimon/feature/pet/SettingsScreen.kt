@@ -46,6 +46,7 @@ fun SettingsScreen(
     onReducedMotionChange: (Boolean) -> Unit,
     modifier: Modifier = Modifier,
     onDebugModeChange: (Boolean) -> Unit = {},
+    debugModeAvailable: Boolean = false,
     motionSaving: Boolean = false,
     motionError: String? = null,
     debugSaving: Boolean = false,
@@ -134,15 +135,22 @@ fun SettingsScreen(
                         isError = motionError != null,
                     )
                     SettingsItem(
-                        R.string.pet_settings_debug_title,
-                        R.string.pet_settings_debug_description,
-                        if (settings.launcherCharacterEnabled) R.string.pet_settings_on else R.string.pet_settings_off,
-                        checked = settings.launcherCharacterEnabled,
-                        enabled = parkedVerified && !debugSaving,
-                        onCheckedChange = onDebugModeChange,
-                        feedback = debugError ?: if (debugSaving) stringResource(R.string.pet_saving) else null,
-                        isError = debugError != null,
+                        R.string.pet_settings_dnd_title,
+                        R.string.pet_settings_dnd_unavailable,
+                        R.string.pet_settings_unavailable_label,
                     )
+                    if (debugModeAvailable) {
+                        SettingsItem(
+                            R.string.pet_settings_debug_title,
+                            R.string.pet_settings_debug_description,
+                            if (settings.debugModeEnabled) R.string.pet_settings_on else R.string.pet_settings_off,
+                            checked = settings.debugModeEnabled,
+                            enabled = parkedVerified && !debugSaving,
+                            onCheckedChange = onDebugModeChange,
+                            feedback = debugError ?: if (debugSaving) stringResource(R.string.pet_saving) else null,
+                            isError = debugError != null,
+                        )
+                    }
                 }
                 if (!settingsAvailable || settingsLoadFailed) {
                     MobiMonMessage(

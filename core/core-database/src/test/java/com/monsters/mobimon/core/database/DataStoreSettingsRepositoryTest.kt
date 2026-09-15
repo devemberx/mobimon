@@ -24,6 +24,27 @@ import java.util.concurrent.CancellationException
 
 class DataStoreSettingsRepositoryTest {
     @Test
+    fun `legacy launcher preference does not enable debug mode after reopening`() =
+        runBlocking {
+            val file = File(System.getProperty("java.io.tmpdir"), "settings-${System.nanoTime()}.preferences_pb")
+            var scope = dataStoreScope()
+            try {
+                var repository = DataStoreSettingsRepository(preferenceStore(file, scope))
+                assertEquals(WriteResult.Success, repository.setLauncherCharacterEnabled(true))
+                scope.stopDataStore()
+
+                scope = dataStoreScope()
+                repository = DataStoreSettingsRepository(preferenceStore(file, scope))
+
+                assertTrue(repository.settings.first().launcherCharacterEnabled)
+                assertEquals(false, repository.settings.first().debugModeEnabled)
+            } finally {
+                scope.stopDataStore()
+                file.delete()
+            }
+        }
+
+    @Test
     fun `settings defaults and successful writes persist after reopening`() =
         runBlocking {
             val file = File(System.getProperty("java.io.tmpdir"), "settings-${System.nanoTime()}.preferences_pb")
@@ -33,9 +54,15 @@ class DataStoreSettingsRepositoryTest {
                 assertEquals(CompanionSettings(), repository.settings.first())
                 assertEquals(WriteResult.Success, repository.setLauncherCharacterEnabled(true))
                 assertEquals(true, repository.settings.first().launcherCharacterEnabled)
+                assertEquals(false, repository.settings.first().debugModeEnabled)
                 assertEquals(WriteResult.Success, repository.setReducedMotion(true))
+                assertEquals(WriteResult.Success, repository.setDebugModeEnabled(true))
                 assertEquals(
-                    CompanionSettings(reducedMotion = true, launcherCharacterEnabled = true),
+                    CompanionSettings(
+                        reducedMotion = true,
+                        launcherCharacterEnabled = true,
+                        debugModeEnabled = true,
+                    ),
                     repository.settings.first(),
                 )
                 scope.stopDataStore()
@@ -43,7 +70,11 @@ class DataStoreSettingsRepositoryTest {
                 scope = dataStoreScope()
                 repository = DataStoreSettingsRepository(preferenceStore(file, scope))
                 assertEquals(
-                    CompanionSettings(reducedMotion = true, launcherCharacterEnabled = true),
+                    CompanionSettings(
+                        reducedMotion = true,
+                        launcherCharacterEnabled = true,
+                        debugModeEnabled = true,
+                    ),
                     repository.settings.first(),
                 )
             } finally {
@@ -67,7 +98,7 @@ class DataStoreSettingsRepositoryTest {
 
             var cancelled = false
             try {
-                repository.setLauncherCharacterEnabled(false)
+                repository.setDebugModeEnabled(false)
             } catch (_: CancellationException) {
                 cancelled = true
             }

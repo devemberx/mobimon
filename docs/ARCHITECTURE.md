@@ -23,9 +23,10 @@ paid item catalog have been approved yet.
 - Room v4 stores the legacy profile, quest runs and completions, plus a separate
   point account, ledger, point quest occurrences, cosmetic catalog, ownership
   and equipment, alongside separate, currently unused leveling tables.
-  DataStore stores reduced-motion and dormant launcher-character preferences.
-  The launcher preference defaults to off, including after v1 migration, and has
-  no supported UI or renderer.
+  DataStore stores reduced-motion, dormant launcher-character and Debug-mode
+  preferences. Debug mode uses its own off-by-default key, so an existing true
+  launcher preference cannot enable it. The launcher preference still has no
+  supported UI or renderer.
 - Hilt wiring lives in `app/di`: `AppModule` binds repositories,
   `PlatformModule` constructs clock/storage, and variant-specific
   `VehicleProviderModule` supplies vehicle data.
@@ -38,6 +39,9 @@ paid item catalog have been approved yet.
   15 seconds; a real adapter needs a verified provider-specific policy.
   Display freshness samples the clock on every snapshot or timer emission, so a
   new reading is never compared against a cached, older timer timestamp.
+  Debug vehicle changes and timer ticks publish through one serialized stream;
+  each snapshot receives the next sequence in its epoch. Only Park gear with no
+  reported motion is parked, while motion is moving and stationary D/R/N is unknown.
 - [PetAvatar](../core/core-ui/src/main/java/com/monsters/mobimon/core/ui/PetAvatar.kt)
   is the artwork replacement point for Home, customization and Copilot. The renderer accepts appearance/character/equipment display inputs, without
   a growth-stage parameter. Rewards, ownership, equipped appearance
@@ -219,6 +223,10 @@ when the Car service disconnects, then reloads UX
 restrictions on reconnect before allowing an action. Quest, point award,
 purchase and equipment commands recheck current authorization in their Room
 transaction. Later restriction changes preserve already committed records.
+The Debug overlay is composed only while app use is allowed, so restricted or
+unavailable states remove all of its focus and pointer targets. Debug point
+commands also recheck app use inside their transaction to close the transition
+race between a click and the durable write.
 
 ## Domain and storage contracts
 
@@ -246,7 +254,8 @@ outcomes. Coroutine cancellation propagates.
 - Inject clocks, IDs, dispatchers and scopes where behavior depends on them.
 
 Use one Room database per app process. Profile, run and completion writes belong
-to the local repository. The legacy schema enforces unique completion by both
+to the local repository; demo vehicle snapshots are transient and are not copied
+to a secondary database. The legacy schema enforces unique completion by both
 run ID and `(profileId, questType)`. Persist the evidence needed for a run/result
 without adding full vehicle histories or chat transcripts.
 
@@ -291,6 +300,12 @@ Current completion follows one atomic boundary:
 Keep all reward writes in this transaction, never split across repositories or
 Room/DataStore. Keep network calls outside transactions. A lossy UI event cannot
 be the only record of a granted reward.
+
+Debug point adjustments are a Debug-source-set exception to the product point
+commands, not a public economy API. They update the account and insert an equal
+ledger delta in the same `AppDatabase` transaction, use a unique debug reference,
+propagate cancellation and roll back both writes on failure. Reset records the
+negative current balance rather than setting the account directly.
 
 ## Planned features
 

@@ -66,6 +66,7 @@ fun MobiMonContent(
     entries: Set<FeatureEntry>,
     modifier: Modifier = Modifier,
     appUseState: AppUseState = AppUseState.UNAVAILABLE,
+    debugOverlay: @Composable () -> Unit = { DebugOverlay() },
 ) {
     val registry = remember(entries) { FeatureRegistry(entries) }
     var shell by rememberSaveable(stateSaver = ShellSaver) { mutableStateOf(ShellState()) }
@@ -104,7 +105,9 @@ fun MobiMonContent(
                 if (appUseState == AppUseState.ALLOWED && shell.menuOpen) {
                     CompanionMenu(onClose = navigator.back, onNavigate = navigator.navigate)
                 }
-                DebugOverlay()
+                if (appUseState == AppUseState.ALLOWED) {
+                    debugOverlay()
+                }
             }
         }
     }

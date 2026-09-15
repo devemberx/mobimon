@@ -95,8 +95,7 @@ class PetViewModel(
     fun setReducedMotion(enabled: Boolean) =
         save(SaveOperation.REDUCED_MOTION) { preferences.setReducedMotion(enabled) }
 
-    fun setDebugMode(enabled: Boolean) =
-        save(SaveOperation.DEBUG_MODE) { preferences.setLauncherCharacterEnabled(enabled) }
+    fun setDebugMode(enabled: Boolean) = save(SaveOperation.DEBUG_MODE) { preferences.setDebugModeEnabled(enabled) }
 
     private fun save(
         operation: SaveOperation,
