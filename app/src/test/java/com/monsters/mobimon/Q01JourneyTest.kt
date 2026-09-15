@@ -325,11 +325,6 @@ class Q01JourneyTest {
     private class JourneySettings : SettingsRepository {
         override val settings = MutableStateFlow(CompanionSettings())
 
-        override suspend fun setShowOnVehicleHome(enabled: Boolean): WriteResult {
-            settings.value = settings.value.copy(showOnVehicleHome = enabled)
-            return WriteResult.Success
-        }
-
         override suspend fun setReducedMotion(enabled: Boolean): WriteResult {
             settings.value = settings.value.copy(reducedMotion = enabled)
             return WriteResult.Success

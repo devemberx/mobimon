@@ -139,8 +139,6 @@ class AiCompanionViewModelTest {
     private class FakeSettings : SettingsRepository {
         override val settings = MutableStateFlow(CompanionSettings())
 
-        override suspend fun setShowOnVehicleHome(enabled: Boolean) = WriteResult.Failure
-
         override suspend fun setReducedMotion(enabled: Boolean) = WriteResult.Failure
 
         override suspend fun setLauncherCharacterEnabled(enabled: Boolean) = WriteResult.Failure

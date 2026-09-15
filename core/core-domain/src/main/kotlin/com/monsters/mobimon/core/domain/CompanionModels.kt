@@ -9,7 +9,6 @@ data class PetProfile(
 )
 
 data class CompanionSettings(
-    val showOnVehicleHome: Boolean = true,
     val reducedMotion: Boolean = false,
     val launcherCharacterEnabled: Boolean = false,
 )

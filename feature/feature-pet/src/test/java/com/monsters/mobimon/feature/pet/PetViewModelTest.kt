@@ -7,7 +7,6 @@ import com.monsters.mobimon.core.domain.PetProfile
 import com.monsters.mobimon.core.domain.PetRepository
 import com.monsters.mobimon.core.domain.SettingsRepository
 import com.monsters.mobimon.core.domain.WriteResult
-import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
@@ -107,24 +106,6 @@ class PetViewModelTest {
         }
 
     @Test
-    fun onePendingPreferenceDoesNotDropAnotherPreferenceWrite() =
-        runTest(dispatcher) {
-            repository.visibilityGate = CompletableDeferred()
-            val vm = subject()
-            runCurrent()
-            vm.setShowOnVehicleHome(false)
-            runCurrent()
-            assertTrue(vm.state.value.isSaving)
-
-            vm.setReducedMotion(true)
-            runCurrent()
-            assertTrue(vm.state.value.settings.reducedMotion)
-            repository.visibilityGate?.complete(Unit)
-            runCurrent()
-            assertFalse(vm.state.value.isSaving)
-        }
-
-    @Test
     fun settingsReadFailureDoesNotHideAnAvailableProfile() =
         runTest(dispatcher) {
             repository.failSettingsObservation = true
@@ -151,19 +132,12 @@ class PetViewModelTest {
             }
         var failInitialization = false
         var failSettingsObservation = false
-        var visibilityGate: CompletableDeferred<Unit>? = null
 
         override suspend fun initialize() {
             check(!failInitialization) { "controlled read failure" }
         }
 
         override suspend fun setAppearance(appearance: PetAppearance) = WriteResult.Failure
-
-        override suspend fun setShowOnVehicleHome(enabled: Boolean): WriteResult {
-            visibilityGate?.await()
-            savedSettings.value = savedSettings.value.copy(showOnVehicleHome = enabled)
-            return WriteResult.Success
-        }
 
         override suspend fun setReducedMotion(enabled: Boolean): WriteResult {
             savedSettings.value = savedSettings.value.copy(reducedMotion = enabled)

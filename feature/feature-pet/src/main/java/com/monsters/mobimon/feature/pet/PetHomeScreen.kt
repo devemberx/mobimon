@@ -1,5 +1,7 @@
 package com.monsters.mobimon.feature.pet
 
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -13,6 +15,7 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.sizeIn
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -24,14 +27,18 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import com.monsters.mobimon.core.domain.CompanionSettings
+import androidx.compose.ui.zIndex
 import com.monsters.mobimon.core.domain.PetProfile
 import com.monsters.mobimon.core.domain.QuestProgress
 import com.monsters.mobimon.core.domain.QuestType
@@ -43,6 +50,7 @@ import com.monsters.mobimon.core.ui.MobiMonMessage
 import com.monsters.mobimon.core.ui.MobiMonPointSummary
 import com.monsters.mobimon.core.ui.MobiMonSourceBadge
 import com.monsters.mobimon.core.ui.PetAvatar
+import com.monsters.mobimon.core.ui.R as CoreUiR
 
 /** Displays either in-app home from committed state; navigation belongs to the shell. */
 @Composable
@@ -50,15 +58,12 @@ fun PetHomeScreen(
     profile: PetProfile,
     snapshot: VehicleSnapshot,
     progress: QuestProgress,
-    settings: CompanionSettings,
     onOpenMenu: () -> Unit,
     onOpenVehicleInfo: () -> Unit,
     onOpenQuests: () -> Unit,
-    onSwitchHome: () -> Unit,
     onPetClick: () -> Unit,
     onOpenAppearance: () -> Unit,
     modifier: Modifier = Modifier,
-    vehiclePreview: Boolean = false,
     pointBalance: Long? = null,
     pointLoadFailed: Boolean = false,
     legacyQuestVisible: Boolean = true,
@@ -74,110 +79,257 @@ fun PetHomeScreen(
     val connectionText = if (connectionAvailable) R.string.pet_connection_description else R.string.pet_ai_unavailable
     val talkText = if (connectionAvailable) R.string.pet_talk_action else R.string.pet_talk_unavailable
     Surface(modifier = modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
-        Box {
-            BoxWithConstraints(Modifier.fillMaxSize()) {
-                val edge = (maxWidth * 0.025f).coerceIn(24.dp, 64.dp)
-                val sceneHeight = (maxHeight * 0.4f).coerceIn(300.dp, 800.dp)
-                val avatarSize = (maxHeight * 0.32f).coerceIn(200.dp, 620.dp)
-                Column(
-                    Modifier
-                        .fillMaxWidth()
-                        .verticalScroll(rememberScrollState())
-                        .heightIn(min = maxHeight)
-                        .padding(edge),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(24.dp, Alignment.CenterVertically),
-                ) {
-                    HomeHeader(snapshot, pointBalance, pointLoadFailed, onOpenMenu, onOpenAppearance)
-                    if (vehiclePreview) MobiMonMessage(stringResource(R.string.pet_vehicle_preview_notice))
-                    if (profileObservationFailed) {
-                        HomeFailure(stringResource(R.string.pet_profile_observation_failed), onRetryProfile)
-                    }
-                    if (inventoryLoadFailed) {
-                        HomeFailure(stringResource(R.string.pet_inventory_failed), onRetryProfile)
-                    }
-                    Column(
-                        Modifier.fillMaxWidth().heightIn(min = sceneHeight),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.Center,
-                    ) {
-                        Surface(
-                            shape = RoundedCornerShape(48.dp),
-                            color = MaterialTheme.colorScheme.primary,
-                            contentColor = MaterialTheme.colorScheme.onPrimary,
-                            modifier = Modifier.widthIn(max = 840.dp),
-                        ) {
-                            Text(
-                                stringResource(R.string.pet_home_greeting),
-                                modifier = Modifier.padding(horizontal = 40.dp, vertical = 20.dp),
-                                style = MaterialTheme.typography.headlineMedium,
-                                textAlign = TextAlign.Center,
-                            )
-                        }
-                        val visible = !vehiclePreview || settings.showOnVehicleHome
-                        when {
-                            !visible ->
-                                Text(
-                                    stringResource(R.string.pet_hidden),
-                                    modifier = Modifier.padding(48.dp),
-                                    textAlign = TextAlign.Center,
-                                )
-                            friendId != null -> {
-                                PetAvatar(
-                                    modifier = Modifier.size(avatarSize),
-                                    appearanceKey = profile.appearance.name,
-                                    friendId = friendId,
-                                    accessoryId = accessoryId,
-                                )
-                            }
-                            inventoryLoadFailed -> Unit
-                            !inventoryLoaded -> {
-                                CircularProgressIndicator(Modifier.padding(24.dp))
-                                Text(stringResource(R.string.pet_inventory_loading))
-                            }
-                            else ->
-                                Text(
-                                    stringResource(R.string.pet_no_friend),
-                                    modifier = Modifier.padding(24.dp),
-                                    textAlign = TextAlign.Center,
-                                )
-                        }
-                    }
-                    HomeVehicleCard(snapshot, onOpenVehicleInfo, Modifier.widthIn(max = 900.dp).fillMaxWidth())
-                    Column(
-                        Modifier.widthIn(max = 1000.dp).fillMaxWidth(),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(12.dp),
-                    ) {
-                        MobiMonButton(
-                            onClick = onPetClick,
-                            enabled = connectionAvailable && interactionAllowed,
+        BoxWithConstraints(Modifier.fillMaxSize()) {
+            Image(
+                painter = painterResource(CoreUiR.drawable.bg_main),
+                contentDescription = null,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.fillMaxSize(),
+            )
+            Box(
+                Modifier
+                    .fillMaxSize()
+                    .background(
+                        Brush.verticalGradient(
+                            0f to MaterialTheme.colorScheme.background.copy(alpha = 0.48f),
+                            0.45f to MaterialTheme.colorScheme.background.copy(alpha = 0.08f),
+                            1f to MaterialTheme.colorScheme.background.copy(alpha = 0.64f),
+                        ),
+                    ),
+            )
+            val fontScale = LocalDensity.current.fontScale
+            val wide = maxWidth / fontScale >= 1200.dp
+            val edge = (maxWidth * 0.025f).coerceIn(24.dp, 64.dp)
+            val sceneHeight = (maxHeight * if (wide) 0.52f else 0.4f).coerceIn(320.dp, 680.dp)
+            val avatarSize = (maxHeight * if (wide) 0.42f else 0.32f).coerceIn(220.dp, 620.dp)
+            Column(
+                Modifier
+                    .fillMaxWidth()
+                    .verticalScroll(rememberScrollState())
+                    .heightIn(min = maxHeight)
+                    .padding(edge),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement =
+                    Arrangement.spacedBy(
+                        if (wide) 12.dp else 24.dp,
+                        Alignment.CenterVertically,
+                    ),
+            ) {
+                HomeHeader(snapshot, pointBalance, pointLoadFailed, onOpenMenu, onOpenAppearance)
+                if (profileObservationFailed) {
+                    HomeFailure(stringResource(R.string.pet_profile_observation_failed), onRetryProfile)
+                }
+                if (inventoryLoadFailed) {
+                    HomeFailure(stringResource(R.string.pet_inventory_failed), onRetryProfile)
+                }
+                if (wide) {
+                    Box(Modifier.fillMaxWidth().heightIn(min = sceneHeight)) {
+                        HomeCompanionScene(
+                            profile = profile,
+                            friendId = friendId,
+                            accessoryId = accessoryId,
+                            inventoryLoaded = inventoryLoaded,
+                            inventoryLoadFailed = inventoryLoadFailed,
+                            avatarSize = avatarSize,
                             modifier =
                                 Modifier
-                                    .widthIn(
-                                        min = 280.dp,
-                                        max = 540.dp,
-                                    ).fillMaxWidth()
-                                    .heightIn(min = 76.dp),
-                        ) {
-                            Text(stringResource(talkText))
-                        }
-                        Text(
-                            stringResource(connectionText),
-                            style = MaterialTheme.typography.bodyMedium,
-                            textAlign = TextAlign.Center,
+                                    .fillMaxWidth(0.56f)
+                                    .heightIn(min = sceneHeight)
+                                    .align(Alignment.Center),
                         )
-                        if (!interactionAllowed) {
-                            Text(
-                                stringResource(R.string.pet_interaction_restricted),
-                                style = MaterialTheme.typography.bodyMedium,
-                                textAlign = TextAlign.Center,
-                            )
-                        }
+                        HomeArtworkActions(
+                            onOpenVehicleInfo = onOpenVehicleInfo,
+                            onOpenQuests = onOpenQuests,
+                            showQuest = legacyQuestVisible,
+                            modifier = Modifier.align(Alignment.CenterEnd),
+                        )
                     }
-                    HomeSecondaryActions(vehiclePreview, legacyQuestVisible, progress, onSwitchHome, onOpenQuests)
+                } else {
+                    HomeCompanionScene(
+                        profile = profile,
+                        friendId = friendId,
+                        accessoryId = accessoryId,
+                        inventoryLoaded = inventoryLoaded,
+                        inventoryLoadFailed = inventoryLoadFailed,
+                        avatarSize = avatarSize,
+                        modifier = Modifier.fillMaxWidth().heightIn(min = sceneHeight),
+                    )
+                    HomeArtworkActions(
+                        onOpenVehicleInfo = onOpenVehicleInfo,
+                        onOpenQuests = onOpenQuests,
+                        showQuest = false,
+                    )
+                }
+                HomeConversationAction(
+                    talkText = talkText,
+                    connectionText = connectionText,
+                    enabled = connectionAvailable && interactionAllowed,
+                    interactionAllowed = interactionAllowed,
+                    onPetClick = onPetClick,
+                )
+                HomeSecondaryActions(
+                    legacyQuestVisible && !wide,
+                    progress,
+                    onOpenQuests,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun HomeCompanionScene(
+    profile: PetProfile,
+    friendId: String?,
+    accessoryId: String?,
+    inventoryLoaded: Boolean,
+    inventoryLoadFailed: Boolean,
+    avatarSize: androidx.compose.ui.unit.Dp,
+    modifier: Modifier = Modifier,
+) {
+    Box(modifier.widthIn(max = 920.dp), contentAlignment = Alignment.Center) {
+        Column(
+            Modifier.align(Alignment.TopCenter).zIndex(1f),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(4.dp),
+        ) {
+            Text(
+                stringResource(R.string.pet_home_greeting),
+                style = MaterialTheme.typography.displaySmall,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.semantics { heading() },
+            )
+            Text(
+                stringResource(R.string.pet_home_subtitle),
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.72f),
+                textAlign = TextAlign.Center,
+            )
+        }
+        when {
+            friendId != null -> {
+                PetAvatar(
+                    modifier = Modifier.size(avatarSize).align(Alignment.BottomCenter),
+                    appearanceKey = profile.appearance.name,
+                    friendId = friendId,
+                    accessoryId = accessoryId,
+                )
+                Surface(
+                    shape = RoundedCornerShape(36.dp),
+                    color = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary,
+                    modifier =
+                        Modifier
+                            .widthIn(max = 300.dp)
+                            .align(Alignment.CenterEnd)
+                            .testTag("home-companion-message"),
+                ) {
+                    Text(
+                        stringResource(R.string.pet_home_message),
+                        modifier = Modifier.padding(horizontal = 32.dp, vertical = 22.dp),
+                        style = MaterialTheme.typography.titleLarge,
+                    )
                 }
             }
+            inventoryLoadFailed -> Unit
+            !inventoryLoaded -> {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    CircularProgressIndicator(Modifier.padding(24.dp))
+                    Text(stringResource(R.string.pet_inventory_loading))
+                }
+            }
+            else ->
+                Text(
+                    stringResource(R.string.pet_no_friend),
+                    modifier = Modifier.padding(24.dp),
+                    textAlign = TextAlign.Center,
+                )
+        }
+    }
+}
+
+@Composable
+private fun HomeArtworkActions(
+    onOpenVehicleInfo: () -> Unit,
+    onOpenQuests: () -> Unit,
+    showQuest: Boolean,
+    modifier: Modifier = Modifier,
+) {
+    Column(modifier, verticalArrangement = Arrangement.spacedBy(16.dp)) {
+        HomeArtworkButton(
+            image = R.drawable.pet_home_vehicle_status_v4,
+            description = stringResource(R.string.pet_vehicle_details),
+            onClick = onOpenVehicleInfo,
+        )
+        if (showQuest) {
+            HomeArtworkButton(
+                image = R.drawable.pet_home_quest_v4,
+                description = stringResource(R.string.pet_quest_start),
+                onClick = onOpenQuests,
+            )
+        }
+    }
+}
+
+@Composable
+private fun HomeArtworkButton(
+    image: Int,
+    description: String,
+    onClick: () -> Unit,
+) {
+    MobiMonButton(
+        style = MobiMonButtonStyle.SECONDARY,
+        onClick = onClick,
+        modifier =
+            Modifier
+                .width(176.dp)
+                .heightIn(min = 128.dp)
+                .semantics { contentDescription = description },
+    ) {
+        Image(
+            painter = painterResource(image),
+            contentDescription = null,
+            contentScale = ContentScale.Fit,
+            modifier = Modifier.size(116.dp),
+        )
+    }
+}
+
+@Composable
+private fun HomeConversationAction(
+    talkText: Int,
+    connectionText: Int,
+    enabled: Boolean,
+    interactionAllowed: Boolean,
+    onPetClick: () -> Unit,
+) {
+    Column(
+        Modifier.widthIn(max = 1000.dp).fillMaxWidth(),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        MobiMonButton(
+            onClick = onPetClick,
+            enabled = enabled,
+            modifier =
+                Modifier
+                    .widthIn(min = 280.dp, max = 540.dp)
+                    .fillMaxWidth()
+                    .heightIn(min = 76.dp),
+        ) {
+            Text(stringResource(talkText))
+        }
+        Text(
+            stringResource(connectionText),
+            style = MaterialTheme.typography.bodyMedium,
+            textAlign = TextAlign.Center,
+        )
+        if (!interactionAllowed) {
+            Text(
+                stringResource(R.string.pet_interaction_restricted),
+                style = MaterialTheme.typography.bodyMedium,
+                textAlign = TextAlign.Center,
+            )
         }
     }
 }
@@ -223,7 +375,17 @@ private fun HomeHeader(
                         style = MaterialTheme.typography.headlineMedium,
                         modifier = Modifier.semantics { heading() },
                     )
-                    if (snapshot.source == SignalSource.SIMULATED) MobiMonSourceBadge(simulated = true)
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    ) {
+                        Text(
+                            stringResource(R.string.pet_brand_tagline),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.72f),
+                        )
+                        if (snapshot.source == SignalSource.SIMULATED) MobiMonSourceBadge(simulated = true)
+                    }
                 }
             }
             HomeParkingStatus(snapshot)
@@ -248,23 +410,14 @@ private fun HomeHeader(
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun HomeSecondaryActions(
-    vehiclePreview: Boolean,
     legacyQuestVisible: Boolean,
     progress: QuestProgress,
-    onSwitchHome: () -> Unit,
     onOpenQuests: () -> Unit,
 ) {
     FlowRow(
         horizontalArrangement = Arrangement.spacedBy(24.dp, Alignment.CenterHorizontally),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        MobiMonButton(
-            style = MobiMonButtonStyle.SECONDARY,
-            onClick = onSwitchHome,
-            modifier = Modifier.heightIn(min = 76.dp),
-        ) {
-            Text(stringResource(if (vehiclePreview) R.string.pet_companion_home else R.string.pet_vehicle_home))
-        }
         if (legacyQuestVisible) {
             MobiMonButton(
                 style = MobiMonButtonStyle.SECONDARY,

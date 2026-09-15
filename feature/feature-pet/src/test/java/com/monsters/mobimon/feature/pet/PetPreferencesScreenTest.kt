@@ -9,7 +9,6 @@ import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsFocused
 import androidx.compose.ui.test.assertIsNotEnabled
-import androidx.compose.ui.test.assertIsOn
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
@@ -40,44 +39,21 @@ class PetPreferencesScreenTest {
     @Config(qualifiers = "ko-rKR-w1792dp-h888dp")
     fun headUnitKeepsSharedRowsReachableAndDoneVisible() {
         compose.setContent {
-            MobiMonTheme { SettingsScreen(CompanionSettings(), {}, {}, parkedVerified = true) }
+            MobiMonTheme { SettingsScreen(CompanionSettings(), {}, parkedVerified = true) }
         }
         compose.onNodeWithText("GitHub Copilot").performScrollTo().assertIsDisplayed()
         compose.onNodeWithText("방해 금지").performScrollTo().assertIsDisplayed()
         compose.onNodeWithTag("settings-done").assertIsDisplayed().assertHeightIsAtLeast(76.dp)
         compose.onNodeWithTag("settings-back").assertHeightIsAtLeast(76.dp)
-        compose.onNodeWithText("차량 홈 캐릭터").performScrollTo().assertHeightIsAtLeast(76.dp)
-    }
-
-    @Test
-    fun visibilityToggleRequestsChangeButKeepsCommittedSetting() {
-        var requested: Boolean? = null
-        compose.setContent {
-            MobiMonTheme {
-                SettingsScreen(
-                    settings = CompanionSettings(showOnVehicleHome = true),
-                    parkedVerified = true,
-                    onShowOnVehicleHomeChange = { requested = it },
-                    onReducedMotionChange = {},
-                )
-            }
-        }
-
-        compose.onNodeWithText("차량 홈 캐릭터").performScrollTo().performClick()
-
-        assertEquals(false, requested)
-        compose.onNodeWithText("차량 홈 캐릭터").assertIsOn()
     }
 
     @Test
     fun unavailableServicesAndUnknownParkingDoNotInvokeSettingsActions() {
-        var visibilityCalls = 0
         var motionCalls = 0
         compose.setContent {
             MobiMonTheme {
                 SettingsScreen(
                     settings = CompanionSettings(),
-                    onShowOnVehicleHomeChange = { visibilityCalls++ },
                     onReducedMotionChange = { motionCalls++ },
                     parkedVerified = false,
                 )
@@ -86,9 +62,7 @@ class PetPreferencesScreenTest {
 
         compose.onNodeWithText("주차 확인 불가").assertExists()
         compose.onNodeWithText("GitHub Copilot").assertIsNotEnabled()
-        compose.onNodeWithText("차량 홈 캐릭터").performScrollTo().performClick()
         compose.onNodeWithText("움직임 줄이기").performScrollTo().performClick()
-        assertEquals(0, visibilityCalls)
         assertEquals(0, motionCalls)
     }
 
@@ -100,7 +74,6 @@ class PetPreferencesScreenTest {
             MobiMonTheme {
                 SettingsScreen(
                     settings = CompanionSettings(),
-                    onShowOnVehicleHomeChange = {},
                     onReducedMotionChange = {},
                     settingsAvailable = false,
                     settingsLoadFailed = true,
@@ -122,49 +95,23 @@ class PetPreferencesScreenTest {
     }
 
     @Test
-    fun savingDisablesOnlyItsOwnSettingAndRetainsTheCommittedValue() {
-        var motion: Boolean? = null
+    fun savingDisablesMotionSettingAndRetainsTheCommittedValue() {
         compose.setContent {
             MobiMonTheme {
                 SettingsScreen(
-                    CompanionSettings(showOnVehicleHome = true),
+                    CompanionSettings(reducedMotion = true),
                     {},
-                    { motion = it },
-                    visibilitySaving = true,
+                    motionSaving = true,
                     parkedVerified = true,
                 )
             }
         }
-        compose
-            .onNodeWithText("차량 홈 캐릭터")
-            .performScrollTo()
-            .assertIsNotEnabled()
-            .assertIsOn()
         compose
             .onNodeWithText("움직임 줄이기")
             .performScrollTo()
-            .assertIsEnabled()
+            .assertIsNotEnabled()
             .performClick()
-        assertEquals(true, motion)
-    }
-
-    @Test
-    fun failedSaveKeepsSavedValueAndAllowsRetryThroughTheSameControl() {
-        var requested: Boolean? = null
-        compose.setContent {
-            MobiMonTheme {
-                SettingsScreen(
-                    CompanionSettings(showOnVehicleHome = true),
-                    { requested = it },
-                    {},
-                    visibilityError = "저장 실패",
-                    parkedVerified = true,
-                )
-            }
-        }
-        compose.onNodeWithText("저장 실패").performScrollTo().assertExists()
-        compose.onNodeWithText("차량 홈 캐릭터").assertIsOn().performClick()
-        assertEquals(false, requested)
+        compose.onNodeWithText("변경 사항을 저장하고 있어요.").assertExists()
     }
 
     @Test
@@ -174,7 +121,7 @@ class PetPreferencesScreenTest {
         compose.setContent {
             val density = LocalDensity.current
             CompositionLocalProvider(LocalDensity provides Density(density.density, 1.5f)) {
-                MobiMonTheme { SettingsScreen(CompanionSettings(), {}, {}, onDone = { done++ }) }
+                MobiMonTheme { SettingsScreen(CompanionSettings(), {}, onDone = { done++ }) }
             }
         }
         compose
@@ -188,7 +135,7 @@ class PetPreferencesScreenTest {
     @Test
     fun loadingDoesNotExposeDefaultPreferencesAsLoaded() {
         compose.setContent {
-            MobiMonTheme { SettingsScreen(CompanionSettings(), {}, {}, settingsAvailable = false) }
+            MobiMonTheme { SettingsScreen(CompanionSettings(), {}, settingsAvailable = false) }
         }
         compose.onNodeWithText("설정을 불러오고 있어요.").assertExists()
         compose.onNodeWithText("차량 홈 캐릭터").assertDoesNotExist()
@@ -198,7 +145,7 @@ class PetPreferencesScreenTest {
     @Test
     fun simulatedParkingIsExplicitlyLabeled() {
         compose.setContent {
-            MobiMonTheme { SettingsScreen(CompanionSettings(), {}, {}, parkedVerified = true, simulatedVehicle = true) }
+            MobiMonTheme { SettingsScreen(CompanionSettings(), {}, parkedVerified = true, simulatedVehicle = true) }
         }
         compose.onNodeWithText("P · 주차 중 · 시뮬레이션").assertExists()
     }
@@ -209,7 +156,6 @@ class PetPreferencesScreenTest {
             MobiMonTheme {
                 SettingsScreen(
                     settings = CompanionSettings(),
-                    onShowOnVehicleHomeChange = {},
                     onReducedMotionChange = {},
                 )
             }
