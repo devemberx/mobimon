@@ -26,7 +26,6 @@ import com.monsters.mobimon.core.navigation.CompanionRoute
 import com.monsters.mobimon.core.navigation.FeatureEntry
 import com.monsters.mobimon.core.navigation.FeatureNavigator
 import com.monsters.mobimon.core.navigation.FeatureRegistry
-import com.monsters.mobimon.core.navigation.HomeSurface
 import com.monsters.mobimon.core.ui.MobiMonContentColumn
 import com.monsters.mobimon.core.ui.MobiMonMessage
 import com.monsters.mobimon.core.ui.MobiMonTheme
@@ -43,13 +42,14 @@ fun MobiMonApp(
 
 internal val ShellSaver =
     listSaver<ShellState, String>(
-        save = { listOf(it.home.name, it.route.name, it.connectionOrigin.name) },
+        save = { listOf(it.route.name, it.connectionOrigin.name) },
         restore = { saved ->
+            val routeIndex = if (saved.firstOrNull() in setOf("PET", "VEHICLE")) 1 else 0
+            val originIndex = routeIndex + 1
             ShellState(
-                home = HomeSurface.entries.firstOrNull { it.name == saved.getOrNull(0) } ?: HomeSurface.PET,
-                route = AppRoute.entries.firstOrNull { it.name == saved.getOrNull(1) } ?: CompanionRoute.HOME,
+                route = AppRoute.entries.firstOrNull { it.name == saved.getOrNull(routeIndex) } ?: CompanionRoute.HOME,
                 connectionOrigin =
-                    if (saved.getOrNull(2) ==
+                    if (saved.getOrNull(originIndex) ==
                         CompanionRoute.SETTINGS.name
                     ) {
                         CompanionRoute.SETTINGS
@@ -72,7 +72,6 @@ fun MobiMonContent(
     val stateHolder = rememberSaveableStateHolder()
     val navigator =
         FeatureNavigator(
-            home = shell.home,
             navigate = { route ->
                 shell =
                     if (route == AiRoute.COPILOT) shell.openCopilot() else shell.navigate(route)
@@ -80,7 +79,6 @@ fun MobiMonContent(
             back = { shell = shell.back() },
             returnHome = { shell = shell.returnHome() },
             openMenu = { shell = shell.openMenu() },
-            switchHome = { shell = shell.switchHome() },
         )
     MobiMonTheme {
         Surface(modifier = modifier.fillMaxSize()) {

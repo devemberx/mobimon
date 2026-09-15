@@ -19,7 +19,6 @@ import com.monsters.mobimon.core.navigation.AppRoute
 import com.monsters.mobimon.core.navigation.CompanionRoute
 import com.monsters.mobimon.core.navigation.FeatureEntry
 import com.monsters.mobimon.core.navigation.FeatureNavigator
-import com.monsters.mobimon.core.navigation.HomeSurface
 import com.monsters.mobimon.core.navigation.QuestRoute
 import com.monsters.mobimon.core.navigation.VehicleRoute
 import com.monsters.mobimon.core.presentation.PointBalanceState
@@ -75,14 +74,6 @@ class PetFeature(
         val balance = (pointBalance as? PointBalanceState.Ready)?.balance
         val balanceFailed = pointBalance == PointBalanceState.Failed
         val legacyQuestVisible = vehicleSnapshot.source == SignalSource.SIMULATED
-        val visibilitySaveError =
-            if (petState.visibilitySaveFailed) {
-                stringResource(
-                    R.string.pet_route_save_failed,
-                )
-            } else {
-                null
-            }
         val motionSaveError =
             if (petState.reducedMotionSaveFailed) {
                 stringResource(
@@ -97,15 +88,12 @@ class PetFeature(
                     profile,
                     vehicleSnapshot,
                     progress,
-                    petState.settings,
                     modifier = modifier,
                     onOpenMenu = navigator.openMenu,
                     onOpenVehicleInfo = { navigator.navigate(VehicleRoute.VEHICLE_INFO) },
                     onOpenQuests = { navigator.navigate(QuestRoute.QUESTS) },
-                    onSwitchHome = navigator.switchHome,
                     onPetClick = { if (interactionAllowed) navigator.navigate(AiRoute.COPILOT) },
                     onOpenAppearance = { navigator.navigate(CompanionRoute.APPEARANCE) },
-                    vehiclePreview = navigator.home == HomeSurface.VEHICLE,
                     pointBalance = balance,
                     pointLoadFailed = balanceFailed,
                     legacyQuestVisible = legacyQuestVisible,
@@ -122,11 +110,8 @@ class PetFeature(
             CompanionRoute.SETTINGS -> {
                 SettingsScreen(
                     petState.settings,
-                    petModel::setShowOnVehicleHome,
                     petModel::setReducedMotion,
                     modifier = modifier,
-                    visibilitySaving = petState.visibilitySaving,
-                    visibilityError = visibilitySaveError,
                     motionSaving = petState.reducedMotionSaving,
                     motionError = motionSaveError,
                     settingsAvailable = petState.settingsLoaded,

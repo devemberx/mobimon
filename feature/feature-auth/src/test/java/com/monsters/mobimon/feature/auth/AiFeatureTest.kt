@@ -46,7 +46,6 @@ import com.monsters.mobimon.core.domain.VehicleSnapshot
 import com.monsters.mobimon.core.domain.WriteResult
 import com.monsters.mobimon.core.navigation.AiRoute
 import com.monsters.mobimon.core.navigation.FeatureNavigator
-import com.monsters.mobimon.core.navigation.HomeSurface
 import com.monsters.mobimon.core.presentation.VehiclePresentation
 import com.monsters.mobimon.core.ui.MobiMonTheme
 import kotlinx.coroutines.channels.Channel
@@ -177,7 +176,7 @@ class AiFeatureTest {
                     VehicleFreshnessPolicy(15_000),
                 ),
             )
-        val navigator = FeatureNavigator(HomeSurface.PET, {}, {}, {}, {}, {})
+        val navigator = FeatureNavigator({}, {}, {}, {})
         compose.setContent {
             CompositionLocalProvider(LocalDensity provides Density(LocalDensity.current.density, fontScale)) {
                 MobiMonTheme { feature.Content(route, navigator, Modifier) }
@@ -198,8 +197,6 @@ class AiFeatureTest {
 
     private class FakeSettings : SettingsRepository {
         override val settings = MutableStateFlow(CompanionSettings())
-
-        override suspend fun setShowOnVehicleHome(enabled: Boolean) = WriteResult.Failure
 
         override suspend fun setReducedMotion(enabled: Boolean) = WriteResult.Failure
 

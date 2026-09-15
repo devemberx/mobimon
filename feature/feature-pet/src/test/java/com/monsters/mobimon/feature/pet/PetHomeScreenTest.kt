@@ -21,15 +21,12 @@ import androidx.compose.ui.test.pressKey
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
-import com.monsters.mobimon.core.domain.CompanionSettings
 import com.monsters.mobimon.core.domain.DrivingState
 import com.monsters.mobimon.core.domain.PetProfile
 import com.monsters.mobimon.core.domain.QuestProgress
 import com.monsters.mobimon.core.domain.SignalQuality
 import com.monsters.mobimon.core.domain.SignalSource
 import com.monsters.mobimon.core.domain.VehicleSnapshot
-import com.monsters.mobimon.core.domain.VehicleWarning
-import com.monsters.mobimon.core.domain.WarningSeverity
 import com.monsters.mobimon.core.ui.MobiMonTheme
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -97,6 +94,9 @@ class PetHomeScreenTest {
             onAppearance = { calls += "appearance" },
             onDetails = { calls += "details" },
         )
+        compose.onNodeWithText("함께 쉬어 가요.").assertIsDisplayed()
+        compose.onNodeWithText("좋은 길엔, 늘 네가 있어.").assertIsDisplayed()
+        compose.onNodeWithText("여행은 언제나\n즐거워요!").assertIsDisplayed()
         compose
             .onNodeWithContentDescription("메뉴 열기")
             .performScrollTo()
@@ -124,7 +124,7 @@ class PetHomeScreenTest {
 
     @Test
     @Config(qualifiers = "ko-rKR-w1792dp-h888dp")
-    fun losingAndRecoveringVehicleDataKeepsCommittedCompanionAndTruthfulReadings() {
+    fun losingAndRecoveringVehicleDataKeepsCommittedCompanionAndTruthfulParking() {
         val snapshot = mutableStateOf(parkedSnapshot())
         render(pointBalance = 0, snapshotSource = { snapshot.value })
         val friend = compose.onNodeWithContentDescription("Mobi 강아지").fetchSemanticsNode().boundsInRoot
@@ -137,28 +137,20 @@ class PetHomeScreenTest {
                 )
         }
         assertEquals(friend, compose.onNodeWithContentDescription("Mobi 강아지").fetchSemanticsNode().boundsInRoot)
-        compose.onNodeWithText("확인할 수 있는 배터리 정보가 없어요.").performScrollTo().assertIsDisplayed()
         compose.onNodeWithText("주차 여부 확인 불가").performScrollTo().assertIsDisplayed()
         compose.onNodeWithText("배터리 72%").assertDoesNotExist()
         compose.onNodeWithText("대화하기 · 연결 불가").performScrollTo().assertIsNotEnabled()
         compose.runOnIdle { snapshot.value = parkedSnapshot() }
-        compose.onNodeWithText("배터리 72%").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText("P · 주차 중").assertExists()
+        compose.onNodeWithText("배터리 72%").assertDoesNotExist()
     }
 
     @Test
     fun realUnavailableHomeDoesNotClaimParkedState() {
-        render(vehiclePreview = false, showOnVehicleHome = true)
+        render()
 
         compose.onNodeWithText("주차 여부 확인 불가").performScrollTo().assertIsDisplayed()
         compose.onNodeWithContentDescription("주차 확인됨").assertDoesNotExist()
-    }
-
-    @Test
-    fun hiddenPetPreferenceRemovesConversationTargetOnlyOnVehiclePreview() {
-        render(vehiclePreview = true, showOnVehicleHome = false)
-
-        compose.onNodeWithContentDescription("친구와 대화하기").assertDoesNotExist()
-        compose.onNodeWithText("차량 홈 미리보기에서 친구를 숨겼어요").performScrollTo().assertIsDisplayed()
     }
 
     @Test
@@ -185,13 +177,12 @@ class PetHomeScreenTest {
     }
 
     @Test
-    fun staleParkingKeepsFreshBatteryAndDoesNotClaimParked() {
+    fun staleParkingDoesNotClaimParked() {
         render(snapshot = parkedSnapshot().copy(quality = SignalQuality.STALE, batteryQuality = SignalQuality.VALID))
 
         compose.onNodeWithText("주차 여부 확인 불가").assertExists()
-        compose.onNodeWithText("배터리 72%").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText("배터리 72%").assertDoesNotExist()
         compose.onNodeWithContentDescription("주차 확인됨").assertDoesNotExist()
-        compose.onNodeWithText("주차 정보가 오래되어 현재 상태를 알 수 없어요.").assertExists()
     }
 
     @Test
@@ -209,43 +200,11 @@ class PetHomeScreenTest {
     }
 
     @Test
-    fun unavailableBatteryNeverClaimsAllCheckedItemsAreHealthy() {
-        render(snapshot = parkedSnapshot().copy(batteryQuality = SignalQuality.UNAVAILABLE))
-        compose.onNodeWithText("확인할 수 있는 배터리 정보가 없어요.").performScrollTo().assertIsDisplayed()
+    fun homeOmitsBatteryAndVehicleHomePreviewControls() {
+        render(snapshot = parkedSnapshot())
         compose.onNodeWithText("배터리 72%").assertDoesNotExist()
-        compose.onNodeWithText("확인한 차량 항목에 이상이 없어요").assertDoesNotExist()
-    }
-
-    @Test
-    fun currentWarningIsPrioritizedAlongsideFreshBattery() {
-        render(
-            snapshot =
-                parkedSnapshot().copy(
-                    warnings =
-                        listOf(
-                            VehicleWarning("타이어", "앞 왼쪽", WarningSeverity.CRITICAL, "공기압이 낮아요", "안전하게 점검해 주세요", 1_000),
-                        ),
-                ),
-        )
-        compose.onNodeWithText("확인이 필요해요 · 긴급 · 타이어").performScrollTo().assertIsDisplayed()
-        compose.onNodeWithText("앞 왼쪽").assertExists()
-        compose.onNodeWithText("공기압이 낮아요").assertExists()
-        compose.onNodeWithText("배터리 72%").assertExists()
-    }
-
-    @Test
-    fun historicalWarningDoesNotAppearAsCurrentWarning() {
-        render(
-            snapshot =
-                parkedSnapshot().copy(
-                    warnings =
-                        listOf(
-                            VehicleWarning("타이어", null, WarningSeverity.CAUTION, "이전 경고", "점검", 0, SignalQuality.STALE),
-                        ),
-                ),
-        )
-        compose.onNodeWithText("이전 경고가 있어요", substring = true).performScrollTo().assertIsDisplayed()
-        compose.onNodeWithText("확인이 필요해요", substring = true).assertDoesNotExist()
+        compose.onNodeWithText("차량 홈 미리보기").assertDoesNotExist()
+        compose.onNodeWithText("친구 홈").assertDoesNotExist()
     }
 
     @Test
@@ -339,8 +298,6 @@ class PetHomeScreenTest {
         )
 
     private fun render(
-        vehiclePreview: Boolean = false,
-        showOnVehicleHome: Boolean = true,
         snapshot: VehicleSnapshot =
             parkedSnapshot().copy(
                 source = SignalSource.REAL,
@@ -368,14 +325,11 @@ class PetHomeScreenTest {
                         profile = PetProfile("profile"),
                         snapshot = snapshotSource?.invoke() ?: snapshot,
                         progress = QuestProgress(),
-                        settings = CompanionSettings(showOnVehicleHome = showOnVehicleHome),
                         onOpenMenu = onMenu,
                         onOpenVehicleInfo = onDetails,
                         onOpenQuests = {},
-                        onSwitchHome = {},
                         onPetClick = {},
                         onOpenAppearance = onAppearance,
-                        vehiclePreview = vehiclePreview,
                         interactionAllowed = interactionAllowed,
                         pointLoadFailed = pointLoadFailed,
                         pointBalance = pointBalance,
