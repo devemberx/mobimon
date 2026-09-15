@@ -1,14 +1,22 @@
 package com.monsters.mobimon.vehicle
 
 import com.monsters.mobimon.core.domain.Clock
+import com.monsters.mobimon.core.domain.CompanionSettings
 import com.monsters.mobimon.core.domain.DrivingState
 import com.monsters.mobimon.core.domain.IdGenerator
+import com.monsters.mobimon.core.domain.SettingsRepository
 import com.monsters.mobimon.core.domain.SignalQuality
 import com.monsters.mobimon.core.domain.SignalSource
+import com.monsters.mobimon.core.domain.WriteResult
+import com.monsters.mobimon.debug.DebugVssProvider
+import com.monsters.mobimon.debug.DebugVssState
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestCoroutineScheduler
 import kotlinx.coroutines.test.advanceTimeBy
@@ -23,18 +31,11 @@ import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
 
-import com.monsters.mobimon.core.domain.SettingsRepository
-import com.monsters.mobimon.core.domain.CompanionSettings
-import com.monsters.mobimon.core.domain.WriteResult
-import com.monsters.mobimon.debug.DebugVssProvider
-import com.monsters.mobimon.debug.DebugVssState
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-
 class FakeSettingsRepository : SettingsRepository {
     override val settings: Flow<CompanionSettings> = MutableStateFlow(CompanionSettings())
+
     override suspend fun setReducedMotion(enabled: Boolean): WriteResult = WriteResult.Success
+
     override suspend fun setLauncherCharacterEnabled(enabled: Boolean): WriteResult = WriteResult.Success
 }
 

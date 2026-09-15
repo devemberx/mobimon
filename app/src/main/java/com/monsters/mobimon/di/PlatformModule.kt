@@ -48,8 +48,11 @@ object PlatformModule {
         @ApplicationContext context: Context,
     ): com.monsters.mobimon.core.database.VehicleDatabase =
         Room
-            .databaseBuilder(context, com.monsters.mobimon.core.database.VehicleDatabase::class.java, "vehicle-status.db")
-            .fallbackToDestructiveMigration()
+            .databaseBuilder(
+                context,
+                com.monsters.mobimon.core.database.VehicleDatabase::class.java,
+                "vehicle-status.db",
+            ).fallbackToDestructiveMigration()
             .build()
 
     @Provides

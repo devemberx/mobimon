@@ -30,12 +30,13 @@ object VehicleProviderModule {
         settingsRepository: com.monsters.mobimon.core.domain.SettingsRepository,
         debugStore: com.monsters.mobimon.debug.DebugStore,
         vehicleDatabase: com.monsters.mobimon.core.database.VehicleDatabase,
-    ): VehicleRepository = DemoVehicleRepository(
-        clock, 
-        ids, 
-        settingsRepository, 
-        debugStore, 
-        CoroutineScope(SupervisorJob() + Dispatchers.Default),
-        vehicleDatabase,
-    )
+    ): VehicleRepository =
+        DemoVehicleRepository(
+            clock,
+            ids,
+            settingsRepository,
+            debugStore,
+            CoroutineScope(SupervisorJob() + Dispatchers.Default),
+            vehicleDatabase,
+        )
 }
