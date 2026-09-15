@@ -39,11 +39,19 @@ class PetPreferencesScreenTest {
     @Config(qualifiers = "ko-rKR-w1792dp-h888dp")
     fun headUnitKeepsSharedRowsReachableAndDoneVisible() {
         compose.setContent {
-            MobiMonTheme { SettingsScreen(CompanionSettings(), {}, parkedVerified = true) }
+            MobiMonTheme {
+                SettingsScreen(
+                    CompanionSettings(),
+                    {},
+                    debugModeAvailable = true,
+                    parkedVerified = true,
+                )
+            }
         }
         compose.onNodeWithText("GitHub Copilot").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText("방해 금지").performScrollTo().assertIsDisplayed()
         compose.onNodeWithText("디버깅용 모드").performScrollTo().assertIsDisplayed()
-        compose.onNodeWithText("테스트 모드").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText("시뮬레이션 신호와 포인트 도구를 표시해요.").performScrollTo().assertIsDisplayed()
         compose.onNodeWithTag("settings-done").assertIsDisplayed().assertHeightIsAtLeast(76.dp)
         compose.onNodeWithTag("settings-back").assertHeightIsAtLeast(76.dp)
     }
@@ -54,10 +62,11 @@ class PetPreferencesScreenTest {
         compose.setContent {
             MobiMonTheme {
                 SettingsScreen(
-                    settings = CompanionSettings(launcherCharacterEnabled = false),
+                    settings = CompanionSettings(debugModeEnabled = false),
                     parkedVerified = true,
                     onReducedMotionChange = {},
                     onDebugModeChange = { requested = it },
+                    debugModeAvailable = true,
                 )
             }
         }
@@ -77,6 +86,7 @@ class PetPreferencesScreenTest {
                     settings = CompanionSettings(),
                     onReducedMotionChange = { motionCalls++ },
                     onDebugModeChange = { debugCalls++ },
+                    debugModeAvailable = true,
                     parkedVerified = false,
                 )
             }
@@ -186,5 +196,21 @@ class PetPreferencesScreenTest {
         }
 
         compose.onNodeWithText("기억 관리", substring = true).assertDoesNotExist()
+    }
+
+    @Test
+    fun productionSettingsKeepsDoNotDisturbAndHidesDebugMode() {
+        compose.setContent {
+            MobiMonTheme {
+                SettingsScreen(
+                    settings = CompanionSettings(debugModeEnabled = true),
+                    onReducedMotionChange = {},
+                    debugModeAvailable = false,
+                )
+            }
+        }
+
+        compose.onNodeWithText("방해 금지").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText("디버깅용 모드").assertDoesNotExist()
     }
 }

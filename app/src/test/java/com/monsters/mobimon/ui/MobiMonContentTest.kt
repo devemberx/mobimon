@@ -69,6 +69,28 @@ class MobiMonContentTest {
     }
 
     @Test
+    fun restrictionGateRemovesDebugControlsBeforeTheyCanReceiveInput() {
+        val appUse = mutableStateOf(AppUseState.ALLOWED)
+        var debugMutations = 0
+        compose.setContent {
+            MobiMonContent(
+                entries = entries,
+                appUseState = appUse.value,
+                debugOverlay = {
+                    TextButton(onClick = { debugMutations++ }) { Text("Debug mutation") }
+                },
+            )
+        }
+        compose.onNodeWithText("Debug mutation").performClick()
+        assertTrue(debugMutations == 1)
+
+        compose.runOnIdle { appUse.value = AppUseState.RESTRICTED }
+
+        compose.onNodeWithText("Debug mutation").assertDoesNotExist()
+        assertTrue(debugMutations == 1)
+    }
+
+    @Test
     fun missingAppUseEvidenceFailsClosed() {
         compose.setContent { MobiMonContent(entries) }
         compose.onNodeWithText("Route HOME").assertDoesNotExist()

@@ -29,7 +29,6 @@ object VehicleProviderModule {
         ids: IdGenerator,
         settingsRepository: com.monsters.mobimon.core.domain.SettingsRepository,
         debugStore: com.monsters.mobimon.debug.DebugStore,
-        vehicleDatabase: com.monsters.mobimon.core.database.VehicleDatabase,
     ): VehicleRepository =
         DemoVehicleRepository(
             clock,
@@ -37,6 +36,5 @@ object VehicleProviderModule {
             settingsRepository,
             debugStore,
             CoroutineScope(SupervisorJob() + Dispatchers.Default),
-            vehicleDatabase,
         )
 }

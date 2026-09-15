@@ -283,6 +283,11 @@ connection introduction. Spoken replies and Do Not Disturb remain visibly
 unavailable. Unknown parking disables preference changes and connection actions,
 and app-use restrictions remain enforced by the app shell.
 
+The Debug build adds a separate Debug mode row without replacing Do Not Disturb.
+Its setting controls the labeled simulation overlay and defaults off independently
+of the dormant launcher-character preference. Release does not expose the row or
+overlay.
+
 Settings take effect immediately. "Done" closes the screen rather than saving a
 batch of changes. Show pending or failed saves and retain the last saved value
 on failure. Each preference is independent.

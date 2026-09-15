@@ -8,4 +8,6 @@ interface SettingsRepository {
     suspend fun setReducedMotion(enabled: Boolean): WriteResult
 
     suspend fun setLauncherCharacterEnabled(enabled: Boolean): WriteResult
+
+    suspend fun setDebugModeEnabled(enabled: Boolean): WriteResult
 }

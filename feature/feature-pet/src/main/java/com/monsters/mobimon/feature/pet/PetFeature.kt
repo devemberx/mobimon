@@ -34,6 +34,7 @@ class PetFeature(
     private val points: PointEconomy,
     private val wallet: PointPresentation,
     private val vehicle: VehiclePresentation,
+    private val debugSettingsAvailable: Boolean = false,
 ) : FeatureEntry {
     override val routes = setOf(CompanionRoute.HOME, CompanionRoute.SETTINGS, CompanionRoute.APPEARANCE)
 
@@ -121,6 +122,7 @@ class PetFeature(
                     petModel::setReducedMotion,
                     modifier = modifier,
                     onDebugModeChange = petModel::setDebugMode,
+                    debugModeAvailable = debugSettingsAvailable,
                     motionSaving = petState.reducedMotionSaving,
                     motionError = motionSaveError,
                     debugSaving = petState.debugModeSaving,

@@ -7,6 +7,7 @@ import com.monsters.mobimon.core.domain.IdGenerator
 import com.monsters.mobimon.core.domain.SettingsRepository
 import com.monsters.mobimon.core.domain.SignalQuality
 import com.monsters.mobimon.core.domain.SignalSource
+import com.monsters.mobimon.core.domain.VehicleSnapshot
 import com.monsters.mobimon.core.domain.WriteResult
 import com.monsters.mobimon.debug.DebugVssProvider
 import com.monsters.mobimon.debug.DebugVssState
@@ -17,8 +18,13 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.drop
+import kotlinx.coroutines.flow.take
+import kotlinx.coroutines.flow.toList
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestCoroutineScheduler
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
@@ -32,19 +38,98 @@ import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
 
 class FakeSettingsRepository : SettingsRepository {
-    override val settings: Flow<CompanionSettings> = MutableStateFlow(CompanionSettings())
+    val mutableSettings = MutableStateFlow(CompanionSettings())
+    override val settings: Flow<CompanionSettings> = mutableSettings
 
     override suspend fun setReducedMotion(enabled: Boolean): WriteResult = WriteResult.Success
 
     override suspend fun setLauncherCharacterEnabled(enabled: Boolean): WriteResult = WriteResult.Success
+
+    override suspend fun setDebugModeEnabled(enabled: Boolean): WriteResult = WriteResult.Success
 }
 
 class FakeDebugStore : DebugVssProvider {
-    override val state: StateFlow<DebugVssState> = MutableStateFlow(DebugVssState())
+    val mutableState = MutableStateFlow(DebugVssState())
+    override val state: StateFlow<DebugVssState> = mutableState
 }
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class DemoVehicleRepositoryTest {
+    @Test
+    fun debugParkingRequiresParkGearAndNonContradictoryMotion() =
+        runTest {
+            val settings = FakeSettingsRepository()
+            settings.mutableSettings.value = CompanionSettings(debugModeEnabled = true)
+            val debug = FakeDebugStore()
+            val repository =
+                DemoVehicleRepository(
+                    Clock { testScheduler.currentTime },
+                    IdGenerator { "epoch" },
+                    settings,
+                    debug,
+                    backgroundScope,
+                )
+            repository.start()
+            runCurrent()
+            assertEquals(DrivingState.PARKED, repository.snapshots.value.drivingState)
+
+            listOf("D", "R", "N").forEach { gear ->
+                debug.mutableState.value = DebugVssState(gear = gear, isMoving = false, speed = 0)
+                runCurrent()
+                assertEquals(DrivingState.UNKNOWN, repository.snapshots.value.drivingState)
+            }
+
+            debug.mutableState.value = DebugVssState(gear = "P", isMoving = true, speed = 0)
+            runCurrent()
+            assertEquals(DrivingState.MOVING, repository.snapshots.value.drivingState)
+
+            debug.mutableState.value = DebugVssState(gear = "P", isMoving = false, speed = 1)
+            runCurrent()
+            assertEquals(DrivingState.MOVING, repository.snapshots.value.drivingState)
+            repository.stop()
+        }
+
+    @Test
+    fun concurrentTimerAndDebugChangesUseOneMonotonicSequence() =
+        runTest {
+            val settings = FakeSettingsRepository()
+            settings.mutableSettings.value = CompanionSettings(debugModeEnabled = true)
+            val debug = FakeDebugStore()
+            val repository =
+                DemoVehicleRepository(
+                    Clock { testScheduler.currentTime },
+                    IdGenerator { "epoch" },
+                    settings,
+                    debug,
+                    backgroundScope,
+                )
+            val published = mutableListOf<VehicleSnapshot>()
+            backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+                repository.snapshots
+                    .drop(1)
+                    .take(4)
+                    .toList(published)
+            }
+
+            repository.start()
+            runCurrent()
+            assertEquals(1L, repository.snapshots.value.sequence)
+
+            advanceTimeBy(2_000)
+            debug.mutableState.value = debug.mutableState.value.copy(batteryPercent = 71)
+            runCurrent()
+
+            assertEquals(3L, repository.snapshots.value.sequence)
+            assertEquals("epoch-3", repository.snapshots.value.id)
+            assertEquals(listOf(1L, 2L, 3L), published.map { it.sequence })
+            assertEquals(listOf("epoch-1", "epoch-2", "epoch-3"), published.map { it.id })
+            debug.mutableState.value = debug.mutableState.value.copy(batteryPercent = 70)
+            runCurrent()
+            assertEquals(4L, repository.snapshots.value.sequence)
+            assertEquals("epoch-4", repository.snapshots.value.id)
+            repository.stop()
+        }
+
     @Test
     fun simulationHasOneObservationJobAndANewEpochAfterEveryGap() =
         runTest {

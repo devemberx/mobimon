@@ -142,6 +142,8 @@ class AiCompanionViewModelTest {
         override suspend fun setReducedMotion(enabled: Boolean) = WriteResult.Failure
 
         override suspend fun setLauncherCharacterEnabled(enabled: Boolean) = WriteResult.Failure
+
+        override suspend fun setDebugModeEnabled(enabled: Boolean) = WriteResult.Failure
     }
 
     private class FakePoints(

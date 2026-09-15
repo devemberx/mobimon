@@ -127,7 +127,7 @@ class PetViewModelTest {
             runCurrent()
             vm.setDebugMode(true)
             runCurrent()
-            assertTrue(vm.state.value.settings.launcherCharacterEnabled)
+            assertTrue(vm.state.value.settings.debugModeEnabled)
             assertFalse(vm.state.value.saveFailed)
         }
 
@@ -157,6 +157,11 @@ class PetViewModelTest {
 
         override suspend fun setLauncherCharacterEnabled(enabled: Boolean): WriteResult {
             savedSettings.value = savedSettings.value.copy(launcherCharacterEnabled = enabled)
+            return WriteResult.Success
+        }
+
+        override suspend fun setDebugModeEnabled(enabled: Boolean): WriteResult {
+            savedSettings.value = savedSettings.value.copy(debugModeEnabled = enabled)
             return WriteResult.Success
         }
     }

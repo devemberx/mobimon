@@ -47,15 +47,13 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.monsters.mobimon.core.database.AppDatabase
-import com.monsters.mobimon.core.domain.ProgressionIdentity
+import com.monsters.mobimon.core.database.DebugPointRepository
 import com.monsters.mobimon.core.domain.SettingsRepository
 import com.monsters.mobimon.debug.DebugVssState
 import dagger.hilt.EntryPoint
 import dagger.hilt.InstallIn
 import dagger.hilt.android.EntryPointAccessors
 import dagger.hilt.components.SingletonComponent
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
@@ -67,9 +65,7 @@ interface DebugOverlayEntryPoint {
 
     fun debugStore(): com.monsters.mobimon.debug.DebugStore
 
-    fun appDatabase(): AppDatabase
-
-    fun progressionIdentity(): ProgressionIdentity
+    fun debugPoints(): DebugPointRepository
 }
 
 @Composable
@@ -88,9 +84,10 @@ fun DebugOverlay() {
     if (entryPoint == null) return
     val settingsRepository = entryPoint.settingsRepository()
     val debugStore = entryPoint.debugStore()
+    val debugPoints = entryPoint.debugPoints()
 
     val isDebugEnabledFlow =
-        remember(settingsRepository) { settingsRepository.settings.map { it.launcherCharacterEnabled } }
+        remember(settingsRepository) { settingsRepository.settings.map { it.debugModeEnabled } }
     val isDebugEnabled by isDebugEnabledFlow.collectAsStateWithLifecycle(initialValue = false)
     val state by debugStore.state.collectAsStateWithLifecycle()
 
@@ -178,21 +175,7 @@ fun DebugOverlay() {
                             Button(
                                 onClick = {
                                     if (pointUnit == 0) return@Button
-                                    scope.launch(Dispatchers.IO) {
-                                        try {
-                                            val dao = entryPoint.appDatabase().economyDao()
-                                            val pid = entryPoint.progressionIdentity().profileId
-                                            if (dao.account(pid) == null) {
-                                                dao.insertAccount(
-                                                    com.monsters.mobimon.core.database
-                                                        .PointAccountEntity(pid, 0),
-                                                )
-                                            }
-                                            dao.credit(pid, pointUnit.toLong(), Long.MAX_VALUE)
-                                        } catch (e: Exception) {
-                                            // ignore in debug
-                                        }
-                                    }
+                                    scope.launch { debugPoints.add(pointUnit.toLong()) }
                                 },
                                 modifier = Modifier.weight(0.8f),
                                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF203C58)),
@@ -203,16 +186,7 @@ fun DebugOverlay() {
                             Button(
                                 onClick = {
                                     if (pointUnit == 0) return@Button
-                                    scope.launch(Dispatchers.IO) {
-                                        try {
-                                            entryPoint.appDatabase().economyDao().debit(
-                                                entryPoint.progressionIdentity().profileId,
-                                                pointUnit.toLong(),
-                                            )
-                                        } catch (e: Exception) {
-                                            // ignore in debug
-                                        }
-                                    }
+                                    scope.launch { debugPoints.subtract(pointUnit.toLong()) }
                                 },
                                 modifier = Modifier.weight(0.8f),
                                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF203C58)),
@@ -222,18 +196,7 @@ fun DebugOverlay() {
 
                             Button(
                                 onClick = {
-                                    scope.launch(Dispatchers.IO) {
-                                        try {
-                                            val dao = entryPoint.appDatabase().economyDao()
-                                            val pid = entryPoint.progressionIdentity().profileId
-                                            val acc = dao.account(pid)
-                                            if (acc != null && acc.balance > 0) {
-                                                dao.debit(pid, acc.balance)
-                                            }
-                                        } catch (e: Exception) {
-                                            // ignore in debug
-                                        }
-                                    }
+                                    scope.launch { debugPoints.reset() }
                                 },
                                 modifier = Modifier.weight(1f),
                                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF802020)),

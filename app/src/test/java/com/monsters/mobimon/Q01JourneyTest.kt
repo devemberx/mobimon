@@ -334,5 +334,10 @@ class Q01JourneyTest {
             settings.value = settings.value.copy(launcherCharacterEnabled = enabled)
             return WriteResult.Success
         }
+
+        override suspend fun setDebugModeEnabled(enabled: Boolean): WriteResult {
+            settings.value = settings.value.copy(debugModeEnabled = enabled)
+            return WriteResult.Success
+        }
     }
 }

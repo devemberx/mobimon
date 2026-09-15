@@ -20,6 +20,7 @@ class DataStoreSettingsRepository(
             CompanionSettings(
                 reducedMotion = preferences[REDUCED_MOTION] ?: false,
                 launcherCharacterEnabled = preferences[LAUNCHER_CHARACTER_ENABLED] ?: false,
+                debugModeEnabled = preferences[DEBUG_MODE_ENABLED] ?: false,
             )
         }
 
@@ -27,6 +28,9 @@ class DataStoreSettingsRepository(
 
     override suspend fun setLauncherCharacterEnabled(enabled: Boolean): WriteResult =
         writePreference(LAUNCHER_CHARACTER_ENABLED, enabled)
+
+    override suspend fun setDebugModeEnabled(enabled: Boolean): WriteResult =
+        writePreference(DEBUG_MODE_ENABLED, enabled)
 
     private suspend fun writePreference(
         key: Preferences.Key<Boolean>,
@@ -44,5 +48,6 @@ class DataStoreSettingsRepository(
     private companion object {
         val REDUCED_MOTION = booleanPreferencesKey("reduced_motion")
         val LAUNCHER_CHARACTER_ENABLED = booleanPreferencesKey("launcher_character_enabled")
+        val DEBUG_MODE_ENABLED = booleanPreferencesKey("debug_mode_enabled")
     }
 }
