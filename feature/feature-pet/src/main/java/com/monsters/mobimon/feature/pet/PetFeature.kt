@@ -91,6 +91,14 @@ class PetFeature(
             } else {
                 null
             }
+        val debugSaveError =
+            if (petState.debugModeSaveFailed) {
+                stringResource(
+                    R.string.pet_route_save_failed,
+                )
+            } else {
+                null
+            }
         when (route) {
             CompanionRoute.HOME -> {
                 PetHomeScreen(
@@ -125,10 +133,13 @@ class PetFeature(
                     petModel::setShowOnVehicleHome,
                     petModel::setReducedMotion,
                     modifier = modifier,
+                    onDebugModeChange = petModel::setDebugMode,
                     visibilitySaving = petState.visibilitySaving,
                     visibilityError = visibilitySaveError,
                     motionSaving = petState.reducedMotionSaving,
                     motionError = motionSaveError,
+                    debugSaving = petState.debugModeSaving,
+                    debugError = debugSaveError,
                     settingsAvailable = petState.settingsLoaded,
                     settingsLoadFailed = petState.settingsLoadFailed,
                     onRetry = onRetry,
