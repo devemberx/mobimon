@@ -24,19 +24,17 @@ data class PetUiState(
     val settingsLoadFailed: Boolean = false,
     val appearanceSaving: Boolean = false,
     val appearanceSaveFailed: Boolean = false,
-    val visibilitySaving: Boolean = false,
-    val visibilitySaveFailed: Boolean = false,
     val reducedMotionSaving: Boolean = false,
     val reducedMotionSaveFailed: Boolean = false,
 ) {
     val isSaving: Boolean
-        get() = appearanceSaving || visibilitySaving || reducedMotionSaving
+        get() = appearanceSaving || reducedMotionSaving
 
     val saveFailed: Boolean
-        get() = appearanceSaveFailed || visibilitySaveFailed || reducedMotionSaveFailed
+        get() = appearanceSaveFailed || reducedMotionSaveFailed
 }
 
-private enum class SaveOperation { APPEARANCE, VISIBILITY, REDUCED_MOTION }
+private enum class SaveOperation { APPEARANCE, REDUCED_MOTION }
 
 class PetViewModel(
     private val pets: PetRepository,
@@ -92,9 +90,6 @@ class PetViewModel(
 
     fun setAppearance(appearance: PetAppearance) = save(SaveOperation.APPEARANCE) { pets.setAppearance(appearance) }
 
-    fun setShowOnVehicleHome(enabled: Boolean) =
-        save(SaveOperation.VISIBILITY) { preferences.setShowOnVehicleHome(enabled) }
-
     fun setReducedMotion(enabled: Boolean) =
         save(SaveOperation.REDUCED_MOTION) { preferences.setReducedMotion(enabled) }
 
@@ -122,7 +117,6 @@ class PetViewModel(
 private fun PetUiState.isSaving(operation: SaveOperation): Boolean =
     when (operation) {
         SaveOperation.APPEARANCE -> appearanceSaving
-        SaveOperation.VISIBILITY -> visibilitySaving
         SaveOperation.REDUCED_MOTION -> reducedMotionSaving
     }
 
@@ -134,8 +128,6 @@ private fun PetUiState.withSave(
     when (operation) {
         SaveOperation.APPEARANCE ->
             copy(appearanceSaving = saving, appearanceSaveFailed = failed ?: appearanceSaveFailed)
-        SaveOperation.VISIBILITY ->
-            copy(visibilitySaving = saving, visibilitySaveFailed = failed ?: visibilitySaveFailed)
         SaveOperation.REDUCED_MOTION ->
             copy(reducedMotionSaving = saving, reducedMotionSaveFailed = failed ?: reducedMotionSaveFailed)
     }

@@ -22,12 +22,10 @@ interface FeatureEntry {
 
 /** Shell events only; feature state and repositories never cross this boundary. */
 data class FeatureNavigator(
-    val home: HomeSurface,
     val navigate: (AppRoute) -> Unit,
     val back: () -> Unit,
     val returnHome: () -> Unit,
     val openMenu: () -> Unit,
-    val switchHome: () -> Unit,
 )
 
 /** Rejects missing or ambiguous registrations before rendering a destination. */

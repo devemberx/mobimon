@@ -2,7 +2,6 @@ package com.monsters.mobimon.feature.pet
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.tooling.preview.Preview
-import com.monsters.mobimon.core.domain.CompanionSettings
 import com.monsters.mobimon.core.domain.DrivingState
 import com.monsters.mobimon.core.domain.PetProfile
 import com.monsters.mobimon.core.domain.QuestProgress
@@ -79,11 +78,9 @@ private fun HomePreview(
                     parkingAgeMillis = if (stale) 60_000 else null,
                 ),
             progress = QuestProgress(),
-            settings = CompanionSettings(),
             onOpenMenu = {},
             onOpenVehicleInfo = {},
             onOpenQuests = {},
-            onSwitchHome = {},
             onPetClick = {},
             onOpenAppearance = {},
             friendId = if (empty) null else "friend:mobi",

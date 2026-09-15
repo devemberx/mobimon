@@ -3,10 +3,8 @@ package com.monsters.mobimon.ui
 import com.monsters.mobimon.core.navigation.AiRoute
 import com.monsters.mobimon.core.navigation.AppRoute
 import com.monsters.mobimon.core.navigation.CompanionRoute
-import com.monsters.mobimon.core.navigation.HomeSurface
 
 data class ShellState(
-    val home: HomeSurface = HomeSurface.PET,
     val route: AppRoute = CompanionRoute.HOME,
     val menuOpen: Boolean = false,
     val connectionOrigin: AppRoute = CompanionRoute.HOME,
@@ -32,18 +30,4 @@ data class ShellState(
 
     fun returnHome(): ShellState =
         copy(route = CompanionRoute.HOME, menuOpen = false, connectionOrigin = CompanionRoute.HOME)
-
-    fun switchHome(): ShellState =
-        copy(
-            home =
-                if (home ==
-                    HomeSurface.PET
-                ) {
-                    HomeSurface.VEHICLE
-                } else {
-                    HomeSurface.PET
-                },
-            route = CompanionRoute.HOME,
-            menuOpen = false,
-        )
 }

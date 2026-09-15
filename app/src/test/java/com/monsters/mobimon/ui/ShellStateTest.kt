@@ -2,7 +2,6 @@ package com.monsters.mobimon.ui
 
 import com.monsters.mobimon.core.navigation.AiRoute
 import com.monsters.mobimon.core.navigation.CompanionRoute
-import com.monsters.mobimon.core.navigation.HomeSurface
 import com.monsters.mobimon.core.navigation.QuestRoute
 import org.junit.Assert.assertEquals
 import org.junit.Test
@@ -25,7 +24,7 @@ class ShellStateTest {
 
     @Test
     fun menuDestinationUsesFullScreenAndBackReturnsHome() {
-        val home = ShellState(home = HomeSurface.VEHICLE)
+        val home = ShellState()
         val destination = home.openMenu().navigate(QuestRoute.QUESTS)
         assertEquals(false, destination.menuOpen)
         assertEquals(QuestRoute.QUESTS, destination.route)
@@ -40,14 +39,9 @@ class ShellStateTest {
     }
 
     @Test
-    fun homeSwitchClearsTransientNavigation() {
-        assertEquals(ShellState(home = HomeSurface.VEHICLE), ShellState(route = AiRoute.CONVERSATION).switchHome())
-    }
-
-    @Test
     fun oldDrawerSavedStateRestoresSafelyAfterNavigationUpgrade() {
         assertEquals(
-            ShellState(home = HomeSurface.VEHICLE),
+            ShellState(),
             ShellSaver.restore(listOf("VEHICLE", "CLOSED")),
         )
         assertEquals(

@@ -34,8 +34,10 @@ character. Existing purchases, rewards, preferences and drafts remain intact.
 - Use one fixed in-app vehicle-display palette through the shared MobiMonTheme;
   system light/dark preferences do not switch the app palette.
 - Give the character visual priority on the home screen. Place navigation and
-  parking status above it, with a vehicle summary and conversation action below.
-  Point balance is secondary information beside the customization entry.
+  parking status above it, with illustrated Vehicle and Quest shortcuts beside
+  it and the conversation action below. Point balance is secondary information
+  beside the customization entry. Battery details belong on Vehicle status,
+  not in a second Home panel.
 - Information screens pair the character with a clear content area.
   Customization pairs a large preview with the selection list. Reflow or scroll
   when space is limited instead of shrinking every element.
@@ -142,14 +144,14 @@ the authoritative groups without duplicating each frame's geometry here.
 
 | Screen | Purpose and primary content |
 | --- | --- |
-| Home | Selected companion and background, parking status, vehicle summary, point balance, conversation and customization entries. |
+| Home | Selected companion and background, parking status, illustrated Vehicle and Quest shortcuts, point balance, conversation and customization entries. |
 | Menu | V4 target: companion panel and entries for conversation, customization, Vehicle, Quest, Settings and Home. |
 | Vehicle status | Available readings, specific warnings, freshness and connection status. |
 | Quests | Conditions, reward type, point reward, progress and the next available action. |
 | Customization | Friends, Outfits and accessories, and Backgrounds; preview, ownership and application states. |
 | Copilot connection | Account connection guidance, approval/help, expiry, readiness, reconnect and disconnect states; see the [current UI scope](#copilot-connection-ui). |
 | Conversation | Clearly identified speakers, conversation history, voice input and a text composer. |
-| Settings | AI connection, vehicle-home character, spoken replies, reduced motion and Do Not Disturb. |
+| Settings | AI connection, spoken replies, reduced motion and Do Not Disturb. |
 
 The current menu preserves its three existing actions in a v4-styled popup;
 the six-entry composition above is a target, not a claim of completion.
@@ -161,8 +163,8 @@ previous screen. Menu destinations return to home; settings subpages return to
 settings. A purchase dialog returns to the same item preview. An explicit
 "Return home" action always opens home.
 
-The app home and the vehicle launcher are separate surfaces. Launcher previews
-illustrate placement; they do not provide map, media or climate controls.
+The app has one Home surface. It does not expose an in-app vehicle-launcher
+preview or a setting that changes companion visibility on another Home surface.
 
 ## Quests and points
 
@@ -276,10 +278,10 @@ Settings uses shared information rows and action/status components. Its
 supported behavior below remains independent of final screen composition.
 The fixed-coordinate specification for the retired design is not retained.
 
-Settings exposes the persisted in-app vehicle-home preview and reduced-motion
-preferences, plus the Copilot connection introduction. Spoken replies and Do Not
-Disturb remain visibly unavailable. Unknown parking disables preference changes
-and connection actions, and app-use restrictions remain enforced by the app shell.
+Settings exposes the persisted reduced-motion preference plus the Copilot
+connection introduction. Spoken replies and Do Not Disturb remain visibly
+unavailable. Unknown parking disables preference changes and connection actions,
+and app-use restrictions remain enforced by the app shell.
 
 Settings take effect immediately. "Done" closes the screen rather than saving a
 batch of changes. Show pending or failed saves and retain the last saved value
@@ -355,27 +357,10 @@ Disconnecting stops AI requests and removes the app's connection while
 preserving points and customization. Clearly distinguish it from canceling a
 Copilot subscription or revoking access at the provider.
 
-## Vehicle-home character
+## Vehicle launcher
 
-The vehicle-home character is an optional companion on a supported vehicle
-launcher, off by default. The existing in-app vehicle-home preview setting does
-not opt the user in to launcher display. It does not control the character inside
-MobiMon.
-
-Separate the user's display preference from actual status: visible, permission
-needed, waiting for parking, unsupported or temporarily unavailable. Permission
-requests are not themselves a successful enablement.
-
-Offer size and position choices only within a safe area that avoids navigation,
-warnings, system bars and vehicle controls. This applies to the character,
-accessories, touch target and expanded menu. Hide the character when no safe
-placement is available.
-
-The character menu provides Open MobiMon, Hide for this parking session and
-Close. Temporary hiding preserves the display preference and ends at the next
-verified parking session or an explicit restore action in settings.
-
-Do Not Disturb suppresses automatic sounds, unsolicited speech bubbles and
-decorative motion. User-initiated text conversation remains available while
-parked. It does not silence vehicle warnings; fully hiding the character is a
-separate action.
+Vehicle-launcher character placement is not part of the current product. Home
+does not include a launcher-preview switch, and Settings does not persist a
+separate launcher-character visibility preference. Any future launcher
+integration requires a new platform capability, safety review and explicit UX
+specification rather than reusing the in-app Home screen.

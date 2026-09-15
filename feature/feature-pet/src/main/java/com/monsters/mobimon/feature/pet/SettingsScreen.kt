@@ -43,11 +43,8 @@ import com.monsters.mobimon.core.ui.MobiMonTheme
 @Composable
 fun SettingsScreen(
     settings: CompanionSettings,
-    onShowOnVehicleHomeChange: (Boolean) -> Unit,
     onReducedMotionChange: (Boolean) -> Unit,
     modifier: Modifier = Modifier,
-    visibilitySaving: Boolean = false,
-    visibilityError: String? = null,
     motionSaving: Boolean = false,
     motionError: String? = null,
     settingsAvailable: Boolean = true,
@@ -117,17 +114,6 @@ fun SettingsScreen(
                         },
                         enabled = parkedVerified,
                         onClick = onOpenCopilot,
-                    )
-                    SettingsItem(
-                        R.string.pet_setting_visibility,
-                        R.string.pet_setting_visibility_description,
-                        if (settings.showOnVehicleHome) R.string.pet_settings_on else R.string.pet_settings_off,
-                        checked = settings.showOnVehicleHome,
-                        enabled = parkedVerified && !visibilitySaving,
-                        onCheckedChange = onShowOnVehicleHomeChange,
-                        feedback =
-                            visibilityError ?: if (visibilitySaving) stringResource(R.string.pet_saving) else null,
-                        isError = visibilityError != null,
                     )
                     SettingsItem(
                         R.string.pet_settings_voice_title,
@@ -237,5 +223,5 @@ private fun SettingsItem(
 @Preview(name = "Settings · enlarged text", widthDp = 800, heightDp = 900, fontScale = 1.5f, locale = "ko")
 @Composable
 private fun SettingsPreview() {
-    MobiMonTheme { SettingsScreen(CompanionSettings(), {}, {}, parkedVerified = true) }
+    MobiMonTheme { SettingsScreen(CompanionSettings(), {}, parkedVerified = true) }
 }
