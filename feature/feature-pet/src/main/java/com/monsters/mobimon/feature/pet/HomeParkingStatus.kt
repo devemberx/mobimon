@@ -18,22 +18,40 @@ internal fun HomeParkingStatus(
     snapshot: VehicleSnapshot,
     modifier: Modifier = Modifier,
 ) {
-    val parked = snapshot.quality == SignalQuality.VALID && snapshot.drivingState == DrivingState.PARKED
-    val status =
-        stringResource(
-            when {
-                snapshot.quality != SignalQuality.VALID || snapshot.drivingState == DrivingState.UNKNOWN ->
-                    R.string.pet_driving_unknown
-                snapshot.drivingState == DrivingState.MOVING -> R.string.pet_driving_moving
-                else -> R.string.pet_driving_parked
-            },
-        )
+    val isCharging = snapshot.quality == SignalQuality.VALID && snapshot.isCharging == true
+    val parked = !isCharging && snapshot.quality == SignalQuality.VALID && snapshot.drivingState == DrivingState.PARKED
+    val gear = snapshot.gear?.uppercase()
+
+    val badgeTextRes =
+        when {
+            snapshot.quality != SignalQuality.VALID || snapshot.drivingState == DrivingState.UNKNOWN ->
+                R.string.pet_driving_unknown
+            isCharging -> R.string.pet_charging_compact
+            snapshot.drivingState == DrivingState.MOVING -> R.string.pet_driving_moving
+            gear == "R" -> R.string.pet_gear_r_compact
+            gear == "N" -> R.string.pet_gear_n_compact
+            gear == "D" -> R.string.pet_gear_d_compact
+            else -> R.string.pet_driving_parked
+        }
+    val status = stringResource(badgeTextRes)
+
     MobiMonStatusBadge(
         modifier.semantics(mergeDescendants = true) { contentDescription = status },
-        tone = if (parked) MobiMonStatusTone.SUCCESS else MobiMonStatusTone.INFORMATION,
+        tone = if (isCharging || parked) MobiMonStatusTone.SUCCESS else MobiMonStatusTone.INFORMATION,
     ) {
         Text(
-            if (parked) stringResource(R.string.pet_parking_compact) else status,
+            when {
+                isCharging -> stringResource(R.string.pet_charging_compact)
+                parked ->
+                    when (gear) {
+                        "P", null -> stringResource(R.string.pet_parking_compact)
+                        "R" -> stringResource(R.string.pet_gear_r_compact)
+                        "N" -> stringResource(R.string.pet_gear_n_compact)
+                        "D" -> stringResource(R.string.pet_gear_d_compact)
+                        else -> stringResource(R.string.pet_parking_compact)
+                    }
+                else -> status
+            },
             style = MaterialTheme.typography.labelLarge,
         )
     }
