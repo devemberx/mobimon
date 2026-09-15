@@ -23,7 +23,11 @@ import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import com.monsters.mobimon.core.domain.DrivingState
 import com.monsters.mobimon.core.domain.PetProfile
+import com.monsters.mobimon.core.domain.QuestCompletion
 import com.monsters.mobimon.core.domain.QuestProgress
+import com.monsters.mobimon.core.domain.QuestRun
+import com.monsters.mobimon.core.domain.QuestStatus
+import com.monsters.mobimon.core.domain.QuestType
 import com.monsters.mobimon.core.domain.SignalQuality
 import com.monsters.mobimon.core.domain.SignalSource
 import com.monsters.mobimon.core.domain.VehicleSnapshot
@@ -69,6 +73,28 @@ class PetHomeScreenTest {
     }
 
     @Test
+    @Config(qualifiers = "ko-rKR-w1792dp-h888dp")
+    fun wideHomeUsesActiveQuestLabelAndOpensQuest() {
+        var opens = 0
+        render(progress = QuestProgress(activeRun = activeRun()), onQuests = { opens++ })
+
+        compose.onNodeWithContentDescription("진행 중인 퀘스트 보기").assertIsDisplayed().performClick()
+
+        assertEquals(1, opens)
+    }
+
+    @Test
+    @Config(qualifiers = "ko-rKR-w1792dp-h888dp")
+    fun wideHomeUsesCompletedQuestLabelAndOpensQuest() {
+        var opens = 0
+        render(progress = QuestProgress(completions = listOf(completion())), onQuests = { opens++ })
+
+        compose.onNodeWithContentDescription("완료한 퀘스트 보기").assertIsDisplayed().performClick()
+
+        assertEquals(1, opens)
+    }
+
+    @Test
     @Config(qualifiers = "ko-rKR-w2560dp-h1440dp")
     @GraphicsMode(GraphicsMode.Mode.NATIVE)
     fun moderatelyEnlargedParkingTextFitsInsideTheBadge() {
@@ -93,6 +119,7 @@ class PetHomeScreenTest {
             onMenu = { calls += "menu" },
             onAppearance = { calls += "appearance" },
             onDetails = { calls += "details" },
+            onQuests = { calls += "quests" },
         )
         compose.onNodeWithText("함께 쉬어 가요.").assertIsDisplayed()
         compose.onNodeWithText("좋은 길엔, 늘 네가 있어.").assertIsDisplayed()
@@ -114,12 +141,17 @@ class PetHomeScreenTest {
             .assertHeightIsAtLeast(76.dp)
             .performClick()
         compose
+            .onNodeWithContentDescription("첫 퀘스트 살펴보기")
+            .performScrollTo()
+            .assertHeightIsAtLeast(76.dp)
+            .performClick()
+        compose
             .onNodeWithText("대화하기 · 연결 불가")
             .performScrollTo()
             .assertIsDisplayed()
             .assertIsNotEnabled()
         compose.onNodeWithText("AI 연결을 지원하지 않아 대화 기능을 사용할 수 없어요.").performScrollTo().assertIsDisplayed()
-        assertEquals(listOf("menu", "appearance", "details"), calls)
+        assertEquals(listOf("menu", "appearance", "details", "quests"), calls)
     }
 
     @Test
@@ -297,6 +329,32 @@ class PetHomeScreenTest {
             72,
         )
 
+    private fun activeRun() =
+        QuestRun(
+            id = "run",
+            profileId = "profile",
+            type = QuestType.Q01,
+            status = QuestStatus.ACTIVE,
+            revision = 1,
+            ruleVersion = 1,
+            rewardXp = 80,
+            startEpoch = "epoch",
+            startSequence = 1,
+            startedAtMillis = 1_000,
+            source = SignalSource.SIMULATED,
+        )
+
+    private fun completion() =
+        QuestCompletion(
+            id = "completion",
+            runId = "run",
+            profileId = "profile",
+            type = QuestType.Q01,
+            awardedXp = 80,
+            completedAtMillis = 2_000,
+            snapshotId = "parked",
+        )
+
     private fun render(
         snapshot: VehicleSnapshot =
             parkedSnapshot().copy(
@@ -316,6 +374,8 @@ class PetHomeScreenTest {
         onMenu: () -> Unit = {},
         onDetails: () -> Unit = {},
         onAppearance: () -> Unit = {},
+        progress: QuestProgress = QuestProgress(),
+        onQuests: () -> Unit = {},
     ) {
         compose.setContent {
             val density = LocalDensity.current.density
@@ -324,10 +384,10 @@ class PetHomeScreenTest {
                     PetHomeScreen(
                         profile = PetProfile("profile"),
                         snapshot = snapshotSource?.invoke() ?: snapshot,
-                        progress = QuestProgress(),
+                        progress = progress,
                         onOpenMenu = onMenu,
                         onOpenVehicleInfo = onDetails,
-                        onOpenQuests = {},
+                        onOpenQuests = onQuests,
                         onPetClick = {},
                         onOpenAppearance = onAppearance,
                         interactionAllowed = interactionAllowed,

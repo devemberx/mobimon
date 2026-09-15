@@ -7,7 +7,7 @@ platform integration. [DESIGN.md](DESIGN.md) owns product and screen behavior,
 
 ## Current foundation
 
-The Android implementation has two in-app home surfaces, a transient home menu,
+The Android implementation has one in-app Home surface, a transient home menu,
 full-content destinations, persisted preferences and the legacy Q01 quest with
 an XP reward. The product migration is in progress; no point reward values or
 paid item catalog have been approved yet.
@@ -23,9 +23,9 @@ paid item catalog have been approved yet.
 - Room v4 stores the legacy profile, quest runs and completions, plus a separate
   point account, ledger, point quest occurrences, cosmetic catalog, ownership
   and equipment, alongside separate, currently unused leveling tables.
-  DataStore stores independent preview, launcher and motion
-  preferences. The launcher preference defaults to off, including after v1
-  migration; the preview preference remains separate.
+  DataStore stores reduced-motion and dormant launcher-character preferences.
+  The launcher preference defaults to off, including after v1 migration, and has
+  no supported UI or renderer.
 - Hilt wiring lives in `app/di`: `AppModule` binds repositories,
   `PlatformModule` constructs clock/storage, and variant-specific
   `VehicleProviderModule` supplies vehicle data.
@@ -161,7 +161,7 @@ compose their own final layouts. See the [UI contracts](DESIGN.md#reusable-compo
 | State | Owner and lifetime |
 | --- | --- |
 | Current profile, legacy XP, quest runs and completions | Room-backed repository; durable |
-| Visibility and reduced-motion preferences | DataStore-backed repository; durable |
+| Reduced-motion and dormant launcher visibility preferences | DataStore-backed repository; durable; launcher visibility has no supported UI or renderer |
 | Legacy growth stage | Historical XP can still be interpreted by `RewardCalculator`, but no growth stage is shown on the product home |
 | Vehicle snapshot availability and driving state | Derived from valid current signals |
 | Route/menu position | Shell; restore route but not a transient open menu |
@@ -363,14 +363,11 @@ progress unverified until new evidence or trustworthy provider history permits
 resuming. Uninterrupted background tracking is not guaranteed.
 
 Launcher character support is conditional on a verified platform integration.
-The current `show_on_vehicle_home` DataStore preference defaults to true and only
-controls the in-app preview. It must not authorize launcher display. The
-separate launcher visibility preference defaults to false, including for
-existing installations. Require an explicit user opt-in before displaying the
-character there. Keep the preview preference and launcher preference independent.
-`launcher_character_enabled` is persisted separately with an off default;
-there is no launcher renderer or supported opt-in UI yet. The settings screen
-continues to report launcher display as unavailable.
+The dormant `launcher_character_enabled` preference remains persisted with an
+off default, including for existing installations, but there is no launcher
+renderer or supported opt-in UI. Require an explicit user opt-in through a newly
+reviewed launcher experience before displaying the character there; the dormant
+preference alone must not authorize launcher display.
 An overlay implementation uses a lifecycle-owned state holder, not an Activity
 ViewModel. Observe actual service/permission state separately from the saved
 visibility preference. Verify service restart, permission failures and parked

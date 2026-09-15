@@ -360,7 +360,9 @@ Copilot subscription or revoking access at the provider.
 ## Vehicle launcher
 
 Vehicle-launcher character placement is not part of the current product. Home
-does not include a launcher-preview switch, and Settings does not persist a
-separate launcher-character visibility preference. Any future launcher
-integration requires a new platform capability, safety review and explicit UX
-specification rather than reusing the in-app Home screen.
+does not include a launcher-preview switch, and Settings does not expose a
+launcher-character visibility control. A dormant off-by-default launcher
+preference remains persisted for compatibility, but it has no supported UI or
+renderer and cannot authorize display. Any future launcher integration requires
+a new platform capability, safety review and explicit UX specification rather
+than reusing the in-app Home screen.
