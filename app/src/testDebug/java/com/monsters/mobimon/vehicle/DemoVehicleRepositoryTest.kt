@@ -34,7 +34,6 @@ import kotlinx.coroutines.flow.StateFlow
 
 class FakeSettingsRepository : SettingsRepository {
     override val settings: Flow<CompanionSettings> = MutableStateFlow(CompanionSettings())
-    override suspend fun setShowOnVehicleHome(enabled: Boolean): WriteResult = WriteResult.Success
     override suspend fun setReducedMotion(enabled: Boolean): WriteResult = WriteResult.Success
     override suspend fun setLauncherCharacterEnabled(enabled: Boolean): WriteResult = WriteResult.Success
 }
