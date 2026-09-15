@@ -104,6 +104,7 @@ fun MobiMonContent(
                 if (appUseState == AppUseState.ALLOWED && shell.menuOpen) {
                     CompanionMenu(onClose = navigator.back, onNavigate = navigator.navigate)
                 }
+                DebugOverlay()
             }
         }
     }

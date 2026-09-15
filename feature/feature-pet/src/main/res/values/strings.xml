@@ -7,7 +7,11 @@
   <string name="pet_home_subtitle">좋은 길엔, 늘 네가 있어.</string>
   <string name="pet_home_message">여행은 언제나\n즐거워요!</string>
     <string name="pet_parking_compact">P · 주차 중</string>
-  <string name="pet_talk_unavailable">대화하기 · 연결 불가</string>
+    <string name="pet_charging_compact">충전 중</string>
+    <string name="pet_gear_r_compact">R · 후진</string>
+    <string name="pet_gear_n_compact">N · 중립</string>
+    <string name="pet_gear_d_compact">D · 주행 중</string>
+    <string name="pet_talk_unavailable">대화하기 · 연결 불가</string>
   <string name="pet_ai_unavailable">AI 연결을 지원하지 않아 대화 기능을 사용할 수 없어요.</string>
   <string name="pet_no_friend">선택한 친구가 없어요. 꾸미기에서 친구를 골라 주세요.</string>
   <string name="pet_home_loading">친구를 불러오고 있어요.</string>
@@ -69,8 +73,8 @@
   <string name="pet_settings_ai_unavailable">연결 환경이 확인되지 않아 대화를 사용할 수 없어요.</string>
   <string name="pet_settings_voice_title">음성 답변</string>
   <string name="pet_settings_voice_unavailable">음성 대화는 현재 지원하지 않아요.</string>
-  <string name="pet_settings_dnd_title">방해 금지</string>
-  <string name="pet_settings_dnd_unavailable">자동 소리 제어는 현재 지원하지 않아요.</string>
+  <string name="pet_settings_debug_title">디버깅용 모드</string>
+  <string name="pet_settings_debug_description">테스트 모드</string>
   <string name="pet_settings_unavailable_label">사용 불가</string>
   <string name="pet_settings_on">켜짐</string>
   <string name="pet_settings_off">꺼짐</string>

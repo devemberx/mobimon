@@ -42,19 +42,41 @@ class PetPreferencesScreenTest {
             MobiMonTheme { SettingsScreen(CompanionSettings(), {}, parkedVerified = true) }
         }
         compose.onNodeWithText("GitHub Copilot").performScrollTo().assertIsDisplayed()
-        compose.onNodeWithText("방해 금지").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText("디버깅용 모드").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText("테스트 모드").performScrollTo().assertIsDisplayed()
         compose.onNodeWithTag("settings-done").assertIsDisplayed().assertHeightIsAtLeast(76.dp)
         compose.onNodeWithTag("settings-back").assertHeightIsAtLeast(76.dp)
     }
 
     @Test
+    fun debugModeToggleRequestsChangeButKeepsCommittedSetting() {
+        var requested: Boolean? = null
+        compose.setContent {
+            MobiMonTheme {
+                SettingsScreen(
+                    settings = CompanionSettings(launcherCharacterEnabled = false),
+                    parkedVerified = true,
+                    onReducedMotionChange = {},
+                    onDebugModeChange = { requested = it },
+                )
+            }
+        }
+
+        compose.onNodeWithText("디버깅용 모드").performScrollTo().performClick()
+
+        assertEquals(true, requested)
+    }
+
+    @Test
     fun unavailableServicesAndUnknownParkingDoNotInvokeSettingsActions() {
         var motionCalls = 0
+        var debugCalls = 0
         compose.setContent {
             MobiMonTheme {
                 SettingsScreen(
                     settings = CompanionSettings(),
                     onReducedMotionChange = { motionCalls++ },
+                    onDebugModeChange = { debugCalls++ },
                     parkedVerified = false,
                 )
             }
@@ -63,7 +85,9 @@ class PetPreferencesScreenTest {
         compose.onNodeWithText("주차 확인 불가").assertExists()
         compose.onNodeWithText("GitHub Copilot").assertIsNotEnabled()
         compose.onNodeWithText("움직임 줄이기").performScrollTo().performClick()
+        compose.onNodeWithText("디버깅용 모드").performScrollTo().performClick()
         assertEquals(0, motionCalls)
+        assertEquals(0, debugCalls)
     }
 
     @Test

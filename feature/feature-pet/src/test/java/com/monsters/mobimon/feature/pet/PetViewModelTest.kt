@@ -120,6 +120,17 @@ class PetViewModelTest {
             assertFalse(vm.state.value.loadFailed)
         }
 
+    @Test
+    fun setDebugModeWritesToSettings() =
+        runTest(dispatcher) {
+            val vm = subject()
+            runCurrent()
+            vm.setDebugMode(true)
+            runCurrent()
+            assertTrue(vm.state.value.settings.launcherCharacterEnabled)
+            assertFalse(vm.state.value.saveFailed)
+        }
+
     private class TestPetRepository :
         PetRepository,
         SettingsRepository {
