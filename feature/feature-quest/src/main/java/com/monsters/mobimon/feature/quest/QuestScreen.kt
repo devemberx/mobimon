@@ -117,12 +117,6 @@ fun QuestScreen(
             else -> QuestItemStatus.IN_PROGRESS
         }
 
-    val q02Completed = internalCompletions.contains("q02")
-    val q02Status = if (q02Completed) QuestItemStatus.COMPLETED else QuestItemStatus.IN_PROGRESS
-
-    val q03Completed = internalCompletions.contains("q03")
-    val q03Status = if (q03Completed) QuestItemStatus.COMPLETED else QuestItemStatus.IN_PROGRESS
-
     val quests =
         listOf(
             QuestItemUiModel(
@@ -142,38 +136,6 @@ fun QuestScreen(
                     },
                 completedDate = "2026.09.14",
                 targetRoute = VehicleRoute.VEHICLE_INFO,
-            ),
-            QuestItemUiModel(
-                id = "q02",
-                type = QuestType.Q02,
-                title = stringResource(R.string.quest_q02_name),
-                description = stringResource(R.string.quest_q02_short_desc),
-                detailLine1 = stringResource(R.string.quest_q02_detail_line1),
-                detailLine2 = stringResource(R.string.quest_q02_detail_line2),
-                rewardPoints = 30,
-                status = q02Status,
-                actionType =
-                    when (q02Status) {
-                        QuestItemStatus.COMPLETED -> QuestActionType.ALREADY_CLAIMED
-                        else -> QuestActionType.CHAT
-                    },
-                completedDate = "2026.09.14",
-            ),
-            QuestItemUiModel(
-                id = "q03",
-                type = QuestType.Q03,
-                title = stringResource(R.string.quest_q03_name),
-                description = stringResource(R.string.quest_q03_short_desc),
-                detailLine1 = stringResource(R.string.quest_q03_detail_line1),
-                detailLine2 = stringResource(R.string.quest_q03_detail_line2),
-                rewardPoints = 20,
-                status = q03Status,
-                actionType =
-                    when (q03Status) {
-                        QuestItemStatus.COMPLETED -> QuestActionType.ALREADY_CLAIMED
-                        else -> QuestActionType.VIEW_DETAIL
-                    },
-                completedDate = "2026.09.14",
             ),
         )
 
@@ -316,6 +278,13 @@ fun QuestScreen(
                             onSelectQuest = handleSelectQuest,
                             onClaimReward = handleClaimReward,
                             onChat = { onNavigateRoute(VehicleRoute.VEHICLE_INFO) },
+                            progress = progress,
+                            canManageQuest = canManageQuest,
+                            onStartQuest = onStartQuest,
+                            onCancelQuest = onCancelQuest,
+                            onOpenVehicleInfo = onOpenVehicleInfo,
+                            isBusy = isBusy,
+                            errorMessage = errorMessage,
                             modifier = Modifier.fillMaxWidth(),
                             isCompact = true,
                         )
@@ -555,6 +524,76 @@ private fun QuestListContent(
 }
 
 @Composable
+private fun LegacyQuestControls(
+    progress: QuestProgress,
+    canManageQuest: Boolean,
+    isBusy: Boolean,
+    onStartQuest: (QuestType) -> Unit,
+    onCancelQuest: () -> Unit,
+    onOpenVehicleInfo: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val completion = progress.completions.firstOrNull { it.type == QuestType.Q01 }
+    val active = progress.activeRun
+
+    Column(
+        modifier = modifier,
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        when {
+            completion != null -> {
+                Text(stringResource(R.string.quest_reward_received, completion.awardedXp))
+            }
+
+            active?.type == QuestType.Q01 -> {
+                LegacyQuestAction(
+                    text = stringResource(R.string.quest_open_vehicle),
+                    enabled = true,
+                    onClick = onOpenVehicleInfo,
+                )
+                LegacyQuestAction(
+                    text = stringResource(R.string.quest_cancel),
+                    enabled = canManageQuest && !isBusy,
+                    onClick = onCancelQuest,
+                )
+            }
+
+            else -> {
+                LegacyQuestAction(
+                    text = stringResource(R.string.quest_start_q01),
+                    enabled = canManageQuest && !isBusy && active == null,
+                    onClick = { onStartQuest(QuestType.Q01) },
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun LegacyQuestAction(
+    text: String,
+    enabled: Boolean,
+    onClick: () -> Unit,
+) {
+    Box(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .heightIn(min = 76.dp)
+                .clip(RoundedCornerShape(24.dp))
+                .background(if (enabled) Colors.button else Colors.raised)
+                .clickable(enabled = enabled, onClick = onClick)
+                .padding(16.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(
+            text = text,
+            style = questTextStyle(28f, 1f, bold = true, color = Colors.onButton),
+        )
+    }
+}
+
+@Composable
 private fun QuestRightPanel(
     quests: List<QuestItemUiModel>,
     scale: Float,
@@ -581,6 +620,18 @@ private fun QuestRightPanel(
         }
 
     Column(modifier = modifier) {
+        LegacyQuestControls(
+            progress = progress,
+            canManageQuest = canManageQuest,
+            isBusy = isBusy,
+            onStartQuest = onStartQuest,
+            onCancelQuest = onCancelQuest,
+            onOpenVehicleInfo = onOpenVehicleInfo,
+            modifier = Modifier.fillMaxWidth(),
+        )
+
+        Spacer(Modifier.height(36.dp * scale))
+
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
