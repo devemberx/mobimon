@@ -23,7 +23,6 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -56,11 +55,7 @@ import com.monsters.mobimon.core.domain.QuestType
 import com.monsters.mobimon.core.domain.VehicleSnapshot
 import com.monsters.mobimon.core.navigation.AppRoute
 import com.monsters.mobimon.core.navigation.VehicleRoute
-import com.monsters.mobimon.core.ui.MobiMonButton
-import com.monsters.mobimon.core.ui.MobiMonButtonStyle
 import com.monsters.mobimon.core.ui.MobiMonFontFamily
-import com.monsters.mobimon.core.ui.MobiMonMessage
-import com.monsters.mobimon.core.ui.MobiMonSection
 import com.monsters.mobimon.core.ui.PetAvatar
 import com.monsters.mobimon.core.ui.MobiMonColors as Colors
 
@@ -325,7 +320,6 @@ fun QuestScreen(
                             isCompact = true,
                         )
                     }
-
                 }
             }
 
@@ -1444,7 +1438,6 @@ private fun QuestRewardSuccessModal(
         }
     }
 }
-
 
 private fun questTextStyle(
     baseSp: Float,
