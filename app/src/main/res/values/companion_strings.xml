@@ -1,5 +1,12 @@
 <resources>
     <string name="drawer_menu">메뉴</string>
+    <string name="drawer_tagline">Drive Together</string>
+    <string name="drawer_mobi_name">Mobi</string>
+    <string name="drawer_luna_name">Luna</string>
+    <string name="drawer_no_friend">친구 선택 중</string>
+    <string name="drawer_profile_subtitle">함께하는 드라이브 메이트</string>
+    <string name="drawer_menu_home">홈</string>
+    <string name="drawer_menu_chat">대화</string>
     <string name="drawer_menu_appearance">꾸미기</string>
     <string name="drawer_menu_vehicle">차량 상태</string>
     <string name="drawer_menu_quests">퀘스트</string>
