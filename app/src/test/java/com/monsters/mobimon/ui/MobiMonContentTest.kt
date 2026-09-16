@@ -107,10 +107,10 @@ class MobiMonContentTest {
         assertTrue(panel.width <= host.width)
         assertTrue(panel.height <= host.height)
         compose.onNodeWithContentDescription("닫기").assertWidthIsAtLeast(76.dp).assertHeightIsAtLeast(76.dp)
-        listOf("차량 상태", "퀘스트", "설정").forEach { label ->
+        listOf("꾸미기", "차량 상태", "퀘스트", "설정").forEach { label ->
             compose.onNodeWithText(label).assertHeightIsAtLeast(76.dp).assertWidthIsAtLeast(76.dp)
         }
-        compose.onNodeWithText("차량 상태").assertIsFocused()
+        compose.onNodeWithText("꾸미기").assertIsFocused()
     }
 
     private fun show() {

@@ -82,6 +82,7 @@ fun CompanionMenu(
                             style = MaterialTheme.typography.headlineMedium,
                         )
                         listOf(
+                            R.string.drawer_menu_appearance to CompanionRoute.APPEARANCE,
                             R.string.drawer_menu_vehicle to VehicleRoute.VEHICLE_INFO,
                             R.string.drawer_menu_quests to QuestRoute.QUESTS,
                             R.string.drawer_settings to CompanionRoute.SETTINGS,

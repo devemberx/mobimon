@@ -15,7 +15,6 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.sizeIn
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -40,15 +39,11 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import com.monsters.mobimon.core.domain.PetProfile
-import com.monsters.mobimon.core.domain.QuestProgress
-import com.monsters.mobimon.core.domain.QuestType
-import com.monsters.mobimon.core.domain.SignalSource
 import com.monsters.mobimon.core.domain.VehicleSnapshot
 import com.monsters.mobimon.core.ui.MobiMonButton
 import com.monsters.mobimon.core.ui.MobiMonButtonStyle
 import com.monsters.mobimon.core.ui.MobiMonMessage
 import com.monsters.mobimon.core.ui.MobiMonPointSummary
-import com.monsters.mobimon.core.ui.MobiMonSourceBadge
 import com.monsters.mobimon.core.ui.PetAvatar
 
 /** Displays the in-app Home from committed state; navigation belongs to the shell. */
@@ -56,16 +51,11 @@ import com.monsters.mobimon.core.ui.PetAvatar
 fun PetHomeScreen(
     profile: PetProfile,
     snapshot: VehicleSnapshot,
-    progress: QuestProgress,
     onOpenMenu: () -> Unit,
-    onOpenVehicleInfo: () -> Unit,
-    onOpenQuests: () -> Unit,
     onPetClick: () -> Unit,
-    onOpenAppearance: () -> Unit,
     modifier: Modifier = Modifier,
     pointBalance: Long? = null,
     pointLoadFailed: Boolean = false,
-    legacyQuestVisible: Boolean = true,
     friendId: String? = "friend:mobi",
     accessoryId: String? = null,
     interactionAllowed: Boolean = false,
@@ -98,7 +88,9 @@ fun PetHomeScreen(
             )
             val fontScale = LocalDensity.current.fontScale
             val wide = maxWidth / fontScale >= 1200.dp
-            val edge = (maxWidth * 0.025f).coerceIn(24.dp, 64.dp)
+            val horizontalEdge =
+                if (wide) (maxWidth * 0.028125f).coerceIn(48.dp, 72.dp) else 24.dp
+            val verticalEdge = (maxHeight * 0.04f).coerceIn(24.dp, 52.dp)
             val sceneHeight = (maxHeight * if (wide) 0.52f else 0.4f).coerceIn(320.dp, 680.dp)
             val avatarSize = (maxHeight * if (wide) 0.42f else 0.32f).coerceIn(220.dp, 620.dp)
             Column(
@@ -106,7 +98,7 @@ fun PetHomeScreen(
                     .fillMaxWidth()
                     .verticalScroll(rememberScrollState())
                     .heightIn(min = maxHeight)
-                    .padding(edge),
+                    .padding(horizontal = horizontalEdge, vertical = verticalEdge),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement =
                     Arrangement.spacedBy(
@@ -114,64 +106,31 @@ fun PetHomeScreen(
                         Alignment.CenterVertically,
                     ),
             ) {
-                HomeHeader(snapshot, pointBalance, pointLoadFailed, onOpenMenu, onOpenAppearance)
+                HomeHeader(snapshot, pointBalance, pointLoadFailed, onOpenMenu)
                 if (profileObservationFailed) {
                     HomeFailure(stringResource(R.string.pet_profile_observation_failed), onRetryProfile)
                 }
                 if (inventoryLoadFailed) {
                     HomeFailure(stringResource(R.string.pet_inventory_failed), onRetryProfile)
                 }
-                if (wide) {
-                    Box(Modifier.fillMaxWidth().heightIn(min = sceneHeight)) {
-                        HomeCompanionScene(
-                            profile = profile,
-                            friendId = friendId,
-                            accessoryId = accessoryId,
-                            inventoryLoaded = inventoryLoaded,
-                            inventoryLoadFailed = inventoryLoadFailed,
-                            avatarSize = avatarSize,
-                            modifier =
-                                Modifier
-                                    .fillMaxWidth(0.56f)
-                                    .heightIn(min = sceneHeight)
-                                    .align(Alignment.Center),
-                        )
-                        HomeArtworkActions(
-                            progress = progress,
-                            onOpenVehicleInfo = onOpenVehicleInfo,
-                            onOpenQuests = onOpenQuests,
-                            showQuest = legacyQuestVisible,
-                            modifier = Modifier.align(Alignment.CenterEnd),
-                        )
-                    }
-                } else {
-                    HomeCompanionScene(
-                        profile = profile,
-                        friendId = friendId,
-                        accessoryId = accessoryId,
-                        inventoryLoaded = inventoryLoaded,
-                        inventoryLoadFailed = inventoryLoadFailed,
-                        avatarSize = avatarSize,
-                        modifier = Modifier.fillMaxWidth().heightIn(min = sceneHeight),
-                    )
-                    HomeArtworkActions(
-                        progress = progress,
-                        onOpenVehicleInfo = onOpenVehicleInfo,
-                        onOpenQuests = onOpenQuests,
-                        showQuest = false,
-                    )
-                }
+                HomeCompanionScene(
+                    profile = profile,
+                    friendId = friendId,
+                    accessoryId = accessoryId,
+                    inventoryLoaded = inventoryLoaded,
+                    inventoryLoadFailed = inventoryLoadFailed,
+                    avatarSize = avatarSize,
+                    modifier =
+                        Modifier
+                            .fillMaxWidth(if (wide) 0.56f else 1f)
+                            .heightIn(min = sceneHeight),
+                )
                 HomeConversationAction(
                     talkText = talkText,
                     connectionText = connectionText,
                     enabled = connectionAvailable && interactionAllowed,
                     interactionAllowed = interactionAllowed,
                     onPetClick = onPetClick,
-                )
-                HomeSecondaryActions(
-                    legacyQuestVisible && !wide,
-                    progress,
-                    onOpenQuests,
                 )
             }
         }
@@ -250,54 +209,6 @@ private fun HomeCompanionScene(
 }
 
 @Composable
-private fun HomeArtworkActions(
-    progress: QuestProgress,
-    onOpenVehicleInfo: () -> Unit,
-    onOpenQuests: () -> Unit,
-    showQuest: Boolean,
-    modifier: Modifier = Modifier,
-) {
-    Column(modifier, verticalArrangement = Arrangement.spacedBy(16.dp)) {
-        HomeArtworkButton(
-            image = R.drawable.pet_home_vehicle_status_v4,
-            description = stringResource(R.string.pet_vehicle_details),
-            onClick = onOpenVehicleInfo,
-        )
-        if (showQuest) {
-            HomeArtworkButton(
-                image = R.drawable.pet_home_quest_v4,
-                description = stringResource(questActionLabel(progress)),
-                onClick = onOpenQuests,
-            )
-        }
-    }
-}
-
-@Composable
-private fun HomeArtworkButton(
-    image: Int,
-    description: String,
-    onClick: () -> Unit,
-) {
-    MobiMonButton(
-        style = MobiMonButtonStyle.SECONDARY,
-        onClick = onClick,
-        modifier =
-            Modifier
-                .width(176.dp)
-                .heightIn(min = 128.dp)
-                .semantics { contentDescription = description },
-    ) {
-        Image(
-            painter = painterResource(image),
-            contentDescription = null,
-            contentScale = ContentScale.Fit,
-            modifier = Modifier.size(116.dp),
-        )
-    }
-}
-
-@Composable
 private fun HomeConversationAction(
     talkText: Int,
     connectionText: Int,
@@ -343,33 +254,30 @@ private fun HomeHeader(
     pointBalance: Long?,
     pointLoadFailed: Boolean,
     onOpenMenu: () -> Unit,
-    onOpenAppearance: () -> Unit,
 ) {
     val menuDescription = stringResource(R.string.pet_open_menu)
     val fontScale = LocalDensity.current.fontScale
     BoxWithConstraints(Modifier.fillMaxWidth()) {
         val wide = maxWidth / fontScale >= 1180.dp
-        FlowRow(
-            Modifier.fillMaxWidth(),
-            horizontalArrangement =
-                Arrangement.spacedBy(
-                    24.dp,
-                    if (wide) Alignment.Start else Alignment.CenterHorizontally,
-                ),
-            verticalArrangement = Arrangement.spacedBy(24.dp),
-        ) {
+        val brand: @Composable () -> Unit = {
             Row(
-                modifier = if (wide) Modifier.weight(1f) else Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(24.dp),
+                horizontalArrangement = Arrangement.spacedBy(if (wide) 34.dp else 24.dp),
             ) {
                 MobiMonButton(
                     style = MobiMonButtonStyle.SECONDARY,
                     onClick = onOpenMenu,
                     modifier =
                         Modifier
-                            .sizeIn(minWidth = 76.dp, minHeight = 76.dp)
-                            .semantics { contentDescription = menuDescription },
+                            .then(
+                                if (wide) {
+                                    Modifier.size(
+                                        104.dp,
+                                    )
+                                } else {
+                                    Modifier.sizeIn(minWidth = 76.dp, minHeight = 76.dp)
+                                },
+                            ).semantics { contentDescription = menuDescription },
                 ) { Text(stringResource(R.string.pet_menu)) }
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text(
@@ -386,60 +294,38 @@ private fun HomeHeader(
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.72f),
                         )
-                        if (snapshot.source == SignalSource.SIMULATED) MobiMonSourceBadge(simulated = true)
                     }
                 }
             }
-            HomeParkingStatus(snapshot)
-            FlowRow(
-                modifier = if (wide) Modifier.weight(1f) else Modifier,
-                horizontalArrangement = Arrangement.spacedBy(24.dp, Alignment.End),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
+        }
+        val status: @Composable () -> Unit = {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(32.dp),
             ) {
                 Box(Modifier.heightIn(min = 76.dp), contentAlignment = Alignment.Center) {
                     MobiMonPointSummary(pointBalance, failed = pointLoadFailed)
                 }
-                MobiMonButton(
-                    style = MobiMonButtonStyle.SECONDARY,
-                    onClick = onOpenAppearance,
-                    modifier = Modifier.heightIn(min = 76.dp),
-                ) { Text(stringResource(R.string.pet_customize)) }
+                HomeParkingStatus(snapshot)
             }
         }
-    }
-}
-
-@OptIn(ExperimentalLayoutApi::class)
-@Composable
-private fun HomeSecondaryActions(
-    legacyQuestVisible: Boolean,
-    progress: QuestProgress,
-    onOpenQuests: () -> Unit,
-) {
-    FlowRow(
-        horizontalArrangement = Arrangement.spacedBy(24.dp, Alignment.CenterHorizontally),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
-    ) {
-        if (legacyQuestVisible) {
-            MobiMonButton(
-                style = MobiMonButtonStyle.SECONDARY,
-                onClick = onOpenQuests,
-                modifier = Modifier.heightIn(min = 76.dp),
+        if (wide) {
+            Box(Modifier.fillMaxWidth().heightIn(min = 112.dp)) {
+                Box(Modifier.align(Alignment.CenterStart)) { brand() }
+                Box(Modifier.align(Alignment.CenterEnd)) { status() }
+            }
+        } else {
+            FlowRow(
+                Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(24.dp, Alignment.CenterHorizontally),
+                verticalArrangement = Arrangement.spacedBy(24.dp),
             ) {
-                Text(
-                    stringResource(questActionLabel(progress)),
-                )
+                brand()
+                status()
             }
         }
     }
 }
-
-private fun questActionLabel(progress: QuestProgress) =
-    when {
-        progress.completions.any { it.type == QuestType.Q01 } -> R.string.pet_quest_history
-        progress.activeRun != null -> R.string.pet_quest_continue
-        else -> R.string.pet_quest_start
-    }
 
 @Composable
 private fun HomeFailure(
