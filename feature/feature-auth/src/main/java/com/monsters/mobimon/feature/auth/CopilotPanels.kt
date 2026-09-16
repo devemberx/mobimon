@@ -67,8 +67,15 @@ internal fun CopilotPanel(
                         PanelHeading(R.string.copilot_intro_heading, R.string.copilot_intro_subtitle, scale)
                         PanelText(R.string.copilot_intro_disclosure, scale)
                         HorizontalDivider(color = Colors.border.copy(alpha = 0.4f))
-                        PanelText(R.string.copilot_intro_note, scale, muted = true)
-                        if (state.connectionUnavailable) Feedback(stringResource(R.string.copilot_unavailable), scale)
+                        if (state.connectionUnavailable) {
+                            Text(
+                                stringResource(R.string.copilot_unavailable),
+                                style = copilotStyle(30f, scale),
+                                color = Colors.warning,
+                            )
+                        } else {
+                            PanelText(R.string.copilot_intro_note, scale, muted = true)
+                        }
                     }
                     is CopilotUiState.Waiting -> {
                         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -321,7 +328,11 @@ private fun PanelActions(
         when (state) {
             is CopilotUiState.Introduction ->
                 listOf(
-                    ActionButton(stringResource(R.string.copilot_connect), CopilotAction.REQUEST_CODE, allowed),
+                    ActionButton(
+                        stringResource(R.string.copilot_connect),
+                        CopilotAction.REQUEST_CODE,
+                        allowed && !state.connectionUnavailable,
+                    ),
                     ActionButton(stringResource(R.string.copilot_later), CopilotAction.CANCEL),
                 )
             is CopilotUiState.Waiting ->

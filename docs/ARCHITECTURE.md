@@ -178,14 +178,19 @@ The independent `feature-auth` module exposes
 through the stateless
 [CopilotConnectionScreen](../feature/feature-auth/src/main/java/com/monsters/mobimon/feature/auth/CopilotConnectionScreen.kt).
 The host supplies display data, an optional QR painter, interaction authorization,
-the reduced-motion preference and action handling. The screen accepts no access
-token, creates no account session and performs no provider calls or polling.
+and action handling. The saved character-motion preference is reserved for
+future character animation and does not control connection panel transitions.
+The screen accepts no access token, creates no account session and performs no
+provider calls or polling.
 It renders expiry instead of a waiting state with no remaining time. Rendering
 `Connected` is a presentation decision, not evidence of approval or Copilot readiness.
 
 [AiFeature](../feature/feature-auth/src/main/java/com/monsters/mobimon/feature/auth/AiFeature.kt)
-hosts introduction/unavailable feedback. The shell saves route origin, and the
-AI route saves feedback across Activity recreation. Its interaction guard combines parked verification
+hosts an introduction with persistent unavailable feedback and a disconnected
+Conversation placeholder that opens the introduction when parking is verified.
+The shell saves Settings or
+Conversation as the connection origin. The unavailable state is fixed until a verified
+provider is integrated. Its interaction guard combines parked verification
 and app-use allowance. The other states are reusable presentation components;
 production integration remains [planned](#ai-conversation-and-session).
 

@@ -58,6 +58,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.monsters.mobimon.core.ui.CompanionIcon
 import com.monsters.mobimon.core.ui.MobiMonFontFamily
+import com.monsters.mobimon.core.ui.MobiMonNavigationButton
 import com.monsters.mobimon.core.ui.PetAvatar
 import com.monsters.mobimon.core.ui.MobiMonColors as Colors
 
@@ -73,7 +74,6 @@ fun CopilotConnectionScreen(
     appearanceKey: String = "GOLDEN",
     accessoryId: String? = null,
     qrCode: Painter? = null,
-    reducedMotion: Boolean = false,
 ) {
     val title = stringResource(R.string.copilot_title)
     val displayedState =
@@ -117,7 +117,6 @@ fun CopilotConnectionScreen(
                                 displayedState,
                                 onAction,
                                 Modifier.weight(1f).fillMaxSize(),
-                                reducedMotion,
                                 interactionAllowed,
                             ) { panelState, panelAction ->
                                 CopilotPanel(
@@ -160,7 +159,6 @@ fun CopilotConnectionScreen(
                         displayedState,
                         onAction,
                         Modifier.fillMaxWidth(),
-                        reducedMotion,
                         interactionAllowed,
                     ) { panelState, panelAction ->
                         CopilotPanel(
@@ -197,10 +195,10 @@ private fun CopilotHeader(
                         24.dp * scale,
                     ),
             ) {
-                CopilotIconButton(
-                    CompanionIcon.BACK,
-                    stringResource(R.string.copilot_back),
-                    { onAction(CopilotAction.BACK) },
+                MobiMonNavigationButton(
+                    icon = painterResource(R.drawable.copilot_back),
+                    description = stringResource(R.string.copilot_back),
+                    onClick = { onAction(CopilotAction.BACK) },
                 )
                 Column(Modifier.weight(1f)) {
                     Text(
@@ -232,25 +230,14 @@ private fun CopilotReferenceHeader(
     Box(modifier) {
         val backSize = 104.dp * scale
         val backTarget = backSize.coerceAtLeast(76.dp)
-        IconButton(
-            { onAction(CopilotAction.BACK) },
-            Modifier.offset(-(backTarget - backSize) / 2, -(backTarget - backSize) / 2).size(backTarget),
-        ) {
-            Surface(
-                Modifier.size(104.dp * scale).copilotPillOutline(2.dp * scale, Colors.border),
-                shape = RoundedCornerShape(50),
-                color = Colors.panel,
-            ) {
-                Box(contentAlignment = Alignment.Center) {
-                    Icon(
-                        painterResource(R.drawable.copilot_back),
-                        stringResource(R.string.copilot_back),
-                        Modifier.size(28.dp * scale),
-                        tint = Colors.text,
-                    )
-                }
-            }
-        }
+        MobiMonNavigationButton(
+            icon = painterResource(R.drawable.copilot_back),
+            description = stringResource(R.string.copilot_back),
+            onClick = { onAction(CopilotAction.BACK) },
+            modifier = Modifier.offset(-(backTarget - backSize) / 2, -(backTarget - backSize) / 2),
+            visualSize = backSize,
+            iconSize = 28.dp * scale,
+        )
         CopilotPositionedText(
             stringResource(R.string.copilot_title),
             136f,

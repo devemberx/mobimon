@@ -78,16 +78,14 @@ class CopilotPanelTransitionTest {
     }
 
     @Test
-    fun reducedMotionAndExpiryRemoveOutgoingContentImmediately() {
+    fun expiryAndAccessChecksRemoveOutgoingContentImmediately() {
         var state: CopilotUiState by mutableStateOf(CopilotUiState.Waiting("OLD CODE", 1))
-        var reducedMotion by mutableStateOf(false)
         val mounted = mutableSetOf<CopilotUiState>()
         compose.setContent {
             MobiMonTheme {
                 CopilotPanelTransition(
                     state,
                     {},
-                    reducedMotion = reducedMotion,
                     interactionAllowed = true,
                 ) { shown, _ ->
                     DisposableEffect(shown) {
@@ -107,16 +105,15 @@ class CopilotPanelTransitionTest {
         compose.mainClock.advanceTimeBy(48)
         compose.runOnIdle { assertEquals(setOf(CopilotUiState.Expired), mounted) }
         compose.runOnIdle {
-            reducedMotion = true
             state = CopilotUiState.Introduction()
             Snapshot.sendApplyNotifications()
         }
         compose.mainClock.advanceTimeBy(48)
         compose.runOnIdle {
-            state = CopilotUiState.Connected("@example")
+            state = CopilotUiState.AccessCheck("@example", CopilotAccessIssue.PERMISSION)
             Snapshot.sendApplyNotifications()
         }
         compose.mainClock.advanceTimeBy(48)
-        compose.runOnIdle { assertTrue(mounted.single() is CopilotUiState.Connected) }
+        compose.runOnIdle { assertTrue(mounted.single() is CopilotUiState.AccessCheck) }
     }
 }

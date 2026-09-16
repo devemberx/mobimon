@@ -1,8 +1,14 @@
 package com.monsters.mobimon.ui
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.MutableTransitionState
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -27,10 +33,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
-import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -81,6 +84,7 @@ private fun drawerProfile(friendId: String?): Pair<Int, Int> =
 
 @Composable
 fun CompanionMenu(
+    visible: Boolean,
     currentRoute: AppRoute,
     onClose: () -> Unit,
     onNavigate: (AppRoute) -> Unit,
@@ -89,34 +93,42 @@ fun CompanionMenu(
     val first = remember { FocusRequester() }
     val closeDescription = stringResource(R.string.close)
     val (portrait, name) = drawerProfile(activeFriendId)
-    var clickedRoute by remember { mutableStateOf<AppRoute?>(null) }
-
-    LaunchedEffect(clickedRoute) {
-        val route = clickedRoute
-        if (route != null) {
-            repeat(9) {
-                withFrameNanos { }
-            }
-            onNavigate(route)
-        }
+    val drawer = remember { MutableTransitionState(false) }
+    LaunchedEffect(visible) {
+        drawer.targetState = visible
     }
+    val backdropAlpha by animateFloatAsState(
+        targetValue = if (visible) 0.58f else 0f,
+        animationSpec = tween(NAVIGATION_MOTION_DURATION_MILLIS, easing = FastOutSlowInEasing),
+        label = "menu backdrop",
+    )
 
+    if (!drawer.currentState && !drawer.targetState) return
     BoxWithConstraints(Modifier.fillMaxSize().testTag("menu-host")) {
         val windowWidth = maxWidth
         val windowHeight = maxHeight
-        Popup(onDismissRequest = onClose, properties = PopupProperties(focusable = true)) {
+        Popup(onDismissRequest = { if (visible) onClose() }, properties = PopupProperties(focusable = true)) {
             // AAOS Popup constraints may exceed the app compatibility-density window.
             Box(Modifier.size(windowWidth, windowHeight)) {
                 Box(
                     Modifier
                         .fillMaxSize()
-                        .background(Color.Black.copy(alpha = 0.58f))
-                        .clickable(onClick = onClose)
+                        .background(Color.Black.copy(alpha = backdropAlpha))
+                        .clickable(enabled = visible, onClick = onClose)
                         .testTag("menu-backdrop"),
                 )
                 AnimatedVisibility(
-                    visible = true,
-                    enter = slideInHorizontally(animationSpec = tween(280), initialOffsetX = { -it }),
+                    visibleState = drawer,
+                    enter =
+                        slideInHorizontally(
+                            animationSpec = tween(NAVIGATION_MOTION_DURATION_MILLIS, easing = FastOutSlowInEasing),
+                            initialOffsetX = { -it },
+                        ) + fadeIn(tween(NAVIGATION_MOTION_DURATION_MILLIS)),
+                    exit =
+                        slideOutHorizontally(
+                            animationSpec = tween(NAVIGATION_MOTION_DURATION_MILLIS, easing = FastOutSlowInEasing),
+                            targetOffsetX = { -it },
+                        ) + fadeOut(tween(NAVIGATION_MOTION_DURATION_MILLIS)),
                 ) {
                     Column(
                         Modifier
@@ -141,7 +153,7 @@ fun CompanionMenu(
                                 "×",
                                 Modifier
                                     .size(76.dp)
-                                    .clickable(onClick = onClose)
+                                    .clickable(enabled = visible, onClick = onClose)
                                     .semantics { contentDescription = closeDescription },
                                 style = MaterialTheme.typography.headlineLarge,
                                 color = Color(0xFFF7FAFF),
@@ -173,12 +185,7 @@ fun CompanionMenu(
                         }
                         Spacer(Modifier.height(24.dp))
                         destinations.forEachIndexed { index, item ->
-                            val selected =
-                                if (clickedRoute != null) {
-                                    clickedRoute == item.route
-                                } else {
-                                    item.route == currentRoute
-                                }
+                            val selected = item.route == currentRoute
                             Row(
                                 Modifier
                                     .fillMaxWidth()
@@ -186,11 +193,8 @@ fun CompanionMenu(
                                     .clip(RoundedCornerShape(24.dp))
                                     .background(if (selected) Color(0xFF244563) else Color.Transparent)
                                     .then(if (index == 0) Modifier.focusRequester(first) else Modifier)
-                                    .clickable {
-                                        if (clickedRoute == null) {
-                                            clickedRoute = item.route
-                                        }
-                                    }.padding(horizontal = 24.dp),
+                                    .clickable(enabled = visible) { onNavigate(item.route) }
+                                    .padding(horizontal = 24.dp),
                                 verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.spacedBy(22.dp),
                             ) {
@@ -205,9 +209,8 @@ fun CompanionMenu(
                     }
                 }
             }
-            LaunchedEffect(first) {
-                withFrameNanos { }
-                first.requestFocus()
+            LaunchedEffect(drawer.currentState) {
+                if (drawer.currentState) first.requestFocus()
             }
         }
     }
