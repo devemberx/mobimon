@@ -111,6 +111,7 @@ fun MobiMonContent(
                 }
                 if (appUseState == AppUseState.ALLOWED && shell.menuOpen) {
                     CompanionMenu(
+                        currentRoute = shell.route,
                         onClose = navigator.back,
                         onNavigate = navigator.navigate,
                         activeFriendId = activeFriendId,
