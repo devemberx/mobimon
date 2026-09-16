@@ -34,11 +34,16 @@ import org.robolectric.annotation.Config
 class MobiMonContentTest {
     @get:Rule val compose = createComposeRule()
 
+    private fun clickMenuItem(text: String) {
+        compose.onNodeWithText(text).performScrollTo().performClick()
+        compose.waitForIdle()
+    }
+
     @Test
     fun menuNavigationClosesOverlayAndBackReturnsHome() {
         show()
         compose.onNodeWithText("Open menu").performClick()
-        compose.onNodeWithText("퀘스트").performClick()
+        clickMenuItem("퀘스트")
         compose.onNodeWithContentDescription("닫기").assertDoesNotExist()
         compose.onNodeWithText("Route QUESTS").assertExists()
         compose.onNodeWithText("Back").performClick()
@@ -52,7 +57,7 @@ class MobiMonContentTest {
         compose.onNodeWithTag("menu-backdrop").performClick()
         compose.onNodeWithTag("companion-menu").assertDoesNotExist()
         compose.onNodeWithText("Open menu").performClick()
-        compose.onNodeWithText("대화").performClick()
+        clickMenuItem("대화")
         compose.onNodeWithText("Route COPILOT").assertExists()
     }
 
@@ -64,12 +69,12 @@ class MobiMonContentTest {
         compose.onNodeWithTag("companion-menu").assertDoesNotExist()
         listOf("차량 상태" to "VEHICLE_INFO", "꾸미기" to "APPEARANCE").forEach { (label, route) ->
             compose.onNodeWithText("Open menu").performClick()
-            compose.onNodeWithText(label).performScrollTo().performClick()
+            clickMenuItem(label)
             compose.onNodeWithText("Route $route").assertExists()
             compose.onNodeWithText("Back").performClick()
         }
         compose.onNodeWithText("Open menu").performClick()
-        compose.onNodeWithText("홈").performClick()
+        clickMenuItem("홈")
         compose.onNodeWithText("Route HOME").assertExists()
     }
 
@@ -88,7 +93,7 @@ class MobiMonContentTest {
     fun connectionReturnsToItsSettingsOrigin() {
         show()
         compose.onNodeWithText("Open menu").performClick()
-        compose.onNodeWithText("설정").performScrollTo().performClick()
+        clickMenuItem("설정")
         compose.onNodeWithText("Route SETTINGS").assertExists()
         compose.onNodeWithText("Connect").performClick()
         compose.onNodeWithText("Route COPILOT").assertExists()
@@ -101,7 +106,7 @@ class MobiMonContentTest {
         val appUse = mutableStateOf(AppUseState.ALLOWED)
         compose.setContent { MobiMonContent(entries, appUseState = appUse.value) }
         compose.onNodeWithText("Open menu").performClick()
-        compose.onNodeWithText("퀘스트").performClick()
+        clickMenuItem("퀘스트")
         compose.runOnIdle { appUse.value = AppUseState.RESTRICTED }
         compose.onNodeWithText("Route QUESTS").assertDoesNotExist()
         compose.onNodeWithText("지금은 MobiMon 사용이 제한돼요").assertExists()

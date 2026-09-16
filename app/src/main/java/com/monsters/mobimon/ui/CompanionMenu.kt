@@ -26,7 +26,10 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -78,6 +81,7 @@ private fun drawerProfile(friendId: String?): Pair<Int, Int> =
 
 @Composable
 fun CompanionMenu(
+    currentRoute: AppRoute,
     onClose: () -> Unit,
     onNavigate: (AppRoute) -> Unit,
     activeFriendId: String? = null,
@@ -85,6 +89,18 @@ fun CompanionMenu(
     val first = remember { FocusRequester() }
     val closeDescription = stringResource(R.string.close)
     val (portrait, name) = drawerProfile(activeFriendId)
+    var clickedRoute by remember { mutableStateOf<AppRoute?>(null) }
+
+    LaunchedEffect(clickedRoute) {
+        val route = clickedRoute
+        if (route != null) {
+            repeat(9) {
+                withFrameNanos { }
+            }
+            onNavigate(route)
+        }
+    }
+
     BoxWithConstraints(Modifier.fillMaxSize().testTag("menu-host")) {
         val windowWidth = maxWidth
         val windowHeight = maxHeight
@@ -157,7 +173,12 @@ fun CompanionMenu(
                         }
                         Spacer(Modifier.height(24.dp))
                         destinations.forEachIndexed { index, item ->
-                            val selected = item.route == CompanionRoute.HOME
+                            val selected =
+                                if (clickedRoute != null) {
+                                    clickedRoute == item.route
+                                } else {
+                                    item.route == currentRoute
+                                }
                             Row(
                                 Modifier
                                     .fillMaxWidth()
@@ -165,8 +186,11 @@ fun CompanionMenu(
                                     .clip(RoundedCornerShape(24.dp))
                                     .background(if (selected) Color(0xFF244563) else Color.Transparent)
                                     .then(if (index == 0) Modifier.focusRequester(first) else Modifier)
-                                    .clickable { onNavigate(item.route) }
-                                    .padding(horizontal = 24.dp),
+                                    .clickable {
+                                        if (clickedRoute == null) {
+                                            clickedRoute = item.route
+                                        }
+                                    }.padding(horizontal = 24.dp),
                                 verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.spacedBy(22.dp),
                             ) {
