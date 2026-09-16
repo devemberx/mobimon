@@ -100,4 +100,52 @@ class CustomizationScreenTest {
         compose.onNodeWithText("다시 시도").assertIsDisplayed().performClick()
         org.junit.Assert.assertEquals(1, retries)
     }
+
+    @Test fun accessoryCatalogAndPreviewFollowEquippedFriend() {
+        val catalog =
+            listOf(
+                CosmeticItem("friend:mobi", CosmeticSlot.FRIEND, 0),
+                CosmeticItem("friend:luna", CosmeticSlot.FRIEND, 0),
+                CosmeticItem("accessory:mobi_headphones", CosmeticSlot.ACCESSORY, 300, "friend:mobi"),
+                CosmeticItem("accessory:luna_cap", CosmeticSlot.ACCESSORY, 300, "friend:luna"),
+            )
+        val inventory =
+            mutableStateOf(
+                CosmeticInventory(
+                    ownedItemIds = catalog.mapTo(mutableSetOf()) { it.id },
+                    equippedItemIds = mapOf(CosmeticSlot.FRIEND to "friend:mobi"),
+                ),
+            )
+        compose.setContent {
+            var selectedId by androidx.compose.runtime.remember { mutableStateOf<String?>(null) }
+            MobiMonTheme {
+                CustomizationScreen(
+                    inventory = inventory.value,
+                    catalog = catalog,
+                    selectedItemId = selectedId,
+                    purchasing = false,
+                    purchaseFailed = false,
+                    onSelectItem = { selectedId = it },
+                    onPurchaseItem = { _, _ -> },
+                    onEquipItem = {},
+                    onEquipFriend = { id ->
+                        inventory.value = inventory.value.copy(equippedItemIds = mapOf(CosmeticSlot.FRIEND to id))
+                    },
+                    pointBalance = 300,
+                    pointLoadFailed = false,
+                )
+            }
+        }
+
+        compose.onNodeWithText("옷·소품").performClick()
+        compose.onNodeWithText("모비 헤드폰").assertExists()
+        compose.onNodeWithText("루나 모자").assertDoesNotExist()
+        compose.runOnIdle {
+            inventory.value = inventory.value.copy(equippedItemIds = mapOf(CosmeticSlot.FRIEND to "friend:luna"))
+        }
+        compose.onNodeWithText("루나 모자").assertExists()
+        compose.onNodeWithText("모비 헤드폰").assertDoesNotExist()
+        compose.onNodeWithTag("preview-background").assertExists()
+        compose.onNodeWithTag("preview-character").assertExists()
+    }
 }

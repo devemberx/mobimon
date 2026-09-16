@@ -158,19 +158,27 @@ class PointEconomyRepositoryTest {
         }
 
     @Test
-    fun changingFriendUnequipsIncompatibleAccessoryWithoutRefund() =
+    fun changingFriendRetainsEachFriendsEquipmentWithoutRefund() =
         runBlocking {
             val dao = database.economyDao()
             dao.insertItem(CosmeticItemEntity("friend:mobi", "FRIEND", 0, null))
             dao.insertItem(CosmeticItemEntity("friend:luna", "FRIEND", 0, null))
             dao.insertItem(CosmeticItemEntity("mobi-hat", "ACCESSORY", 20, "friend:mobi"))
+            dao.insertItem(CosmeticItemEntity("luna-glasses", "ACCESSORY", 20, "friend:luna"))
             dao.insertOwned(OwnedCosmeticEntity("profile", "friend:mobi"))
             dao.insertOwned(OwnedCosmeticEntity("profile", "friend:luna"))
             dao.insertOwned(OwnedCosmeticEntity("profile", "mobi-hat"))
+            dao.insertOwned(OwnedCosmeticEntity("profile", "luna-glasses"))
             assertEquals(EquipResult.Applied, repository.equip("friend:mobi"))
             assertEquals(EquipResult.Applied, repository.equip("mobi-hat"))
             assertEquals(EquipResult.Applied, repository.equip("friend:luna"))
+            assertEquals(EquipResult.Applied, repository.equip("luna-glasses"))
             assertNull(dao.equipped("profile", "ACCESSORY"))
+            assertEquals("mobi-hat", dao.equipped("profile", "ACCESSORY:friend:mobi")?.itemId)
+            assertEquals("luna-glasses", dao.equipped("profile", "ACCESSORY:friend:luna")?.itemId)
+            assertEquals("luna-glasses", repository.inventory.first().equippedItemIds[CosmeticSlot.ACCESSORY])
+            assertEquals(EquipResult.Applied, repository.equip("friend:mobi"))
+            assertEquals("mobi-hat", repository.inventory.first().equippedItemIds[CosmeticSlot.ACCESSORY])
             assertTrue(dao.owned("profile", "mobi-hat") != null)
             assertEquals(100L, repository.wallet.first().balance)
         }

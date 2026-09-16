@@ -28,6 +28,11 @@
   <string name="pet_customization_subtab_owned">보유 중</string>
   <string name="pet_customization_count_format">%1$d개</string>
   <string name="pet_item_necklace">기본 목걸이</string>
+  <string name="pet_item_mobi_headphones">모비 헤드폰</string>
+  <string name="pet_item_mobi_goggles">모비 고글</string>
+  <string name="pet_item_luna_cap">루나 모자</string>
+  <string name="pet_item_luna_sunglasses">루나 선글라스</string>
+  <string name="pet_background_pending">배경 이미지 준비 중</string>
   <string name="pet_item_mint_scarf">민트 스카프</string>
   <string name="pet_item_status_equipped">보유 중 · 현재 착용</string>
   <string name="pet_item_status_owned">보유 중 · 선택됨</string>
