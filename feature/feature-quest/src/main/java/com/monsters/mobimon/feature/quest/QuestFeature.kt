@@ -66,7 +66,6 @@ class QuestFeature(
         val interactionAllowed = snapshot.parkedVerified
         val balance = (pointBalance as? PointBalanceState.Ready)?.balance
         val balanceFailed = pointBalance == PointBalanceState.Failed
-        val legacyQuestVisible = snapshot.source == SignalSource.SIMULATED
         val questError = error(state)
         MobiMonDestination(
             stringResource(R.string.quest_destination_title),
@@ -84,7 +83,6 @@ class QuestFeature(
                 errorMessage = questError,
                 pointBalance = balance,
                 pointLoadFailed = balanceFailed,
-                legacyVisible = legacyQuestVisible,
             )
         }
     }
@@ -105,7 +103,6 @@ class QuestFeature(
             modifier = modifier,
             isBusy = state.isBusy,
             errorMessage = error(state),
-            legacyQuestVisible = snapshot.source == SignalSource.SIMULATED,
         )
     }
 
