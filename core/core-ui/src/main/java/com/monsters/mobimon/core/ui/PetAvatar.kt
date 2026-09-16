@@ -2,6 +2,8 @@ package com.monsters.mobimon.core.ui
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -28,12 +30,17 @@ fun PetAvatar(
     val cat = friendId == "friend:luna"
     val cream = appearanceKey == "CREAM"
     val description = stringResource(if (cat) R.string.mobimon_luna_description else R.string.mobimon_mobi_description)
-    if (!cat && !cream && accessoryId == null) {
-        Image(
-            painter = painterResource(R.drawable.mobimon_mobi_v4),
-            contentDescription = description,
-            modifier = modifier.size(120.dp),
-        )
+    if (!cat && !cream) {
+        Box(modifier = modifier.size(120.dp).semantics { contentDescription = description }) {
+            Image(
+                painter = painterResource(R.drawable.mobimon_mobi_v4),
+                contentDescription = null,
+                modifier = Modifier.fillMaxSize(),
+            )
+            if (accessoryId != null) {
+                MobiAccessory(accessoryId, Modifier.fillMaxSize())
+            }
+        }
         return
     }
     val fur =
@@ -104,5 +111,44 @@ fun PetAvatar(
         }
 
         drawCircle(Color(0xFF51402C), radius * 0.1f, center + Offset(0f, radius * 0.25f))
+    }
+}
+
+@Composable
+private fun MobiAccessory(
+    accessoryId: String,
+    modifier: Modifier = Modifier,
+) {
+    Canvas(modifier) {
+        val center = Offset(size.width / 2, size.height * 0.82f)
+        when (accessoryId) {
+            "accessory:necklace" -> {
+                val stroke = size.minDimension * 0.012f
+                drawLine(
+                    Color(0xFF8B5A2B),
+                    Offset(size.width * 0.4f, size.height * 0.77f),
+                    center,
+                    stroke,
+                )
+                drawLine(
+                    Color(0xFF8B5A2B),
+                    center,
+                    Offset(size.width * 0.6f, size.height * 0.77f),
+                    stroke,
+                )
+                drawCircle(Color(0xFFFFD700), size.minDimension * 0.025f, center)
+            }
+            "accessory:mint_scarf" -> {
+                val scarfPath =
+                    Path().apply {
+                        moveTo(size.width * 0.38f, size.height * 0.75f)
+                        quadraticBezierTo(center.x, size.height * 0.82f, size.width * 0.62f, size.height * 0.75f)
+                        lineTo(size.width * 0.57f, size.height * 0.85f)
+                        lineTo(size.width * 0.43f, size.height * 0.85f)
+                        close()
+                    }
+                drawPath(scarfPath, Color(0xFF7FC1A5))
+            }
+        }
     }
 }

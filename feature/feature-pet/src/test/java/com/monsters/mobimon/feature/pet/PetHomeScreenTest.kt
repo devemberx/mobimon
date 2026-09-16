@@ -2,7 +2,6 @@ package com.monsters.mobimon.feature.pet
 
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.assertHeightIsAtLeast
@@ -14,20 +13,13 @@ import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
-import androidx.compose.ui.test.performKeyInput
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performSemanticsAction
-import androidx.compose.ui.test.pressKey
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import com.monsters.mobimon.core.domain.DrivingState
 import com.monsters.mobimon.core.domain.PetProfile
-import com.monsters.mobimon.core.domain.QuestCompletion
-import com.monsters.mobimon.core.domain.QuestProgress
-import com.monsters.mobimon.core.domain.QuestRun
-import com.monsters.mobimon.core.domain.QuestStatus
-import com.monsters.mobimon.core.domain.QuestType
 import com.monsters.mobimon.core.domain.SignalQuality
 import com.monsters.mobimon.core.domain.SignalSource
 import com.monsters.mobimon.core.domain.VehicleSnapshot
@@ -73,28 +65,6 @@ class PetHomeScreenTest {
     }
 
     @Test
-    @Config(qualifiers = "ko-rKR-w1792dp-h888dp")
-    fun wideHomeUsesActiveQuestLabelAndOpensQuest() {
-        var opens = 0
-        render(progress = QuestProgress(activeRun = activeRun()), onQuests = { opens++ })
-
-        compose.onNodeWithContentDescription("진행 중인 퀘스트 보기").assertIsDisplayed().performClick()
-
-        assertEquals(1, opens)
-    }
-
-    @Test
-    @Config(qualifiers = "ko-rKR-w1792dp-h888dp")
-    fun wideHomeUsesCompletedQuestLabelAndOpensQuest() {
-        var opens = 0
-        render(progress = QuestProgress(completions = listOf(completion())), onQuests = { opens++ })
-
-        compose.onNodeWithContentDescription("완료한 퀘스트 보기").assertIsDisplayed().performClick()
-
-        assertEquals(1, opens)
-    }
-
-    @Test
     @Config(qualifiers = "ko-rKR-w2560dp-h1440dp")
     @GraphicsMode(GraphicsMode.Mode.NATIVE)
     fun moderatelyEnlargedParkingTextFitsInsideTheBadge() {
@@ -117,9 +87,6 @@ class PetHomeScreenTest {
             snapshot = parkedSnapshot(),
             pointBalance = 0,
             onMenu = { calls += "menu" },
-            onAppearance = { calls += "appearance" },
-            onDetails = { calls += "details" },
-            onQuests = { calls += "quests" },
         )
         compose.onNodeWithText("함께 쉬어 가요.").assertIsDisplayed()
         compose.onNodeWithText("좋은 길엔, 늘 네가 있어.").assertIsDisplayed()
@@ -130,28 +97,12 @@ class PetHomeScreenTest {
             .assertHeightIsAtLeast(76.dp)
             .performClick()
         compose
-            .onNodeWithText("꾸미기")
-            .performScrollTo()
-            .assertHeightIsAtLeast(76.dp)
-            .performClick()
-        compose
-            .onNodeWithContentDescription(
-                "차량 정보 자세히 보기",
-            ).performScrollTo()
-            .assertHeightIsAtLeast(76.dp)
-            .performClick()
-        compose
-            .onNodeWithContentDescription("첫 퀘스트 살펴보기")
-            .performScrollTo()
-            .assertHeightIsAtLeast(76.dp)
-            .performClick()
-        compose
             .onNodeWithText("대화하기 · 연결 불가")
             .performScrollTo()
             .assertIsDisplayed()
             .assertIsNotEnabled()
         compose.onNodeWithText("AI 연결을 지원하지 않아 대화 기능을 사용할 수 없어요.").performScrollTo().assertIsDisplayed()
-        assertEquals(listOf("menu", "appearance", "details", "quests"), calls)
+        assertEquals(listOf("menu"), calls)
     }
 
     @Test
@@ -198,14 +149,10 @@ class PetHomeScreenTest {
         val calls = mutableListOf<String>()
         render(
             onMenu = { calls += "menu" },
-            onDetails = { calls += "details" },
-            onAppearance = { calls += "appearance" },
         )
 
         compose.onNodeWithContentDescription("메뉴 열기").performClick()
-        compose.onNodeWithText("꾸미기").performScrollTo().performClick()
-        compose.onNodeWithContentDescription("차량 정보 자세히 보기").performScrollTo().performClick()
-        assertEquals(listOf("menu", "appearance", "details"), calls)
+        assertEquals(listOf("menu"), calls)
     }
 
     @Test
@@ -237,12 +184,14 @@ class PetHomeScreenTest {
         compose.onNodeWithText("배터리 72%").assertDoesNotExist()
         compose.onNodeWithText("차량 홈 미리보기").assertDoesNotExist()
         compose.onNodeWithText("친구 홈").assertDoesNotExist()
+        compose.onNodeWithContentDescription("차량 정보 자세히 보기").assertDoesNotExist()
+        compose.onNodeWithContentDescription("첫 퀘스트 살펴보기").assertDoesNotExist()
     }
 
     @Test
-    fun simulatedSourceAndCommittedZeroRemainExplicit() {
+    fun homeHidesSimulationBadgeAndShowsCommittedZero() {
         render(snapshot = parkedSnapshot(), pointBalance = 0)
-        compose.onNodeWithText("시뮬레이션").assertExists()
+        compose.onNodeWithText("시뮬레이션").assertDoesNotExist()
         compose.onNodeWithText("포인트 0 P").assertExists()
     }
 
@@ -279,25 +228,13 @@ class PetHomeScreenTest {
             .assertIsDisplayed()
             .assertHeightIsAtLeast(76.dp)
             .assertWidthIsAtLeast(76.dp)
-        compose
-            .onNodeWithText("꾸미기")
-            .performScrollTo()
-            .assertIsDisplayed()
-            .assertHeightIsAtLeast(76.dp)
-        compose
-            .onNodeWithContentDescription("차량 정보 자세히 보기")
-            .performScrollTo()
-            .assertIsDisplayed()
-            .assertHeightIsAtLeast(76.dp)
     }
 
-    @OptIn(androidx.compose.ui.test.ExperimentalTestApi::class)
     @Test
-    fun keyboardFocusMovesFromMenuToCustomization() {
+    fun menuAcceptsKeyboardFocus() {
         render()
         compose.onNodeWithContentDescription("메뉴 열기").performSemanticsAction(SemanticsActions.RequestFocus) { it() }
-        compose.onNodeWithContentDescription("메뉴 열기").performKeyInput { pressKey(Key.Tab) }
-        compose.onNodeWithText("꾸미기").assertIsFocused()
+        compose.onNodeWithContentDescription("메뉴 열기").assertIsFocused()
     }
 
     @Test
@@ -329,32 +266,6 @@ class PetHomeScreenTest {
             72,
         )
 
-    private fun activeRun() =
-        QuestRun(
-            id = "run",
-            profileId = "profile",
-            type = QuestType.Q01,
-            status = QuestStatus.ACTIVE,
-            revision = 1,
-            ruleVersion = 1,
-            rewardXp = 80,
-            startEpoch = "epoch",
-            startSequence = 1,
-            startedAtMillis = 1_000,
-            source = SignalSource.SIMULATED,
-        )
-
-    private fun completion() =
-        QuestCompletion(
-            id = "completion",
-            runId = "run",
-            profileId = "profile",
-            type = QuestType.Q01,
-            awardedXp = 80,
-            completedAtMillis = 2_000,
-            snapshotId = "parked",
-        )
-
     private fun render(
         snapshot: VehicleSnapshot =
             parkedSnapshot().copy(
@@ -372,10 +283,6 @@ class PetHomeScreenTest {
         snapshotSource: (() -> VehicleSnapshot)? = null,
         onRetry: () -> Unit = {},
         onMenu: () -> Unit = {},
-        onDetails: () -> Unit = {},
-        onAppearance: () -> Unit = {},
-        progress: QuestProgress = QuestProgress(),
-        onQuests: () -> Unit = {},
     ) {
         compose.setContent {
             val density = LocalDensity.current.density
@@ -384,12 +291,8 @@ class PetHomeScreenTest {
                     PetHomeScreen(
                         profile = PetProfile("profile"),
                         snapshot = snapshotSource?.invoke() ?: snapshot,
-                        progress = progress,
                         onOpenMenu = onMenu,
-                        onOpenVehicleInfo = onDetails,
-                        onOpenQuests = onQuests,
                         onPetClick = {},
-                        onOpenAppearance = onAppearance,
                         interactionAllowed = interactionAllowed,
                         pointLoadFailed = pointLoadFailed,
                         pointBalance = pointBalance,

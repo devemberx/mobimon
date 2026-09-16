@@ -4,7 +4,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.tooling.preview.Preview
 import com.monsters.mobimon.core.domain.DrivingState
 import com.monsters.mobimon.core.domain.PetProfile
-import com.monsters.mobimon.core.domain.QuestProgress
 import com.monsters.mobimon.core.domain.SignalQuality
 import com.monsters.mobimon.core.domain.SignalSource
 import com.monsters.mobimon.core.domain.VehicleSnapshot
@@ -77,17 +76,12 @@ private fun HomePreview(
                     batteryQuality = if (empty || unavailable) SignalQuality.UNAVAILABLE else SignalQuality.VALID,
                     parkingAgeMillis = if (stale) 60_000 else null,
                 ),
-            progress = QuestProgress(),
             onOpenMenu = {},
-            onOpenVehicleInfo = {},
-            onOpenQuests = {},
             onPetClick = {},
-            onOpenAppearance = {},
             friendId = if (empty) null else "friend:mobi",
             inventoryLoaded = true,
             pointBalance = if (empty) null else 0,
             pointLoadFailed = empty,
-            legacyQuestVisible = !empty,
             interactionAllowed = !empty && !stale && !unavailable,
         )
     }

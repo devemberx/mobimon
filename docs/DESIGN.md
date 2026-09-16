@@ -33,11 +33,12 @@ character. Existing purchases, rewards, preferences and drafts remain intact.
   the same meanings for selection, warning and action colors.
 - Use one fixed in-app vehicle-display palette through the shared MobiMonTheme;
   system light/dark preferences do not switch the app palette.
-- Give the character visual priority on the home screen. Place navigation and
-  parking status above it, with illustrated Vehicle and Quest shortcuts beside
-  it and the conversation action below. Point balance is secondary information
-  beside the customization entry. Battery details belong on Vehicle status,
-  not in a second Home panel.
+- Give the character visual priority on the home screen. Keep the menu and brand
+  at the upper left, and align point balance and parking status at the upper
+  right. The Home surface does not render Vehicle or Quest artwork shortcuts;
+  those destinations remain owned by the app menu. Keep the conversation action
+  below the character. Battery details belong on Vehicle status, not in a
+  second Home panel.
 - Information screens pair the character with a clear content area.
   Customization pairs a large preview with the selection list. Reflow or scroll
   when space is limited instead of shrinking every element.
@@ -110,10 +111,10 @@ vector paths during Android conversion. Do not commit temporary MCP asset URLs,
 whole-screen SVGs as UI, invented icon replacements, or duplicated shared artwork.
 Remove superseded assets only after checking all variants, previews and tests.
 
-Default, unequipped Mobi uses the original v4 PNG through `PetAvatar`; the retired
-character PNG and drawn scenery are removed. Luna, historical Cream and
-equipped accessory presentations remain explicit temporary renderer fallbacks until approved
-assets are supplied. They are not additional product appearance choices.
+Mobi uses the original v4 PNG through `PetAvatar`, including when a temporary
+accessory overlay is equipped; the retired drawn dog is not a Mobi fallback.
+Luna and historical Cream remain explicit temporary renderer fallbacks until
+approved assets are supplied. They are not additional product appearance choices.
 Artwork replacement must not change rewards, ownership or equipment.
 
 The shared library is implemented independently of full-screen migration.
@@ -144,7 +145,7 @@ the authoritative groups without duplicating each frame's geometry here.
 
 | Screen | Purpose and primary content |
 | --- | --- |
-| Home | Selected companion and background, parking status, illustrated Vehicle and Quest shortcuts, point balance, conversation and customization entries. |
+| Home | Selected companion and background, upper-right parking status and point balance, and conversation entry. Vehicle, Quest and customization navigation live in the app menu. |
 | Menu | V4 target: companion panel and entries for conversation, customization, Vehicle, Quest, Settings and Home. |
 | Vehicle status | Available readings, specific warnings, freshness and connection status. |
 | Quests | Conditions, reward type, point reward, progress and the next available action. |
@@ -153,7 +154,8 @@ the authoritative groups without duplicating each frame's geometry here.
 | Conversation | Clearly identified speakers, conversation history, voice input and a text composer. |
 | Settings | AI connection, spoken replies, reduced motion and Do Not Disturb. |
 
-The current menu preserves its three existing actions in a v4-styled popup;
+The current menu preserves Vehicle, Quest and Settings and also exposes
+Customization after its direct Home button was removed to match the SVG;
 the six-entry composition above is a target, not a claim of completion.
 Its destinations, conversation and customization use the full content area.
 Entering a menu destination closes the menu.
@@ -165,6 +167,8 @@ settings. A purchase dialog returns to the same item preview. An explicit
 
 The app has one Home surface. It does not expose an in-app vehicle-launcher
 preview or a setting that changes companion visibility on another Home surface.
+The Home tagline does not carry a Simulation badge. Signal provenance remains
+explicit on Vehicle and Quest information where it qualifies displayed data.
 
 ## Quests and points
 
