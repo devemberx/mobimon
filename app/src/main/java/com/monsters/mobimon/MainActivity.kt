@@ -3,6 +3,7 @@ package com.monsters.mobimon
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import com.monsters.mobimon.core.domain.PointEconomy
 import com.monsters.mobimon.core.navigation.FeatureEntry
 import com.monsters.mobimon.runtime.AppUseStateSource
 import com.monsters.mobimon.ui.MobiMonApp
@@ -15,10 +16,12 @@ class MainActivity : ComponentActivity() {
 
     @Inject lateinit var appUse: AppUseStateSource
 
+    @Inject lateinit var points: PointEconomy
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            MobiMonApp(entries, appUse)
+            MobiMonApp(entries, appUse, points)
         }
     }
 }

@@ -20,6 +20,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.monsters.mobimon.R
 import com.monsters.mobimon.core.domain.AppUseState
+import com.monsters.mobimon.core.domain.CosmeticSlot
+import com.monsters.mobimon.core.domain.PointEconomy
 import com.monsters.mobimon.core.navigation.AiRoute
 import com.monsters.mobimon.core.navigation.AppRoute
 import com.monsters.mobimon.core.navigation.CompanionRoute
@@ -30,14 +32,18 @@ import com.monsters.mobimon.core.ui.MobiMonContentColumn
 import com.monsters.mobimon.core.ui.MobiMonMessage
 import com.monsters.mobimon.core.ui.MobiMonTheme
 import com.monsters.mobimon.runtime.AppUseStateSource
+import kotlinx.coroutines.flow.map
 
 @Composable
 fun MobiMonApp(
     entries: Set<FeatureEntry>,
     appUse: AppUseStateSource,
+    points: PointEconomy,
 ) {
     val state by appUse.states.collectAsStateWithLifecycle()
-    MobiMonContent(entries = entries, appUseState = state)
+    val equippedFriend = remember(points) { points.inventory.map { it.equippedItemIds[CosmeticSlot.FRIEND] } }
+    val activeFriendId by equippedFriend.collectAsStateWithLifecycle(initialValue = null)
+    MobiMonContent(entries = entries, appUseState = state, activeFriendId = activeFriendId)
 }
 
 internal val ShellSaver =
@@ -66,6 +72,7 @@ fun MobiMonContent(
     entries: Set<FeatureEntry>,
     modifier: Modifier = Modifier,
     appUseState: AppUseState = AppUseState.UNAVAILABLE,
+    activeFriendId: String? = null,
     debugOverlay: @Composable () -> Unit = { DebugOverlay() },
 ) {
     val registry = remember(entries) { FeatureRegistry(entries) }
@@ -103,7 +110,11 @@ fun MobiMonContent(
                     }
                 }
                 if (appUseState == AppUseState.ALLOWED && shell.menuOpen) {
-                    CompanionMenu(onClose = navigator.back, onNavigate = navigator.navigate)
+                    CompanionMenu(
+                        onClose = navigator.back,
+                        onNavigate = navigator.navigate,
+                        activeFriendId = activeFriendId,
+                    )
                 }
                 if (appUseState == AppUseState.ALLOWED) {
                     debugOverlay()

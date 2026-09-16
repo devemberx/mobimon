@@ -154,11 +154,13 @@ the authoritative groups without duplicating each frame's geometry here.
 | Conversation | Clearly identified speakers, conversation history, voice input and a text composer. |
 | Settings | AI connection, spoken replies, reduced motion and Do Not Disturb. |
 
-The current menu preserves Vehicle, Quest and Settings and also exposes
-Customization after its direct Home button was removed to match the SVG;
-the six-entry composition above is a target, not a claim of completion.
-Its destinations, conversation and customization use the full content area.
-Entering a menu destination closes the menu.
+The P02 menu is a left-side overlay, opened by the Home menu button and
+dismissed by its close control, backdrop, or Back. It exposes Home,
+Conversation, Quest, Vehicle, Customization and Settings in that order.
+The profile portrait and name follow the equipped friend identifier, with
+portrait resources kept outside Compose UI code. Selecting an entry closes
+the menu and opens its destination. Conversation currently routes to the
+Copilot connection/introduction screen while its full chat UI is pending.
 
 Back closes the keyboard first, then an open dialog or menu, then returns to the
 previous screen. Menu destinations return to home; settings subpages return to

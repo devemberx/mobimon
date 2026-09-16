@@ -58,7 +58,7 @@ class CopilotConnectionJourneyTest {
         ActivityScenario.launch(MainActivity::class.java).use { scenario ->
             waitFor(hasContentDescription(text(PetR.string.pet_open_menu)))
             compose.onNodeWithContentDescription(text(PetR.string.pet_open_menu)).ensureDisplayed().performClick()
-            compose.onNodeWithText(text(R.string.drawer_settings)).performClick()
+            compose.onNodeWithText(text(R.string.drawer_settings)).ensureDisplayed().performClick()
             waitFor(hasText(text(PetR.string.pet_settings_ai_title)) and isEnabled())
             compose.onNodeWithText(text(PetR.string.pet_settings_ai_title)).ensureDisplayed().performClick()
             waitFor(hasText(text(AuthR.string.copilot_connect)))

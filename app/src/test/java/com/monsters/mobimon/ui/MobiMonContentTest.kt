@@ -15,6 +15,7 @@ import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.unit.dp
 import com.monsters.mobimon.core.domain.AppUseState
 import com.monsters.mobimon.core.navigation.AiRoute
@@ -45,10 +46,50 @@ class MobiMonContentTest {
     }
 
     @Test
+    fun menuRoutesConversationAndDismissesFromBackdrop() {
+        show()
+        compose.onNodeWithText("Open menu").performClick()
+        compose.onNodeWithTag("menu-backdrop").performClick()
+        compose.onNodeWithTag("companion-menu").assertDoesNotExist()
+        compose.onNodeWithText("Open menu").performClick()
+        compose.onNodeWithText("대화").performClick()
+        compose.onNodeWithText("Route COPILOT").assertExists()
+    }
+
+    @Test
+    fun menuRoutesVehicleAndCustomizationAndClosesWithBackAndClose() {
+        show()
+        compose.onNodeWithText("Open menu").performClick()
+        compose.onNodeWithContentDescription("닫기").performClick()
+        compose.onNodeWithTag("companion-menu").assertDoesNotExist()
+        listOf("차량 상태" to "VEHICLE_INFO", "꾸미기" to "APPEARANCE").forEach { (label, route) ->
+            compose.onNodeWithText("Open menu").performClick()
+            compose.onNodeWithText(label).performScrollTo().performClick()
+            compose.onNodeWithText("Route $route").assertExists()
+            compose.onNodeWithText("Back").performClick()
+        }
+        compose.onNodeWithText("Open menu").performClick()
+        compose.onNodeWithText("홈").performClick()
+        compose.onNodeWithText("Route HOME").assertExists()
+    }
+
+    @Test
+    fun menuProfileTracksEquippedFriend() {
+        val friend = mutableStateOf("friend:mobi")
+        compose.setContent { MobiMonContent(entries, appUseState = AppUseState.ALLOWED, activeFriendId = friend.value) }
+        compose.onNodeWithText("Open menu").performClick()
+        compose.onNodeWithText("Mobi").assertExists()
+        compose.runOnIdle { friend.value = "friend:luna" }
+        compose.onNodeWithText("Luna").assertExists()
+        compose.onNodeWithText("Mobi").assertDoesNotExist()
+    }
+
+    @Test
     fun connectionReturnsToItsSettingsOrigin() {
         show()
         compose.onNodeWithText("Open menu").performClick()
-        compose.onNodeWithText("설정").performClick()
+        compose.onNodeWithText("설정").performScrollTo().performClick()
+        compose.onNodeWithText("Route SETTINGS").assertExists()
         compose.onNodeWithText("Connect").performClick()
         compose.onNodeWithText("Route COPILOT").assertExists()
         compose.onNodeWithText("Back").performClick()
@@ -107,10 +148,10 @@ class MobiMonContentTest {
         assertTrue(panel.width <= host.width)
         assertTrue(panel.height <= host.height)
         compose.onNodeWithContentDescription("닫기").assertWidthIsAtLeast(76.dp).assertHeightIsAtLeast(76.dp)
-        listOf("꾸미기", "차량 상태", "퀘스트", "설정").forEach { label ->
+        listOf("홈", "대화", "퀘스트", "차량 상태", "꾸미기", "설정").forEach { label ->
             compose.onNodeWithText(label).assertHeightIsAtLeast(76.dp).assertWidthIsAtLeast(76.dp)
         }
-        compose.onNodeWithText("꾸미기").assertIsFocused()
+        compose.onNodeWithText("홈").assertIsFocused()
     }
 
     private fun show() {
