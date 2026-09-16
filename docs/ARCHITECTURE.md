@@ -47,6 +47,11 @@ paid item catalog have been approved yet.
   a growth-stage parameter. Rewards, ownership, equipped appearance
   and interaction state stay outside the renderer. Asset provenance and fallback
   artwork belong in the [design guidance](DESIGN.md#reusable-compose-library-and-asset-handoff).
+  [CharacterArtwork](../core/core-ui/src/main/java/com/monsters/mobimon/core/ui/CharacterArtwork.kt)
+  maps Home and customization character, accessory and future background IDs to external
+  resources. Friend-specific equipment uses scoped slot keys in the existing
+  equipped-cosmetics table; the inventory exposes both the active friend's
+  effective equipment and each friend's retained equipment.
 
 Q02/Q03 remain legacy identifiers, but are no longer offered as forthcoming
 quests. Existing Q01-Q03 identifiers, rewards and completion records do not

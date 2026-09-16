@@ -11,6 +11,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import org.junit.Assert.assertNotEquals
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -25,6 +26,12 @@ import org.robolectric.annotation.GraphicsMode
 class PetAvatarTest {
     @get:Rule
     val compose = createComposeRule()
+
+    @Test
+    fun equippedLooksUseIsolatedAssetsAndLunaIsNormalized() {
+        CharacterArtwork.equippedLooks.values.forEach { assertNull(it.crop) }
+        assertTrue(CharacterArtwork.characters.getValue("friend:luna").visualScale < 1f)
+    }
 
     @Test
     fun supportedMobiVariantsHaveDistinctPixelSignatures() {
