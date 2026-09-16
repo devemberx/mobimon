@@ -21,6 +21,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -286,7 +287,13 @@ private fun HomeHeader(
                                     Modifier.sizeIn(minWidth = 76.dp, minHeight = 76.dp)
                                 },
                             ).semantics { contentDescription = menuDescription },
-                ) { Text(stringResource(R.string.pet_menu)) }
+                ) {
+                    Icon(
+                        painter = painterResource(R.drawable.pet_menu_icon),
+                        contentDescription = null,
+                        modifier = Modifier.size(if (wide) 40.dp else 28.dp),
+                    )
+                }
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text(
                         stringResource(R.string.pet_brand),
