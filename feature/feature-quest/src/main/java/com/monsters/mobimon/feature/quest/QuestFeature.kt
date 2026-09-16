@@ -15,7 +15,6 @@ import com.monsters.mobimon.core.domain.QuestEvaluator
 import com.monsters.mobimon.core.domain.QuestRepository
 import com.monsters.mobimon.core.domain.QuestType
 import com.monsters.mobimon.core.domain.RewardRepository
-import com.monsters.mobimon.core.domain.SignalSource
 import com.monsters.mobimon.core.domain.VehicleRepository
 import com.monsters.mobimon.core.domain.VehicleSnapshot
 import com.monsters.mobimon.core.navigation.AppRoute
@@ -66,7 +65,6 @@ class QuestFeature(
         val interactionAllowed = snapshot.parkedVerified
         val balance = (pointBalance as? PointBalanceState.Ready)?.balance
         val balanceFailed = pointBalance == PointBalanceState.Failed
-        val legacyQuestVisible = snapshot.source == SignalSource.SIMULATED
         val questError = error(state)
         MobiMonDestination(
             stringResource(R.string.quest_destination_title),
@@ -84,7 +82,6 @@ class QuestFeature(
                 errorMessage = questError,
                 pointBalance = balance,
                 pointLoadFailed = balanceFailed,
-                legacyVisible = legacyQuestVisible,
             )
         }
     }
@@ -105,7 +102,6 @@ class QuestFeature(
             modifier = modifier,
             isBusy = state.isBusy,
             errorMessage = error(state),
-            legacyQuestVisible = snapshot.source == SignalSource.SIMULATED,
         )
     }
 
