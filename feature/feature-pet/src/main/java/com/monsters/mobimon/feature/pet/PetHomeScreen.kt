@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.sizeIn
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.CircularProgressIndicator
@@ -106,7 +107,13 @@ fun PetHomeScreen(
                         Alignment.CenterVertically,
                     ),
             ) {
-                HomeHeader(snapshot, pointBalance, pointLoadFailed, onOpenMenu)
+                HomeHeader(
+                    snapshot = snapshot,
+                    pointBalance = pointBalance,
+                    pointLoadFailed = pointLoadFailed,
+                    onOpenMenu = onOpenMenu,
+                    modifier = Modifier.offset(y = (-48).dp),
+                )
                 if (profileObservationFailed) {
                     HomeFailure(stringResource(R.string.pet_profile_observation_failed), onRetryProfile)
                 }
@@ -149,7 +156,7 @@ private fun HomeCompanionScene(
 ) {
     Box(modifier.widthIn(max = 920.dp), contentAlignment = Alignment.Center) {
         Column(
-            Modifier.align(Alignment.TopCenter).zIndex(1f),
+            Modifier.align(Alignment.TopCenter).offset(y = (-48).dp).zIndex(1f),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(4.dp),
         ) {
@@ -254,10 +261,11 @@ private fun HomeHeader(
     pointBalance: Long?,
     pointLoadFailed: Boolean,
     onOpenMenu: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     val menuDescription = stringResource(R.string.pet_open_menu)
     val fontScale = LocalDensity.current.fontScale
-    BoxWithConstraints(Modifier.fillMaxWidth()) {
+    BoxWithConstraints(modifier.fillMaxWidth()) {
         val wide = maxWidth / fontScale >= 1180.dp
         val brand: @Composable () -> Unit = {
             Row(
