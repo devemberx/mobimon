@@ -73,9 +73,9 @@ class Q01AppJourneyTest {
         ActivityScenario.launch(MainActivity::class.java).use { scenario ->
             openQuests()
             waitFor(hasText(text(QuestR.string.quest_start_q01)) and isEnabled())
-            clickScrollable(QuestR.string.quest_start_q01)
+            clickQuestAction(QuestR.string.quest_start_q01)
             waitFor(hasText(text(QuestR.string.quest_open_vehicle)))
-            clickScrollable(QuestR.string.quest_open_vehicle)
+            clickQuestAction(QuestR.string.quest_open_vehicle)
             waitFor(hasText(text(QuestR.string.quest_vehicle_q01_waiting)))
             compose.onNodeWithText(text(QuestR.string.quest_vehicle_acknowledge)).assertIsNotEnabled()
 
@@ -151,7 +151,7 @@ class Q01AppJourneyTest {
         ActivityScenario.launch(MainActivity::class.java).use {
             openQuests()
             waitFor(hasText(text(QuestR.string.quest_start_q01)) and !isEnabled())
-            compose.onNodeWithText(text(QuestR.string.quest_start_q01)).performScrollTo().assertIsNotEnabled()
+            compose.onNodeWithText(text(QuestR.string.quest_start_q01)).assertIsNotEnabled()
             compose.onNodeWithText(text(QuestR.string.quest_start_q01)).performClick()
             runBlocking(Dispatchers.IO) {
                 withTimeout(5_000) {
@@ -176,7 +176,7 @@ class Q01AppJourneyTest {
             }
             vehicle.publish()
             waitFor(hasText(text(QuestR.string.quest_start_q01)) and isEnabled())
-            clickScrollable(QuestR.string.quest_start_q01)
+            clickQuestAction(QuestR.string.quest_start_q01)
             waitFor(hasText(text(QuestR.string.quest_open_vehicle)))
             runBlocking(Dispatchers.IO) {
                 withTimeout(5_000) {
@@ -212,6 +212,10 @@ class Q01AppJourneyTest {
 
     private fun clickScrollable(resource: Int) {
         compose.onNodeWithText(text(resource)).performScrollTo().performClick()
+    }
+
+    private fun clickQuestAction(resource: Int) {
+        compose.onNodeWithText(text(resource)).performClick()
     }
 
     private fun waitFor(matcher: SemanticsMatcher) {
