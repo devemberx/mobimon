@@ -173,7 +173,12 @@ fun CompanionMenu(
                         }
                         Spacer(Modifier.height(24.dp))
                         destinations.forEachIndexed { index, item ->
-                            val selected = (clickedRoute == item.route) || (clickedRoute == null && item.route == currentRoute)
+                            val selected =
+                                if (clickedRoute != null) {
+                                    clickedRoute == item.route
+                                } else {
+                                    item.route == currentRoute
+                                }
                             Row(
                                 Modifier
                                     .fillMaxWidth()
@@ -185,8 +190,7 @@ fun CompanionMenu(
                                         if (clickedRoute == null) {
                                             clickedRoute = item.route
                                         }
-                                    }
-                                    .padding(horizontal = 24.dp),
+                                    }.padding(horizontal = 24.dp),
                                 verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.spacedBy(22.dp),
                             ) {
