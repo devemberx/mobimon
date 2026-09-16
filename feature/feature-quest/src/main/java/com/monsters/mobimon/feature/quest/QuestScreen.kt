@@ -66,7 +66,9 @@ fun QuestScreen(
     canManageQuest: Boolean,
     onStartQuest: (QuestType) -> Unit = {},
     onCancelQuest: () -> Unit = {},
-    onOpenVehicleInfo: () -> Unit = {},
+    onAcknowledgeVehicle: (String) -> Unit,
+    vehicleSnapshot: VehicleSnapshot,
+    canAcknowledgeVehicle: Boolean,
     modifier: Modifier = Modifier,
     isBusy: Boolean = false,
     errorMessage: String? = null,
@@ -108,9 +110,9 @@ fun QuestScreen(
 
     val q01Completed = progress.completions.any { it.type == QuestType.Q01 } || internalCompletions.contains("q01")
     val q01RunActive = progress.activeRun != null
+    val displaySnapshot = snapshot ?: vehicleSnapshot
     val q01Claimable =
-        (q01RunActive && canManageQuest) ||
-            (!q01Completed && !q01RunActive && canManageQuest && internalCompletions.contains("q01_acknowledged"))
+        !q01Completed && !q01RunActive && canManageQuest && internalCompletions.contains("q01_acknowledged")
 
     val q01Status =
         when {
@@ -164,7 +166,6 @@ fun QuestScreen(
                         QuestItemStatus.IN_PROGRESS -> QuestActionType.VIEW_DETAIL
                     },
                 completedDate = "2026.09.14",
-                targetRoute = VehicleRoute.VEHICLE_INFO,
             ),
             QuestItemUiModel(
                 id = DrivingQuestIds.SEATBELT,
@@ -323,7 +324,7 @@ fun QuestScreen(
 
     val selectedQuest = currentSelectedQuestId?.let { id -> quests.firstOrNull { it.id == id } }
     val title = stringResource(R.string.quest_header_title)
-    val isParked = snapshot?.drivingState == DrivingState.PARKED
+    val isParked = displaySnapshot.drivingState == DrivingState.PARKED
 
     Box(
         modifier =
@@ -364,8 +365,10 @@ fun QuestScreen(
                                 onExecute = {
                                     if (selectedQuest.id == "q01" && !q01RunActive && !q01Completed) {
                                         onStartQuest(QuestType.Q01)
+                                        handleSelectQuest(null)
+                                    } else {
+                                        selectedQuest.targetRoute?.let(onNavigateRoute)
                                     }
-                                    onOpenVehicleInfo()
                                 },
                                 onClaimReward = { handleClaimReward(selectedQuest.id) },
                                 modifier =
@@ -382,12 +385,14 @@ fun QuestScreen(
                                 scale = scale,
                                 onSelectQuest = handleSelectQuest,
                                 onClaimReward = handleClaimReward,
-                                onChat = { onNavigateRoute(VehicleRoute.VEHICLE_INFO) },
+                                onChat = {},
                                 progress = progress,
                                 canManageQuest = canManageQuest,
                                 onStartQuest = onStartQuest,
                                 onCancelQuest = onCancelQuest,
-                                onOpenVehicleInfo = onOpenVehicleInfo,
+                                onAcknowledgeVehicle = onAcknowledgeVehicle,
+                                vehicleSnapshot = displaySnapshot,
+                                canAcknowledgeVehicle = canAcknowledgeVehicle,
                                 isBusy = isBusy,
                                 errorMessage = errorMessage,
                                 pointBalance = pointBalance,
@@ -425,8 +430,10 @@ fun QuestScreen(
                             onExecute = {
                                 if (selectedQuest.id == "q01" && !q01RunActive && !q01Completed) {
                                     onStartQuest(QuestType.Q01)
+                                    handleSelectQuest(null)
+                                } else {
+                                    selectedQuest.targetRoute?.let(onNavigateRoute)
                                 }
-                                onOpenVehicleInfo()
                             },
                             onClaimReward = { handleClaimReward(selectedQuest.id) },
                             modifier = Modifier.fillMaxWidth(),
@@ -441,12 +448,14 @@ fun QuestScreen(
                             scale = compactScale,
                             onSelectQuest = handleSelectQuest,
                             onClaimReward = handleClaimReward,
-                            onChat = { onNavigateRoute(VehicleRoute.VEHICLE_INFO) },
+                            onChat = {},
                             progress = progress,
                             canManageQuest = canManageQuest,
                             onStartQuest = onStartQuest,
                             onCancelQuest = onCancelQuest,
-                            onOpenVehicleInfo = onOpenVehicleInfo,
+                            onAcknowledgeVehicle = onAcknowledgeVehicle,
+                            vehicleSnapshot = displaySnapshot,
+                            canAcknowledgeVehicle = canAcknowledgeVehicle,
                             isBusy = isBusy,
                             errorMessage = errorMessage,
                             pointBalance = pointBalance,
@@ -540,7 +549,9 @@ private fun QuestListContent(
     canManageQuest: Boolean = false,
     onStartQuest: (QuestType) -> Unit = {},
     onCancelQuest: () -> Unit = {},
-    onOpenVehicleInfo: () -> Unit = {},
+    onAcknowledgeVehicle: (String) -> Unit,
+    vehicleSnapshot: VehicleSnapshot,
+    canAcknowledgeVehicle: Boolean,
     isBusy: Boolean = false,
     errorMessage: String? = null,
     isCompact: Boolean = false,
@@ -596,7 +607,9 @@ private fun QuestListContent(
                 canManageQuest = canManageQuest,
                 onStartQuest = onStartQuest,
                 onCancelQuest = onCancelQuest,
-                onOpenVehicleInfo = onOpenVehicleInfo,
+                onAcknowledgeVehicle = onAcknowledgeVehicle,
+                vehicleSnapshot = vehicleSnapshot,
+                canAcknowledgeVehicle = canAcknowledgeVehicle,
                 isBusy = isBusy,
                 errorMessage = errorMessage,
                 pointBalance = pointBalance,
@@ -656,7 +669,9 @@ private fun QuestListContent(
                 canManageQuest = canManageQuest,
                 onStartQuest = onStartQuest,
                 onCancelQuest = onCancelQuest,
-                onOpenVehicleInfo = onOpenVehicleInfo,
+                onAcknowledgeVehicle = onAcknowledgeVehicle,
+                vehicleSnapshot = vehicleSnapshot,
+                canAcknowledgeVehicle = canAcknowledgeVehicle,
                 isBusy = isBusy,
                 errorMessage = errorMessage,
                 pointBalance = pointBalance,
@@ -676,8 +691,11 @@ private fun LegacyQuestControls(
     isBusy: Boolean,
     onStartQuest: (QuestType) -> Unit,
     onCancelQuest: () -> Unit,
-    onOpenVehicleInfo: () -> Unit,
     pointBalance: Long? = null,
+    onAcknowledgeVehicle: (String) -> Unit,
+    vehicleSnapshot: VehicleSnapshot,
+    canAcknowledgeVehicle: Boolean,
+    errorMessage: String?,
     modifier: Modifier = Modifier,
 ) {
     val completion = progress.completions.firstOrNull { it.type == QuestType.Q01 }
@@ -699,10 +717,14 @@ private fun LegacyQuestControls(
             }
 
             active?.type == QuestType.Q01 -> {
-                LegacyQuestAction(
-                    text = stringResource(R.string.quest_open_vehicle),
-                    enabled = true,
-                    onClick = onOpenVehicleInfo,
+                QuestVehicleCard(
+                    snapshot = vehicleSnapshot,
+                    questActive = true,
+                    questCompleted = false,
+                    canAcknowledge = canAcknowledgeVehicle,
+                    onAcknowledge = onAcknowledgeVehicle,
+                    isBusy = isBusy,
+                    errorMessage = errorMessage,
                 )
                 LegacyQuestAction(
                     text = stringResource(R.string.quest_cancel),
@@ -759,7 +781,9 @@ private fun QuestRightPanel(
     canManageQuest: Boolean = false,
     onStartQuest: (QuestType) -> Unit = {},
     onCancelQuest: () -> Unit = {},
-    onOpenVehicleInfo: () -> Unit = {},
+    onAcknowledgeVehicle: (String) -> Unit,
+    vehicleSnapshot: VehicleSnapshot,
+    canAcknowledgeVehicle: Boolean,
     isBusy: Boolean = false,
     errorMessage: String? = null,
     pointBalance: Long? = null,
@@ -780,8 +804,11 @@ private fun QuestRightPanel(
             isBusy = isBusy,
             onStartQuest = onStartQuest,
             onCancelQuest = onCancelQuest,
-            onOpenVehicleInfo = onOpenVehicleInfo,
             pointBalance = pointBalance,
+            onAcknowledgeVehicle = onAcknowledgeVehicle,
+            vehicleSnapshot = vehicleSnapshot,
+            canAcknowledgeVehicle = canAcknowledgeVehicle,
+            errorMessage = errorMessage,
             modifier = Modifier.fillMaxWidth(),
         )
 

@@ -73,9 +73,7 @@ class Q01AppJourneyTest {
         ActivityScenario.launch(MainActivity::class.java).use { scenario ->
             openQuests()
             waitFor(hasText(text(QuestR.string.quest_start_q01)) and isEnabled())
-            clickQuestAction(QuestR.string.quest_start_q01)
-            waitFor(hasText(text(QuestR.string.quest_open_vehicle)))
-            clickQuestAction(QuestR.string.quest_open_vehicle)
+            clickScrollable(QuestR.string.quest_start_q01)
             waitFor(hasText(text(QuestR.string.quest_vehicle_q01_waiting)))
             compose.onNodeWithText(text(QuestR.string.quest_vehicle_acknowledge)).assertIsNotEnabled()
 
@@ -83,8 +81,8 @@ class Q01AppJourneyTest {
             val evidenceId = vehicle.snapshots.value.id
             waitFor(hasText(text(QuestR.string.quest_vehicle_acknowledge)) and isEnabled())
             clickScrollable(QuestR.string.quest_vehicle_acknowledge)
-            waitFor(hasText(text(QuestR.string.quest_vehicle_q01_completed)))
-            compose.onNodeWithText(text(QuestR.string.quest_vehicle_acknowledge)).assertIsNotEnabled()
+            waitFor(hasText(text(QuestR.string.quest_point_reward_received, 0)))
+            compose.onNodeWithText(text(QuestR.string.quest_vehicle_acknowledge)).assertDoesNotExist()
             val completion =
                 runBlocking(Dispatchers.IO) {
                     withTimeout(5_000) {
@@ -176,8 +174,8 @@ class Q01AppJourneyTest {
             }
             vehicle.publish()
             waitFor(hasText(text(QuestR.string.quest_start_q01)) and isEnabled())
-            clickQuestAction(QuestR.string.quest_start_q01)
-            waitFor(hasText(text(QuestR.string.quest_open_vehicle)))
+            clickScrollable(QuestR.string.quest_start_q01)
+            waitFor(hasText(text(QuestR.string.quest_vehicle_acknowledge)))
             runBlocking(Dispatchers.IO) {
                 withTimeout(5_000) {
                     assertEquals(

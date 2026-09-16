@@ -91,7 +91,7 @@ coverage, not a passing result at a particular revision.
 | AI route exposes initial and later observation failures, retains the displayed companion across revisits, and retries to current equipment without duplicate observers or authorizing unknown parking | [AiFeatureTest](../feature/feature-auth/src/test/java/com/monsters/mobimon/feature/auth/AiFeatureTest.kt) | Production feature entry, real ViewModels and fake repositories on Robolectric; includes enlarged-text and keyboard retry |
 | Shared actions and selection controls retain 76dp targets; disabled callbacks cannot dispatch; selection stays caller-owned; account content is vertically centered; tabs and rows reflow at enlarged text | [MobiMonComponentsTest](../core/core-ui/src/test/java/com/monsters/mobimon/core/ui/MobiMonComponentsTest.kt), [MobiMonV4ComponentsTest](../core/core-ui/src/test/java/com/monsters/mobimon/core/ui/MobiMonV4ComponentsTest.kt) | Compose semantics, layout bounds and Robolectric; not Figma pixel parity |
 | Mobi retains the approved v4 artwork with distinct necklace and mint-scarf overlays, while Cream remains visibly distinct | [PetAvatarTest](../core/core-ui/src/test/java/com/monsters/mobimon/core/ui/PetAvatarTest.kt) | Deterministic native Robolectric pixel signatures; fallback regression coverage, not Figma pixel parity |
-| Quest-owned acknowledgment blocks moving/stale/unknown state and forwards the displayed snapshot ID | [QuestVehicleCardTest](../feature/feature-quest/src/test/java/com/monsters/mobimon/feature/quest/QuestVehicleCardTest.kt), shared Q01 journey | Compose and app integration |
+| Quest-owned acknowledgment blocks moving/stale/unknown state and forwards the displayed snapshot ID from the Quest route | [QuestVehicleCardTest](../feature/feature-quest/src/test/java/com/monsters/mobimon/feature/quest/QuestVehicleCardTest.kt), shared Q01 journey | Compose and app integration |
 | Historical XP compatibility boundaries; not a product progression feature | [RewardCalculatorTest](../core/core-domain/src/test/kotlin/com/monsters/mobimon/core/domain/RewardCalculatorTest.kt) | JVM |
 | Concurrent completion awards once; failures roll back all reward writes | [RoomCompanionRepositoryTest](../core/core-database/src/test/java/com/monsters/mobimon/core/database/RoomCompanionRepositoryTest.kt), [device counterpart](../core/core-database/src/androidTest/java/com/monsters/mobimon/core/database/RoomCompanionRepositoryAndroidTest.kt) | Local SQLite and device |
 | Committed appearance, XP and completion survive file reopening | Same Room suites | File persistence |
@@ -145,8 +145,8 @@ The MainActivity journeys use `HiltTestApplication`. Their
 replaces platform, vehicle and AAOS use-state providers with a fixed clock, controllable
 simulated vehicle, an allowed app-use state, in-memory Room and isolated DataStore. MainActivity, feature
 ViewModels, repository bindings and reward transactions remain real. They now
-exercise Hilt feature registrations, the vehicle contribution slot and saved
-route state end to end; shell-only tests use minimal entries to isolate navigation.
+exercise Hilt feature registrations, Quest's shared vehicle observation and
+saved route state end to end; shell-only tests use minimal entries to isolate navigation.
 
 `CopilotPreviewJourneyTest` launches the plain Debug preview Activity without
 Hilt injection or Room interaction. It verifies presentation navigation and

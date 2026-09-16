@@ -14,18 +14,14 @@ import com.monsters.mobimon.core.domain.PointEconomy
 import com.monsters.mobimon.core.domain.ProgressionIdentity
 import com.monsters.mobimon.core.domain.QuestEvaluator
 import com.monsters.mobimon.core.domain.QuestRepository
-import com.monsters.mobimon.core.domain.QuestType
 import com.monsters.mobimon.core.domain.RewardRepository
 import com.monsters.mobimon.core.domain.VehicleRepository
-import com.monsters.mobimon.core.domain.VehicleSnapshot
 import com.monsters.mobimon.core.navigation.AppRoute
 import com.monsters.mobimon.core.navigation.FeatureEntry
 import com.monsters.mobimon.core.navigation.FeatureNavigator
 import com.monsters.mobimon.core.navigation.QuestRoute
-import com.monsters.mobimon.core.navigation.VehicleRoute
 import com.monsters.mobimon.core.presentation.PointBalanceState
 import com.monsters.mobimon.core.presentation.PointPresentation
-import com.monsters.mobimon.core.presentation.VehicleDetailContribution
 import com.monsters.mobimon.core.presentation.VehiclePresentation
 import com.monsters.mobimon.core.presentation.parkedVerified
 import com.monsters.mobimon.core.ui.MobiMonDestination
@@ -40,10 +36,8 @@ class QuestFeature(
     private val vehicle: VehiclePresentation,
     private val wallet: PointPresentation,
     private val economy: PointEconomy? = null,
-) : FeatureEntry,
-    VehicleDetailContribution {
+) : FeatureEntry {
     override val routes = setOf(QuestRoute.QUESTS)
-    override val key = "legacy-q01"
 
     @Composable
     private fun model(): QuestViewModel {
@@ -81,7 +75,9 @@ class QuestFeature(
                 canManageQuest = state.canManageQuest && interactionAllowed,
                 onStartQuest = model::start,
                 onCancelQuest = model::cancel,
-                onOpenVehicleInfo = { navigator.navigate(VehicleRoute.VEHICLE_INFO) },
+                onAcknowledgeVehicle = model::acknowledge,
+                vehicleSnapshot = snapshot,
+                canAcknowledgeVehicle = state.canAcknowledge && interactionAllowed,
                 isBusy = state.isBusy,
                 errorMessage = questError,
                 pointBalance = balance,
@@ -92,25 +88,6 @@ class QuestFeature(
                 onClaimReward = model::claimPointQuest,
             )
         }
-    }
-
-    @Composable
-    override fun Content(
-        snapshot: VehicleSnapshot,
-        modifier: Modifier,
-    ) {
-        val model = model()
-        val state by model.state.collectAsStateWithLifecycle()
-        QuestVehicleCard(
-            snapshot = snapshot,
-            questActive = state.progress.activeRun != null,
-            questCompleted = state.progress.completions.any { it.type == QuestType.Q01 },
-            canAcknowledge = state.canAcknowledge && snapshot.parkedVerified,
-            onAcknowledge = model::acknowledge,
-            modifier = modifier,
-            isBusy = state.isBusy,
-            errorMessage = error(state),
-        )
     }
 
     @Composable
