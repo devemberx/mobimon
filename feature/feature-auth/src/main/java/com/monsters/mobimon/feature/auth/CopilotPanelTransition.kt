@@ -18,13 +18,11 @@ internal fun CopilotPanelTransition(
     state: CopilotUiState,
     onAction: (CopilotAction) -> Unit,
     modifier: Modifier = Modifier,
-    reducedMotion: Boolean = false,
     interactionAllowed: Boolean = false,
     content: @Composable (CopilotUiState, (CopilotAction) -> Unit) -> Unit,
 ) {
     // Expired credentials and lost authorization must disappear without an outgoing frame.
-    if (reducedMotion ||
-        !interactionAllowed ||
+    if (!interactionAllowed ||
         state is CopilotUiState.Expired ||
         state is CopilotUiState.Reconnect ||
         state is CopilotUiState.AccessCheck

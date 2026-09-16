@@ -61,8 +61,9 @@ character. Existing purchases, rewards, preferences and drafts remain intact.
   consistent. Screen-reader and rotary focus follows title, information, primary
   action and secondary actions. Dialogs contain focus and return it to their
   trigger when closed.
-- Keep motion brief and quiet. Reduced motion replaces decorative movement with
-  a static expression. A successful connection may trigger one silent,
+- Keep motion brief and quiet. The reduced-motion preference limits repeated
+  character movement when character animation is introduced; the current
+  character artwork is static. A successful connection may trigger one silent,
   character-appropriate greeting; it must not delay the next action.
 
 ## Reusable Compose library and asset handoff
@@ -284,8 +285,9 @@ Settings uses shared information rows and action/status components. Its
 supported behavior below remains independent of final screen composition.
 The fixed-coordinate specification for the retired design is not retained.
 
-Settings exposes the persisted reduced-motion preference plus the Copilot
-connection introduction. Spoken replies and Do Not Disturb remain visibly
+Settings exposes the persisted character-motion preference plus the Copilot
+connection introduction. The character is currently static, so this preference
+has no visible effect yet. Spoken replies and Do Not Disturb remain visibly
 unavailable. Unknown parking disables preference changes and connection actions,
 and app-use restrictions remain enforced by the app shell.
 
@@ -300,11 +302,14 @@ on failure. Each preference is independent.
 
 ### Copilot connection UI
 
-The UI is implemented before live authentication. Settings and the conversation
-entry open the introduction; Back and Later return to the originating screen.
-Requesting a QR currently explains that connection is not available. No sample
-account, working code or successful authentication is presented in the production
-route. The remaining states are reusable components for future provider integration.
+The UI is implemented before live authentication. Settings and the Home/menu
+conversation entries open the introduction. The disconnected Conversation placeholder
+also offers a connection action when parking is verified.
+When a provider is unavailable, the introduction keeps the same steps, companion,
+content and action positions. Its note area states the limitation and its QR action
+is disabled from first render. Back and Later return to the originating screen. No sample account,
+working code or successful authentication is presented in the production route.
+The remaining states are reusable components for future provider integration.
 
 If companion context cannot be loaded, show a failure message and Retry. If an
 observation fails after loading, keep the last committed companion visible and
@@ -336,18 +341,23 @@ separately from behavior verification.
 The Debug-only **Copilot UI 체험** launcher connects all eight states using the
 same components, with a persistent simulation notice, a fixed sample timer,
 explicit expiry/reconnect/access scenarios, and labeled destination placeholders.
-Its local motion toggle does not change the saved app preference. Keep its review
-controls outside the design composition without forcing the reference viewport
+Keep its review controls outside the design composition without forcing the reference viewport
 into the compact layout. It does not open GitHub or provide an operational service.
 Missing QR images fall back to the selectable GitHub address and code, and expiry
 hides the old code.
 
+Home menu and Copilot Back use the same circular navigation control. Drawer
+movement, backdrop fade and destination change share a 220ms timing. Selecting
+a drawer destination closes the drawer while the destination changes. Both
+screens remain rendered during the change: the old screen recedes slightly as
+the new screen enters with a subtle fade and horizontal offset. Back reverses
+the direction. Outgoing screens have no accessible or active controls.
 Eligible panel changes fade in over 180ms and out over 120ms, without moving the
 header or character. Countdown and pending-status updates retain the current panel.
 Outgoing controls cannot dispatch actions or retain accessibility targets.
 Expiry, reconnect, access checks and lost parking replace the panel immediately.
-The persisted reduced-motion preference also removes transitions. Android's animation
-duration scale still applies. These timings are implementation choices following
+The character-motion preference does not alter navigation, drawer or panel
+transitions. Android's animation duration scale still applies. These timings follow
 the motion guidance above; the supplied static SVGs contain no motion specification.
 
 ### Planned live connection

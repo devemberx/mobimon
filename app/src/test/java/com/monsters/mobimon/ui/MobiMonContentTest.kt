@@ -5,6 +5,8 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.test.assertHeightIsAtLeast
@@ -20,6 +22,7 @@ import androidx.compose.ui.unit.dp
 import com.monsters.mobimon.core.domain.AppUseState
 import com.monsters.mobimon.core.navigation.AiRoute
 import com.monsters.mobimon.core.navigation.AppRoute
+import com.monsters.mobimon.core.navigation.CompanionRoute
 import com.monsters.mobimon.core.navigation.FeatureEntry
 import com.monsters.mobimon.core.navigation.FeatureNavigator
 import org.junit.Assert.assertTrue
@@ -33,6 +36,7 @@ import org.robolectric.annotation.Config
 @Config(sdk = [34], application = Application::class, qualifiers = "ko-rKR-w1000dp-h700dp")
 class MobiMonContentTest {
     @get:Rule val compose = createComposeRule()
+    private val mountedRoutes = mutableStateListOf<AppRoute>()
 
     private fun clickMenuItem(text: String) {
         compose.onNodeWithText(text).performScrollTo().performClick()
@@ -99,6 +103,29 @@ class MobiMonContentTest {
         compose.onNodeWithText("Route COPILOT").assertExists()
         compose.onNodeWithText("Back").performClick()
         compose.onNodeWithText("Route SETTINGS").assertExists()
+    }
+
+    @Test
+    fun destinationChangeKeepsOutgoingFrameUntilIncomingScreenArrives() {
+        show()
+        compose.mainClock.autoAdvance = false
+
+        compose.onNodeWithText("Connect").performClick()
+        compose.mainClock.advanceTimeBy(80)
+
+        compose.runOnIdle {
+            assertTrue(mountedRoutes.containsAll(listOf(CompanionRoute.HOME, AiRoute.COPILOT)))
+        }
+        compose.onNodeWithText("Route HOME").assertDoesNotExist()
+        compose.onNodeWithText("Route COPILOT").assertExists()
+
+        compose.mainClock.advanceTimeBy(300)
+        compose.runOnIdle {
+            assertTrue(
+                "mounted: ${mountedRoutes.toList()}",
+                mountedRoutes.toList() == listOf(AiRoute.COPILOT),
+            )
+        }
     }
 
     @Test
@@ -174,6 +201,10 @@ class MobiMonContentTest {
                     navigator: FeatureNavigator,
                     modifier: Modifier,
                 ) {
+                    DisposableEffect(route) {
+                        mountedRoutes.add(route)
+                        onDispose { mountedRoutes.remove(route) }
+                    }
                     Column(modifier) {
                         Text("Route ${route.name}")
                         TextButton(onClick = navigator.openMenu) { Text("Open menu") }

@@ -5,7 +5,6 @@
   <string name="copilot_preview_expire">만료시키기</string>
   <string name="copilot_preview_reconnect">재연결 상황</string>
   <string name="copilot_preview_access">이용 불가 상황</string>
-  <string name="copilot_preview_reduce_motion">모션 줄이기</string>
   <string name="copilot_preview_account">예시 계정</string>
   <string name="copilot_preview_reconnect_reason">GitHub 계정 인증이 만료되었어요.</string>
   <string name="copilot_preview_settings">설정 이동 확인 · UI 체험용 계정 관리</string>

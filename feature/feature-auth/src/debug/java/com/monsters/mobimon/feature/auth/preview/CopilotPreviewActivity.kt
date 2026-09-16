@@ -6,16 +6,13 @@ import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.selection.toggleable
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
-import androidx.compose.material3.Checkbox
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -29,7 +26,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.Lifecycle
@@ -58,7 +54,6 @@ private enum class PreviewStep { INTRO, QR, ADDRESS, EXPIRED, CONNECTED, RECONNE
 private fun CopilotPreview(onExit: () -> Unit) {
     var step by rememberSaveable { mutableStateOf(PreviewStep.INTRO) }
     var pending by rememberSaveable { mutableStateOf(false) }
-    var reducedMotion by rememberSaveable { mutableStateOf(false) }
     var showAccessNotice by rememberSaveable { mutableStateOf(false) }
     val lifecycle = LocalLifecycleOwner.current.lifecycle
 
@@ -114,19 +109,6 @@ private fun CopilotPreview(onExit: () -> Unit) {
                         onClick = { navigate(PreviewStep.ACCESS) },
                     ) { Text(stringResource(R.string.copilot_preview_access)) }
                 }
-                item {
-                    Row(
-                        Modifier.toggleable(
-                            reducedMotion,
-                            role = Role.Checkbox,
-                            onValueChange = { reducedMotion = it },
-                        ),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Checkbox(checked = reducedMotion, onCheckedChange = null)
-                        Text(stringResource(R.string.copilot_preview_reduce_motion))
-                    }
-                }
             }
             val state = previewState(step, pending)
             if (state != null) {
@@ -149,7 +131,6 @@ private fun CopilotPreview(onExit: () -> Unit) {
                     interactionAllowed = true,
                     simulatedVehicle = true,
                     qrCode = painterResource(AuthR.drawable.copilot_preview_qr),
-                    reducedMotion = reducedMotion,
                 )
             } else {
                 Column(

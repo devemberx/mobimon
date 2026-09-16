@@ -9,7 +9,7 @@ import org.junit.Test
 class ShellStateTest {
     @Test
     fun copilotBackReturnsToItsOriginIncludingAfterRestoration() {
-        listOf(CompanionRoute.HOME, CompanionRoute.SETTINGS).forEach { origin ->
+        listOf(CompanionRoute.HOME, CompanionRoute.SETTINGS, AiRoute.CONVERSATION).forEach { origin ->
             val state = ShellState(route = origin).openCopilot()
             assertEquals(AiRoute.COPILOT, state.route)
             assertEquals(origin, state.back().route)

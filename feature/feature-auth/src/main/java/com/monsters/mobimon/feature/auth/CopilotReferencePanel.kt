@@ -41,9 +41,9 @@ internal fun CopilotUiState.hasReferenceLayout(
     interactionAllowed: Boolean,
     hasQr: Boolean,
 ): Boolean =
-    interactionAllowed &&
+    (this is CopilotUiState.Introduction || interactionAllowed) &&
         when (this) {
-            is CopilotUiState.Introduction -> !connectionUnavailable
+            is CopilotUiState.Introduction -> true
             is CopilotUiState.Waiting -> error == null && (showAddress || hasQr)
             is CopilotUiState.Disconnect -> error == null
             is CopilotUiState.AccessCheck -> detail == null && !checking && reason != CopilotAccessIssue.CHECKING
@@ -77,13 +77,21 @@ internal fun CopilotReferencePanel(
                     text(stringResource(R.string.copilot_intro_subtitle), 1220f, 545.8f, 32f, color = Colors.muted)
                     lines(R.string.copilot_intro_disclosure, 1064f, 663.1f, 34f, 66f)
                     rect(1064f, 846f, 1352f, 2f, 0f)
-                    lines(R.string.copilot_intro_note, 1064f, 908f, 30f, 54f, Colors.muted)
+                    lines(
+                        if (state.connectionUnavailable) R.string.copilot_unavailable else R.string.copilot_intro_note,
+                        1064f,
+                        908f,
+                        30f,
+                        if (state.connectionUnavailable) 44f else 54f,
+                        if (state.connectionUnavailable) Colors.warning else Colors.muted,
+                    )
                     action(
                         R.string.copilot_connect,
                         CopilotAction.REQUEST_CODE,
                         1064f,
                         1088f,
                         816f,
+                        enabled = !state.connectionUnavailable,
                         icon = R.drawable.copilot_qr,
                         iconX = 1294.08f,
                     )

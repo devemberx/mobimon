@@ -50,6 +50,72 @@ class CopilotConnectionScreenTest {
     @get:Rule val compose = createComposeRule()
 
     @Test
+    @Config(qualifiers = "ko-rKR-w2560dp-h1268dp")
+    @GraphicsMode(GraphicsMode.Mode.NATIVE)
+    fun unavailableIntroductionKeepsReferenceCompositionAndDisablesQr() {
+        var unavailable by mutableStateOf(false)
+        lateinit var view: View
+        compose.setContent {
+            val currentView = LocalView.current
+            SideEffect { view = currentView }
+            MobiMonTheme {
+                CopilotConnectionScreen(
+                    CopilotUiState.Introduction(connectionUnavailable = unavailable),
+                    {},
+                    interactionAllowed = true,
+                )
+            }
+        }
+        val availableBounds = compose.onNodeWithTag("copilot-panel").fetchSemanticsNode().boundsInRoot
+        compose.onNodeWithTag("copilot-reference").assertExists()
+        compose.runOnIdle { unavailable = true }
+        compose.onNodeWithTag("copilot-reference").assertExists()
+        assertEquals(availableBounds, compose.onNodeWithTag("copilot-panel").fetchSemanticsNode().boundsInRoot)
+        compose.onNodeWithText("아직 계정 연결을 이용할 수 없어요.").assertExists()
+        compose.onNodeWithText("QR로 연결하기").assertIsNotEnabled()
+        compose.onNodeWithText("나중에").assertIsEnabled()
+        compose.runOnIdle {
+            val bitmap = Bitmap.createBitmap(view.width, view.height, Bitmap.Config.ARGB_8888)
+            view.draw(Canvas(bitmap))
+            val directory = File("build/reports/copilot-ui").apply { mkdirs() }
+            File(directory, "P51-unavailable.png").outputStream().use {
+                assertTrue(bitmap.compress(Bitmap.CompressFormat.PNG, 100, it))
+            }
+            bitmap.recycle()
+        }
+    }
+
+    @Test
+    @GraphicsMode(GraphicsMode.Mode.NATIVE)
+    fun compactUnavailableIntroductionKeepsStepsAndDisabledQr() {
+        lateinit var view: View
+        compose.setContent {
+            val currentView = LocalView.current
+            SideEffect { view = currentView }
+            MobiMonTheme {
+                CopilotConnectionScreen(
+                    CopilotUiState.Introduction(connectionUnavailable = true),
+                    {},
+                    interactionAllowed = true,
+                )
+            }
+        }
+        compose.onNodeWithTag("copilot-reference").assertDoesNotExist()
+        compose.onNodeWithText("계정 연결").assertExists()
+        compose.onNodeWithText("아직 계정 연결을 이용할 수 없어요.", substring = true).assertExists()
+        compose.runOnIdle {
+            val bitmap = Bitmap.createBitmap(view.width, view.height, Bitmap.Config.ARGB_8888)
+            view.draw(Canvas(bitmap))
+            val directory = File("build/reports/copilot-ui").apply { mkdirs() }
+            File(directory, "P51-unavailable-compact.png").outputStream().use {
+                assertTrue(bitmap.compress(Bitmap.CompressFormat.PNG, 100, it))
+            }
+            bitmap.recycle()
+        }
+        compose.onNodeWithText("QR로 연결하기").performScrollTo().assertIsNotEnabled()
+    }
+
+    @Test
     fun introductionExplainsSharingAndRequestsConnectionWithoutInventingAnAccount() {
         val actions = mutableListOf<CopilotAction>()
         show(CopilotUiState.Introduction(), actions::add)

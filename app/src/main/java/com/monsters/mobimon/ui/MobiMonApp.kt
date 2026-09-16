@@ -1,6 +1,16 @@
 package com.monsters.mobimon.ui
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.safeDrawingPadding
@@ -17,6 +27,8 @@ import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.unit.IntOffset
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.monsters.mobimon.R
 import com.monsters.mobimon.core.domain.AppUseState
@@ -34,6 +46,8 @@ import com.monsters.mobimon.core.ui.MobiMonTheme
 import com.monsters.mobimon.runtime.AppUseStateSource
 import kotlinx.coroutines.flow.map
 
+internal const val NAVIGATION_MOTION_DURATION_MILLIS = 220
+
 @Composable
 fun MobiMonApp(
     entries: Set<FeatureEntry>,
@@ -43,7 +57,11 @@ fun MobiMonApp(
     val state by appUse.states.collectAsStateWithLifecycle()
     val equippedFriend = remember(points) { points.inventory.map { it.equippedItemIds[CosmeticSlot.FRIEND] } }
     val activeFriendId by equippedFriend.collectAsStateWithLifecycle(initialValue = null)
-    MobiMonContent(entries = entries, appUseState = state, activeFriendId = activeFriendId)
+    MobiMonContent(
+        entries = entries,
+        appUseState = state,
+        activeFriendId = activeFriendId,
+    )
 }
 
 internal val ShellSaver =
@@ -55,12 +73,10 @@ internal val ShellSaver =
             ShellState(
                 route = AppRoute.entries.firstOrNull { it.name == saved.getOrNull(routeIndex) } ?: CompanionRoute.HOME,
                 connectionOrigin =
-                    if (saved.getOrNull(originIndex) ==
-                        CompanionRoute.SETTINGS.name
-                    ) {
-                        CompanionRoute.SETTINGS
-                    } else {
-                        CompanionRoute.HOME
+                    when (saved.getOrNull(originIndex)) {
+                        CompanionRoute.SETTINGS.name -> CompanionRoute.SETTINGS
+                        AiRoute.CONVERSATION.name -> AiRoute.CONVERSATION
+                        else -> CompanionRoute.HOME
                     },
             )
         },
@@ -77,15 +93,24 @@ fun MobiMonContent(
 ) {
     val registry = remember(entries) { FeatureRegistry(entries) }
     var shell by rememberSaveable(stateSaver = ShellSaver) { mutableStateOf(ShellState()) }
+    var returning by remember { mutableStateOf(false) }
     val stateHolder = rememberSaveableStateHolder()
     val navigator =
         FeatureNavigator(
             navigate = { route ->
+                returning = false
                 shell =
                     if (route == AiRoute.COPILOT) shell.openCopilot() else shell.navigate(route)
             },
-            back = { shell = shell.back() },
-            returnHome = { shell = shell.returnHome() },
+            back = {
+                val previous = shell
+                shell = previous.back()
+                if (shell.route != previous.route) returning = true
+            },
+            returnHome = {
+                returning = true
+                shell = shell.returnHome()
+            },
             openMenu = { shell = shell.openMenu() },
         )
     MobiMonTheme {
@@ -102,15 +127,61 @@ fun MobiMonContent(
                         }
                     } else {
                         BackHandler(enabled = shell.menuOpen || shell.route != CompanionRoute.HOME) {
-                            shell = shell.back()
+                            navigator.back()
                         }
-                        stateHolder.SaveableStateProvider(shell.route.name) {
-                            registry[shell.route].Content(shell.route, navigator, Modifier)
+                        AnimatedContent(
+                            targetState = shell.route,
+                            modifier = Modifier.fillMaxSize(),
+                            contentKey = { it.name },
+                            transitionSpec = {
+                                val direction = if (returning) -1 else 1
+                                val motion =
+                                    tween<IntOffset>(
+                                        NAVIGATION_MOTION_DURATION_MILLIS,
+                                        easing = FastOutSlowInEasing,
+                                    )
+                                val fade = tween<Float>(NAVIGATION_MOTION_DURATION_MILLIS, easing = FastOutSlowInEasing)
+                                (
+                                    (
+                                        slideInHorizontally(motion) { direction * it / 18 } + fadeIn(fade)
+                                    ) togetherWith
+                                        (slideOutHorizontally(motion) { -direction * it / 36 } + fadeOut(fade))
+                                ).using(null).apply { targetContentZIndex = 1f }
+                            },
+                            label = "destination change",
+                        ) { route ->
+                            val active = route == shell.route
+                            val routeNavigator =
+                                FeatureNavigator(
+                                    navigate = { if (active) navigator.navigate(it) },
+                                    back = { if (active) navigator.back() },
+                                    returnHome = { if (active) navigator.returnHome() },
+                                    openMenu = { if (active) navigator.openMenu() },
+                                )
+                            Box(
+                                Modifier.fillMaxSize().then(if (active) Modifier else Modifier.clearAndSetSemantics {}),
+                            ) {
+                                stateHolder.SaveableStateProvider(route.name) {
+                                    registry[route].Content(route, routeNavigator, Modifier)
+                                }
+                                if (!active) {
+                                    Box(
+                                        Modifier
+                                            .fillMaxSize()
+                                            .clickable(
+                                                interactionSource = remember { MutableInteractionSource() },
+                                                indication = null,
+                                            ) {}
+                                            .clearAndSetSemantics {},
+                                    )
+                                }
+                            }
                         }
                     }
                 }
-                if (appUseState == AppUseState.ALLOWED && shell.menuOpen) {
+                if (appUseState == AppUseState.ALLOWED) {
                     CompanionMenu(
+                        visible = shell.menuOpen,
                         currentRoute = shell.route,
                         onClose = navigator.back,
                         onNavigate = navigator.navigate,

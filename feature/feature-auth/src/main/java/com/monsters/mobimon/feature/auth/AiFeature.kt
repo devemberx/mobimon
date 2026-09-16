@@ -9,10 +9,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -52,6 +49,7 @@ class AiFeature(
         navigator: FeatureNavigator,
         modifier: Modifier,
     ) {
+        val snapshot = vehicle.snapshot()
         if (route == AiRoute.CONVERSATION) {
             MobiMonDestination(
                 stringResource(R.string.conversation_title),
@@ -59,7 +57,13 @@ class AiFeature(
                 navigator.returnHome,
                 modifier,
             ) {
-                MobiMonContentColumn { MobiMonMessage(stringResource(R.string.conversation_not_connected)) }
+                MobiMonContentColumn {
+                    MobiMonMessage(stringResource(R.string.conversation_not_connected))
+                    MobiMonButton(
+                        onClick = { navigator.navigate(AiRoute.COPILOT) },
+                        enabled = snapshot.parkedVerified,
+                    ) { Text(stringResource(R.string.conversation_connect)) }
+                }
             }
             return
         }
@@ -67,8 +71,6 @@ class AiFeature(
             remember(this) { viewModelFactory { initializer { AiCompanionViewModel(pets, settings, points) } } }
         val model: AiCompanionViewModel = viewModel(factory = factory)
         val companion by model.state.collectAsStateWithLifecycle()
-        val snapshot = vehicle.snapshot()
-        var unavailable by rememberSaveable { mutableStateOf(false) }
         val profile = companion.profile
         if (profile == null) {
             MobiMonDestination(stringResource(R.string.copilot_title), navigator.back, navigator.returnHome, modifier) {
@@ -104,16 +106,14 @@ class AiFeature(
                 }
             }
             CopilotConnectionScreen(
-                state = CopilotUiState.Introduction(connectionUnavailable = unavailable),
+                state = CopilotUiState.Introduction(connectionUnavailable = true),
                 onAction = { action ->
                     when (action) {
                         CopilotAction.BACK, CopilotAction.CANCEL -> navigator.back()
-                        CopilotAction.REQUEST_CODE -> if (snapshot.parkedVerified) unavailable = true
                         else -> Unit
                     }
                 },
                 modifier = Modifier.weight(1f),
-                reducedMotion = companion.settings.reducedMotion,
                 interactionAllowed = snapshot.parkedVerified,
                 simulatedVehicle = snapshot.source == SignalSource.SIMULATED,
                 friendId = companion.inventory?.equippedItemIds?.get(CosmeticSlot.FRIEND) ?: "friend:mobi",

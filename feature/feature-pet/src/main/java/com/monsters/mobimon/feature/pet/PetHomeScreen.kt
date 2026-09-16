@@ -15,13 +15,11 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.sizeIn
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -43,8 +41,8 @@ import androidx.compose.ui.zIndex
 import com.monsters.mobimon.core.domain.PetProfile
 import com.monsters.mobimon.core.domain.VehicleSnapshot
 import com.monsters.mobimon.core.ui.MobiMonButton
-import com.monsters.mobimon.core.ui.MobiMonButtonStyle
 import com.monsters.mobimon.core.ui.MobiMonMessage
+import com.monsters.mobimon.core.ui.MobiMonNavigationButton
 import com.monsters.mobimon.core.ui.MobiMonPointSummary
 import com.monsters.mobimon.core.ui.PetAvatar
 
@@ -271,29 +269,15 @@ private fun HomeHeader(
         val brand: @Composable () -> Unit = {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(if (wide) 34.dp else 24.dp),
+                horizontalArrangement = Arrangement.spacedBy(24.dp),
             ) {
-                MobiMonButton(
-                    style = MobiMonButtonStyle.SECONDARY,
+                MobiMonNavigationButton(
+                    icon = painterResource(R.drawable.pet_menu_icon),
+                    description = menuDescription,
                     onClick = onOpenMenu,
-                    modifier =
-                        Modifier
-                            .then(
-                                if (wide) {
-                                    Modifier.size(
-                                        104.dp,
-                                    )
-                                } else {
-                                    Modifier.sizeIn(minWidth = 76.dp, minHeight = 76.dp)
-                                },
-                            ).semantics { contentDescription = menuDescription },
-                ) {
-                    Icon(
-                        painter = painterResource(R.drawable.pet_menu_icon),
-                        contentDescription = null,
-                        modifier = Modifier.size(if (wide) 40.dp else 28.dp),
-                    )
-                }
+                    visualSize = 76.dp,
+                    iconSize = 28.dp,
+                )
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text(
                         stringResource(R.string.pet_brand),

@@ -23,7 +23,8 @@ data class ShellState(
         copy(
             route = AiRoute.COPILOT,
             menuOpen = false,
-            connectionOrigin = if (route == CompanionRoute.SETTINGS) route else CompanionRoute.HOME,
+            connectionOrigin =
+                if (route == CompanionRoute.SETTINGS || route == AiRoute.CONVERSATION) route else CompanionRoute.HOME,
         )
 
     fun navigate(destination: AppRoute): ShellState = copy(route = destination, menuOpen = false)

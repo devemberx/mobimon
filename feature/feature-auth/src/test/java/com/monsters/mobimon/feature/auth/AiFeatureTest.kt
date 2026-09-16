@@ -72,6 +72,28 @@ class AiFeatureTest {
     private var route by mutableStateOf(AiRoute.COPILOT)
 
     @Test
+    fun disconnectedConversationOpensConnectionWhenParked() {
+        route = AiRoute.CONVERSATION
+        show(parked = true)
+        compose.onNodeWithText("연결 안내 열기").assertHeightIsAtLeast(76.dp).performClick()
+        compose.onNodeWithText("모비와 이야기해요.").assertIsDisplayed()
+    }
+
+    @Test
+    fun disconnectedConversationCannotOpenConnectionWithoutParking() {
+        route = AiRoute.CONVERSATION
+        show()
+        compose.onNodeWithText("연결 안내 열기").assertIsNotEnabled()
+    }
+
+    @Test
+    fun productionIntroductionShowsUnavailableStateBeforeQrAction() {
+        show(parked = true)
+        compose.onNodeWithText("아직 계정 연결을 이용할 수 없어요.", substring = true).assertExists()
+        compose.onNodeWithText("QR로 연결하기").performScrollTo().assertIsNotEnabled()
+    }
+
+    @Test
     fun failedObservationKeepsCompanionAndExposesRetryAfterRevisiting() {
         show()
         compose.onNodeWithText("모비와 이야기해요.").assertIsDisplayed()
@@ -142,7 +164,10 @@ class AiFeatureTest {
         compose.runOnIdle { assertEquals(2, points.subscriptions) }
     }
 
-    private fun show(fontScale: Float = 1f) {
+    private fun show(
+        fontScale: Float = 1f,
+        parked: Boolean = false,
+    ) {
         val vehicle =
             object : VehicleRepository {
                 override val snapshots =
@@ -153,8 +178,8 @@ class AiFeatureTest {
                             0,
                             0,
                             SignalSource.REAL,
-                            DrivingState.UNKNOWN,
-                            SignalQuality.UNAVAILABLE,
+                            if (parked) DrivingState.PARKED else DrivingState.UNKNOWN,
+                            if (parked) SignalQuality.VALID else SignalQuality.UNAVAILABLE,
                         ),
                     )
 
@@ -176,7 +201,7 @@ class AiFeatureTest {
                     VehicleFreshnessPolicy(15_000),
                 ),
             )
-        val navigator = FeatureNavigator({}, {}, {}, {})
+        val navigator = FeatureNavigator({ route = it as AiRoute }, {}, {}, {})
         compose.setContent {
             CompositionLocalProvider(LocalDensity provides Density(LocalDensity.current.density, fontScale)) {
                 MobiMonTheme { feature.Content(route, navigator, Modifier) }
