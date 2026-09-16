@@ -56,9 +56,30 @@ class PointEconomyRepository(
             if (account == null) {
                 null
             } else {
+                val global =
+                    equipped
+                        .filter { ':' !in it.slot }
+                        .associate { CosmeticSlot.valueOf(it.slot) to it.itemId }
+                val perFriend =
+                    equipped
+                        .filter { ':' in it.slot }
+                        .groupBy { it.slot.substringAfter(':') }
+                        .mapValues { (_, rows) ->
+                            rows.associate { CosmeticSlot.valueOf(it.slot.substringBefore(':')) to it.itemId }
+                        }
+                val activeFriend = global[CosmeticSlot.FRIEND] ?: "friend:mobi"
+                val legacyAccessory =
+                    if (activeFriend == "friend:mobi") {
+                        global[CosmeticSlot.ACCESSORY]?.let { mapOf(CosmeticSlot.ACCESSORY to it) } ?: emptyMap()
+                    } else {
+                        emptyMap()
+                    }
                 CosmeticInventory(
                     ownedItemIds = owned.mapTo(mutableSetOf()) { it.itemId },
-                    equippedItemIds = equipped.associate { CosmeticSlot.valueOf(it.slot) to it.itemId },
+                    equippedItemIds =
+                        global - CosmeticSlot.ACCESSORY + legacyAccessory +
+                            (perFriend[activeFriend] ?: emptyMap()),
+                    equippedByFriend = perFriend,
                 )
             }
         }.mapNotNull { it }
@@ -124,10 +145,16 @@ class PointEconomyRepository(
                 if (dao.owned(profileId, itemId) == null) return@withTransaction EquipResult.NotOwned
                 if (!item.isCompatible()) return@withTransaction EquipResult.Incompatible
                 val slot = CosmeticSlot.valueOf(item.slot)
-                if (dao.equipped(profileId, slot.name)?.itemId == itemId) {
+                val storageSlot =
+                    if (item.compatibleFriendId != null && slot != CosmeticSlot.FRIEND) {
+                        "${slot.name}:${item.compatibleFriendId}"
+                    } else {
+                        slot.name
+                    }
+                if (dao.equipped(profileId, storageSlot)?.itemId == itemId) {
                     return@withTransaction EquipResult.AlreadyApplied
                 }
-                dao.putEquipped(EquippedCosmeticEntity(profileId, slot.name, itemId))
+                dao.putEquipped(EquippedCosmeticEntity(profileId, storageSlot, itemId))
                 if (slot == CosmeticSlot.FRIEND) dao.unequipIncompatible(profileId, itemId)
                 EquipResult.Applied
             }

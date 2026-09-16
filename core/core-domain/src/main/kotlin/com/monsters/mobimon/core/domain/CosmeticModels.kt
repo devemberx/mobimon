@@ -12,6 +12,7 @@ data class CosmeticItem(
 data class CosmeticInventory(
     val ownedItemIds: Set<String>,
     val equippedItemIds: Map<CosmeticSlot, String>,
+    val equippedByFriend: Map<String, Map<CosmeticSlot, String>> = emptyMap(),
 )
 
 sealed interface PurchaseResult {

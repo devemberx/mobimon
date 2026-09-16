@@ -97,7 +97,7 @@ interface PointEconomyDao {
     fun observeEquipped(profileId: String): Flow<List<EquippedCosmeticEntity>>
 
     @Query(
-        "DELETE FROM equipped_cosmetics WHERE profileId = :profileId AND slot != 'FRIEND' " +
+        "DELETE FROM equipped_cosmetics WHERE profileId = :profileId AND slot != 'FRIEND' AND slot NOT LIKE '%:%' " +
             "AND itemId IN (SELECT id FROM cosmetic_items WHERE compatibleFriendId IS NOT NULL " +
             "AND compatibleFriendId != :friendId)",
     )

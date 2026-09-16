@@ -47,6 +47,27 @@ class PetHomeScreenTest {
     }
 
     @Test
+    fun homeAvatarFollowsEquippedFriendChanges() {
+        val friend = mutableStateOf("friend:mobi")
+        compose.setContent {
+            MobiMonTheme {
+                PetHomeScreen(
+                    profile = PetProfile("profile"),
+                    snapshot = parkedSnapshot(),
+                    onOpenMenu = {},
+                    onPetClick = {},
+                    friendId = friend.value,
+                    inventoryLoaded = true,
+                )
+            }
+        }
+        compose.onNodeWithContentDescription("Mobi 강아지").assertExists()
+        compose.runOnIdle { friend.value = "friend:luna" }
+        compose.onNodeWithContentDescription("Luna 고양이").assertExists()
+        compose.onNodeWithContentDescription("Mobi 강아지").assertDoesNotExist()
+    }
+
+    @Test
     @Config(qualifiers = "ko-rKR-w2560dp-h1440dp")
     fun landscapeKeepsActionsReachable() {
         assertLandscapeComposition()

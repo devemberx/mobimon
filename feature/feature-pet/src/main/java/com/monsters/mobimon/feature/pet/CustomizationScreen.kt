@@ -37,6 +37,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
@@ -47,6 +48,8 @@ import androidx.compose.ui.unit.dp
 import com.monsters.mobimon.core.domain.CosmeticInventory
 import com.monsters.mobimon.core.domain.CosmeticItem
 import com.monsters.mobimon.core.domain.CosmeticSlot
+import com.monsters.mobimon.core.ui.CharacterArtwork
+import com.monsters.mobimon.core.ui.CharacterAssetImage
 import com.monsters.mobimon.core.ui.MobiMonButton
 import com.monsters.mobimon.core.ui.MobiMonMessage
 import com.monsters.mobimon.core.ui.MobiMonPointSummary
@@ -103,7 +106,7 @@ fun CustomizationScreen(
     val effectiveSelectedId =
         selectedItemId ?: when (activeTab) {
             CosmeticSlot.FRIEND -> currentEquippedFriendId
-            CosmeticSlot.ACCESSORY -> currentEquippedAccessoryId ?: "accessory:necklace"
+            CosmeticSlot.ACCESSORY -> currentEquippedAccessoryId
             CosmeticSlot.BACKGROUND -> inventory.equippedItemIds[CosmeticSlot.BACKGROUND]
             else -> null
         }
@@ -117,12 +120,16 @@ fun CustomizationScreen(
             currentEquippedFriendId
         }
     val previewAccessoryId =
-        if (activeTab ==
-            CosmeticSlot.ACCESSORY
-        ) {
+        when {
+            activeTab == CosmeticSlot.ACCESSORY -> effectiveSelectedId
+            previewFriendId == currentEquippedFriendId -> currentEquippedAccessoryId
+            else -> inventory.equippedByFriend[previewFriendId]?.get(CosmeticSlot.ACCESSORY)
+        }
+    val previewBackgroundId =
+        if (activeTab == CosmeticSlot.BACKGROUND) {
             effectiveSelectedId
         } else {
-            currentEquippedAccessoryId
+            inventory.equippedItemIds[CosmeticSlot.BACKGROUND]
         }
 
     // Filter items based on active categories
@@ -131,8 +138,11 @@ fun CustomizationScreen(
             CosmeticSlot.FRIEND -> catalog.filter { it.slot == CosmeticSlot.FRIEND }
             CosmeticSlot.ACCESSORY ->
                 catalog.filter {
-                    it.slot == CosmeticSlot.ACCESSORY ||
-                        it.slot == CosmeticSlot.OUTFIT
+                    (it.slot == CosmeticSlot.ACCESSORY || it.slot == CosmeticSlot.OUTFIT) &&
+                        (
+                            it.compatibleFriendId == currentEquippedFriendId ||
+                                (currentEquippedFriendId == "friend:mobi" && it.compatibleFriendId == null)
+                        )
                 }
             CosmeticSlot.BACKGROUND -> catalog.filter { it.slot == CosmeticSlot.BACKGROUND }
             else -> emptyList()
@@ -157,16 +167,36 @@ fun CustomizationScreen(
                 verticalArrangement = Arrangement.Center,
             ) {
                 Card(
-                    modifier = Modifier.widthIn(max = 260.dp).fillMaxWidth().aspectRatio(1f),
+                    modifier = Modifier.widthIn(max = 540.dp).fillMaxWidth().aspectRatio(1.35f),
                     shape = MaterialTheme.shapes.extraLarge,
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
                 ) {
                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        PetAvatar(
-                            modifier = Modifier.size(200.dp),
-                            friendId = previewFriendId,
-                            accessoryId = previewAccessoryId,
-                        )
+                        Box(
+                            Modifier
+                                .fillMaxSize()
+                                .testTag("preview-background")
+                                .background(Brush.verticalGradient(listOf(Color(0xFF1B3856), Color(0xFF0A192D)))),
+                        ) {
+                            previewBackgroundId?.let { CharacterArtwork.backgrounds[it] }?.let { background ->
+                                CharacterAssetImage(background, Modifier.fillMaxSize())
+                            }
+                        }
+                        if (previewAccessoryId == "accessory:necklace" ||
+                            previewAccessoryId == "accessory:mint_scarf"
+                        ) {
+                            PetAvatar(
+                                modifier = Modifier.fillMaxSize(0.88f).testTag("preview-character"),
+                                friendId = previewFriendId,
+                                accessoryId = previewAccessoryId,
+                            )
+                        } else {
+                            CharacterAssetImage(
+                                CharacterArtwork.preview(previewFriendId, previewAccessoryId),
+                                modifier = Modifier.fillMaxSize(0.88f).testTag("preview-character"),
+                                contentDescription = previewFriendId,
+                            )
+                        }
                     }
                 }
                 Spacer(modifier = Modifier.height(16.dp))
@@ -175,26 +205,11 @@ fun CustomizationScreen(
                         effectiveSelectedId == null -> ""
                         effectiveSelectedId == currentEquippedFriendId ||
                             effectiveSelectedId == currentEquippedAccessoryId -> {
-                            val name =
-                                if (effectiveSelectedId.startsWith(
-                                        "friend",
-                                    )
-                                ) {
-                                    stringResource(R.string.pet_friend_mobi)
-                                } else {
-                                    stringResource(R.string.pet_item_necklace)
-                                }
+                            val name = cosmeticName(effectiveSelectedId)
                             "$name · 현재 착용"
                         }
                         else -> {
-                            val name =
-                                when (effectiveSelectedId) {
-                                    "friend:mobi" -> stringResource(R.string.pet_friend_mobi)
-                                    "friend:luna" -> stringResource(R.string.pet_friend_luna)
-                                    "accessory:necklace" -> stringResource(R.string.pet_item_necklace)
-                                    "accessory:mint_scarf" -> stringResource(R.string.pet_item_mint_scarf)
-                                    else -> effectiveSelectedId
-                                }
+                            val name = cosmeticName(effectiveSelectedId)
                             "$name · 착용 미리보기"
                         }
                     }
@@ -302,8 +317,11 @@ fun CustomizationScreen(
                                                         ),
                                                 contentAlignment = Alignment.Center,
                                             ) {
-                                                if (item.id.startsWith("friend")) {
-                                                    PetAvatar(modifier = Modifier.size(50.dp), friendId = item.id)
+                                                val iconAsset =
+                                                    CharacterArtwork.characters[item.id]
+                                                        ?: CharacterArtwork.itemIcons[item.id]
+                                                if (iconAsset != null) {
+                                                    CharacterAssetImage(iconAsset, Modifier.size(64.dp))
                                                 } else {
                                                     // accessory placeholder
                                                     Box(
@@ -327,17 +345,7 @@ fun CustomizationScreen(
 
                                             Spacer(modifier = Modifier.height(12.dp))
 
-                                            val title =
-                                                when (item.id) {
-                                                    "friend:mobi" -> stringResource(R.string.pet_friend_mobi)
-                                                    "friend:luna" -> stringResource(R.string.pet_friend_luna)
-                                                    "accessory:necklace" -> stringResource(R.string.pet_item_necklace)
-                                                    "accessory:mint_scarf" ->
-                                                        stringResource(
-                                                            R.string.pet_item_mint_scarf,
-                                                        )
-                                                    else -> item.id
-                                                }
+                                            val title = cosmeticName(item.id)
 
                                             Text(
                                                 text = title,
@@ -452,3 +460,17 @@ fun CustomizationScreen(
         }
     }
 }
+
+@Composable
+private fun cosmeticName(itemId: String): String =
+    when (itemId) {
+        "friend:mobi" -> stringResource(R.string.pet_friend_mobi)
+        "friend:luna" -> stringResource(R.string.pet_friend_luna)
+        "accessory:necklace" -> stringResource(R.string.pet_item_necklace)
+        "accessory:mint_scarf" -> stringResource(R.string.pet_item_mint_scarf)
+        "accessory:mobi_headphones" -> stringResource(R.string.pet_item_mobi_headphones)
+        "accessory:mobi_goggles" -> stringResource(R.string.pet_item_mobi_goggles)
+        "accessory:luna_cap" -> stringResource(R.string.pet_item_luna_cap)
+        "accessory:luna_sunglasses" -> stringResource(R.string.pet_item_luna_sunglasses)
+        else -> itemId
+    }

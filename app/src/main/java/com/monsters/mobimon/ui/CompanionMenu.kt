@@ -57,6 +57,7 @@ import com.monsters.mobimon.core.navigation.AppRoute
 import com.monsters.mobimon.core.navigation.CompanionRoute
 import com.monsters.mobimon.core.navigation.QuestRoute
 import com.monsters.mobimon.core.navigation.VehicleRoute
+import com.monsters.mobimon.core.ui.R as CoreUiR
 
 private data class DrawerDestination(
     val label: Int,
@@ -78,7 +79,7 @@ private val destinations =
 private fun drawerProfile(friendId: String?): Pair<Int, Int> =
     when (friendId) {
         "friend:mobi" -> R.drawable.drawer_mobi_v4 to R.string.drawer_mobi_name
-        "friend:luna" -> R.drawable.drawer_luna_v4 to R.string.drawer_luna_name
+        "friend:luna" -> CoreUiR.drawable.mobimon_luna_v4 to R.string.drawer_luna_name
         else -> R.drawable.drawer_mobi_v4 to R.string.drawer_no_friend
     }
 

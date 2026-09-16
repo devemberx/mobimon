@@ -114,8 +114,10 @@ Remove superseded assets only after checking all variants, previews and tests.
 
 Mobi uses the original v4 PNG through `PetAvatar`, including when a temporary
 accessory overlay is equipped; the retired drawn dog is not a Mobi fallback.
-Luna and historical Cream remain explicit temporary renderer fallbacks until
-approved assets are supplied. They are not additional product appearance choices.
+Customization and Home use a Luna cutout derived from the supplied 04 SVG.
+The equipped Mobi/Luna looks use isolated transparent character resources,
+not source-sheet crops; the historical Cream fallback remains temporary.
+Cream is not an additional product appearance choice.
 Artwork replacement must not change rewards, ownership or equipment.
 
 The shared library is implemented independently of full-screen migration.
@@ -204,6 +206,13 @@ zero.
 Friends, outfits/accessories and backgrounds are independent choices. Switching
 between Mobi and Luna preserves points and owned items. Use the selected
 companion's name and artwork consistently throughout the app.
+
+The customization preview uses external Mobi and Luna character PNG resources.
+Its accessory catalog shows the selected friend's own items: Mobi headphones
+and goggles, or Luna cap and sunglasses. Each friend's equipped accessory is
+retained when switching friends. Background art is a separate layer behind the
+character; the current gradient is a placeholder until approved background
+resources are mapped to background item IDs.
 
 Selecting an item changes the preview. A separate, specific action applies it.
 Distinguish **previewing**, **owned** and **currently applied** states. Show
