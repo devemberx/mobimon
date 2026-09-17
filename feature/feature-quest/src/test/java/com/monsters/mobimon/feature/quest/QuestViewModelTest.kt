@@ -2,8 +2,16 @@ package com.monsters.mobimon.feature.quest
 
 import androidx.lifecycle.ViewModelStore
 import com.monsters.mobimon.core.domain.Clock
+import com.monsters.mobimon.core.domain.CosmeticInventory
+import com.monsters.mobimon.core.domain.CosmeticItem
+import com.monsters.mobimon.core.domain.DrivingQuestIds
 import com.monsters.mobimon.core.domain.DrivingState
+import com.monsters.mobimon.core.domain.EquipResult
+import com.monsters.mobimon.core.domain.PointAwardResult
+import com.monsters.mobimon.core.domain.PointEconomy
+import com.monsters.mobimon.core.domain.PointWallet
 import com.monsters.mobimon.core.domain.ProgressionIdentity
+import com.monsters.mobimon.core.domain.PurchaseResult
 import com.monsters.mobimon.core.domain.QuestCommandResult
 import com.monsters.mobimon.core.domain.QuestEvaluator
 import com.monsters.mobimon.core.domain.QuestProgress
@@ -22,6 +30,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.emitAll
+import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
@@ -284,4 +293,62 @@ class QuestViewModelTest {
             return rewardGate.await()
         }
     }
+
+    private class TestEconomy : PointEconomy {
+        var awardCalls = 0
+        var lastAwardQuestId: String? = null
+        var result: PointAwardResult = PointAwardResult.Awarded(5, 105, "occurrence")
+        val completionsFlow = MutableStateFlow<Set<String>>(emptySet())
+        override val wallet = emptyFlow<PointWallet>()
+        override val inventory = emptyFlow<CosmeticInventory>()
+        override val catalog = emptyFlow<List<CosmeticItem>>()
+        override val completedQuestIds = completionsFlow
+
+        override suspend fun purchase(
+            itemId: String,
+            expectedPrice: Long,
+        ): PurchaseResult = PurchaseResult.AlreadyOwned
+
+        override suspend fun equip(itemId: String): EquipResult = EquipResult.Applied
+
+        override suspend fun awardQuest(
+            questId: String,
+            displayedSnapshot: VehicleSnapshot,
+        ): PointAwardResult {
+            awardCalls++
+            lastAwardQuestId = questId
+            return result
+        }
+    }
+
+    @Test
+    fun claimPointQuestCallsEconomyAwardAndReflectsCompletions() =
+        runModelTest {
+            val testEconomy = TestEconomy()
+            val vm =
+                QuestViewModel(
+                    local,
+                    local,
+                    vehicle,
+                    ProgressionIdentity("profile", SignalSource.REAL),
+                    Clock { now },
+                    QuestEvaluator(15_000),
+                    testEconomy,
+                ).also { store.put("quest-economy", it) }
+            runCurrent()
+
+            vm.claimPointQuest(DrivingQuestIds.SEATBELT)
+            runCurrent()
+
+            assertEquals(1, testEconomy.awardCalls)
+            assertEquals(DrivingQuestIds.SEATBELT, testEconomy.lastAwardQuestId)
+            assertNull(vm.state.value.message)
+
+            testEconomy.completionsFlow.value = setOf(DrivingQuestIds.SEATBELT)
+            runCurrent()
+            assertTrue(
+                vm.state.value.completedPointQuestIds
+                    .contains(DrivingQuestIds.SEATBELT),
+            )
+        }
 }

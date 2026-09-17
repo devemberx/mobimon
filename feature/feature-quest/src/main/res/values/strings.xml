@@ -84,6 +84,10 @@
     <string name="quest_q01_detail_line1">주차 중 차량 상태 화면에서</string>
     <string name="quest_q01_detail_line2">배터리와 타이어 정보를 확인해 주세요.</string>
 
+    <string name="quest_schedule_per_drive_short">주행 당</string>
+    <string name="quest_schedule_weekly_short">주간</string>
+    <string name="quest_schedule_per_count_short">1회당</string>
+
     <string name="quest_q02_name">친구에게 인사하기</string>
     <string name="quest_q02_short_desc">모비와 첫 번째 대화를 나누기</string>
     <string name="quest_q02_detail_line1">모비와 인사를 나누며</string>
@@ -93,4 +97,55 @@
     <string name="quest_q03_short_desc">마음에 드는 친구를 적용하기</string>
     <string name="quest_q03_detail_line1">커스텀 화면에서</string>
     <string name="quest_q03_detail_line2">동행할 친구와 의상을 골라보세요.</string>
+
+    <!-- Driving Quests from specification -->
+    <string name="quest_seatbelt_name">안전벨트 착용 상태로 주행 시작</string>
+    <string name="quest_seatbelt_short_desc">주행 시작 전 안전벨트 착용 후 5km 이상 주행</string>
+    <string name="quest_seatbelt_detail_line1">안전벨트를 착용한 상태로</string>
+    <string name="quest_seatbelt_detail_line2">5km 이상 안전하게 주행을 완료해 보세요.</string>
+
+    <string name="quest_safe_drive_name">안전 주행 종료</string>
+    <string name="quest_safe_drive_short_desc">5km 이상 주행 후 안전점수 달성하여 주행 종료</string>
+    <string name="quest_safe_drive_detail_line1">안전점수 80점 이상을 유지하며</string>
+    <string name="quest_safe_drive_detail_line2">5km 이상 주행을 마쳐보세요.</string>
+
+    <string name="quest_100km_name">100km 주행 완료</string>
+    <string name="quest_100km_short_desc">모비와 함께 누적 100km 주행 달성</string>
+    <string name="quest_100km_detail_line1">꾸준히 안전 주행을 실천하여</string>
+    <string name="quest_100km_detail_line2">누적 100km 주행 목표를 달성해 보세요.</string>
+
+    <string name="quest_clean_drive_name">급가속/급제동/과속 없음 보너스</string>
+    <string name="quest_clean_drive_short_desc">급가속·급제동·과속 없는 클린 주행 완료</string>
+    <string name="quest_clean_drive_detail_line1">급가속, 급제동, 과속 없이 부드럽게</string>
+    <string name="quest_clean_drive_detail_line2">5km 이상 완벽한 클린 주행을 실천해 보세요.</string>
+
+    <string name="quest_first_drive_name">하루 첫 주행 완료</string>
+    <string name="quest_first_drive_short_desc">오늘 하루의 첫 번째 주행을 안전하게 완주</string>
+    <string name="quest_first_drive_detail_line1">오늘의 첫 주행을 안전하게 마치고</string>
+    <string name="quest_first_drive_detail_line2">기분 좋은 보너스 포인트를 받아보세요.</string>
+
+    <string name="quest_focus_drive_name">집중 운전 완료</string>
+    <string name="quest_focus_drive_short_desc">부주의 없이 30km 연속 집중 운전 달성</string>
+    <string name="quest_focus_drive_detail_line1">전방 주시와 주의력을 유지하며</string>
+    <string name="quest_focus_drive_detail_line2">30km 이상 연속으로 안전하게 운행해 보세요.</string>
+
+    <string name="quest_lane_keep_name">차선 지키기 완료</string>
+    <string name="quest_lane_keep_short_desc">차선 이탈 없이 30km 연속 주행 완료</string>
+    <string name="quest_lane_keep_detail_line1">차로를 안정적으로 유지하며</string>
+    <string name="quest_lane_keep_detail_line2">30km 이상 연속 주행을 달성해 보세요.</string>
+
+    <string name="quest_maintenance_name">정비소 방문</string>
+    <string name="quest_maintenance_short_desc">차량 관리를 위한 정비소 방문 완료</string>
+    <string name="quest_maintenance_detail_line1">차량 점검과 정기 정비를 위해</string>
+    <string name="quest_maintenance_detail_line2">정비소를 방문하고 차량을 점검해 보세요.</string>
+
+    <string name="quest_turn_signal_name">차선 변경 시 깜빡이 매너점수</string>
+    <string name="quest_turn_signal_short_desc">차선 변경 시 방향지시등 점등 매너점수</string>
+    <string name="quest_turn_signal_detail_line1">차선 변경 전 방향지시등을 켜는 매너 운전으로</string>
+    <string name="quest_turn_signal_detail_line2">주변 차량을 배려해 보세요. (일일 최대 10P)</string>
+
+    <string name="quest_5days_safe_name">5일 연속 안전 주행</string>
+    <string name="quest_5days_safe_short_desc">5일 연속으로 안전 운전 달성</string>
+    <string name="quest_5days_safe_detail_line1">매일 안전 운전을 이어가며</string>
+    <string name="quest_5days_safe_detail_line2">주간 5일 연속 안전 주행 보너스를 받아보세요.</string>
 </resources>

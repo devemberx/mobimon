@@ -21,6 +21,7 @@ import com.monsters.mobimon.core.domain.SignalSource
 import com.monsters.mobimon.core.domain.UtcClock
 import com.monsters.mobimon.core.domain.VehicleSnapshot
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.mapNotNull
 import java.time.DateTimeException
@@ -87,6 +88,11 @@ class PointEconomyRepository(
     override val catalog =
         dao.observeAllItems().mapNotNull { items ->
             items.map { it.toDomain() }
+        }
+
+    override val completedQuestIds: Flow<Set<String>> =
+        dao.observeQuestCompletions(profileId).mapNotNull { items ->
+            items.mapTo(mutableSetOf()) { it.questId }
         }
 
     override suspend fun purchase(
@@ -259,6 +265,24 @@ private fun PointQuestSchedule.occurrenceKey(utcMillis: Long): String? =
         is PointQuestSchedule.Daily ->
             try {
                 "daily:${Instant.ofEpochMilli(utcMillis).atZone(ZoneId.of(resetZoneId)).toLocalDate()}"
+            } catch (_: DateTimeException) {
+                null
+            }
+        is PointQuestSchedule.Weekly ->
+            try {
+                val zdt = Instant.ofEpochMilli(utcMillis).atZone(ZoneId.of(resetZoneId))
+                val week = zdt.get(java.time.temporal.IsoFields.WEEK_OF_WEEK_BASED_YEAR)
+                val year = zdt.get(java.time.temporal.IsoFields.WEEK_BASED_YEAR)
+                "weekly:$year-W$week"
+            } catch (_: DateTimeException) {
+                null
+            }
+        is PointQuestSchedule.PerDrive -> "drive:$driveId"
+        is PointQuestSchedule.CappedDaily ->
+            try {
+                val date = Instant.ofEpochMilli(utcMillis).atZone(ZoneId.of(resetZoneId)).toLocalDate()
+                val count = currentCount.coerceIn(1, maxPerDay)
+                "daily:$date:count:$count"
             } catch (_: DateTimeException) {
                 null
             }

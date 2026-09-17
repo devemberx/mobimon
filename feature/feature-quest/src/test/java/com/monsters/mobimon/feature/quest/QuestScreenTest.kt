@@ -92,6 +92,21 @@ class QuestScreenTest {
         compose.onNodeWithText("퀘스트 취소").assertDoesNotExist()
     }
 
+    @Test
+    fun drivingQuestsAreRenderedInQuestList() {
+        compose.setContent {
+            MaterialTheme {
+                QuestScreen(QuestProgress(), canManageQuest = true, {}, {}, {})
+            }
+        }
+
+        compose.onNodeWithText("안전벨트 착용 상태로 주행 시작").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText("안전 주행 종료").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText("100km 주행 완료").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText("급가속/급제동/과속 없음 보너스").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText("5일 연속 안전 주행").performScrollTo().assertIsDisplayed()
+    }
+
     private fun render(
         progress: QuestProgress,
         canManageQuest: Boolean,
