@@ -9,7 +9,6 @@ import com.monsters.mobimon.core.domain.RewardRepository
 import com.monsters.mobimon.core.domain.VehicleRepository
 import com.monsters.mobimon.core.navigation.FeatureEntry
 import com.monsters.mobimon.core.presentation.PointPresentation
-import com.monsters.mobimon.core.presentation.VehicleDetailContribution
 import com.monsters.mobimon.core.presentation.VehiclePresentation
 import com.monsters.mobimon.feature.quest.QuestFeature
 import dagger.Module
@@ -37,7 +36,4 @@ object QuestFeatureModule {
 
     @Provides @IntoSet
     fun entry(feature: QuestFeature): FeatureEntry = feature
-
-    @Provides @IntoSet
-    fun vehicleContribution(feature: QuestFeature): VehicleDetailContribution = feature
 }

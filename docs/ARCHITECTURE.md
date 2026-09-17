@@ -87,7 +87,7 @@ Add planned modules with their first working behavior and tests. Use
 | `:core:core-vss` | Unavailable real vehicle adapter | `core-domain` |
 | `:core:core-ui` | Stateless Compose components, palette roles, fonts and replaceable `PetAvatar` | None |
 | `:core:core-navigation` | Typed destinations, feature entry and navigation callbacks; no feature state | None |
-| `:core:core-presentation` | Shared wallet observation, vehicle display freshness, and vehicle contribution contract | `core-domain` |
+| `:core:core-presentation` | Shared wallet observation and vehicle display freshness | `core-domain` |
 | `:feature:feature-pet` | Companion workspace: Home, Shop/customization, Settings, inventory state and [PetFeature](../feature/feature-pet/src/main/java/com/monsters/mobimon/feature/pet/PetFeature.kt) | `core-domain`, `core-ui`, `core-navigation`, `core-presentation` |
 | `:feature:feature-quest` | Quest workspace: commands, progress, rewards UI and [QuestFeature](../feature/feature-quest/src/main/java/com/monsters/mobimon/feature/quest/QuestFeature.kt) | Same four core modules |
 | `:feature:feature-vehicle-info` | Vehicle workspace: readings, availability and [VehicleFeature](../feature/feature-vehicle-info/src/main/java/com/monsters/mobimon/feature/vehicle/VehicleFeature.kt) | Same four core modules |
@@ -155,11 +155,10 @@ committed companion context through domain interfaces. Neither imports another
 feature's ViewModel. AI retains its last committed context if observation fails;
 the route exposes that failure and an explicit retry even after a profile has
 loaded. Retry reconnects the combined observation without duplicating active jobs.
-The Quest-owned `QuestFeature` implements a
-`VehicleDetailContribution` assembled in `app/di/features/QuestFeatureModule`.
-It renders the stateless `QuestVehicleCard` inside Vehicle's slot with the
-currently displayed snapshot; only Quest dispatches acknowledgment to the reward
-repository.
+Quest reads the same shared vehicle presentation as Vehicle, but renders its
+own acknowledgment UI inside the Quest route. Vehicle remains a vehicle
+information surface and does not host quest actions; only Quest dispatches
+acknowledgment to the reward repository.
 
 The shell owns transient menu state and cross-feature callbacks as defined in
 [DESIGN.md](DESIGN.md). Shared component APIs never accept repositories or ViewModels. All features use

@@ -9,7 +9,6 @@
     <string name="quest_completed">완료</string>
     <string name="quest_active">진행 중</string>
     <string name="quest_start_q01">Q01 시작하기</string>
-    <string name="quest_open_vehicle">차량 상태 확인하기</string>
     <string name="quest_cancel">퀘스트 취소</string>
     <string name="quest_other_active">진행 중인 퀘스트를 먼저 마치거나 취소해 주세요.</string>
     <string name="quest_parked_required">최신 차량 정보로 주차가 확인되면 시작하거나 취소할 수 있어요.</string>

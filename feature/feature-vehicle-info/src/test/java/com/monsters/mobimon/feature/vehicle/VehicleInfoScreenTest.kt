@@ -27,8 +27,8 @@ class VehicleInfoScreenTest {
     fun unavailableSnapshotDoesNotInventParkedStateOrBattery() {
         render(snapshot(quality = SignalQuality.UNAVAILABLE, drivingState = DrivingState.UNKNOWN, battery = null))
 
-        compose.onNodeWithText("주차 여부 확인 불가").assertIsDisplayed()
-        compose.onNodeWithText("배터리 정보 없음").assertIsDisplayed()
+        compose.onNodeWithText("주차 여부 확인 불가").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText("배터리 정보 없음").performScrollTo().assertIsDisplayed()
     }
 
     @Test
