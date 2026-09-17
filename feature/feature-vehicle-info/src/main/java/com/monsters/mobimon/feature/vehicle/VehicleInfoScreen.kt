@@ -1,5 +1,6 @@
 package com.monsters.mobimon.feature.vehicle
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -7,9 +8,9 @@ import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -44,7 +45,12 @@ fun VehicleInfoScreen(
     modifier: Modifier = Modifier,
 ) {
     val mood = snapshot.mood()
-    MobiMonContentColumn(modifier = modifier) {
+    MobiMonContentColumn(
+        modifier =
+            modifier
+                .fillMaxSize()
+                .background(VehicleScreenBackground),
+    ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.End,
@@ -145,9 +151,9 @@ private fun CompanionStatusPanel(
     modifier: Modifier = Modifier,
 ) {
     StatusSurface(
-        background = MobiMonColors.panel,
-        border = Color.Transparent,
-        modifier = modifier.heightIn(min = 420.dp),
+        background = VehiclePanelBackground,
+        border = VehicleBorder,
+        modifier = modifier.height(VehiclePanelHeight),
         contentPadding = PaddingValues(horizontal = 28.dp, vertical = 32.dp),
         corner = 24.dp,
     ) {
@@ -385,8 +391,8 @@ private fun ConnectionCard(
 @Composable
 private fun WarningList(warnings: List<VehicleWarning>) {
     StatusSurface(
-        background = MobiMonColors.panel,
-        border = Color.Transparent,
+        background = VehiclePanelBackground,
+        border = VehicleBorder,
         modifier = Modifier.fillMaxWidth(),
         contentPadding = PaddingValues(28.dp),
         corner = 24.dp,
@@ -450,9 +456,9 @@ private fun MetricCard(
     content: @Composable () -> Unit = {},
 ) {
     StatusSurface(
-        background = MobiMonColors.panel,
-        border = Color.Transparent,
-        modifier = modifier.heightIn(min = 236.dp),
+        background = VehiclePanelBackground,
+        border = VehicleBorder,
+        modifier = modifier.height(VehicleCardHeight),
         contentPadding = PaddingValues(24.dp),
         corner = 24.dp,
     ) {
@@ -534,7 +540,7 @@ private fun StatusPill(
         color = background,
         contentColor = foreground,
         shape = RoundedCornerShape(28.dp),
-        border = androidx.compose.foundation.BorderStroke(1.dp, border),
+        border = BorderStroke(1.dp, border),
     ) {
         Text(
             text = text,
@@ -564,7 +570,7 @@ private fun StatusSurface(
             if (border == Color.Transparent) {
                 null
             } else {
-                androidx.compose.foundation.BorderStroke(1.dp, border)
+                BorderStroke(VehicleBorderWidth, border)
             },
     ) {
         Box(Modifier.padding(contentPadding)) {
@@ -703,6 +709,12 @@ private val WarningBackground = Color(0xFF251E14)
 private val WarningBadgeBackground = Color(0xFF2E2213)
 private val NeutralBackground = Color(0xFF10243A)
 private val NeutralBadgeBackground = Color(0xFF142A42)
+private val VehicleScreenBackground = Color(0xFF091525)
+private val VehiclePanelBackground = Color(0xFF142A42)
+private val VehicleBorder = Color(0xFF2A4968)
+private val VehicleBorderWidth = 2.dp
+private val VehicleCardHeight = 260.dp
+private val VehiclePanelHeight = 544.dp
 
 @Composable
 private fun lastCheckedText(ageMillis: Long): String {
