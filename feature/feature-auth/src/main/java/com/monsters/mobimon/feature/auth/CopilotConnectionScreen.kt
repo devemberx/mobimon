@@ -73,6 +73,8 @@ fun CopilotConnectionScreen(
     friendId: String = "friend:mobi",
     appearanceKey: String = "GOLDEN",
     accessoryId: String? = null,
+    outfitId: String? = null,
+    backgroundId: String? = null,
     qrCode: Painter? = null,
 ) {
     val title = stringResource(R.string.copilot_title)
@@ -110,6 +112,8 @@ fun CopilotConnectionScreen(
                                 friendId,
                                 appearanceKey,
                                 accessoryId,
+                                outfitId,
+                                backgroundId,
                                 scale,
                                 Modifier.width(884.dp * scale).fillMaxSize(),
                             )
@@ -149,6 +153,8 @@ fun CopilotConnectionScreen(
                             appearanceKey,
                             friendId = friendId,
                             accessoryId = accessoryId,
+                            outfitId = outfitId,
+                            backgroundId = backgroundId,
                         )
                         Text(
                             stringResource(R.string.copilot_friend_heading, friend),
@@ -318,6 +324,8 @@ private fun CompanionPanel(
     friendId: String,
     appearanceKey: String,
     accessoryId: String?,
+    outfitId: String?,
+    backgroundId: String?,
     scale: Float,
     modifier: Modifier = Modifier,
 ) {
@@ -354,6 +362,8 @@ private fun CompanionPanel(
             appearanceKey,
             friendId = friendId,
             accessoryId = accessoryId,
+            outfitId = outfitId,
+            backgroundId = backgroundId,
         )
         Box(
             Modifier

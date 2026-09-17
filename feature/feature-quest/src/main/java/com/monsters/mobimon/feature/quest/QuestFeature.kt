@@ -20,6 +20,7 @@ import com.monsters.mobimon.core.navigation.AppRoute
 import com.monsters.mobimon.core.navigation.FeatureEntry
 import com.monsters.mobimon.core.navigation.FeatureNavigator
 import com.monsters.mobimon.core.navigation.QuestRoute
+import com.monsters.mobimon.core.presentation.CompanionAppearancePresentation
 import com.monsters.mobimon.core.presentation.PointBalanceState
 import com.monsters.mobimon.core.presentation.PointPresentation
 import com.monsters.mobimon.core.presentation.VehiclePresentation
@@ -60,6 +61,8 @@ class QuestFeature(
         val state by model.state.collectAsStateWithLifecycle()
         val pointBalance by wallet.model().state.collectAsStateWithLifecycle()
         val snapshot = vehicle.snapshot()
+        val appearance = remember(economy) { economy?.let { CompanionAppearancePresentation(it) } }
+        val equipped = appearance?.state()
         val interactionAllowed = snapshot.parkedVerified
         val balance = (pointBalance as? PointBalanceState.Ready)?.balance
         val balanceFailed = pointBalance == PointBalanceState.Failed
@@ -72,6 +75,10 @@ class QuestFeature(
         ) {
             QuestScreen(
                 progress = state.progress,
+                friendId = equipped?.friendId ?: "friend:mobi",
+                accessoryId = equipped?.accessoryId,
+                outfitId = equipped?.outfitId,
+                backgroundId = equipped?.backgroundId,
                 canManageQuest = state.canManageQuest && interactionAllowed,
                 onStartQuest = model::start,
                 onCancelQuest = model::cancel,

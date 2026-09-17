@@ -7,11 +7,13 @@ import com.monsters.mobimon.core.navigation.AppRoute
 import com.monsters.mobimon.core.navigation.FeatureEntry
 import com.monsters.mobimon.core.navigation.FeatureNavigator
 import com.monsters.mobimon.core.navigation.VehicleRoute
+import com.monsters.mobimon.core.presentation.CompanionAppearancePresentation
 import com.monsters.mobimon.core.presentation.VehiclePresentation
 import com.monsters.mobimon.core.ui.MobiMonDestination
 
 class VehicleFeature(
     private val vehicle: VehiclePresentation,
+    private val appearance: CompanionAppearancePresentation? = null,
 ) : FeatureEntry {
     override val routes = setOf(VehicleRoute.VEHICLE_INFO)
 
@@ -22,13 +24,20 @@ class VehicleFeature(
         modifier: Modifier,
     ) {
         val snapshot = vehicle.snapshot()
+        val equipped = appearance?.state()
         MobiMonDestination(
             stringResource(R.string.vehicle_destination_title),
             navigator.back,
             navigator.returnHome,
             modifier,
         ) {
-            VehicleInfoScreen(snapshot = snapshot)
+            VehicleInfoScreen(
+                snapshot = snapshot,
+                friendId = equipped?.friendId ?: "friend:mobi",
+                accessoryId = equipped?.accessoryId,
+                backgroundId = equipped?.backgroundId,
+                outfitId = equipped?.outfitId,
+            )
         }
     }
 }

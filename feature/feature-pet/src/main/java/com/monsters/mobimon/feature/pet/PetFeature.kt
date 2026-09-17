@@ -22,7 +22,6 @@ import com.monsters.mobimon.core.presentation.PointBalanceState
 import com.monsters.mobimon.core.presentation.PointPresentation
 import com.monsters.mobimon.core.presentation.VehiclePresentation
 import com.monsters.mobimon.core.presentation.parkedVerified
-import com.monsters.mobimon.core.ui.MobiMonDestination
 
 class PetFeature(
     private val pets: PetRepository,
@@ -95,6 +94,14 @@ class PetFeature(
                     pointLoadFailed = balanceFailed,
                     friendId = inventoryState.equippedFriendId,
                     accessoryId = inventoryState.equippedAccessoryId,
+                    outfitId =
+                        inventoryState.inventory?.equippedItemIds?.get(
+                            com.monsters.mobimon.core.domain.CosmeticSlot.OUTFIT,
+                        ),
+                    backgroundId =
+                        inventoryState.inventory?.equippedItemIds?.get(
+                            com.monsters.mobimon.core.domain.CosmeticSlot.BACKGROUND,
+                        ),
                     interactionAllowed = interactionAllowed,
                     connectionAvailable = true,
                     profileObservationFailed = petState.loadFailed,
@@ -125,30 +132,25 @@ class PetFeature(
                 )
             }
             CompanionRoute.APPEARANCE ->
-                MobiMonDestination(
-                    title = stringResource(R.string.pet_destination_title),
-                    onBack = navigator.back,
-                    onHome = navigator.returnHome,
+                CustomizationScreen(
                     modifier = modifier,
-                ) {
-                    CustomizationScreen(
-                        inventory = inventoryState.inventory,
-                        catalog = inventoryState.catalog,
-                        selectedItemId = inventoryState.selectedItemId,
-                        purchasing = inventoryState.purchasing,
-                        purchaseFailed = inventoryState.purchaseFailed,
-                        onSelectItem = inventoryModel::selectItem,
-                        onPurchaseItem = inventoryModel::purchaseItem,
-                        onEquipItem = inventoryModel::equipItem,
-                        onEquipFriend = inventoryModel::equipFriend,
-                        pointBalance = balance,
-                        pointLoadFailed = balanceFailed,
-                        saving = inventoryState.saving,
-                        loadFailed = inventoryState.loadFailed,
-                        saveFailed = inventoryState.saveFailed,
-                        onRetry = onRetry,
-                    )
-                }
+                    onBack = navigator.back,
+                    inventory = inventoryState.inventory,
+                    catalog = inventoryState.catalog,
+                    selectedItemId = inventoryState.selectedItemId,
+                    purchasing = inventoryState.purchasing,
+                    purchaseFailed = inventoryState.purchaseFailed,
+                    onSelectItem = inventoryModel::selectItem,
+                    onPurchaseItem = inventoryModel::purchaseItem,
+                    onEquipItem = inventoryModel::equipItem,
+                    onEquipFriend = inventoryModel::equipFriend,
+                    pointBalance = balance,
+                    pointLoadFailed = balanceFailed,
+                    saving = inventoryState.saving,
+                    loadFailed = inventoryState.loadFailed,
+                    saveFailed = inventoryState.saveFailed,
+                    onRetry = onRetry,
+                )
             else -> error("Unsupported companion route: $route")
         }
     }

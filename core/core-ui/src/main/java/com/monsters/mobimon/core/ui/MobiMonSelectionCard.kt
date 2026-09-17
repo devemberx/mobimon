@@ -17,7 +17,17 @@ fun MobiMonSelectionCard(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
+    shape: androidx.compose.ui.graphics.Shape? = null,
     content: @Composable BoxScope.() -> Unit,
 ) {
-    MobiMonSelectionSurface(selected, onClick, modifier, enabled, Role.RadioButton, pill = false, content)
+    MobiMonSelectionSurface(
+        selected,
+        onClick,
+        modifier,
+        enabled,
+        Role.RadioButton,
+        pill = false,
+        content,
+        customShape = shape,
+    )
 }

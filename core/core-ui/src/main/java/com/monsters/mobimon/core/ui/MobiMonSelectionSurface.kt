@@ -30,10 +30,11 @@ internal fun MobiMonSelectionSurface(
     role: Role,
     pill: Boolean,
     content: @Composable BoxScope.() -> Unit,
+    customShape: androidx.compose.ui.graphics.Shape? = null,
 ) {
     var focused by remember { mutableStateOf(false) }
     val colors = MaterialTheme.colorScheme
-    val shape = if (pill) RoundedCornerShape(50) else RoundedCornerShape(MobiMonDimensions.panelCorner)
+    val shape = customShape ?: if (pill) RoundedCornerShape(50) else RoundedCornerShape(MobiMonDimensions.panelCorner)
     Surface(
         modifier
             .sizeIn(minWidth = MobiMonDimensions.touchTarget, minHeight = MobiMonDimensions.touchTarget)

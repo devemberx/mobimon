@@ -21,8 +21,8 @@
   <string name="pet_open_menu">메뉴 열기</string>
   <string name="pet_interaction_restricted">주행 중에는 상호작용이 제한돼요.</string>
   <string name="pet_customize">꾸미기</string>
-  <string name="pet_customization_tab_friend">친구 바꾸기</string>
-  <string name="pet_customization_tab_accessory">옷·소품</string>
+  <string name="pet_customization_tab_friend">친구</string>
+  <string name="pet_customization_tab_accessory">옷과 소품</string>
   <string name="pet_customization_tab_background">배경</string>
   <string name="pet_customization_subtab_all">전체</string>
   <string name="pet_customization_subtab_owned">보유 중</string>
@@ -88,5 +88,5 @@
   <string name="pet_settings_done">완료</string>
   <string name="pet_settings_back">뒤로</string>
     <string name="pet_route_save_failed">저장하지 못했어요. 현재 기록을 확인하고 다시 시도해 주세요.</string>
-    <string name="pet_destination_title">캐릭터 선택</string>
+    <string name="pet_destination_title">꾸미기</string>
 </resources>

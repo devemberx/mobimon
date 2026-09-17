@@ -40,11 +40,11 @@ import com.monsters.mobimon.core.navigation.CompanionRoute
 import com.monsters.mobimon.core.navigation.FeatureEntry
 import com.monsters.mobimon.core.navigation.FeatureNavigator
 import com.monsters.mobimon.core.navigation.FeatureRegistry
+import com.monsters.mobimon.core.presentation.CompanionAppearancePresentation
 import com.monsters.mobimon.core.ui.MobiMonContentColumn
 import com.monsters.mobimon.core.ui.MobiMonMessage
 import com.monsters.mobimon.core.ui.MobiMonTheme
 import com.monsters.mobimon.runtime.AppUseStateSource
-import kotlinx.coroutines.flow.map
 
 internal const val NAVIGATION_MOTION_DURATION_MILLIS = 220
 
@@ -55,12 +55,15 @@ fun MobiMonApp(
     points: PointEconomy,
 ) {
     val state by appUse.states.collectAsStateWithLifecycle()
-    val equippedFriend = remember(points) { points.inventory.map { it.equippedItemIds[CosmeticSlot.FRIEND] } }
-    val activeFriendId by equippedFriend.collectAsStateWithLifecycle(initialValue = null)
+    val appearance = remember(points) { CompanionAppearancePresentation(points) }.state()
+    val activeFriendId = appearance.inventory?.equippedItemIds?.get(CosmeticSlot.FRIEND)
     MobiMonContent(
         entries = entries,
         appUseState = state,
         activeFriendId = activeFriendId,
+        activeAccessoryId = appearance.accessoryId,
+        activeOutfitId = appearance.outfitId,
+        activeBackgroundId = appearance.backgroundId,
     )
 }
 
@@ -89,6 +92,9 @@ fun MobiMonContent(
     modifier: Modifier = Modifier,
     appUseState: AppUseState = AppUseState.UNAVAILABLE,
     activeFriendId: String? = null,
+    activeAccessoryId: String? = null,
+    activeOutfitId: String? = null,
+    activeBackgroundId: String? = null,
     debugOverlay: @Composable () -> Unit = { DebugOverlay() },
 ) {
     val registry = remember(entries) { FeatureRegistry(entries) }
@@ -186,6 +192,9 @@ fun MobiMonContent(
                         onClose = navigator.back,
                         onNavigate = navigator.navigate,
                         activeFriendId = activeFriendId,
+                        accessoryId = activeAccessoryId,
+                        outfitId = activeOutfitId,
+                        backgroundId = activeBackgroundId,
                     )
                 }
                 if (appUseState == AppUseState.ALLOWED) {

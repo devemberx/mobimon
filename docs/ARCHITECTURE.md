@@ -149,8 +149,13 @@ This is not a Navigation 3 migration: the pinned Compose/SDK toolchain and exist
 Back behavior are retained. Multiple back stacks, route arguments or deep links
 require a separately verified navigation integration.
 
-`PointPresentation` and `VehiclePresentation` share only independently observed
-read state. Home reads quest summaries through `QuestRepository`; AI reads
+`PointPresentation`, `VehiclePresentation` and `CompanionAppearancePresentation` share independently observed
+read state. The companion presentation observes the existing Room-backed `PointEconomy.inventory`
+for Vehicle, Quest (including reward dialogs) and the menu. Home/Store and AI consume
+the same repository through their feature ViewModels. Store selections stay local until
+the equip transaction commits; friend, accessory, outfit and background IDs flow to
+the shared renderer. Failed companion observation retains the last committed look
+and supports retry without duplicate subscriptions. Home reads quest summaries through `QuestRepository`; AI reads
 committed companion context through domain interfaces. Neither imports another
 feature's ViewModel. AI retains its last committed context if observation fails;
 the route exposes that failure and an explicit retry even after a profile has

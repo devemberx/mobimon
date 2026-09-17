@@ -52,14 +52,13 @@ import com.monsters.mobimon.core.ui.CharacterArtwork
 import com.monsters.mobimon.core.ui.CharacterAssetImage
 import com.monsters.mobimon.core.ui.MobiMonButton
 import com.monsters.mobimon.core.ui.MobiMonMessage
-import com.monsters.mobimon.core.ui.MobiMonPointSummary
 import com.monsters.mobimon.core.ui.MobiMonSelectionCard
 import com.monsters.mobimon.core.ui.MobiMonTab
 import com.monsters.mobimon.core.ui.MobiMonTabs
 import com.monsters.mobimon.core.ui.PetAvatar
 
 @Composable
-fun CustomizationScreen(
+internal fun CompactCustomizationScreen(
     inventory: CosmeticInventory?,
     catalog: List<CosmeticItem>,
     selectedItemId: String?,
@@ -76,8 +75,9 @@ fun CustomizationScreen(
     loadFailed: Boolean = false,
     saveFailed: Boolean = false,
     onRetry: () -> Unit = {},
+    activeTab: CosmeticSlot,
+    onTabChange: (CosmeticSlot) -> Unit,
 ) {
-    var activeTab by rememberSaveable { mutableStateOf(CosmeticSlot.FRIEND) }
     var subTab by rememberSaveable { mutableStateOf(0) } // 0: 전체, 1: 보유 중
 
     if (inventory == null) {
@@ -121,7 +121,9 @@ fun CustomizationScreen(
         }
     val previewAccessoryId =
         when {
-            activeTab == CosmeticSlot.ACCESSORY -> effectiveSelectedId
+            activeTab == CosmeticSlot.ACCESSORY ->
+                effectiveSelectedId?.takeIf { id -> catalog.any { it.id == id && it.slot == CosmeticSlot.ACCESSORY } }
+                    ?: currentEquippedAccessoryId
             previewFriendId == currentEquippedFriendId -> currentEquippedAccessoryId
             else -> inventory.equippedByFriend[previewFriendId]?.get(CosmeticSlot.ACCESSORY)
         }
@@ -182,21 +184,17 @@ fun CustomizationScreen(
                                 CharacterAssetImage(background, Modifier.fillMaxSize())
                             }
                         }
-                        if (previewAccessoryId == "accessory:necklace" ||
-                            previewAccessoryId == "accessory:mint_scarf"
-                        ) {
-                            PetAvatar(
-                                modifier = Modifier.fillMaxSize(0.88f).testTag("preview-character"),
-                                friendId = previewFriendId,
-                                accessoryId = previewAccessoryId,
-                            )
-                        } else {
-                            CharacterAssetImage(
-                                CharacterArtwork.preview(previewFriendId, previewAccessoryId),
-                                modifier = Modifier.fillMaxSize(0.88f).testTag("preview-character"),
-                                contentDescription = previewFriendId,
-                            )
-                        }
+                        PetAvatar(
+                            modifier = Modifier.fillMaxSize(0.88f).testTag("preview-character"),
+                            friendId = previewFriendId,
+                            accessoryId = previewAccessoryId,
+                            outfitId =
+                                catalog
+                                    .firstOrNull {
+                                        it.id == effectiveSelectedId && it.slot == CosmeticSlot.OUTFIT
+                                    }?.id
+                                    ?: inventory.equippedByFriend[previewFriendId]?.get(CosmeticSlot.OUTFIT),
+                        )
                     }
                 }
                 Spacer(modifier = Modifier.height(16.dp))
@@ -231,10 +229,6 @@ fun CustomizationScreen(
                         ).fillMaxHeight()
                         .then(if (scrollCatalog) Modifier.verticalScroll(catalogScroll) else Modifier),
             ) {
-                // Point balance bar
-                MobiMonPointSummary(pointBalance, failed = pointLoadFailed)
-                Spacer(modifier = Modifier.height(8.dp))
-
                 MobiMonTabs(Modifier.fillMaxWidth()) {
                     listOf(
                         CosmeticSlot.FRIEND to R.string.pet_customization_tab_friend,
@@ -242,7 +236,7 @@ fun CustomizationScreen(
                         CosmeticSlot.BACKGROUND to R.string.pet_customization_tab_background,
                     ).forEach { (slot, label) ->
                         MobiMonTab(activeTab == slot, {
-                            activeTab = slot
+                            onTabChange(slot)
                             onSelectItem(null)
                         }) {
                             Text(stringResource(label))
@@ -436,7 +430,10 @@ fun CustomizationScreen(
                         !purchasing &&
                             !saving &&
                             !isEquipped &&
-                            (isOwned || (pointBalance != null && pointBalance >= selectedItem.price))
+                            (
+                                isOwned ||
+                                    (!pointLoadFailed && pointBalance != null && pointBalance >= selectedItem.price)
+                            )
 
                     MobiMonButton(
                         onClick = {
@@ -462,7 +459,7 @@ fun CustomizationScreen(
 }
 
 @Composable
-private fun cosmeticName(itemId: String): String =
+internal fun cosmeticName(itemId: String): String =
     when (itemId) {
         "friend:mobi" -> stringResource(R.string.pet_friend_mobi)
         "friend:luna" -> stringResource(R.string.pet_friend_luna)

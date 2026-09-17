@@ -24,13 +24,18 @@ fun PetAvatar(
     appearanceKey: String = "GOLDEN",
     friendId: String = "friend:mobi",
     accessoryId: String? = null,
+    outfitId: String? = null,
+    backgroundId: String? = null,
 ) {
     val cat = friendId == "friend:luna"
     val cream = appearanceKey == "CREAM"
     val description = stringResource(if (cat) R.string.mobimon_luna_description else R.string.mobimon_mobi_description)
     if (!cream || cat) {
         Box(modifier = modifier.size(120.dp).semantics { contentDescription = description }) {
-            CharacterAssetImage(CharacterArtwork.preview(friendId, accessoryId), Modifier.fillMaxSize())
+            backgroundId?.let { CharacterArtwork.backgrounds[it] }?.let {
+                CharacterAssetImage(it, Modifier.fillMaxSize())
+            }
+            CharacterAssetImage(CharacterArtwork.preview(friendId, accessoryId ?: outfitId), Modifier.fillMaxSize())
             if (friendId == "friend:mobi" &&
                 (accessoryId == "accessory:necklace" || accessoryId == "accessory:mint_scarf")
             ) {

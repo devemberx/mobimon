@@ -119,6 +119,8 @@ class AiFeature(
                 friendId = companion.inventory?.equippedItemIds?.get(CosmeticSlot.FRIEND) ?: "friend:mobi",
                 appearanceKey = profile.appearance.name,
                 accessoryId = companion.inventory?.equippedItemIds?.get(CosmeticSlot.ACCESSORY),
+                outfitId = companion.inventory?.equippedItemIds?.get(CosmeticSlot.OUTFIT),
+                backgroundId = companion.inventory?.equippedItemIds?.get(CosmeticSlot.BACKGROUND),
             )
         }
     }

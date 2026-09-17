@@ -43,6 +43,10 @@ import com.monsters.mobimon.core.ui.PetAvatar
 fun VehicleInfoScreen(
     snapshot: VehicleSnapshot,
     modifier: Modifier = Modifier,
+    friendId: String = "friend:mobi",
+    accessoryId: String? = null,
+    outfitId: String? = null,
+    backgroundId: String? = null,
 ) {
     val mood = snapshot.mood()
     MobiMonContentColumn(
@@ -57,7 +61,7 @@ fun VehicleInfoScreen(
         ) {
             MobiMonSourceBadge(simulated = snapshot.source == SignalSource.SIMULATED)
         }
-        VehicleStatusBanner(snapshot, mood)
+        VehicleStatusBanner(snapshot, mood, friendId)
         BoxWithConstraints {
             if (maxWidth >= 980.dp) {
                 Row(
@@ -67,6 +71,10 @@ fun VehicleInfoScreen(
                 ) {
                     CompanionStatusPanel(
                         mood = mood,
+                        friendId = friendId,
+                        accessoryId = accessoryId,
+                        outfitId = outfitId,
+                        backgroundId = backgroundId,
                         modifier = Modifier.weight(0.34f),
                     )
                     VehicleCardGrid(
@@ -78,7 +86,14 @@ fun VehicleInfoScreen(
                 Column(
                     verticalArrangement = Arrangement.spacedBy(24.dp),
                 ) {
-                    CompanionStatusPanel(mood = mood, modifier = Modifier.fillMaxWidth())
+                    CompanionStatusPanel(
+                        mood = mood,
+                        friendId = friendId,
+                        accessoryId = accessoryId,
+                        outfitId = outfitId,
+                        backgroundId = backgroundId,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
                     VehicleCardGrid(snapshot = snapshot, modifier = Modifier.fillMaxWidth())
                 }
             }
@@ -91,6 +106,7 @@ fun VehicleInfoScreen(
 private fun VehicleStatusBanner(
     snapshot: VehicleSnapshot,
     mood: VehicleMood,
+    friendId: String,
     modifier: Modifier = Modifier,
 ) {
     StatusSurface(
@@ -102,13 +118,33 @@ private fun VehicleStatusBanner(
     ) {
         if (mood == VehicleMood.ATTENTION && snapshot.batteryPercent != null) {
             BannerText(
-                title = stringResource(R.string.vehicle_banner_low_battery_title),
+                title =
+                    stringResource(R.string.vehicle_banner_low_battery_title).replace(
+                        "모비",
+                        if (friendId ==
+                            "friend:luna"
+                        ) {
+                            "루나"
+                        } else {
+                            "모비"
+                        },
+                    ),
                 description = stringResource(R.string.vehicle_banner_low_battery_desc),
                 accent = mood.accent,
             )
         } else {
             BannerText(
-                title = stringResource(mood.bannerTitleRes),
+                title =
+                    stringResource(mood.bannerTitleRes).replace(
+                        "모비",
+                        if (friendId ==
+                            "friend:luna"
+                        ) {
+                            "루나"
+                        } else {
+                            "모비"
+                        },
+                    ),
                 description = stringResource(mood.bannerDescriptionRes),
                 accent = mood.accent,
             )
@@ -148,6 +184,10 @@ private fun BannerText(
 @Composable
 private fun CompanionStatusPanel(
     mood: VehicleMood,
+    friendId: String,
+    accessoryId: String?,
+    outfitId: String?,
+    backgroundId: String?,
     modifier: Modifier = Modifier,
 ) {
     StatusSurface(
@@ -162,7 +202,13 @@ private fun CompanionStatusPanel(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(26.dp),
         ) {
-            PetAvatar(modifier = Modifier.size(272.dp))
+            PetAvatar(
+                modifier = Modifier.size(272.dp),
+                friendId = friendId,
+                accessoryId = accessoryId,
+                outfitId = outfitId,
+                backgroundId = backgroundId,
+            )
             StatusPill(
                 text = stringResource(mood.badgeRes),
                 foreground = mood.accent,
