@@ -1,10 +1,12 @@
 package com.monsters.mobimon
 
 import androidx.compose.ui.test.SemanticsMatcher
+import androidx.compose.ui.test.SemanticsNodeInteraction
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasText
+import androidx.compose.ui.test.isDisplayed
 import androidx.compose.ui.test.isEnabled
 import androidx.compose.ui.test.junit4.createEmptyComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
@@ -198,18 +200,18 @@ class Q01AppJourneyTest {
 
     private fun openQuests() {
         waitFor(hasContentDescription(text(PetR.string.pet_open_menu)))
-        compose.onNodeWithContentDescription(text(PetR.string.pet_open_menu)).performScrollTo().performClick()
+        compose.onNodeWithContentDescription(text(PetR.string.pet_open_menu)).ensureDisplayed().performClick()
         compose.onNodeWithText(text(R.string.drawer_menu_quests)).performClick()
     }
 
     private fun assertHomePoints(points: Long) {
         val label = text(CoreUiR.string.mobimon_points_balance, points)
         waitFor(hasText(label))
-        compose.onNodeWithText(label).performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText(label).ensureDisplayed()
     }
 
     private fun clickScrollable(resource: Int) {
-        compose.onNodeWithText(text(resource)).performScrollTo().performClick()
+        compose.onNodeWithText(text(resource)).ensureDisplayed().performClick()
     }
 
     private fun clickQuestAction(resource: Int) {
@@ -220,6 +222,11 @@ class Q01AppJourneyTest {
         compose.waitUntil(timeoutMillis = 10_000) {
             compose.onAllNodes(matcher).fetchSemanticsNodes().size == 1
         }
+    }
+
+    private fun SemanticsNodeInteraction.ensureDisplayed(): SemanticsNodeInteraction {
+        if (!isDisplayed()) performScrollTo()
+        return assertIsDisplayed()
     }
 
     private fun text(
