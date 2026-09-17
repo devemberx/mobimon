@@ -9,6 +9,7 @@
 - Follow [DESIGN.md](docs/DESIGN.md) for UI changes and [TESTING.md](docs/TESTING.md) for behavior changes or tests.
 - Before using `ui-ux-pro-max`, read its [project integration rules](.agents/skills/README.md#uiux-design-guidance).
 - Mirror subject modules/packages for focused tests; do not require one test file per source file. Update the current requirement map in `TESTING.md` for changed critical behavior.
+- When the user asks "description 적어줘" or "description 써줘" (or asks for PR/commit description), the response must start directly with `- ` with no preamble or code block: write exactly two single-line English bullets starting with `- ` (first bullet: why the change is needed; second bullet: what was changed; max 120 characters per bullet).
 
 ## Code Quality
 

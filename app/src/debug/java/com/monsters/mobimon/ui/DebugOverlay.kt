@@ -49,7 +49,15 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.monsters.mobimon.core.database.DebugPointRepository
+import com.monsters.mobimon.core.domain.DriveEvaluationData
+import com.monsters.mobimon.core.domain.DrivingQuestEvaluator
+import com.monsters.mobimon.core.domain.DrivingQuestIds
+import com.monsters.mobimon.core.domain.DrivingQuestResult
+import com.monsters.mobimon.core.domain.PointAwardResult
+import com.monsters.mobimon.core.domain.PointEconomy
 import com.monsters.mobimon.core.domain.SettingsRepository
+import com.monsters.mobimon.core.domain.VehicleRepository
+import com.monsters.mobimon.core.domain.WeatherCondition
 import com.monsters.mobimon.debug.DebugVssState
 import dagger.hilt.EntryPoint
 import dagger.hilt.InstallIn
@@ -67,6 +75,10 @@ interface DebugOverlayEntryPoint {
     fun debugStore(): com.monsters.mobimon.debug.DebugStore
 
     fun debugPoints(): DebugPointRepository
+
+    fun pointEconomy(): PointEconomy
+
+    fun vehicleRepository(): VehicleRepository
 }
 
 @Composable
@@ -86,6 +98,8 @@ fun DebugOverlay() {
     val settingsRepository = entryPoint.settingsRepository()
     val debugStore = entryPoint.debugStore()
     val debugPoints = entryPoint.debugPoints()
+    val pointEconomy = entryPoint.pointEconomy()
+    val vehicleRepository = entryPoint.vehicleRepository()
 
     val isDebugEnabledFlow =
         remember(settingsRepository) { settingsRepository.settings.map { it.debugModeEnabled } }
@@ -102,6 +116,19 @@ fun DebugOverlay() {
         var offsetY by remember { mutableStateOf(100f) }
         var pointUnitText by remember { mutableStateOf("100") }
         val pointUnit = pointUnitText.toIntOrNull() ?: 0
+
+        var questWeather by remember { mutableStateOf(WeatherCondition.CLEAR) }
+        var questStatusMessage by remember { mutableStateOf("") }
+        var simDistanceKm by remember { mutableStateOf("5") }
+        var simSafeBeltMinutes by remember { mutableStateOf("10") }
+        var simSafeScore by remember { mutableStateOf("85") }
+        var simTotalDistanceKm by remember { mutableStateOf("100") }
+        var simSafeDays by remember { mutableStateOf("5") }
+        var simTurnSignals by remember { mutableStateOf("5") }
+        var simLaneDepartures by remember { mutableStateOf("0") }
+        var simNoViolations by remember { mutableStateOf(true) }
+        var simMaintenanceReached by remember { mutableStateOf(true) }
+        var evalResults by remember { mutableStateOf<List<DrivingQuestResult>>(emptyList()) }
 
         Box(modifier = Modifier.fillMaxSize()) {
             Box(
@@ -342,6 +369,287 @@ fun DebugOverlay() {
 
                     DebugSection("I. Trip / Start") {
                         DebugToggleRow("isEngineOn", state.isEngineOn) { v -> updateState { it.copy(isEngineOn = v) } }
+                    }
+
+                    DebugSection("J. Quests (주행 퀘스트 테스트)") {
+                        Text(
+                            "1. 날씨 가중치 설정",
+                            color = Color(0xFFF4F7FC),
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.SemiBold,
+                        )
+                        DebugSegmentedRow(
+                            "Weather",
+                            listOf("CLEAR", "CLOUDY", "RAIN/SNOW"),
+                            when (questWeather) {
+                                WeatherCondition.CLEAR -> "CLEAR"
+                                WeatherCondition.CLOUDY_OR_NIGHT -> "CLOUDY"
+                                WeatherCondition.RAIN_OR_SNOW -> "RAIN/SNOW"
+                            },
+                        ) { sel ->
+                            questWeather =
+                                when (sel) {
+                                    "CLOUDY" -> WeatherCondition.CLOUDY_OR_NIGHT
+                                    "RAIN/SNOW" -> WeatherCondition.RAIN_OR_SNOW
+                                    else -> WeatherCondition.CLEAR
+                                }
+                        }
+
+                        Text(
+                            "2. 퀘스트 제어",
+                            color = Color(0xFFF4F7FC),
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.SemiBold,
+                        )
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        ) {
+                            Button(
+                                onClick = {
+                                    updateState { it.copy(gear = "P", speed = 0, isMoving = false) }
+                                    questStatusMessage = "안전 정차 상태 (P, 속도 0) 설정됨"
+                                },
+                                modifier = Modifier.weight(1f),
+                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF203C58)),
+                                shape = RoundedCornerShape(8.dp),
+                                contentPadding = PaddingValues(horizontal = 4.dp, vertical = 6.dp),
+                            ) {
+                                Text("P단 정차 설정", color = Color.White, fontSize = 11.sp)
+                            }
+
+                            Button(
+                                onClick = {
+                                    scope.launch {
+                                        debugPoints.resetQuestCompletions()
+                                        questStatusMessage = "퀘스트 완료 이력 초기화 완료"
+                                    }
+                                },
+                                modifier = Modifier.weight(1f),
+                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF802050)),
+                                shape = RoundedCornerShape(8.dp),
+                                contentPadding = PaddingValues(horizontal = 4.dp, vertical = 6.dp),
+                            ) {
+                                Text("완료 이력 초기화", color = Color.White, fontSize = 11.sp)
+                            }
+                        }
+
+                        Button(
+                            onClick = {
+                                scope.launch {
+                                    val snapshot = vehicleRepository.snapshots.value
+                                    val allQuests =
+                                        listOf(
+                                            DrivingQuestIds.SEATBELT,
+                                            DrivingQuestIds.SAFE_DRIVE,
+                                            DrivingQuestIds.DISTANCE_100KM,
+                                            DrivingQuestIds.CLEAN_DRIVE,
+                                            DrivingQuestIds.FIRST_DRIVE,
+                                            DrivingQuestIds.FOCUS_DRIVE,
+                                            DrivingQuestIds.LANE_KEEP,
+                                            DrivingQuestIds.MAINTENANCE,
+                                            DrivingQuestIds.TURN_SIGNAL,
+                                            DrivingQuestIds.SAFE_5DAYS,
+                                        )
+                                    var awardedCount = 0
+                                    var alreadyCount = 0
+                                    for (qid in allQuests) {
+                                        when (pointEconomy.awardQuest(qid, snapshot)) {
+                                            is PointAwardResult.Awarded -> awardedCount++
+                                            is PointAwardResult.AlreadyAwarded -> alreadyCount++
+                                            else -> Unit
+                                        }
+                                    }
+                                    questStatusMessage = "지급: $awardedCount 건, 이미 완료: $alreadyCount 건"
+                                }
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1E5B42)),
+                            shape = RoundedCornerShape(8.dp),
+                        ) {
+                            Text(
+                                "10종 퀘스트 전체 일괄 지급",
+                                color = Color.White,
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold,
+                            )
+                        }
+
+                        if (questStatusMessage.isNotEmpty()) {
+                            Text(
+                                questStatusMessage,
+                                color = Color(0xFF71E5C5),
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Medium,
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            "3. 주행 조건 평가 시뮬레이터",
+                            color = Color(0xFF87DAF5),
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.SemiBold,
+                        )
+
+                        DebugInputRow("주행거리 (km)", simDistanceKm) { simDistanceKm = it }
+                        DebugInputRow("안전벨트 착용 (분)", simSafeBeltMinutes) { simSafeBeltMinutes = it }
+                        DebugInputRow("안전운전 점수 (0-100)", simSafeScore) { simSafeScore = it }
+                        DebugInputRow("누적거리 (km)", simTotalDistanceKm) { simTotalDistanceKm = it }
+                        DebugInputRow("연속 안전일수 (일)", simSafeDays) { simSafeDays = it }
+                        DebugInputRow("방향지시등 (회)", simTurnSignals) { simTurnSignals = it }
+                        DebugInputRow("차선이탈 (회)", simLaneDepartures) { simLaneDepartures = it }
+                        DebugToggleRow("위반 없음 (급제동/급가속/과속 0)", simNoViolations) { simNoViolations = it }
+                        DebugToggleRow("정비소 목적지 도착 완료", simMaintenanceReached) { simMaintenanceReached = it }
+
+                        Button(
+                            onClick = {
+                                val dist = simDistanceKm.toFloatOrNull() ?: 0f
+                                val belt = simSafeBeltMinutes.toIntOrNull() ?: 0
+                                val score = simSafeScore.toIntOrNull() ?: 0
+                                val total = simTotalDistanceKm.toFloatOrNull() ?: 0f
+                                val safeDays = simSafeDays.toIntOrNull() ?: 0
+                                val signals = simTurnSignals.toIntOrNull() ?: 0
+                                val lanes = simLaneDepartures.toIntOrNull() ?: 0
+                                val violations = if (simNoViolations) 0 else 1
+
+                                val evalData =
+                                    DriveEvaluationData(
+                                        distanceKm = dist,
+                                        safeBeltMinutes = belt,
+                                        safeDriveScore = score,
+                                        totalDistanceKm = total,
+                                        safeDriveDaysCount = safeDays,
+                                        turnSignalOnCount = signals,
+                                        continuousDistanceKm = dist,
+                                        isDistracted = state.isDistracted,
+                                        laneDepartureCount = lanes,
+                                        hardBrakeCount = violations,
+                                        hardAccelCount = violations,
+                                        overspeedCount = violations,
+                                        isDestinationMaintenanceCenter = simMaintenanceReached,
+                                        isDestinationReached = simMaintenanceReached,
+                                        weather = questWeather,
+                                    )
+                                evalResults = DrivingQuestEvaluator().evaluateAll(evalData)
+                                pointEconomy.updateDriveEvaluation(evalData)
+                                questStatusMessage = "조건 판정 완료: 만족 ${evalResults.count { it.isSatisfied }}건 반영됨"
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2C4A70)),
+                            shape = RoundedCornerShape(8.dp),
+                        ) {
+                            Text(
+                                "조건 판정 실행 및 화면 반영 (Evaluate All)",
+                                color = Color.White,
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold,
+                            )
+                        }
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(6.dp),
+                        ) {
+                            Button(
+                                onClick = {
+                                    simDistanceKm = "10"
+                                    simSafeBeltMinutes = "15"
+                                    simSafeScore = "95"
+                                    simTotalDistanceKm = "150"
+                                    simSafeDays = "5"
+                                    simTurnSignals = "5"
+                                    simLaneDepartures = "0"
+                                    simNoViolations = true
+                                    simMaintenanceReached = true
+
+                                    val allSatisfiedData =
+                                        DriveEvaluationData(
+                                            distanceKm = 10f,
+                                            safeBeltMinutes = 15,
+                                            safeDriveScore = 95,
+                                            totalDistanceKm = 150f,
+                                            safeDriveDaysCount = 5,
+                                            turnSignalOnCount = 5,
+                                            continuousDistanceKm = 35f,
+                                            isDistracted = false,
+                                            laneDepartureCount = 0,
+                                            hardBrakeCount = 0,
+                                            hardAccelCount = 0,
+                                            overspeedCount = 0,
+                                            isDestinationMaintenanceCenter = true,
+                                            isDestinationReached = true,
+                                            weather = questWeather,
+                                        )
+                                    evalResults = DrivingQuestEvaluator().evaluateAll(allSatisfiedData)
+                                    pointEconomy.updateDriveEvaluation(allSatisfiedData)
+                                    questStatusMessage = "10종 퀘스트 전체 조건 만족 설정됨 (완료 가능)"
+                                },
+                                modifier = Modifier.weight(1f),
+                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1E5B42)),
+                                shape = RoundedCornerShape(8.dp),
+                                contentPadding = PaddingValues(horizontal = 4.dp, vertical = 6.dp),
+                            ) {
+                                Text("전체 조건 만족 (완료 가능)", color = Color.White, fontSize = 11.sp)
+                            }
+
+                            Button(
+                                onClick = {
+                                    simDistanceKm = "0"
+                                    simSafeBeltMinutes = "0"
+                                    simSafeScore = "0"
+                                    simTotalDistanceKm = "0"
+                                    simSafeDays = "0"
+                                    simTurnSignals = "0"
+                                    simLaneDepartures = "0"
+                                    simNoViolations = false
+                                    simMaintenanceReached = false
+
+                                    val emptyData = DriveEvaluationData()
+                                    evalResults = DrivingQuestEvaluator().evaluateAll(emptyData)
+                                    pointEconomy.updateDriveEvaluation(emptyData)
+                                    questStatusMessage = "모든 주행 조건 초기화됨 (진행 중)"
+                                },
+                                modifier = Modifier.weight(1f),
+                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF6B3A2A)),
+                                shape = RoundedCornerShape(8.dp),
+                                contentPadding = PaddingValues(horizontal = 4.dp, vertical = 6.dp),
+                            ) {
+                                Text("조건 초기화 (진행 중)", color = Color.White, fontSize = 11.sp)
+                            }
+                        }
+
+                        if (evalResults.isNotEmpty()) {
+                            Column(
+                                modifier =
+                                    Modifier
+                                        .fillMaxWidth()
+                                        .background(Color(0xFF0D1B2A), RoundedCornerShape(6.dp))
+                                        .padding(8.dp),
+                                verticalArrangement = Arrangement.spacedBy(4.dp),
+                            ) {
+                                evalResults.forEach { r ->
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                    ) {
+                                        val icon = if (r.isSatisfied) "[O]" else "[X]"
+                                        val color = if (r.isSatisfied) Color(0xFF71E5C5) else Color(0xFFE57373)
+                                        Text(
+                                            "$icon ${r.questId}: ${if (r.isSatisfied) "+${r.earnedPoints}P" else "0P"}",
+                                            color = color,
+                                            fontSize = 11.sp,
+                                            fontWeight = FontWeight.Bold,
+                                        )
+                                        Text(
+                                            r.reason,
+                                            color = Color.LightGray,
+                                            fontSize = 10.sp,
+                                        )
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
             }

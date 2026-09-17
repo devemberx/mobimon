@@ -11,6 +11,9 @@ interface PointEconomy {
     val inventory: Flow<CosmeticInventory>
     val catalog: Flow<List<CosmeticItem>>
     val completedQuestIds: Flow<Set<String>> get() = kotlinx.coroutines.flow.emptyFlow()
+    val driveEvaluation: Flow<DriveEvaluationData> get() = kotlinx.coroutines.flow.flowOf(DriveEvaluationData())
+
+    fun updateDriveEvaluation(data: DriveEvaluationData) {}
 
     suspend fun purchase(
         itemId: String,
