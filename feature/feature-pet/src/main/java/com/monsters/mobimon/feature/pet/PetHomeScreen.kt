@@ -28,6 +28,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
@@ -238,17 +239,57 @@ private fun HomeConversationAction(
         ) {
             Text(stringResource(talkText))
         }
-        Text(
-            stringResource(connectionText),
-            style = MaterialTheme.typography.bodyMedium,
-            textAlign = TextAlign.Center,
+        HomeConnectionStatus(
+            connectionText = connectionText,
+            interactionAllowed = interactionAllowed,
+            modifier = Modifier.fillMaxWidth(),
         )
-        if (!interactionAllowed) {
+    }
+}
+
+@Composable
+private fun HomeConnectionStatus(
+    connectionText: Int,
+    interactionAllowed: Boolean,
+    modifier: Modifier = Modifier,
+) {
+    Layout(
+        content = {
             Text(
-                stringResource(R.string.pet_interaction_restricted),
+                stringResource(connectionText),
                 style = MaterialTheme.typography.bodyMedium,
                 textAlign = TextAlign.Center,
             )
+            if (!interactionAllowed) {
+                Text(
+                    stringResource(R.string.pet_interaction_restricted),
+                    style = MaterialTheme.typography.bodyMedium,
+                    textAlign = TextAlign.Center,
+                )
+            }
+        },
+        modifier = modifier,
+    ) { measurables, constraints ->
+        val connectionPlaceable = measurables[0].measure(constraints)
+        val noticePlaceable = if (measurables.size > 1) measurables[1].measure(constraints) else null
+
+        val width =
+            if (constraints.hasBoundedWidth) {
+                constraints.maxWidth
+            } else {
+                maxOf(connectionPlaceable.width, noticePlaceable?.width ?: 0)
+            }
+        val height = connectionPlaceable.height
+
+        layout(width, height) {
+            val connectionX = (width - connectionPlaceable.width) / 2
+            connectionPlaceable.placeRelative(connectionX, 0)
+
+            if (noticePlaceable != null) {
+                val noticeX = (width - noticePlaceable.width) / 2
+                val noticeY = connectionPlaceable.height + 12.dp.roundToPx()
+                noticePlaceable.placeRelative(noticeX, noticeY)
+            }
         }
     }
 }

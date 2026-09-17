@@ -19,7 +19,7 @@
   <string name="pet_retry">다시 시도</string>
   <string name="pet_menu">메뉴</string>
   <string name="pet_open_menu">메뉴 열기</string>
-  <string name="pet_interaction_restricted">현재는 상호작용이 제한돼요. 주차와 화면 사용 가능 상태를 확인해 주세요.</string>
+  <string name="pet_interaction_restricted">주행 중에는 상호작용이 제한돼요.</string>
   <string name="pet_customize">꾸미기</string>
   <string name="pet_customization_tab_friend">친구 바꾸기</string>
   <string name="pet_customization_tab_accessory">옷·소품</string>
