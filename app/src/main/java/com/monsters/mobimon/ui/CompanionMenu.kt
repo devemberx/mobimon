@@ -40,7 +40,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -57,6 +56,7 @@ import com.monsters.mobimon.core.navigation.AppRoute
 import com.monsters.mobimon.core.navigation.CompanionRoute
 import com.monsters.mobimon.core.navigation.QuestRoute
 import com.monsters.mobimon.core.navigation.VehicleRoute
+import com.monsters.mobimon.core.ui.PetAvatar
 import com.monsters.mobimon.core.ui.R as CoreUiR
 
 private data class DrawerDestination(
@@ -90,10 +90,13 @@ fun CompanionMenu(
     onClose: () -> Unit,
     onNavigate: (AppRoute) -> Unit,
     activeFriendId: String? = null,
+    accessoryId: String? = null,
+    outfitId: String? = null,
+    backgroundId: String? = null,
 ) {
     val first = remember { FocusRequester() }
     val closeDescription = stringResource(R.string.close)
-    val (portrait, name) = drawerProfile(activeFriendId)
+    val (_, name) = drawerProfile(activeFriendId)
     val drawer = remember { MutableTransitionState(false) }
     LaunchedEffect(visible) {
         drawer.targetState = visible
@@ -164,11 +167,12 @@ fun CompanionMenu(
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(24.dp),
                         ) {
-                            Image(
-                                painterResource(portrait),
-                                null,
-                                contentScale = ContentScale.Fit,
+                            PetAvatar(
                                 modifier = Modifier.size(109.dp),
+                                friendId = activeFriendId ?: "friend:mobi",
+                                accessoryId = accessoryId,
+                                outfitId = outfitId,
+                                backgroundId = backgroundId,
                             )
                             Column {
                                 Text(

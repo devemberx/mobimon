@@ -57,7 +57,7 @@ class CustomizationScreenTest {
             }
         }
 
-        compose.onNodeWithText("친구 바꾸기").performClick()
+        compose.onNodeWithText("친구").performClick()
 
         compose.onNodeWithTag("shop-items").performScrollTo().performScrollToIndex(1)
         compose
@@ -137,7 +137,7 @@ class CustomizationScreenTest {
             }
         }
 
-        compose.onNodeWithText("옷·소품").performClick()
+        compose.onNodeWithText("옷과 소품").performClick()
         compose.onNodeWithText("모비 헤드폰").assertExists()
         compose.onNodeWithText("루나 모자").assertDoesNotExist()
         compose.runOnIdle {

@@ -83,6 +83,8 @@ fun QuestScreen(
     friendId: String = "friend:mobi",
     appearanceKey: String = "GOLDEN",
     accessoryId: String? = null,
+    outfitId: String? = null,
+    backgroundId: String? = null,
     onSelectTab: (QuestFilterTab) -> Unit = {},
     onSelectQuest: (String?) -> Unit = {},
     onClaimReward: (String) -> Unit = {},
@@ -347,6 +349,7 @@ fun QuestScreen(
                     ) {
                         QuestHeader(
                             isParked = isParked,
+                            friendId = friendId,
                             scale = scale,
                             modifier =
                                 Modifier
@@ -361,6 +364,8 @@ fun QuestScreen(
                                 friendId = friendId,
                                 appearanceKey = appearanceKey,
                                 accessoryId = accessoryId,
+                                outfitId = outfitId,
+                                backgroundId = backgroundId,
                                 scale = scale,
                                 onExecute = {
                                     if (selectedQuest.id == "q01" && !q01RunActive && !q01Completed) {
@@ -382,6 +387,8 @@ fun QuestScreen(
                                 friendId = friendId,
                                 appearanceKey = appearanceKey,
                                 accessoryId = accessoryId,
+                                outfitId = outfitId,
+                                backgroundId = backgroundId,
                                 scale = scale,
                                 onSelectQuest = handleSelectQuest,
                                 onClaimReward = handleClaimReward,
@@ -416,6 +423,7 @@ fun QuestScreen(
                 ) {
                     QuestHeader(
                         isParked = isParked,
+                        friendId = friendId,
                         scale = compactScale,
                         modifier = Modifier.fillMaxWidth(),
                     )
@@ -426,6 +434,8 @@ fun QuestScreen(
                             friendId = friendId,
                             appearanceKey = appearanceKey,
                             accessoryId = accessoryId,
+                            outfitId = outfitId,
+                            backgroundId = backgroundId,
                             scale = compactScale,
                             onExecute = {
                                 if (selectedQuest.id == "q01" && !q01RunActive && !q01Completed) {
@@ -445,6 +455,8 @@ fun QuestScreen(
                             friendId = friendId,
                             appearanceKey = appearanceKey,
                             accessoryId = accessoryId,
+                            outfitId = outfitId,
+                            backgroundId = backgroundId,
                             scale = compactScale,
                             onSelectQuest = handleSelectQuest,
                             onClaimReward = handleClaimReward,
@@ -469,6 +481,10 @@ fun QuestScreen(
             if (currentRewardModal != null) {
                 QuestRewardSuccessModal(
                     points = currentRewardModal.points,
+                    friendId = friendId,
+                    accessoryId = accessoryId,
+                    outfitId = outfitId,
+                    backgroundId = backgroundId,
                     scale = scale,
                     onConfirm = handleDismissModal,
                 )
@@ -480,6 +496,7 @@ fun QuestScreen(
 @Composable
 private fun QuestHeader(
     isParked: Boolean,
+    friendId: String,
     scale: Float,
     modifier: Modifier = Modifier,
 ) {
@@ -494,7 +511,17 @@ private fun QuestHeader(
                 modifier = Modifier.semantics { heading() },
             )
             Text(
-                text = stringResource(R.string.quest_header_subtitle),
+                text =
+                    stringResource(R.string.quest_header_subtitle).replace(
+                        "모비",
+                        if (friendId ==
+                            "friend:luna"
+                        ) {
+                            "루나"
+                        } else {
+                            "모비"
+                        },
+                    ),
                 style = questTextStyle(28f, scale, bold = false, color = Colors.muted),
             )
         }
@@ -540,6 +567,8 @@ private fun QuestListContent(
     friendId: String,
     appearanceKey: String,
     accessoryId: String?,
+    outfitId: String?,
+    backgroundId: String?,
     scale: Float,
     onSelectQuest: (String) -> Unit,
     onClaimReward: (String) -> Unit,
@@ -577,6 +606,8 @@ private fun QuestListContent(
                     appearanceKey = appearanceKey,
                     friendId = friendId,
                     accessoryId = accessoryId,
+                    outfitId = outfitId,
+                    backgroundId = backgroundId,
                 )
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
@@ -642,6 +673,8 @@ private fun QuestListContent(
                     appearanceKey = appearanceKey,
                     friendId = friendId,
                     accessoryId = accessoryId,
+                    outfitId = outfitId,
+                    backgroundId = backgroundId,
                 )
                 Spacer(Modifier.height(32.dp * scale))
                 Text(
@@ -1242,6 +1275,8 @@ private fun QuestDetailContent(
     friendId: String,
     appearanceKey: String,
     accessoryId: String?,
+    outfitId: String?,
+    backgroundId: String?,
     scale: Float,
     onExecute: () -> Unit,
     onClaimReward: () -> Unit,
@@ -1270,6 +1305,8 @@ private fun QuestDetailContent(
                     appearanceKey = appearanceKey,
                     friendId = friendId,
                     accessoryId = accessoryId,
+                    outfitId = outfitId,
+                    backgroundId = backgroundId,
                 )
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
@@ -1320,6 +1357,8 @@ private fun QuestDetailContent(
                     appearanceKey = appearanceKey,
                     friendId = friendId,
                     accessoryId = accessoryId,
+                    outfitId = outfitId,
+                    backgroundId = backgroundId,
                 )
                 Spacer(Modifier.height(32.dp * scale))
                 Text(
@@ -1559,6 +1598,10 @@ private fun QuestDetailCard(
 @Composable
 private fun QuestRewardSuccessModal(
     points: Long,
+    friendId: String,
+    accessoryId: String?,
+    outfitId: String?,
+    backgroundId: String?,
     scale: Float,
     onConfirm: () -> Unit,
 ) {
@@ -1610,7 +1653,10 @@ private fun QuestRewardSuccessModal(
                 PetAvatar(
                     modifier = Modifier.size(280.dp * scale),
                     appearanceKey = "GOLDEN",
-                    friendId = "friend:mobi",
+                    friendId = friendId,
+                    accessoryId = accessoryId,
+                    outfitId = outfitId,
+                    backgroundId = backgroundId,
                 )
 
                 Spacer(Modifier.height(24.dp * scale))
@@ -1624,7 +1670,17 @@ private fun QuestRewardSuccessModal(
                 Spacer(Modifier.height(12.dp * scale))
 
                 Text(
-                    text = stringResource(R.string.quest_modal_subtitle),
+                    text =
+                        stringResource(R.string.quest_modal_subtitle).replace(
+                            "모비",
+                            if (friendId ==
+                                "friend:luna"
+                            ) {
+                                "루나"
+                            } else {
+                                "모비"
+                            },
+                        ),
                     style = questTextStyle(30f, scale, bold = false, color = Colors.muted),
                     textAlign = TextAlign.Center,
                 )

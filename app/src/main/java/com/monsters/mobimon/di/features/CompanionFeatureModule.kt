@@ -5,6 +5,7 @@ import com.monsters.mobimon.core.domain.PetRepository
 import com.monsters.mobimon.core.domain.PointEconomy
 import com.monsters.mobimon.core.domain.SettingsRepository
 import com.monsters.mobimon.core.navigation.FeatureEntry
+import com.monsters.mobimon.core.presentation.CompanionAppearancePresentation
 import com.monsters.mobimon.core.presentation.PointPresentation
 import com.monsters.mobimon.core.presentation.VehiclePresentation
 import com.monsters.mobimon.feature.pet.PetFeature
@@ -20,6 +21,9 @@ import javax.inject.Singleton
 object CompanionFeatureModule {
     @Provides @Singleton
     fun wallet(points: PointEconomy): PointPresentation = PointPresentation(points)
+
+    @Provides @Singleton
+    fun appearance(points: PointEconomy): CompanionAppearancePresentation = CompanionAppearancePresentation(points)
 
     @Provides @IntoSet @Singleton
     fun entry(

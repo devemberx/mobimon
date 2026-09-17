@@ -207,6 +207,16 @@ Friends, outfits/accessories and backgrounds are independent choices. Switching
 between Mobi and Luna preserves points and owned items. Use the selected
 companion's name and artwork consistently throughout the app.
 
+Customization uses the local [P20](ui/store/P20_friend_selection.svg) and
+[P22](ui/store/P22_store.svg) exports: the 2560:1268 content frame, 916-unit preview,
+1448-unit catalog, category pills and bottom apply action. The header uses a larger,
+vertically centered title and committed point balance without parking or a subtitle.
+All three categories expose selected semantics and a sky-colored active pill.
+Compact/enlarged-text windows retain the scrollable catalog and the selected category.
+Reference icons retain the SVG paths. Catalog data comes from the repository; sample
+SVG products/prices do not become purchasable products. Background/outfit IDs reach
+all companion renderers, but have no new product artwork or catalog entries.
+
 The customization preview uses external Mobi and Luna character PNG resources.
 Its accessory catalog shows the selected friend's own items: Mobi headphones
 and goggles, or Luna cap and sunglasses. Each friend's equipped accessory is

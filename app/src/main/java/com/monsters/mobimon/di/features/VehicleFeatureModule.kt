@@ -5,6 +5,7 @@ import com.monsters.mobimon.core.domain.ProgressionIdentity
 import com.monsters.mobimon.core.domain.VehicleFreshnessPolicy
 import com.monsters.mobimon.core.domain.VehicleRepository
 import com.monsters.mobimon.core.navigation.FeatureEntry
+import com.monsters.mobimon.core.presentation.CompanionAppearancePresentation
 import com.monsters.mobimon.core.presentation.VehiclePresentation
 import com.monsters.mobimon.feature.vehicle.VehicleFeature
 import dagger.Module
@@ -26,5 +27,8 @@ object VehicleFeatureModule {
     ): VehiclePresentation = VehiclePresentation(source, identity, clock, freshness)
 
     @Provides @IntoSet @Singleton
-    fun entry(vehicle: VehiclePresentation): FeatureEntry = VehicleFeature(vehicle)
+    fun entry(
+        vehicle: VehiclePresentation,
+        appearance: CompanionAppearancePresentation,
+    ): FeatureEntry = VehicleFeature(vehicle, appearance)
 }
