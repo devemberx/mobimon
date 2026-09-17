@@ -28,8 +28,8 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -40,6 +40,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -99,7 +100,8 @@ fun DebugOverlay() {
         val scope = rememberCoroutineScope()
         var offsetX by remember { mutableStateOf(50f) }
         var offsetY by remember { mutableStateOf(100f) }
-        var pointUnit by remember { mutableIntStateOf(100) }
+        var pointUnitText by remember { mutableStateOf("100") }
+        val pointUnit = pointUnitText.toIntOrNull() ?: 0
 
         Box(modifier = Modifier.fillMaxSize()) {
             Box(
@@ -154,20 +156,38 @@ fun DebugOverlay() {
                                             .padding(horizontal = 6.dp, vertical = 8.dp),
                                     contentAlignment = Alignment.Center,
                                 ) {
+                                    if (pointUnitText.isEmpty()) {
+                                        Text(
+                                            text = "0",
+                                            color = Color(0xFF627D98),
+                                            fontSize = 12.sp,
+                                        )
+                                    }
                                     BasicTextField(
-                                        value = pointUnit.toString(),
-                                        onValueChange = {
-                                            val newVal = it.toIntOrNull() ?: 0
-                                            if (newVal in 1..1000) {
-                                                pointUnit = newVal
-                                            } else if (it.isEmpty()) {
-                                                pointUnit = 0
+                                        value = pointUnitText,
+                                        onValueChange = { newText ->
+                                            if (newText.isEmpty()) {
+                                                pointUnitText = ""
+                                            } else {
+                                                val newVal = newText.toIntOrNull()
+                                                if (newVal != null && newVal in 0..1000) {
+                                                    pointUnitText =
+                                                        if (pointUnitText == "0" &&
+                                                            newText.length == 2 &&
+                                                            newText.startsWith("0")
+                                                        ) {
+                                                            newText.drop(1)
+                                                        } else {
+                                                            newText
+                                                        }
+                                                }
                                             }
                                         },
                                         textStyle = TextStyle(color = Color.White, fontSize = 12.sp),
                                         cursorBrush = SolidColor(Color(0xFF71E5C5)),
                                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                                         singleLine = true,
+                                        modifier = Modifier.testTag("debug-point-unit"),
                                     )
                                 }
                             }
@@ -222,8 +242,7 @@ fun DebugOverlay() {
                         DebugInputRow("attentionLevel", state.attentionLevel.toString()) { v ->
                             updateState {
                                 it.copy(
-                                    attentionLevel =
-                                        v.toIntOrNull() ?: it.attentionLevel,
+                                    attentionLevel = v.toIntOrNull() ?: 0,
                                 )
                             }
                         }
@@ -237,8 +256,7 @@ fun DebugOverlay() {
                         DebugInputRow("distanceToFrontVehicle", state.distanceToFrontVehicle.toString()) { v ->
                             updateState {
                                 it.copy(
-                                    distanceToFrontVehicle =
-                                        v.toIntOrNull() ?: it.distanceToFrontVehicle,
+                                    distanceToFrontVehicle = v.toIntOrNull() ?: 0,
                                 )
                             }
                         }
@@ -247,7 +265,11 @@ fun DebugOverlay() {
                     DebugSection("C. Energy") {
                         DebugToggleRow("isCharging", state.isCharging) { v -> updateState { it.copy(isCharging = v) } }
                         DebugInputRow("batteryPercent", state.batteryPercent.toString()) { v ->
-                            v.toIntOrNull()?.let { num -> updateState { it.copy(batteryPercent = num) } }
+                            updateState {
+                                it.copy(
+                                    batteryPercent = v.toIntOrNull() ?: 0,
+                                )
+                            }
                         }
                     }
 
@@ -256,8 +278,7 @@ fun DebugOverlay() {
                         DebugInputRow("outsideTemperature", state.outsideTemperature.toString()) { v ->
                             updateState {
                                 it.copy(
-                                    outsideTemperature =
-                                        v.toIntOrNull() ?: it.outsideTemperature,
+                                    outsideTemperature = v.toIntOrNull() ?: 0,
                                 )
                             }
                         }
@@ -267,8 +288,7 @@ fun DebugOverlay() {
                         DebugInputRow("washerFluidLevel", state.washerFluidLevel.toString()) { v ->
                             updateState {
                                 it.copy(
-                                    washerFluidLevel =
-                                        v.toIntOrNull() ?: it.washerFluidLevel,
+                                    washerFluidLevel = v.toIntOrNull() ?: 0,
                                 )
                             }
                         }
@@ -295,8 +315,7 @@ fun DebugOverlay() {
                         DebugInputRow("speed (km/h)", state.speed.toString()) { v ->
                             updateState {
                                 it.copy(
-                                    speed =
-                                        v.toIntOrNull() ?: it.speed,
+                                    speed = v.toIntOrNull() ?: 0,
                                 )
                             }
                         }
@@ -315,8 +334,7 @@ fun DebugOverlay() {
                         DebugInputRow("distanceToDestination", state.distanceToDestination.toString()) { v ->
                             updateState {
                                 it.copy(
-                                    distanceToDestination =
-                                        v.toIntOrNull() ?: it.distanceToDestination,
+                                    distanceToDestination = v.toIntOrNull() ?: 0,
                                 )
                             }
                         }
@@ -420,6 +438,22 @@ fun DebugInputRow(
     isNumber: Boolean = true,
     onValueChange: (String) -> Unit,
 ) {
+    var text by remember { mutableStateOf(value) }
+
+    LaunchedEffect(value) {
+        if (isNumber) {
+            val currentParsed = text.toIntOrNull() ?: 0
+            val externalParsed = value.toIntOrNull() ?: 0
+            if (currentParsed != externalParsed) {
+                text = value
+            }
+        } else {
+            if (text != value) {
+                text = value
+            }
+        }
+    }
+
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceBetween,
@@ -435,9 +469,35 @@ fun DebugInputRow(
                     .padding(horizontal = 10.dp, vertical = 8.dp),
             contentAlignment = Alignment.CenterStart,
         ) {
+            if (isNumber && text.isEmpty()) {
+                Text(
+                    text = "0",
+                    color = Color(0xFF627D98),
+                    fontSize = 14.sp,
+                )
+            }
             BasicTextField(
-                value = value,
-                onValueChange = onValueChange,
+                value = text,
+                onValueChange = { newText ->
+                    if (isNumber) {
+                        if (newText.isNotEmpty() && newText != "-" && newText.toIntOrNull() == null) {
+                            return@BasicTextField
+                        }
+                    }
+                    val sanitized =
+                        if (isNumber &&
+                            text == "0" &&
+                            newText.length == 2 &&
+                            newText.startsWith("0") &&
+                            newText[1].isDigit()
+                        ) {
+                            newText.drop(1)
+                        } else {
+                            newText
+                        }
+                    text = sanitized
+                    onValueChange(sanitized)
+                },
                 textStyle =
                     TextStyle(
                         color = Color.White,
@@ -453,7 +513,7 @@ fun DebugInputRow(
                         KeyboardOptions.Default
                     },
                 singleLine = true,
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth().testTag("debug-input-$label"),
             )
         }
     }

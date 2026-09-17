@@ -1,6 +1,7 @@
 package com.monsters.mobimon.di.features
 
 import com.monsters.mobimon.core.domain.Clock
+import com.monsters.mobimon.core.domain.PointEconomy
 import com.monsters.mobimon.core.domain.ProgressionIdentity
 import com.monsters.mobimon.core.domain.QuestEvaluator
 import com.monsters.mobimon.core.domain.QuestRepository
@@ -31,7 +32,8 @@ object QuestFeatureModule {
         evaluator: QuestEvaluator,
         vehicle: VehiclePresentation,
         wallet: PointPresentation,
-    ): QuestFeature = QuestFeature(quests, rewards, source, identity, clock, evaluator, vehicle, wallet)
+        economy: PointEconomy,
+    ): QuestFeature = QuestFeature(quests, rewards, source, identity, clock, evaluator, vehicle, wallet, economy)
 
     @Provides @IntoSet
     fun entry(feature: QuestFeature): FeatureEntry = feature

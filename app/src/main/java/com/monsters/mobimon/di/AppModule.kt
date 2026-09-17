@@ -9,6 +9,7 @@ import com.monsters.mobimon.core.database.RoomCompanionRepository
 import com.monsters.mobimon.core.domain.Clock
 import com.monsters.mobimon.core.domain.CurrentAppUse
 import com.monsters.mobimon.core.domain.CurrentVehicleEvidence
+import com.monsters.mobimon.core.domain.DefaultPointQuestCatalog
 import com.monsters.mobimon.core.domain.IdGenerator
 import com.monsters.mobimon.core.domain.PetRepository
 import com.monsters.mobimon.core.domain.PointEconomy
@@ -61,7 +62,8 @@ object AppModule {
     fun currentAppUse(appUse: AppUseStateSource): CurrentAppUse = appUse
 
     @Provides
-    fun pointQuestCatalog(): PointQuestCatalog = PointQuestCatalog { null }
+    @Singleton
+    fun pointQuestCatalog(): PointQuestCatalog = DefaultPointQuestCatalog()
 
     @Provides
     @Singleton

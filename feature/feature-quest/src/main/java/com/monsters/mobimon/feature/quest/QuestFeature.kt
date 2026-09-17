@@ -10,6 +10,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.monsters.mobimon.core.domain.Clock
+import com.monsters.mobimon.core.domain.PointEconomy
 import com.monsters.mobimon.core.domain.ProgressionIdentity
 import com.monsters.mobimon.core.domain.QuestEvaluator
 import com.monsters.mobimon.core.domain.QuestRepository
@@ -38,6 +39,7 @@ class QuestFeature(
     private val evaluator: QuestEvaluator,
     private val vehicle: VehiclePresentation,
     private val wallet: PointPresentation,
+    private val economy: PointEconomy? = null,
 ) : FeatureEntry,
     VehicleDetailContribution {
     override val routes = setOf(QuestRoute.QUESTS)
@@ -47,7 +49,9 @@ class QuestFeature(
     private fun model(): QuestViewModel {
         val factory =
             remember(this) {
-                viewModelFactory { initializer { QuestViewModel(quests, rewards, source, identity, clock, evaluator) } }
+                viewModelFactory {
+                    initializer { QuestViewModel(quests, rewards, source, identity, clock, evaluator, economy) }
+                }
             }
         return viewModel(factory = factory)
     }
@@ -73,15 +77,18 @@ class QuestFeature(
             modifier,
         ) {
             QuestScreen(
-                state.progress,
-                state.canManageQuest && interactionAllowed,
-                model::start,
-                model::cancel,
+                progress = state.progress,
+                canManageQuest = state.canManageQuest && interactionAllowed,
+                onStartQuest = model::start,
+                onCancelQuest = model::cancel,
                 onOpenVehicleInfo = { navigator.navigate(VehicleRoute.VEHICLE_INFO) },
                 isBusy = state.isBusy,
                 errorMessage = questError,
                 pointBalance = balance,
                 pointLoadFailed = balanceFailed,
+                snapshot = snapshot,
+                customCompletions = state.completedPointQuestIds,
+                onClaimReward = model::claimPointQuest,
             )
         }
     }

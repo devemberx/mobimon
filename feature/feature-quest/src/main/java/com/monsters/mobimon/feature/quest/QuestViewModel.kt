@@ -3,6 +3,8 @@ package com.monsters.mobimon.feature.quest
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.monsters.mobimon.core.domain.Clock
+import com.monsters.mobimon.core.domain.PointAwardResult
+import com.monsters.mobimon.core.domain.PointEconomy
 import com.monsters.mobimon.core.domain.ProgressionIdentity
 import com.monsters.mobimon.core.domain.QuestCommandResult
 import com.monsters.mobimon.core.domain.QuestEvaluator
@@ -18,11 +20,13 @@ import com.monsters.mobimon.core.domain.VehicleSnapshot
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
@@ -48,6 +52,14 @@ data class QuestUiState(
     val isBusy: Boolean = false,
     val observationFailed: Boolean = false,
     val message: QuestMessage? = null,
+    val completedPointQuestIds: Set<String> = emptySet(),
+)
+
+private data class ObservationData(
+    val progress: QuestProgress,
+    val snapshot: VehicleSnapshot,
+    val now: Long,
+    val completedIds: Set<String>,
 )
 
 class QuestViewModel(
@@ -57,6 +69,7 @@ class QuestViewModel(
     private val identity: ProgressionIdentity,
     private val clock: Clock,
     private val evaluator: QuestEvaluator,
+    private val economy: PointEconomy? = null,
 ) : ViewModel() {
     private val mutableState = MutableStateFlow(QuestUiState(vehicle.snapshots.value))
     val state = mutableState.asStateFlow()
@@ -75,10 +88,16 @@ class QuestViewModel(
                     delay(1_000)
                 }
             }
+        val completedFlow: Flow<Set<String>> = economy?.completedQuestIds ?: flowOf(emptySet())
         observation =
             viewModelScope.launch {
-                combine(quests.progress, vehicle.snapshots, clockTicks) { progress, snapshot, now ->
-                    Triple(progress, snapshot, now)
+                combine(
+                    quests.progress,
+                    vehicle.snapshots,
+                    clockTicks,
+                    completedFlow,
+                ) { progress, snapshot, now, completedIds ->
+                    ObservationData(progress, snapshot, now, completedIds)
                 }.catch { cause ->
                     if (cause is CancellationException) throw cause
                     mutableState.update {
@@ -89,7 +108,7 @@ class QuestViewModel(
                             message = QuestMessage.STORAGE_FAILURE,
                         )
                     }
-                }.collect { (progress, snapshot, now) ->
+                }.collect { (progress, snapshot, now, completedIds) ->
                     val invalid = evaluator.validateSnapshot(snapshot, identity.source, now)
                     val displaySnapshot =
                         when (invalid) {
@@ -113,6 +132,7 @@ class QuestViewModel(
                                         now,
                                     ) == null,
                             observationFailed = false,
+                            completedPointQuestIds = completedIds,
                             message =
                                 if (it.observationFailed ||
                                     it.message.isResolved(invalid, it.snapshot, snapshot)
@@ -126,6 +146,20 @@ class QuestViewModel(
                 }
             }
     }
+
+    fun claimPointQuest(questId: String) =
+        command {
+            val pointEconomy = economy ?: return@command
+            val snapshot = vehicle.snapshots.value
+            if (!validate(snapshot)) return@command
+            when (val result = pointEconomy.awardQuest(questId, snapshot)) {
+                is PointAwardResult.Awarded, PointAwardResult.AlreadyAwarded -> show(null)
+                PointAwardResult.EvidenceChanged -> show(QuestMessage.REFRESH_REQUIRED)
+                PointAwardResult.InteractionRestricted -> show(QuestMessage.NOT_PARKED)
+                PointAwardResult.QuestUnavailable -> show(QuestMessage.UNSUPPORTED)
+                PointAwardResult.StorageFailure -> show(QuestMessage.STORAGE_FAILURE)
+            }
+        }
 
     fun start(type: QuestType) =
         command {

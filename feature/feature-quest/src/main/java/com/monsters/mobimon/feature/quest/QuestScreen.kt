@@ -49,6 +49,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import com.monsters.mobimon.core.domain.DrivingQuestIds
 import com.monsters.mobimon.core.domain.DrivingState
 import com.monsters.mobimon.core.domain.QuestProgress
 import com.monsters.mobimon.core.domain.QuestType
@@ -117,6 +118,33 @@ fun QuestScreen(
             else -> QuestItemStatus.IN_PROGRESS
         }
 
+    val drivingQuestStatus: (String) -> QuestItemStatus = { questId ->
+        when {
+            internalCompletions.contains(questId) -> QuestItemStatus.COMPLETED
+            canManageQuest -> QuestItemStatus.CLAIMABLE
+            else -> QuestItemStatus.IN_PROGRESS
+        }
+    }
+
+    val drivingQuestAction: (QuestItemStatus) -> QuestActionType = { status ->
+        when (status) {
+            QuestItemStatus.CLAIMABLE -> QuestActionType.CLAIM_REWARD
+            QuestItemStatus.COMPLETED -> QuestActionType.ALREADY_CLAIMED
+            QuestItemStatus.IN_PROGRESS -> QuestActionType.VIEW_DETAIL
+        }
+    }
+
+    val seatbeltStatus = drivingQuestStatus(DrivingQuestIds.SEATBELT)
+    val safeDriveStatus = drivingQuestStatus(DrivingQuestIds.SAFE_DRIVE)
+    val distance100KmStatus = drivingQuestStatus(DrivingQuestIds.DISTANCE_100KM)
+    val cleanDriveStatus = drivingQuestStatus(DrivingQuestIds.CLEAN_DRIVE)
+    val firstDriveStatus = drivingQuestStatus(DrivingQuestIds.FIRST_DRIVE)
+    val focusDriveStatus = drivingQuestStatus(DrivingQuestIds.FOCUS_DRIVE)
+    val laneKeepStatus = drivingQuestStatus(DrivingQuestIds.LANE_KEEP)
+    val maintenanceStatus = drivingQuestStatus(DrivingQuestIds.MAINTENANCE)
+    val turnSignalStatus = drivingQuestStatus(DrivingQuestIds.TURN_SIGNAL)
+    val safe5DaysStatus = drivingQuestStatus(DrivingQuestIds.SAFE_5DAYS)
+
     val quests =
         listOf(
             QuestItemUiModel(
@@ -135,6 +163,146 @@ fun QuestScreen(
                         QuestItemStatus.IN_PROGRESS -> QuestActionType.VIEW_DETAIL
                     },
                 completedDate = "2026.09.14",
+                targetRoute = VehicleRoute.VEHICLE_INFO,
+            ),
+            QuestItemUiModel(
+                id = DrivingQuestIds.SEATBELT,
+                type = null,
+                title = stringResource(R.string.quest_seatbelt_name),
+                description = stringResource(R.string.quest_seatbelt_short_desc),
+                detailLine1 = stringResource(R.string.quest_seatbelt_detail_line1),
+                detailLine2 = stringResource(R.string.quest_seatbelt_detail_line2),
+                scheduleText = stringResource(R.string.quest_schedule_per_drive_short),
+                scheduleFullText = stringResource(R.string.quest_schedule_per_drive_short),
+                rewardPoints = 5,
+                status = seatbeltStatus,
+                actionType = drivingQuestAction(seatbeltStatus),
+                targetRoute = VehicleRoute.VEHICLE_INFO,
+            ),
+            QuestItemUiModel(
+                id = DrivingQuestIds.SAFE_DRIVE,
+                type = null,
+                title = stringResource(R.string.quest_safe_drive_name),
+                description = stringResource(R.string.quest_safe_drive_short_desc),
+                detailLine1 = stringResource(R.string.quest_safe_drive_detail_line1),
+                detailLine2 = stringResource(R.string.quest_safe_drive_detail_line2),
+                scheduleText = stringResource(R.string.quest_schedule_per_drive_short),
+                scheduleFullText = stringResource(R.string.quest_schedule_per_drive_short),
+                rewardPoints = 20,
+                status = safeDriveStatus,
+                actionType = drivingQuestAction(safeDriveStatus),
+                targetRoute = VehicleRoute.VEHICLE_INFO,
+            ),
+            QuestItemUiModel(
+                id = DrivingQuestIds.DISTANCE_100KM,
+                type = null,
+                title = stringResource(R.string.quest_100km_name),
+                description = stringResource(R.string.quest_100km_short_desc),
+                detailLine1 = stringResource(R.string.quest_100km_detail_line1),
+                detailLine2 = stringResource(R.string.quest_100km_detail_line2),
+                scheduleText = stringResource(R.string.quest_schedule_once_short),
+                scheduleFullText = stringResource(R.string.quest_schedule_once),
+                rewardPoints = 25,
+                status = distance100KmStatus,
+                actionType = drivingQuestAction(distance100KmStatus),
+                targetRoute = VehicleRoute.VEHICLE_INFO,
+            ),
+            QuestItemUiModel(
+                id = DrivingQuestIds.CLEAN_DRIVE,
+                type = null,
+                title = stringResource(R.string.quest_clean_drive_name),
+                description = stringResource(R.string.quest_clean_drive_short_desc),
+                detailLine1 = stringResource(R.string.quest_clean_drive_detail_line1),
+                detailLine2 = stringResource(R.string.quest_clean_drive_detail_line2),
+                scheduleText = stringResource(R.string.quest_schedule_per_drive_short),
+                scheduleFullText = stringResource(R.string.quest_schedule_per_drive_short),
+                rewardPoints = 15,
+                status = cleanDriveStatus,
+                actionType = drivingQuestAction(cleanDriveStatus),
+                targetRoute = VehicleRoute.VEHICLE_INFO,
+            ),
+            QuestItemUiModel(
+                id = DrivingQuestIds.FIRST_DRIVE,
+                type = null,
+                title = stringResource(R.string.quest_first_drive_name),
+                description = stringResource(R.string.quest_first_drive_short_desc),
+                detailLine1 = stringResource(R.string.quest_first_drive_detail_line1),
+                detailLine2 = stringResource(R.string.quest_first_drive_detail_line2),
+                scheduleText = stringResource(R.string.quest_schedule_daily_short),
+                scheduleFullText = stringResource(R.string.quest_schedule_daily_short),
+                rewardPoints = 10,
+                status = firstDriveStatus,
+                actionType = drivingQuestAction(firstDriveStatus),
+                targetRoute = VehicleRoute.VEHICLE_INFO,
+            ),
+            QuestItemUiModel(
+                id = DrivingQuestIds.FOCUS_DRIVE,
+                type = null,
+                title = stringResource(R.string.quest_focus_drive_name),
+                description = stringResource(R.string.quest_focus_drive_short_desc),
+                detailLine1 = stringResource(R.string.quest_focus_drive_detail_line1),
+                detailLine2 = stringResource(R.string.quest_focus_drive_detail_line2),
+                scheduleText = stringResource(R.string.quest_schedule_per_drive_short),
+                scheduleFullText = stringResource(R.string.quest_schedule_per_drive_short),
+                rewardPoints = 10,
+                status = focusDriveStatus,
+                actionType = drivingQuestAction(focusDriveStatus),
+                targetRoute = VehicleRoute.VEHICLE_INFO,
+            ),
+            QuestItemUiModel(
+                id = DrivingQuestIds.LANE_KEEP,
+                type = null,
+                title = stringResource(R.string.quest_lane_keep_name),
+                description = stringResource(R.string.quest_lane_keep_short_desc),
+                detailLine1 = stringResource(R.string.quest_lane_keep_detail_line1),
+                detailLine2 = stringResource(R.string.quest_lane_keep_detail_line2),
+                scheduleText = stringResource(R.string.quest_schedule_per_drive_short),
+                scheduleFullText = stringResource(R.string.quest_schedule_per_drive_short),
+                rewardPoints = 10,
+                status = laneKeepStatus,
+                actionType = drivingQuestAction(laneKeepStatus),
+                targetRoute = VehicleRoute.VEHICLE_INFO,
+            ),
+            QuestItemUiModel(
+                id = DrivingQuestIds.MAINTENANCE,
+                type = null,
+                title = stringResource(R.string.quest_maintenance_name),
+                description = stringResource(R.string.quest_maintenance_short_desc),
+                detailLine1 = stringResource(R.string.quest_maintenance_detail_line1),
+                detailLine2 = stringResource(R.string.quest_maintenance_detail_line2),
+                scheduleText = stringResource(R.string.quest_schedule_once_short),
+                scheduleFullText = stringResource(R.string.quest_schedule_once),
+                rewardPoints = 10,
+                status = maintenanceStatus,
+                actionType = drivingQuestAction(maintenanceStatus),
+                targetRoute = VehicleRoute.VEHICLE_INFO,
+            ),
+            QuestItemUiModel(
+                id = DrivingQuestIds.TURN_SIGNAL,
+                type = null,
+                title = stringResource(R.string.quest_turn_signal_name),
+                description = stringResource(R.string.quest_turn_signal_short_desc),
+                detailLine1 = stringResource(R.string.quest_turn_signal_detail_line1),
+                detailLine2 = stringResource(R.string.quest_turn_signal_detail_line2),
+                scheduleText = stringResource(R.string.quest_schedule_per_count_short),
+                scheduleFullText = stringResource(R.string.quest_schedule_per_count_short),
+                rewardPoints = 1,
+                status = turnSignalStatus,
+                actionType = drivingQuestAction(turnSignalStatus),
+                targetRoute = VehicleRoute.VEHICLE_INFO,
+            ),
+            QuestItemUiModel(
+                id = DrivingQuestIds.SAFE_5DAYS,
+                type = null,
+                title = stringResource(R.string.quest_5days_safe_name),
+                description = stringResource(R.string.quest_5days_safe_short_desc),
+                detailLine1 = stringResource(R.string.quest_5days_safe_detail_line1),
+                detailLine2 = stringResource(R.string.quest_5days_safe_detail_line2),
+                scheduleText = stringResource(R.string.quest_schedule_weekly_short),
+                scheduleFullText = stringResource(R.string.quest_schedule_weekly_short),
+                rewardPoints = 50,
+                status = safe5DaysStatus,
+                actionType = drivingQuestAction(safe5DaysStatus),
                 targetRoute = VehicleRoute.VEHICLE_INFO,
             ),
         )
@@ -196,10 +364,10 @@ fun QuestScreen(
                                 accessoryId = accessoryId,
                                 scale = scale,
                                 onExecute = {
-                                    if (selectedQuest.id == "q01") {
-                                        if (!q01RunActive && !q01Completed) onStartQuest(QuestType.Q01)
-                                        onOpenVehicleInfo()
+                                    if (selectedQuest.id == "q01" && !q01RunActive && !q01Completed) {
+                                        onStartQuest(QuestType.Q01)
                                     }
+                                    onOpenVehicleInfo()
                                 },
                                 onClaimReward = { handleClaimReward(selectedQuest.id) },
                                 modifier =
@@ -259,10 +427,10 @@ fun QuestScreen(
                             accessoryId = accessoryId,
                             scale = compactScale,
                             onExecute = {
-                                if (selectedQuest.id == "q01") {
-                                    if (!q01RunActive && !q01Completed) onStartQuest(QuestType.Q01)
-                                    onOpenVehicleInfo()
+                                if (selectedQuest.id == "q01" && !q01RunActive && !q01Completed) {
+                                    onStartQuest(QuestType.Q01)
                                 }
+                                onOpenVehicleInfo()
                             },
                             onClaimReward = { handleClaimReward(selectedQuest.id) },
                             modifier = Modifier.fillMaxWidth(),

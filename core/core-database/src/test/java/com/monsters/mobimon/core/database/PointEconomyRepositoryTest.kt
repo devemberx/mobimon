@@ -136,6 +136,31 @@ class PointEconomyRepositoryTest {
         }
 
     @Test
+    fun weeklyAndPerDriveAndCappedDailyAwardsGenerateCorrectOccurrenceKeys() =
+        runBlocking {
+            catalog = PointQuestDefinition("weekly-bonus", 50, PointQuestSchedule.Weekly("Asia/Seoul"))
+            val weeklyResult = repository.awardQuest("weekly-bonus", vehicle)
+            assertTrue(weeklyResult is PointAwardResult.Awarded)
+            assertTrue((weeklyResult as PointAwardResult.Awarded).occurrenceKey.startsWith("weekly:"))
+            assertEquals(PointAwardResult.AlreadyAwarded, repository.awardQuest("weekly-bonus", vehicle))
+
+            catalog = PointQuestDefinition("drive-seatbelt", 5, PointQuestSchedule.PerDrive("drive-101"))
+            val driveResult = repository.awardQuest("drive-seatbelt", vehicle)
+            assertEquals(PointAwardResult.Awarded(5, 155, "drive:drive-101"), driveResult)
+            assertEquals(PointAwardResult.AlreadyAwarded, repository.awardQuest("drive-seatbelt", vehicle))
+
+            catalog =
+                PointQuestDefinition(
+                    "turn-signal",
+                    1,
+                    PointQuestSchedule.CappedDaily("Asia/Seoul", 10, currentCount = 1),
+                )
+            val signal1 = repository.awardQuest("turn-signal", vehicle)
+            assertTrue(signal1 is PointAwardResult.Awarded)
+            assertEquals(PointAwardResult.AlreadyAwarded, repository.awardQuest("turn-signal", vehicle))
+        }
+
+    @Test
     fun ledgerFailureRollsBackPurchaseOwnershipAndDebit() =
         runBlocking {
             database.economyDao().insertItem(CosmeticItemEntity("hat", CosmeticSlot.ACCESSORY.name, 30, null))
