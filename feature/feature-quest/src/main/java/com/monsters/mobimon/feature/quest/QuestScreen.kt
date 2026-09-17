@@ -77,6 +77,7 @@ fun QuestScreen(
     selectedQuestId: String? = null,
     rewardSuccessModal: RewardSuccessModalState? = null,
     customCompletions: Set<String> = setOf("q03"),
+    satisfiedQuestIds: Set<String> = emptySet(),
     friendId: String = "friend:mobi",
     appearanceKey: String = "GOLDEN",
     accessoryId: String? = null,
@@ -90,7 +91,7 @@ fun QuestScreen(
 ) {
     var internalSelectedQuestId by remember { mutableStateOf(selectedQuestId) }
     var internalRewardModal by remember { mutableStateOf(rewardSuccessModal) }
-    var internalCompletions by remember { mutableStateOf(customCompletions) }
+    var internalCompletions by remember(customCompletions) { mutableStateOf(customCompletions) }
 
     val currentSelectedQuestId = internalSelectedQuestId
     val currentRewardModal = internalRewardModal ?: rewardSuccessModal
@@ -121,7 +122,7 @@ fun QuestScreen(
     val drivingQuestStatus: (String) -> QuestItemStatus = { questId ->
         when {
             internalCompletions.contains(questId) -> QuestItemStatus.COMPLETED
-            canManageQuest -> QuestItemStatus.CLAIMABLE
+            satisfiedQuestIds.contains(questId) && canManageQuest -> QuestItemStatus.CLAIMABLE
             else -> QuestItemStatus.IN_PROGRESS
         }
     }
@@ -344,9 +345,6 @@ fun QuestScreen(
                             .testTag("quest-reference"),
                     ) {
                         QuestHeader(
-                            onBack = {
-                                if (selectedQuest != null) handleSelectQuest(null) else onBack()
-                            },
                             isParked = isParked,
                             scale = scale,
                             modifier =
@@ -392,6 +390,7 @@ fun QuestScreen(
                                 onOpenVehicleInfo = onOpenVehicleInfo,
                                 isBusy = isBusy,
                                 errorMessage = errorMessage,
+                                pointBalance = pointBalance,
                                 modifier =
                                     Modifier
                                         .offset(72.dp * scale, 216.dp * scale)
@@ -411,9 +410,6 @@ fun QuestScreen(
                     verticalArrangement = Arrangement.spacedBy(24.dp),
                 ) {
                     QuestHeader(
-                        onBack = {
-                            if (selectedQuest != null) handleSelectQuest(null) else onBack()
-                        },
                         isParked = isParked,
                         scale = compactScale,
                         modifier = Modifier.fillMaxWidth(),
@@ -453,6 +449,7 @@ fun QuestScreen(
                             onOpenVehicleInfo = onOpenVehicleInfo,
                             isBusy = isBusy,
                             errorMessage = errorMessage,
+                            pointBalance = pointBalance,
                             modifier = Modifier.fillMaxWidth(),
                             isCompact = true,
                         )
@@ -473,7 +470,6 @@ fun QuestScreen(
 
 @Composable
 private fun QuestHeader(
-    onBack: () -> Unit,
     isParked: Boolean,
     scale: Float,
     modifier: Modifier = Modifier,
@@ -482,27 +478,6 @@ private fun QuestHeader(
         modifier = modifier,
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Box(
-            modifier =
-                Modifier
-                    .size(104.dp * scale)
-                    .clip(RoundedCornerShape(24.dp * scale))
-                    .background(Colors.panel)
-                    .border(2.dp * scale, Colors.border, RoundedCornerShape(24.dp * scale))
-                    .clickable(onClick = onBack)
-                    .testTag("quest-back-button"),
-            contentAlignment = Alignment.Center,
-        ) {
-            Image(
-                painter = painterResource(R.drawable.quest_icon_back),
-                contentDescription = stringResource(R.string.quest_header_title),
-                modifier = Modifier.size(36.dp * scale),
-                colorFilter = ColorFilter.tint(Colors.text),
-            )
-        }
-
-        Spacer(Modifier.width(32.dp * scale))
-
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = stringResource(R.string.quest_header_title),
@@ -569,6 +544,7 @@ private fun QuestListContent(
     isBusy: Boolean = false,
     errorMessage: String? = null,
     isCompact: Boolean = false,
+    pointBalance: Long? = null,
 ) {
     if (isCompact) {
         Column(
@@ -623,6 +599,7 @@ private fun QuestListContent(
                 onOpenVehicleInfo = onOpenVehicleInfo,
                 isBusy = isBusy,
                 errorMessage = errorMessage,
+                pointBalance = pointBalance,
                 modifier = Modifier.fillMaxWidth(),
             )
         }
@@ -682,6 +659,7 @@ private fun QuestListContent(
                 onOpenVehicleInfo = onOpenVehicleInfo,
                 isBusy = isBusy,
                 errorMessage = errorMessage,
+                pointBalance = pointBalance,
                 modifier =
                     Modifier
                         .weight(1f)
@@ -699,6 +677,7 @@ private fun LegacyQuestControls(
     onStartQuest: (QuestType) -> Unit,
     onCancelQuest: () -> Unit,
     onOpenVehicleInfo: () -> Unit,
+    pointBalance: Long? = null,
     modifier: Modifier = Modifier,
 ) {
     val completion = progress.completions.firstOrNull { it.type == QuestType.Q01 }
@@ -710,7 +689,13 @@ private fun LegacyQuestControls(
     ) {
         when {
             completion != null -> {
-                Text(stringResource(R.string.quest_reward_received, completion.awardedXp))
+                val rewardText =
+                    if (pointBalance != null) {
+                        stringResource(R.string.quest_point_reward_received, pointBalance)
+                    } else {
+                        stringResource(R.string.quest_reward_received, completion.awardedXp)
+                    }
+                Text(rewardText)
             }
 
             active?.type == QuestType.Q01 -> {
@@ -777,6 +762,7 @@ private fun QuestRightPanel(
     onOpenVehicleInfo: () -> Unit = {},
     isBusy: Boolean = false,
     errorMessage: String? = null,
+    pointBalance: Long? = null,
 ) {
     var selectedTab by remember { mutableStateOf(QuestFilterTab.ALL) }
 
@@ -795,6 +781,7 @@ private fun QuestRightPanel(
             onStartQuest = onStartQuest,
             onCancelQuest = onCancelQuest,
             onOpenVehicleInfo = onOpenVehicleInfo,
+            pointBalance = pointBalance,
             modifier = Modifier.fillMaxWidth(),
         )
 

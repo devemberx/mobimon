@@ -88,6 +88,7 @@ class QuestFeature(
                 pointLoadFailed = balanceFailed,
                 snapshot = snapshot,
                 customCompletions = state.completedPointQuestIds,
+                satisfiedQuestIds = state.satisfiedDrivingQuestIds,
                 onClaimReward = model::claimPointQuest,
             )
         }
