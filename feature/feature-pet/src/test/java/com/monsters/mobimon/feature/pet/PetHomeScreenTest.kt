@@ -166,6 +166,36 @@ class PetHomeScreenTest {
     }
 
     @Test
+    fun interactionRestrictedNoticeDisplaysDuringDrivingWithoutShiftingUi() {
+        val allowed = mutableStateOf(true)
+        compose.setContent {
+            MobiMonTheme {
+                PetHomeScreen(
+                    profile = PetProfile("profile"),
+                    snapshot = parkedSnapshot(),
+                    onOpenMenu = {},
+                    onPetClick = {},
+                    interactionAllowed = allowed.value,
+                    pointBalance = 0,
+                )
+            }
+        }
+
+        compose.onNodeWithText("주행 중에는 상호작용이 제한돼요.").assertDoesNotExist()
+        val friendBoundsParked = compose.onNodeWithContentDescription("Mobi 강아지").fetchSemanticsNode().boundsInRoot
+        val buttonBoundsParked = compose.onNodeWithText("대화하기 · 연결 불가").fetchSemanticsNode().boundsInRoot
+
+        compose.runOnIdle { allowed.value = false }
+
+        compose.onNodeWithText("주행 중에는 상호작용이 제한돼요.").assertIsDisplayed()
+        assertEquals(
+            friendBoundsParked,
+            compose.onNodeWithContentDescription("Mobi 강아지").fetchSemanticsNode().boundsInRoot,
+        )
+        assertEquals(buttonBoundsParked, compose.onNodeWithText("대화하기 · 연결 불가").fetchSemanticsNode().boundsInRoot)
+    }
+
+    @Test
     fun homeActionsForwardToShell() {
         val calls = mutableListOf<String>()
         render(
