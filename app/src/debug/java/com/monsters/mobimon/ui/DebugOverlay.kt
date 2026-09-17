@@ -14,8 +14,10 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -24,6 +26,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
@@ -33,6 +36,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -41,6 +45,8 @@ import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -58,6 +64,8 @@ import com.monsters.mobimon.core.domain.PointEconomy
 import com.monsters.mobimon.core.domain.SettingsRepository
 import com.monsters.mobimon.core.domain.VehicleRepository
 import com.monsters.mobimon.core.domain.WeatherCondition
+import com.monsters.mobimon.debug.DebugInterpretationOverrides
+import com.monsters.mobimon.debug.DebugRawVssState
 import com.monsters.mobimon.debug.DebugVssState
 import dagger.hilt.EntryPoint
 import dagger.hilt.InstallIn
@@ -135,10 +143,7 @@ fun DebugOverlay() {
                 modifier =
                     Modifier
                         .offset { IntOffset(offsetX.roundToInt(), offsetY.roundToInt()) }
-                        .width(440.dp)
-                        .height(600.dp)
-                        .background(Color(0xFF091525), RoundedCornerShape(12.dp))
-                        .border(2.dp, Color(0xFF142A42), RoundedCornerShape(12.dp))
+                        .width(720.dp)
                         .pointerInput(Unit) {
                             detectDragGestures { change, dragAmount ->
                                 change.consume()
@@ -147,21 +152,7 @@ fun DebugOverlay() {
                             }
                         },
             ) {
-                Column(
-                    modifier =
-                        Modifier
-                            .fillMaxSize()
-                            .padding(24.dp)
-                            .verticalScroll(rememberScrollState()),
-                    verticalArrangement = Arrangement.spacedBy(16.dp),
-                ) {
-                    Text(
-                        "디버깅 모드 (테스트 신호)",
-                        color = Color(0xFFF4F7FC),
-                        fontSize = 24.sp,
-                        fontWeight = FontWeight.Bold,
-                    )
-
+                DebugOverlayFrame(title = "디버깅 모드 (테스트 신호)") {
                     // App State / Points
                     DebugSection("Point") {
                         Row(
@@ -253,125 +244,17 @@ fun DebugOverlay() {
                         }
                     }
 
-                    Text(
-                        "차량 신호 (VSS)",
-                        color = Color(0xFFF4F7FC),
-                        fontSize = 20.sp,
-                        fontWeight = FontWeight.Bold,
-                    )
+                    DebugSection("차량 신호 (VSS)") {
+                        DebugVssRawSection(state.raw) { raw -> updateState { it.copy(raw = raw) } }
+                    }
 
-                    DebugSection("A. Driver State") {
-                        DebugToggleRow(
-                            "isDistracted",
-                            state.isDistracted,
-                        ) { v -> updateState { it.copy(isDistracted = v) } }
-                        DebugToggleRow("isDrowsy", state.isDrowsy) { v -> updateState { it.copy(isDrowsy = v) } }
-                        DebugInputRow("attentionLevel", state.attentionLevel.toString()) { v ->
-                            updateState {
-                                it.copy(
-                                    attentionLevel = v.toIntOrNull() ?: 0,
-                                )
-                            }
+                    DebugSection("차량 상태 (Interpretation)") {
+                        DebugInterpretationSection(state) { overrides ->
+                            updateState { it.copy(overrides = overrides) }
                         }
                     }
 
-                    DebugSection("B. Safety/ADAS") {
-                        DebugToggleRow(
-                            "isEmergencyBraking",
-                            state.isEmergencyBraking,
-                        ) { v -> updateState { it.copy(isEmergencyBraking = v) } }
-                        DebugInputRow("distanceToFrontVehicle", state.distanceToFrontVehicle.toString()) { v ->
-                            updateState {
-                                it.copy(
-                                    distanceToFrontVehicle = v.toIntOrNull() ?: 0,
-                                )
-                            }
-                        }
-                    }
-
-                    DebugSection("C. Energy") {
-                        DebugToggleRow("isCharging", state.isCharging) { v -> updateState { it.copy(isCharging = v) } }
-                        DebugInputRow("batteryPercent", state.batteryPercent.toString()) { v ->
-                            updateState {
-                                it.copy(
-                                    batteryPercent = v.toIntOrNull() ?: 0,
-                                )
-                            }
-                        }
-                    }
-
-                    DebugSection("D. Environment") {
-                        DebugToggleRow("isRaining", state.isRaining) { v -> updateState { it.copy(isRaining = v) } }
-                        DebugInputRow("outsideTemperature", state.outsideTemperature.toString()) { v ->
-                            updateState {
-                                it.copy(
-                                    outsideTemperature = v.toIntOrNull() ?: 0,
-                                )
-                            }
-                        }
-                    }
-
-                    DebugSection("E. Consumables") {
-                        DebugInputRow("washerFluidLevel", state.washerFluidLevel.toString()) { v ->
-                            updateState {
-                                it.copy(
-                                    washerFluidLevel = v.toIntOrNull() ?: 0,
-                                )
-                            }
-                        }
-                    }
-
-                    DebugSection("F. Vehicle Health") {
-                        DebugToggleRow(
-                            "isEngineWarning",
-                            state.isEngineWarning,
-                        ) { v -> updateState { it.copy(isEngineWarning = v) } }
-                        DebugSegmentedRow(
-                            "tirePressureStatus",
-                            listOf("OK", "NG"),
-                            state.tirePressureStatus,
-                        ) { v ->
-                            updateState {
-                                it.copy(tirePressureStatus = v)
-                            }
-                        }
-                    }
-
-                    DebugSection("G. Driving / Activity") {
-                        DebugToggleRow("isMoving", state.isMoving) { v -> updateState { it.copy(isMoving = v) } }
-                        DebugInputRow("speed (km/h)", state.speed.toString()) { v ->
-                            updateState {
-                                it.copy(
-                                    speed = v.toIntOrNull() ?: 0,
-                                )
-                            }
-                        }
-                        DebugSegmentedRow(
-                            "gear (P/R/N/D)",
-                            listOf("P", "R", "N", "D"),
-                            state.gear,
-                        ) { v -> updateState { it.copy(gear = v) } }
-                    }
-
-                    DebugSection("H. Direction") {
-                        DebugToggleRow(
-                            "isNavigating",
-                            state.isNavigating,
-                        ) { v -> updateState { it.copy(isNavigating = v) } }
-                        DebugInputRow("distanceToDestination", state.distanceToDestination.toString()) { v ->
-                            updateState {
-                                it.copy(
-                                    distanceToDestination = v.toIntOrNull() ?: 0,
-                                )
-                            }
-                        }
-                    }
-
-                    DebugSection("I. Trip / Start") {
-                        DebugToggleRow("isEngineOn", state.isEngineOn) { v -> updateState { it.copy(isEngineOn = v) } }
-                    }
-
-                    DebugSection("J. Quests (주행 퀘스트 테스트)") {
+                    DebugSection("Quest") {
                         Text(
                             "1. 날씨 가중치 설정",
                             color = Color(0xFFF4F7FC),
@@ -407,7 +290,22 @@ fun DebugOverlay() {
                         ) {
                             Button(
                                 onClick = {
-                                    updateState { it.copy(gear = "P", speed = 0, isMoving = false) }
+                                    updateState {
+                                        it.copy(
+                                            raw =
+                                                it.raw.copy(
+                                                    selectedGear = 126,
+                                                    vehicleSpeedKmh = 0f,
+                                                    vehicleIsMoving = false,
+                                                ),
+                                            overrides =
+                                                it.overrides.copy(
+                                                    gear = null,
+                                                    speed = null,
+                                                    isMoving = null,
+                                                ),
+                                        )
+                                    }
                                     questStatusMessage = "안전 정차 상태 (P, 속도 0) 설정됨"
                                 },
                                 modifier = Modifier.weight(1f),
@@ -658,20 +556,631 @@ fun DebugOverlay() {
 }
 
 @Composable
+fun DebugOverlayFrame(
+    title: String,
+    modifier: Modifier = Modifier,
+    content: @Composable ColumnScope.() -> Unit,
+) {
+    var closed by remember { mutableStateOf(false) }
+    var minimized by remember { mutableStateOf(false) }
+    if (closed) return
+
+    Column(
+        modifier =
+            modifier
+                .heightIn(min = 64.dp, max = 600.dp)
+                .then(if (minimized) Modifier else Modifier.height(600.dp))
+                .background(Color(0xFF091525), RoundedCornerShape(12.dp))
+                .border(2.dp, Color(0xFF142A42), RoundedCornerShape(12.dp)),
+    ) {
+        DebugOverlayHeader(
+            title = title,
+            minimized = minimized,
+            onMinimizedChange = { minimized = !minimized },
+            onClose = { closed = true },
+        )
+        if (!minimized) {
+            Column(
+                modifier =
+                    Modifier
+                        .fillMaxSize()
+                        .padding(start = 24.dp, end = 24.dp, bottom = 24.dp)
+                        .verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+                content = content,
+            )
+        }
+    }
+}
+
+@Composable
+private fun DebugOverlayHeader(
+    title: String,
+    minimized: Boolean,
+    onMinimizedChange: () -> Unit,
+    onClose: () -> Unit,
+) {
+    Row(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .background(Color(0xFF091525), RoundedCornerShape(topStart = 12.dp, topEnd = 12.dp))
+                .padding(start = 24.dp, end = 12.dp, top = 12.dp, bottom = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        Text(
+            title,
+            modifier = Modifier.weight(1f),
+            color = Color(0xFFF4F7FC),
+            fontSize = 24.sp,
+            fontWeight = FontWeight.Bold,
+        )
+        DebugHeaderButton(
+            label = if (minimized) "+" else "-",
+            contentDescription = if (minimized) "디버그 창 펼치기" else "디버그 창 축소",
+            onClick = onMinimizedChange,
+        )
+        DebugHeaderButton(
+            label = "x",
+            contentDescription = "디버그 창 닫기",
+            onClick = onClose,
+        )
+    }
+}
+
+@Composable
+private fun DebugHeaderButton(
+    label: String,
+    contentDescription: String,
+    onClick: () -> Unit,
+) {
+    IconButton(
+        onClick = onClick,
+        modifier =
+            Modifier
+                .size(44.dp)
+                .semantics { this.contentDescription = contentDescription },
+    ) {
+        Text(
+            text = label,
+            color = Color(0xFFF4F7FC),
+            fontSize = 20.sp,
+            fontWeight = FontWeight.Bold,
+        )
+    }
+}
+
+@Composable
+private fun DebugVssRawSection(
+    raw: DebugRawVssState,
+    onRawChange: (DebugRawVssState) -> Unit,
+) {
+    DebugSection("A. 운전자 상태") {
+        DebugRawNumberRow("Vehicle.Driver.FatigueLevel", raw.driverFatigueLevel) {
+            onRawChange(raw.copy(driverFatigueLevel = it.toFloatOrNull() ?: 0f))
+        }
+        DebugRawNumberRow("Vehicle.Driver.DistractionLevel", raw.driverDistractionLevel) {
+            onRawChange(raw.copy(driverDistractionLevel = it.toFloatOrNull() ?: 0f))
+        }
+        DebugToggleRow("Vehicle.ADAS.DMS.IsWarning", raw.dmsIsWarning) {
+            onRawChange(raw.copy(dmsIsWarning = it))
+        }
+    }
+
+    DebugSection("B. 안전/ADAS") {
+        DebugToggleRow("Vehicle.ADAS.LaneDepartureDetection.IsWarning", raw.laneDepartureWarning) {
+            onRawChange(raw.copy(laneDepartureWarning = it))
+        }
+        DebugToggleRow("Vehicle.ADAS.ObstacleDetection.IsWarning", raw.obstacleDetectionWarning) {
+            onRawChange(raw.copy(obstacleDetectionWarning = it))
+        }
+        DebugToggleRow("Vehicle.ADAS.ESC.IsStrongCrossWindDetected", raw.strongCrossWindDetected) {
+            onRawChange(raw.copy(strongCrossWindDetected = it))
+        }
+        DebugRawNumberRow("Vehicle.ADAS.ESC.RoadFriction.MostProbable", raw.roadFrictionMostProbable) {
+            onRawChange(raw.copy(roadFrictionMostProbable = it.toFloatOrNull() ?: 0f))
+        }
+        DebugRawNumberRow("Vehicle.Acceleration.Longitudinal", raw.accelerationLongitudinal) {
+            onRawChange(raw.copy(accelerationLongitudinal = it.toFloatOrNull() ?: 0f))
+        }
+        DebugToggleRow("Vehicle.Chassis.Brake.IsDriverEmergencyBrakingDetected", raw.driverEmergencyBrakingDetected) {
+            onRawChange(raw.copy(driverEmergencyBrakingDetected = it))
+        }
+        DebugRawNumberRow("Vehicle.ADAS.ObstacleDetection.Front.Center.Distance", raw.obstacleFrontCenterDistance) {
+            onRawChange(raw.copy(obstacleFrontCenterDistance = it.toFloatOrNull() ?: 0f))
+        }
+    }
+
+    DebugSection("C. 에너지") {
+        DebugToggleRow("Vehicle.Powertrain.FuelSystem.IsFuelLevelLow", raw.fuelLevelLow) {
+            onRawChange(raw.copy(fuelLevelLow = it))
+        }
+        DebugRawNumberRow(
+            "Vehicle.Powertrain.TractionBattery.StateOfCharge.Displayed",
+            raw.tractionBatterySocDisplayed,
+        ) {
+            onRawChange(raw.copy(tractionBatterySocDisplayed = it.toFloatOrNull() ?: 0f))
+        }
+        DebugToggleRow(
+            "Vehicle.Powertrain.TractionBattery.Charging.ChargingPort.AnyPosition.IsChargingCableConnected",
+            raw.chargingCableConnected,
+        ) {
+            onRawChange(raw.copy(chargingCableConnected = it))
+        }
+        DebugToggleRow(
+            "Vehicle.Powertrain.TractionBattery.Charging.IsCharging",
+            raw.tractionBatteryChargingIsCharging,
+        ) {
+            onRawChange(raw.copy(tractionBatteryChargingIsCharging = it))
+        }
+        DebugRawNumberRow("Vehicle.Powertrain.TractionBattery.Charging.AveragePower", raw.chargingAveragePowerKw) {
+            onRawChange(raw.copy(chargingAveragePowerKw = it.toFloatOrNull() ?: 0f))
+        }
+    }
+
+    DebugSection("D. 환경") {
+        DebugRawNumberRow("Vehicle.Cabin.HVAC.AmbientAirTemperature", raw.cabinAmbientAirTemperature) {
+            onRawChange(raw.copy(cabinAmbientAirTemperature = it.toFloatOrNull() ?: 0f))
+        }
+        DebugRawNumberRow("Vehicle.Exterior.AirTemperature", raw.exteriorAirTemperature) {
+            onRawChange(raw.copy(exteriorAirTemperature = it.toFloatOrNull() ?: 0f))
+        }
+        DebugRawNumberRow("Vehicle.Body.Raindetection.Intensity", raw.rainIntensity) {
+            onRawChange(raw.copy(rainIntensity = it.toIntOrNull() ?: 0))
+        }
+    }
+
+    DebugSection("E. 소모품") {
+        DebugToggleRow("Vehicle.Body.Windshield.Front.WasherFluid.IsLevelLow", raw.washerFluidLow) {
+            onRawChange(raw.copy(washerFluidLow = it))
+        }
+        DebugRawNumberRow("Vehicle.Body.Windshield.Front.WasherFluid.Level", raw.washerFluidLevel) {
+            onRawChange(raw.copy(washerFluidLevel = it.toIntOrNull() ?: 0))
+        }
+        DebugRawNumberRow("Vehicle.Body.Windshield.Front.Wiping.WiperWear", raw.frontWiperWear) {
+            onRawChange(raw.copy(frontWiperWear = it.toIntOrNull() ?: 0))
+        }
+        DebugRawNumberRow("Vehicle.Body.Windshield.Rear.Wiping.WiperWear", raw.rearWiperWear) {
+            onRawChange(raw.copy(rearWiperWear = it.toIntOrNull() ?: 0))
+        }
+        DebugRawNumberRow("Vehicle.Chassis.Axle.Row1.Wheel.Left.Brake.PadWear", raw.row1LeftBrakePadWear) {
+            onRawChange(raw.copy(row1LeftBrakePadWear = it.toIntOrNull() ?: 0))
+        }
+        DebugRawNumberRow("Vehicle.Chassis.Axle.Row1.Wheel.Right.Brake.PadWear", raw.row1RightBrakePadWear) {
+            onRawChange(raw.copy(row1RightBrakePadWear = it.toIntOrNull() ?: 0))
+        }
+        DebugRawNumberRow("Vehicle.Chassis.Axle.Row2.Wheel.Left.Brake.PadWear", raw.row2LeftBrakePadWear) {
+            onRawChange(raw.copy(row2LeftBrakePadWear = it.toIntOrNull() ?: 0))
+        }
+        DebugRawNumberRow("Vehicle.Chassis.Axle.Row2.Wheel.Right.Brake.PadWear", raw.row2RightBrakePadWear) {
+            onRawChange(raw.copy(row2RightBrakePadWear = it.toIntOrNull() ?: 0))
+        }
+    }
+
+    DebugSection("F. 차량건강") {
+        DebugToggleRow("Vehicle.Chassis.Axle.Row1.Wheel.Left.Tire.IsPressureLow", raw.row1LeftTirePressureLow) {
+            onRawChange(raw.copy(row1LeftTirePressureLow = it))
+        }
+        DebugToggleRow("Vehicle.Chassis.Axle.Row1.Wheel.Right.Tire.IsPressureLow", raw.row1RightTirePressureLow) {
+            onRawChange(raw.copy(row1RightTirePressureLow = it))
+        }
+        DebugToggleRow("Vehicle.Chassis.Axle.Row2.Wheel.Left.Tire.IsPressureLow", raw.row2LeftTirePressureLow) {
+            onRawChange(raw.copy(row2LeftTirePressureLow = it))
+        }
+        DebugToggleRow("Vehicle.Chassis.Axle.Row2.Wheel.Right.Tire.IsPressureLow", raw.row2RightTirePressureLow) {
+            onRawChange(raw.copy(row2RightTirePressureLow = it))
+        }
+        DebugRawNumberRow("Vehicle.Diagnostics.DTCCount", raw.diagnosticsDtcCount) {
+            onRawChange(raw.copy(diagnosticsDtcCount = it.toIntOrNull() ?: 0))
+        }
+        DebugToggleRow("Vehicle.OBD.Status.IsMILOn", raw.obdMilOn) {
+            onRawChange(raw.copy(obdMilOn = it))
+        }
+        DebugToggleRow("Vehicle.Service.IsServiceDue", raw.serviceDue) {
+            onRawChange(raw.copy(serviceDue = it))
+        }
+    }
+
+    DebugSection("G. 주행/활동") {
+        DebugToggleRow("Vehicle.IsMoving", raw.vehicleIsMoving) {
+            onRawChange(raw.copy(vehicleIsMoving = it))
+        }
+        DebugRawNumberRow("Vehicle.Speed", raw.vehicleSpeedKmh) {
+            onRawChange(raw.copy(vehicleSpeedKmh = it.toFloatOrNull() ?: 0f))
+        }
+        DebugRawNumberRow("Vehicle.Powertrain.Transmission.SelectedGear", raw.selectedGear) {
+            onRawChange(raw.copy(selectedGear = it.toIntOrNull() ?: 126))
+        }
+        DebugRawNumberRow("Vehicle.TraveledDistance", raw.traveledDistanceKm) {
+            onRawChange(raw.copy(traveledDistanceKm = it.toFloatOrNull() ?: 0f))
+        }
+        DebugToggleRow("Vehicle.Cabin.Seat.Row1.DriverSide.IsBelted", raw.driverSeatBelted) {
+            onRawChange(raw.copy(driverSeatBelted = it))
+        }
+    }
+
+    DebugSection("H. 방향지시등/내비게이션/위치") {
+        DebugToggleRow("Vehicle.Body.Lights.DirectionIndicator.Left.IsSignaling", raw.leftIndicatorSignaling) {
+            onRawChange(raw.copy(leftIndicatorSignaling = it))
+        }
+        DebugToggleRow("Vehicle.Body.Lights.DirectionIndicator.Right.IsSignaling", raw.rightIndicatorSignaling) {
+            onRawChange(raw.copy(rightIndicatorSignaling = it))
+        }
+        DebugRawNumberRow("Vehicle.Cabin.Infotainment.Navigation.DestinationSet.Latitude", raw.destinationLatitude) {
+            onRawChange(raw.copy(destinationLatitude = it.toDoubleOrNull() ?: 0.0))
+        }
+        DebugRawNumberRow("Vehicle.Cabin.Infotainment.Navigation.DestinationSet.Longitude", raw.destinationLongitude) {
+            onRawChange(raw.copy(destinationLongitude = it.toDoubleOrNull() ?: 0.0))
+        }
+        DebugRawNumberRow("Vehicle.CurrentLocation.Latitude", raw.currentLatitude) {
+            onRawChange(raw.copy(currentLatitude = it.toDoubleOrNull() ?: 0.0))
+        }
+        DebugRawNumberRow("Vehicle.CurrentLocation.Longitude", raw.currentLongitude) {
+            onRawChange(raw.copy(currentLongitude = it.toDoubleOrNull() ?: 0.0))
+        }
+    }
+
+    DebugSection("I. 트립/주행 시작") {
+        DebugToggleRow("Vehicle.Powertrain.CombustionEngine.IsRunning", raw.combustionEngineRunning) {
+            onRawChange(raw.copy(combustionEngineRunning = it))
+        }
+        DebugRawNumberRow("Vehicle.TraveledDistanceSinceStart", raw.traveledDistanceSinceStartKm) {
+            onRawChange(raw.copy(traveledDistanceSinceStartKm = it.toFloatOrNull() ?: 0f))
+        }
+        DebugRawNumberRow("Vehicle.TripDuration", raw.tripDurationSeconds) {
+            onRawChange(raw.copy(tripDurationSeconds = it.toFloatOrNull() ?: 0f))
+        }
+        DebugRawNumberRow("Vehicle.TripMeterReading", raw.tripMeterReadingKm) {
+            onRawChange(raw.copy(tripMeterReadingKm = it.toFloatOrNull() ?: 0f))
+        }
+        DebugRawNumberRow("Vehicle.AverageSpeed", raw.averageSpeedKmh) {
+            onRawChange(raw.copy(averageSpeedKmh = it.toFloatOrNull() ?: 0f))
+        }
+    }
+}
+
+@Composable
+private fun DebugRawNumberRow(
+    label: String,
+    value: Any,
+    onValueChange: (String) -> Unit,
+) {
+    DebugInputRow(label, value.toString(), isNumber = false, onValueChange = onValueChange)
+}
+
+@Composable
+private fun DebugInterpretationSection(
+    state: DebugVssState,
+    onOverridesChange: (DebugInterpretationOverrides) -> Unit,
+) {
+    val overrides = state.overrides
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(6.dp),
+    ) {
+        DebugInterpretationRow(
+            label = "isDistracted",
+            value = state.isDistracted.toString(),
+            inputType = DebugInterpretationInputType.Boolean,
+            manualValue = overrides.isDistracted?.toString().orEmpty(),
+            formula = "Vehicle.Driver.DistractionLevel >= 70",
+            onManualValueChange = { onOverridesChange(overrides.copy(isDistracted = it.toBooleanOverride())) },
+            onClearManualValue = { onOverridesChange(overrides.copy(isDistracted = null)) },
+        )
+        DebugInterpretationRow(
+            label = "isDrowsy",
+            value = state.isDrowsy.toString(),
+            inputType = DebugInterpretationInputType.Boolean,
+            manualValue = overrides.isDrowsy?.toString().orEmpty(),
+            formula = "Vehicle.Driver.FatigueLevel >= 70 || Vehicle.ADAS.DMS.IsWarning",
+            onManualValueChange = { onOverridesChange(overrides.copy(isDrowsy = it.toBooleanOverride())) },
+            onClearManualValue = { onOverridesChange(overrides.copy(isDrowsy = null)) },
+        )
+        DebugInterpretationRow(
+            label = "attentionLevel",
+            value = state.attentionLevel.toString(),
+            manualValue = overrides.attentionLevel?.toString().orEmpty(),
+            formula = "(100 - Vehicle.Driver.DistractionLevel).coerceIn(0, 100)",
+            onManualValueChange = { onOverridesChange(overrides.copy(attentionLevel = it.toIntOrNull())) },
+            onClearManualValue = { onOverridesChange(overrides.copy(attentionLevel = null)) },
+        )
+        DebugInterpretationRow(
+            label = "isEmergencyBraking",
+            value = state.isEmergencyBraking.toString(),
+            inputType = DebugInterpretationInputType.Boolean,
+            manualValue = overrides.isEmergencyBraking?.toString().orEmpty(),
+            formula = "Vehicle.Chassis.Brake.IsDriverEmergencyBrakingDetected",
+            onManualValueChange = { onOverridesChange(overrides.copy(isEmergencyBraking = it.toBooleanOverride())) },
+            onClearManualValue = { onOverridesChange(overrides.copy(isEmergencyBraking = null)) },
+        )
+        DebugInterpretationRow(
+            label = "distanceToFrontVehicle",
+            value = state.distanceToFrontVehicle.toString(),
+            manualValue = overrides.distanceToFrontVehicle?.toString().orEmpty(),
+            formula = "Vehicle.ADAS.ObstacleDetection.Front.Center.Distance.roundToInt()",
+            onManualValueChange = { onOverridesChange(overrides.copy(distanceToFrontVehicle = it.toIntOrNull())) },
+            onClearManualValue = { onOverridesChange(overrides.copy(distanceToFrontVehicle = null)) },
+        )
+        DebugInterpretationRow(
+            label = "isCharging",
+            value = state.isCharging.toString(),
+            inputType = DebugInterpretationInputType.Boolean,
+            manualValue = overrides.isCharging?.toString().orEmpty(),
+            formula = "Charging.IsCharging || (ChargingCableConnected && Charging.AveragePower > 0)",
+            onManualValueChange = { onOverridesChange(overrides.copy(isCharging = it.toBooleanOverride())) },
+            onClearManualValue = { onOverridesChange(overrides.copy(isCharging = null)) },
+        )
+        DebugInterpretationRow(
+            label = "batteryPercent",
+            value = state.batteryPercent.toString(),
+            manualValue = overrides.batteryPercent?.toString().orEmpty(),
+            formula = "Vehicle.Powertrain.TractionBattery.StateOfCharge.Displayed.roundToInt()",
+            onManualValueChange = { onOverridesChange(overrides.copy(batteryPercent = it.toIntOrNull())) },
+            onClearManualValue = { onOverridesChange(overrides.copy(batteryPercent = null)) },
+        )
+        DebugInterpretationRow(
+            label = "outsideTemperature",
+            value = state.outsideTemperature.toString(),
+            manualValue = overrides.outsideTemperature?.toString().orEmpty(),
+            formula = "Vehicle.Exterior.AirTemperature.roundToInt()",
+            onManualValueChange = { onOverridesChange(overrides.copy(outsideTemperature = it.toIntOrNull())) },
+            onClearManualValue = { onOverridesChange(overrides.copy(outsideTemperature = null)) },
+        )
+        DebugInterpretationRow(
+            label = "isRaining",
+            value = state.isRaining.toString(),
+            inputType = DebugInterpretationInputType.Boolean,
+            manualValue = overrides.isRaining?.toString().orEmpty(),
+            formula = "Vehicle.Body.Raindetection.Intensity > 0",
+            onManualValueChange = { onOverridesChange(overrides.copy(isRaining = it.toBooleanOverride())) },
+            onClearManualValue = { onOverridesChange(overrides.copy(isRaining = null)) },
+        )
+        DebugInterpretationRow(
+            label = "washerFluidLevel",
+            value = state.washerFluidLevel.toString(),
+            manualValue = overrides.washerFluidLevel?.toString().orEmpty(),
+            formula = "Vehicle.Body.Windshield.Front.WasherFluid.Level",
+            onManualValueChange = { onOverridesChange(overrides.copy(washerFluidLevel = it.toIntOrNull())) },
+            onClearManualValue = { onOverridesChange(overrides.copy(washerFluidLevel = null)) },
+        )
+        DebugInterpretationRow(
+            label = "isEngineWarning",
+            value = state.isEngineWarning.toString(),
+            inputType = DebugInterpretationInputType.Boolean,
+            manualValue = overrides.isEngineWarning?.toString().orEmpty(),
+            formula = "Vehicle.OBD.Status.IsMILOn || Vehicle.Diagnostics.DTCCount > 0",
+            onManualValueChange = { onOverridesChange(overrides.copy(isEngineWarning = it.toBooleanOverride())) },
+            onClearManualValue = { onOverridesChange(overrides.copy(isEngineWarning = null)) },
+        )
+        DebugInterpretationRow(
+            label = "tirePressureStatus",
+            value = state.tirePressureStatus,
+            manualValue = overrides.tirePressureStatus.orEmpty(),
+            formula = "if (any Tire.IsPressureLow) \"NG\" else \"OK\"",
+            onManualValueChange = { onOverridesChange(overrides.copy(tirePressureStatus = it.ifBlank { null })) },
+            onClearManualValue = { onOverridesChange(overrides.copy(tirePressureStatus = null)) },
+        )
+        DebugInterpretationRow(
+            label = "isMoving",
+            value = state.isMoving.toString(),
+            inputType = DebugInterpretationInputType.Boolean,
+            manualValue = overrides.isMoving?.toString().orEmpty(),
+            formula = "Vehicle.IsMoving || Vehicle.Speed > 0",
+            onManualValueChange = { onOverridesChange(overrides.copy(isMoving = it.toBooleanOverride())) },
+            onClearManualValue = { onOverridesChange(overrides.copy(isMoving = null)) },
+        )
+        DebugInterpretationRow(
+            label = "speed",
+            value = state.speed.toString(),
+            manualValue = overrides.speed?.toString().orEmpty(),
+            formula = "Vehicle.Speed.roundToInt()",
+            onManualValueChange = { onOverridesChange(overrides.copy(speed = it.toIntOrNull())) },
+            onClearManualValue = { onOverridesChange(overrides.copy(speed = null)) },
+        )
+        DebugInterpretationRow(
+            label = "gear",
+            value = state.gear,
+            manualValue = overrides.gear.orEmpty(),
+            formula = "SelectedGear: 126=P, 127=D, 0=N, negative=R",
+            onManualValueChange = { onOverridesChange(overrides.copy(gear = it.ifBlank { null })) },
+            onClearManualValue = { onOverridesChange(overrides.copy(gear = null)) },
+        )
+        DebugInterpretationRow(
+            label = "isNavigating",
+            value = state.isNavigating.toString(),
+            inputType = DebugInterpretationInputType.Boolean,
+            manualValue = overrides.isNavigating?.toString().orEmpty(),
+            formula = "distance(currentLocation, destinationSet) > 100m",
+            onManualValueChange = { onOverridesChange(overrides.copy(isNavigating = it.toBooleanOverride())) },
+            onClearManualValue = { onOverridesChange(overrides.copy(isNavigating = null)) },
+        )
+        DebugInterpretationRow(
+            label = "distanceToDestination",
+            value = state.distanceToDestination.toString(),
+            manualValue = overrides.distanceToDestination?.toString().orEmpty(),
+            formula = "haversine(CurrentLocation, DestinationSet).roundToInt()",
+            onManualValueChange = { onOverridesChange(overrides.copy(distanceToDestination = it.toIntOrNull())) },
+            onClearManualValue = { onOverridesChange(overrides.copy(distanceToDestination = null)) },
+        )
+        DebugInterpretationRow(
+            label = "isEngineOn",
+            value = state.isEngineOn.toString(),
+            inputType = DebugInterpretationInputType.Boolean,
+            manualValue = overrides.isEngineOn?.toString().orEmpty(),
+            formula = "Vehicle.Powertrain.CombustionEngine.IsRunning",
+            onManualValueChange = { onOverridesChange(overrides.copy(isEngineOn = it.toBooleanOverride())) },
+            onClearManualValue = { onOverridesChange(overrides.copy(isEngineOn = null)) },
+        )
+    }
+}
+
+enum class DebugInterpretationInputType {
+    Text,
+    Boolean,
+}
+
+@Composable
+fun DebugInterpretationRow(
+    label: String,
+    value: String,
+    inputType: DebugInterpretationInputType = DebugInterpretationInputType.Text,
+    formula: String,
+    onManualValueChange: (String) -> Unit,
+    onClearManualValue: () -> Unit,
+    manualValue: String = "",
+) {
+    var expanded by remember { mutableStateOf(false) }
+    Column(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .background(Color(0xFF0D1B2A), RoundedCornerShape(6.dp))
+                .padding(horizontal = 10.dp, vertical = 6.dp),
+        verticalArrangement = Arrangement.spacedBy(4.dp),
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                label,
+                color = Color.White,
+                fontSize = 13.sp,
+                fontWeight = FontWeight.SemiBold,
+                modifier = Modifier.width(190.dp),
+            )
+            Button(
+                onClick = { expanded = !expanded },
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF203C58)),
+                shape = RoundedCornerShape(8.dp),
+                contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
+                modifier = Modifier.semantics { contentDescription = "$label 계산식 보기" },
+            ) {
+                Text("?", color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+            }
+
+            Text(
+                value,
+                color = Color(0xFF71E5C5),
+                fontSize = 13.sp,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.width(72.dp),
+            )
+
+            when (inputType) {
+                DebugInterpretationInputType.Boolean -> {
+                    val checked =
+                        manualValue.toBooleanStrictOrNull()
+                            ?: value.toBooleanStrictOrNull()
+                            ?: false
+                    Switch(
+                        checked = checked,
+                        onCheckedChange = { onManualValueChange(it.toString()) },
+                        modifier = Modifier.testTag("debug-interpretation-toggle-$label"),
+                        colors =
+                            SwitchDefaults.colors(
+                                checkedThumbColor = Color.White,
+                                checkedTrackColor = Color(0xFF71E5C5),
+                            ),
+                    )
+                }
+
+                DebugInterpretationInputType.Text -> {
+                    Box(
+                        modifier =
+                            Modifier
+                                .weight(1f)
+                                .background(Color(0xFF203C58), RoundedCornerShape(8.dp))
+                                .border(1.dp, Color(0xFF42658A), RoundedCornerShape(8.dp))
+                                .padding(horizontal = 10.dp, vertical = 7.dp),
+                    ) {
+                        BasicTextField(
+                            value = manualValue,
+                            onValueChange = onManualValueChange,
+                            textStyle = TextStyle(color = Color.White, fontSize = 13.sp),
+                            cursorBrush = SolidColor(Color(0xFF71E5C5)),
+                            singleLine = true,
+                            modifier =
+                                Modifier
+                                    .fillMaxWidth()
+                                    .testTag("debug-interpretation-input-$label"),
+                        )
+                    }
+                }
+            }
+
+            Button(
+                onClick = onClearManualValue,
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF203C58)),
+                shape = RoundedCornerShape(8.dp),
+                contentPadding = PaddingValues(horizontal = 10.dp, vertical = 7.dp),
+            ) {
+                Text("자동", color = Color.White, fontSize = 12.sp)
+            }
+        }
+        if (expanded) {
+            Text(formula, color = Color(0xFFBFD7EA), fontSize = 12.sp)
+        }
+    }
+}
+
+private fun String.toBooleanOverride(): Boolean? =
+    when (trim().lowercase()) {
+        "true", "1", "yes", "y", "on" -> true
+        "false", "0", "no", "n", "off" -> false
+        else -> null
+    }
+
+@Composable
 fun DebugSection(
     title: String,
     content: @Composable ColumnScope.() -> Unit,
 ) {
+    var expanded by rememberSaveable(title) { mutableStateOf(false) }
     Column(
         modifier =
             Modifier
                 .fillMaxWidth()
                 .background(Color(0xFF142A42), RoundedCornerShape(8.dp))
-                .padding(16.dp),
+                .padding(12.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        Text(title, color = Color(0xFF87DAF5), fontWeight = FontWeight.Bold, fontSize = 16.sp)
-        content()
+        Row(
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .clickable { expanded = !expanded }
+                    .semantics {
+                        contentDescription =
+                            if (expanded) {
+                                "$title 접기"
+                            } else {
+                                "$title 펼치기"
+                            }
+                    }.padding(vertical = 2.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                text = if (expanded) "-" else "+",
+                color = Color(0xFF87DAF5),
+                fontWeight = FontWeight.Bold,
+                fontSize = 18.sp,
+                modifier = Modifier.width(18.dp),
+            )
+            Text(
+                title,
+                color = Color(0xFF87DAF5),
+                fontWeight = FontWeight.Bold,
+                fontSize = 16.sp,
+                modifier = Modifier.weight(1f),
+            )
+        }
+        if (expanded) {
+            content()
+        }
     }
 }
 
