@@ -106,7 +106,7 @@ class Q01AppJourneyTest {
             scenario.recreate()
             assertHomePoints(0)
             openQuests()
-            waitFor(hasText(text(QuestR.string.quest_reward_received, 80)))
+            waitFor(hasText(text(QuestR.string.quest_point_reward_received, 0)))
             compose.onNodeWithText(text(QuestR.string.quest_start_q01)).assertDoesNotExist()
             compose.onNodeWithText(text(QuestR.string.quest_cancel)).assertDoesNotExist()
             runBlocking(Dispatchers.IO) {

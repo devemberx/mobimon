@@ -50,6 +50,9 @@ interface PointEconomyDao {
     @Query("SELECT * FROM point_quest_completions WHERE profileId = :profileId ORDER BY completedAtUtcMillis")
     fun observeQuestCompletions(profileId: String): Flow<List<PointQuestCompletionEntity>>
 
+    @Query("DELETE FROM point_quest_completions WHERE profileId = :profileId")
+    suspend fun clearQuestCompletions(profileId: String): Int
+
     @Insert
     suspend fun insertLedger(entry: PointLedgerEntity)
 

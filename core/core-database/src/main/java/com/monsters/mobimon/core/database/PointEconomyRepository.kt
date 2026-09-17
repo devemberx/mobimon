@@ -8,6 +8,7 @@ import com.monsters.mobimon.core.domain.CosmeticInventory
 import com.monsters.mobimon.core.domain.CosmeticSlot
 import com.monsters.mobimon.core.domain.CurrentAppUse
 import com.monsters.mobimon.core.domain.CurrentVehicleEvidence
+import com.monsters.mobimon.core.domain.DriveEvaluationData
 import com.monsters.mobimon.core.domain.EquipResult
 import com.monsters.mobimon.core.domain.IdGenerator
 import com.monsters.mobimon.core.domain.PointAwardResult
@@ -22,6 +23,8 @@ import com.monsters.mobimon.core.domain.UtcClock
 import com.monsters.mobimon.core.domain.VehicleSnapshot
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.mapNotNull
 import java.time.DateTimeException
@@ -94,6 +97,13 @@ class PointEconomyRepository(
         dao.observeQuestCompletions(profileId).mapNotNull { items ->
             items.mapTo(mutableSetOf()) { it.questId }
         }
+
+    private val _driveEvaluation = MutableStateFlow(DriveEvaluationData())
+    override val driveEvaluation: Flow<DriveEvaluationData> = _driveEvaluation.asStateFlow()
+
+    override fun updateDriveEvaluation(data: DriveEvaluationData) {
+        _driveEvaluation.value = data
+    }
 
     override suspend fun purchase(
         itemId: String,

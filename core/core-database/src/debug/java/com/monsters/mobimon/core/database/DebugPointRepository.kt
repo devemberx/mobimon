@@ -54,6 +54,12 @@ class DebugPointRepository(
             DebugPointResult.UPDATED
         }
 
+    suspend fun resetQuestCompletions(): DebugPointResult =
+        transact {
+            clearQuestCompletions(profileId)
+            DebugPointResult.UPDATED
+        }
+
     private suspend fun transact(block: suspend PointEconomyDao.() -> DebugPointResult): DebugPointResult =
         try {
             database.withTransaction {

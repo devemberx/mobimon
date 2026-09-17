@@ -3,6 +3,8 @@ package com.monsters.mobimon.feature.quest
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.monsters.mobimon.core.domain.Clock
+import com.monsters.mobimon.core.domain.DriveEvaluationData
+import com.monsters.mobimon.core.domain.DrivingQuestEvaluator
 import com.monsters.mobimon.core.domain.PointAwardResult
 import com.monsters.mobimon.core.domain.PointEconomy
 import com.monsters.mobimon.core.domain.ProgressionIdentity
@@ -53,6 +55,7 @@ data class QuestUiState(
     val observationFailed: Boolean = false,
     val message: QuestMessage? = null,
     val completedPointQuestIds: Set<String> = emptySet(),
+    val satisfiedDrivingQuestIds: Set<String> = emptySet(),
 )
 
 private data class ObservationData(
@@ -60,6 +63,7 @@ private data class ObservationData(
     val snapshot: VehicleSnapshot,
     val now: Long,
     val completedIds: Set<String>,
+    val evalData: DriveEvaluationData,
 )
 
 class QuestViewModel(
@@ -70,6 +74,7 @@ class QuestViewModel(
     private val clock: Clock,
     private val evaluator: QuestEvaluator,
     private val economy: PointEconomy? = null,
+    private val drivingEvaluator: DrivingQuestEvaluator = DrivingQuestEvaluator(),
 ) : ViewModel() {
     private val mutableState = MutableStateFlow(QuestUiState(vehicle.snapshots.value))
     val state = mutableState.asStateFlow()
@@ -84,11 +89,12 @@ class QuestViewModel(
         val clockTicks =
             flow {
                 while (true) {
-                    emit(clock.nowMillis())
+                    emit(Unit)
                     delay(1_000)
                 }
             }
         val completedFlow: Flow<Set<String>> = economy?.completedQuestIds ?: flowOf(emptySet())
+        val evaluationFlow: Flow<DriveEvaluationData> = economy?.driveEvaluation ?: flowOf(DriveEvaluationData())
         observation =
             viewModelScope.launch {
                 combine(
@@ -96,8 +102,9 @@ class QuestViewModel(
                     vehicle.snapshots,
                     clockTicks,
                     completedFlow,
-                ) { progress, snapshot, now, completedIds ->
-                    ObservationData(progress, snapshot, now, completedIds)
+                    evaluationFlow,
+                ) { progress, snapshot, _, completedIds, evalData ->
+                    ObservationData(progress, snapshot, clock.nowMillis(), completedIds, evalData)
                 }.catch { cause ->
                     if (cause is CancellationException) throw cause
                     mutableState.update {
@@ -108,7 +115,7 @@ class QuestViewModel(
                             message = QuestMessage.STORAGE_FAILURE,
                         )
                     }
-                }.collect { (progress, snapshot, now, completedIds) ->
+                }.collect { (progress, snapshot, now, completedIds, evalData) ->
                     val invalid = evaluator.validateSnapshot(snapshot, identity.source, now)
                     val displaySnapshot =
                         when (invalid) {
@@ -117,6 +124,8 @@ class QuestViewModel(
                             else -> snapshot
                         }
                     val run = progress.activeRun
+                    val drivingResults = drivingEvaluator.evaluateAll(evalData)
+                    val satisfiedIds = drivingResults.filter { it.isSatisfied }.map { it.questId }.toSet()
                     mutableState.update {
                         it.copy(
                             progress = progress,
@@ -133,6 +142,7 @@ class QuestViewModel(
                                     ) == null,
                             observationFailed = false,
                             completedPointQuestIds = completedIds,
+                            satisfiedDrivingQuestIds = satisfiedIds,
                             message =
                                 if (it.observationFailed ||
                                     it.message.isResolved(invalid, it.snapshot, snapshot)
