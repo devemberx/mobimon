@@ -9,6 +9,7 @@ import com.monsters.mobimon.core.domain.SignalQuality
 import com.monsters.mobimon.core.domain.SignalSource
 import com.monsters.mobimon.core.domain.VehicleSnapshot
 import com.monsters.mobimon.core.domain.WriteResult
+import com.monsters.mobimon.debug.DebugRawVssState
 import com.monsters.mobimon.debug.DebugVssProvider
 import com.monsters.mobimon.debug.DebugVssState
 import kotlinx.coroutines.CoroutineScope
@@ -73,17 +74,41 @@ class DemoVehicleRepositoryTest {
             runCurrent()
             assertEquals(DrivingState.PARKED, repository.snapshots.value.drivingState)
 
-            listOf("D", "R", "N").forEach { gear ->
-                debug.mutableState.value = DebugVssState(gear = gear, isMoving = false, speed = 0)
+            listOf(127, -1, 0).forEach { selectedGear ->
+                debug.mutableState.value =
+                    DebugVssState(
+                        raw =
+                            DebugRawVssState(
+                                selectedGear = selectedGear,
+                                vehicleIsMoving = false,
+                                vehicleSpeedKmh = 0f,
+                            ),
+                    )
                 runCurrent()
                 assertEquals(DrivingState.UNKNOWN, repository.snapshots.value.drivingState)
             }
 
-            debug.mutableState.value = DebugVssState(gear = "P", isMoving = true, speed = 0)
+            debug.mutableState.value =
+                DebugVssState(
+                    raw =
+                        DebugRawVssState(
+                            selectedGear = 126,
+                            vehicleIsMoving = true,
+                            vehicleSpeedKmh = 0f,
+                        ),
+                )
             runCurrent()
             assertEquals(DrivingState.MOVING, repository.snapshots.value.drivingState)
 
-            debug.mutableState.value = DebugVssState(gear = "P", isMoving = false, speed = 1)
+            debug.mutableState.value =
+                DebugVssState(
+                    raw =
+                        DebugRawVssState(
+                            selectedGear = 126,
+                            vehicleIsMoving = false,
+                            vehicleSpeedKmh = 1f,
+                        ),
+                )
             runCurrent()
             assertEquals(DrivingState.MOVING, repository.snapshots.value.drivingState)
             repository.stop()
@@ -116,14 +141,24 @@ class DemoVehicleRepositoryTest {
             assertEquals(1L, repository.snapshots.value.sequence)
 
             advanceTimeBy(2_000)
-            debug.mutableState.value = debug.mutableState.value.copy(batteryPercent = 71)
+            debug.mutableState.value =
+                debug.mutableState.value.copy(
+                    raw =
+                        debug.mutableState.value.raw
+                            .copy(tractionBatterySocDisplayed = 71f),
+                )
             runCurrent()
 
             assertEquals(3L, repository.snapshots.value.sequence)
             assertEquals("epoch-3", repository.snapshots.value.id)
             assertEquals(listOf(1L, 2L, 3L), published.map { it.sequence })
             assertEquals(listOf("epoch-1", "epoch-2", "epoch-3"), published.map { it.id })
-            debug.mutableState.value = debug.mutableState.value.copy(batteryPercent = 70)
+            debug.mutableState.value =
+                debug.mutableState.value.copy(
+                    raw =
+                        debug.mutableState.value.raw
+                            .copy(tractionBatterySocDisplayed = 70f),
+                )
             runCurrent()
             assertEquals(4L, repository.snapshots.value.sequence)
             assertEquals("epoch-4", repository.snapshots.value.id)
