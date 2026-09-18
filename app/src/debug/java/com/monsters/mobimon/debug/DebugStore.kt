@@ -424,12 +424,12 @@ private fun String.toTimeOfDay(): String {
         try {
             OffsetDateTime.parse(this).hour
         } catch (_: DateTimeParseException) {
-            return "낮"
+            return "Day"
         }
     return when (hour) {
-        in 8..11 -> "아침"
-        in 12..18 -> "낮"
-        else -> "밤"
+        in 8..11 -> "Morning"
+        in 12..18 -> "Day"
+        else -> "Night"
     }
 }
 
