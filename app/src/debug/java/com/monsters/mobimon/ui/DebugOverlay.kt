@@ -1046,7 +1046,7 @@ private fun DebugInterpretationSection(
             label = "timeOfDay",
             value = state.timeOfDay,
             manualValue = overrides.timeOfDay.orEmpty(),
-            formula = "Vehicle.CurrentLocation.Timestamp hour: 08-11=아침, 12-18=낮, else=밤",
+            formula = "Vehicle.CurrentLocation.Timestamp hour: 08-11=Morning, 12-18=Day, else=Night",
             onManualValueChange = { onOverridesChange(overrides.copy(timeOfDay = it.ifBlank { null })) },
             onClearManualValue = { onOverridesChange(overrides.copy(timeOfDay = null)) },
         )
