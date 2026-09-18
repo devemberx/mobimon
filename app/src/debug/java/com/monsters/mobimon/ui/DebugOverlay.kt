@@ -839,6 +839,9 @@ private fun DebugVssRawSection(
         DebugRawNumberRow("Vehicle.Cabin.Infotainment.Navigation.DestinationSet.Longitude", raw.destinationLongitude) {
             onRawChange(raw.copy(destinationLongitude = it.toDoubleOrNull() ?: 0.0))
         }
+        DebugRawNumberRow("Vehicle.CurrentLocation.Timestamp", raw.currentLocationTimestamp, wideInput = true) {
+            onRawChange(raw.copy(currentLocationTimestamp = it))
+        }
         DebugRawNumberRow("Vehicle.CurrentLocation.Latitude", raw.currentLatitude) {
             onRawChange(raw.copy(currentLatitude = it.toDoubleOrNull() ?: 0.0))
         }
@@ -870,9 +873,10 @@ private fun DebugVssRawSection(
 private fun DebugRawNumberRow(
     label: String,
     value: Any,
+    wideInput: Boolean = false,
     onValueChange: (String) -> Unit,
 ) {
-    DebugInputRow(label, value.toString(), isNumber = false, onValueChange = onValueChange)
+    DebugInputRow(label, value.toString(), isNumber = false, wideInput = wideInput, onValueChange = onValueChange)
 }
 
 @Composable
@@ -1038,13 +1042,13 @@ private fun DebugInterpretationSection(
             onManualValueChange = { onOverridesChange(overrides.copy(isEngineOn = it.toBooleanOverride())) },
             onClearManualValue = { onOverridesChange(overrides.copy(isEngineOn = null)) },
         )
-        DebugSegmentedRow(
+        DebugInterpretationRow(
             label = "timeOfDay",
-            options = listOf("아침", "낮", "밤"),
-            selectedValue = state.timeOfDay,
-            onValueChange = { selected ->
-                onOverridesChange(overrides.copy(timeOfDay = selected))
-            },
+            value = state.timeOfDay,
+            manualValue = overrides.timeOfDay.orEmpty(),
+            formula = "Vehicle.CurrentLocation.Timestamp hour: 08-11=아침, 12-18=낮, else=밤",
+            onManualValueChange = { onOverridesChange(overrides.copy(timeOfDay = it.ifBlank { null })) },
+            onClearManualValue = { onOverridesChange(overrides.copy(timeOfDay = null)) },
         )
     }
 }
@@ -1287,6 +1291,7 @@ fun DebugInputRow(
     label: String,
     value: String,
     isNumber: Boolean = true,
+    wideInput: Boolean = false,
     onValueChange: (String) -> Unit,
 ) {
     var text by remember { mutableStateOf(value) }
@@ -1305,16 +1310,11 @@ fun DebugInputRow(
         }
     }
 
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Text(label, color = Color(0xFFFFFFFF), fontSize = 16.sp)
+    @Composable
+    fun InputBox(modifier: Modifier) {
         Box(
             modifier =
-                Modifier
-                    .width(100.dp)
+                modifier
                     .background(Color(0xFF203C58), RoundedCornerShape(8.dp))
                     .border(1.dp, Color(0xFF42658A), RoundedCornerShape(8.dp))
                     .padding(horizontal = 10.dp, vertical = 8.dp),
@@ -1366,6 +1366,25 @@ fun DebugInputRow(
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth().testTag("debug-input-$label"),
             )
+        }
+    }
+
+    if (wideInput) {
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            verticalArrangement = Arrangement.spacedBy(6.dp),
+        ) {
+            Text(label, color = Color(0xFFFFFFFF), fontSize = 16.sp)
+            InputBox(Modifier.fillMaxWidth())
+        }
+    } else {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(label, color = Color(0xFFFFFFFF), fontSize = 16.sp)
+            InputBox(Modifier.width(100.dp))
         }
     }
 }
