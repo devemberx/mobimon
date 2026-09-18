@@ -32,6 +32,9 @@
   <string name="pet_item_mobi_goggles">모비 고글</string>
   <string name="pet_item_luna_cap">루나 모자</string>
   <string name="pet_item_luna_sunglasses">루나 선글라스</string>
+  <string name="pet_background_star">반짝이는 별</string>
+  <string name="pet_background_snow">소복소복 눈</string>
+  <string name="pet_background_petal">흩날리는 꽃잎</string>
   <string name="pet_background_pending">배경 이미지 준비 중</string>
   <string name="pet_item_status_equipped">보유 중 · 현재 착용</string>
   <string name="pet_item_status_owned">보유 중 · 선택됨</string>

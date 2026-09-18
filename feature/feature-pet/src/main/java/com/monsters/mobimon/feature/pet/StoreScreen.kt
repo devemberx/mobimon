@@ -211,6 +211,23 @@ fun CustomizationScreen(
                             background?.let { CharacterArtwork.backgrounds[it] }?.let {
                                 CharacterAssetImage(it, Modifier.fillMaxSize().testTag("preview-background"))
                             }
+                            if (background != null) {
+                                val particleType =
+                                    when {
+                                        background.contains("snow") -> com.monsters.mobimon.core.ui.ParticleType.SNOW
+                                        background.contains(
+                                            "petal",
+                                        ) ||
+                                            background.contains(
+                                                "flower",
+                                            ) -> com.monsters.mobimon.core.ui.ParticleType.PETAL
+                                        else -> com.monsters.mobimon.core.ui.ParticleType.STAR
+                                    }
+                                com.monsters.mobimon.core.ui.FallingParticlesEffect(
+                                    particleType = particleType,
+                                    modifier = Modifier.fillMaxSize().testTag("store-preview-particles"),
+                                )
+                            }
                             PetAvatar(
                                 Modifier
                                     .fillMaxSize()
@@ -358,6 +375,29 @@ fun CustomizationScreen(
                                 Box(Modifier.fillMaxWidth().weight(1f), contentAlignment = Alignment.Center) {
                                     if (item.slot == CosmeticSlot.FRIEND) {
                                         PetAvatar(Modifier.fillMaxSize(), friendId = item.id)
+                                    } else if (item.slot == CosmeticSlot.BACKGROUND ||
+                                        item.id.startsWith("background:")
+                                    ) {
+                                        val particleType =
+                                            when {
+                                                item.id.contains(
+                                                    "snow",
+                                                ) -> com.monsters.mobimon.core.ui.ParticleType.SNOW
+                                                item.id.contains(
+                                                    "petal",
+                                                ) ||
+                                                    item.id.contains(
+                                                        "flower",
+                                                    ) -> com.monsters.mobimon.core.ui.ParticleType.PETAL
+                                                else -> com.monsters.mobimon.core.ui.ParticleType.STAR
+                                            }
+                                        com.monsters.mobimon.core.ui.FallingParticlesEffect(
+                                            particleType = particleType,
+                                            modifier = Modifier.fillMaxSize().clip(RoundedCornerShape(16.dp)),
+                                            particleCount = 18,
+                                            minSize = 6.dp,
+                                            maxSize = 12.dp,
+                                        )
                                     } else {
                                         (CharacterArtwork.itemIcons[item.id] ?: CharacterArtwork.backgrounds[item.id])
                                             ?.let {

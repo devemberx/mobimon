@@ -59,13 +59,7 @@ object CharacterArtwork {
         )
 
     // Add drawable resource mappings here when selectable background art is delivered.
-    val backgrounds: Map<String, CharacterAsset> =
-        mapOf(
-            "background:star" to CharacterAsset(R.drawable.ic_star_particle),
-            "background:snow" to CharacterAsset(R.drawable.ic_star_particle),
-            "background:petal" to CharacterAsset(R.drawable.ic_star_particle),
-            "background:night" to CharacterAsset(R.drawable.ic_star_particle),
-        )
+    val backgrounds: Map<String, CharacterAsset> = emptyMap()
 
     fun preview(
         friendId: String,

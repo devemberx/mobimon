@@ -37,6 +37,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
@@ -50,11 +51,13 @@ import com.monsters.mobimon.core.domain.CosmeticItem
 import com.monsters.mobimon.core.domain.CosmeticSlot
 import com.monsters.mobimon.core.ui.CharacterArtwork
 import com.monsters.mobimon.core.ui.CharacterAssetImage
+import com.monsters.mobimon.core.ui.FallingParticlesEffect
 import com.monsters.mobimon.core.ui.MobiMonButton
 import com.monsters.mobimon.core.ui.MobiMonMessage
 import com.monsters.mobimon.core.ui.MobiMonSelectionCard
 import com.monsters.mobimon.core.ui.MobiMonTab
 import com.monsters.mobimon.core.ui.MobiMonTabs
+import com.monsters.mobimon.core.ui.ParticleType
 import com.monsters.mobimon.core.ui.PetAvatar
 
 private fun isObsoleteItem(itemId: String): Boolean =
@@ -208,18 +211,14 @@ internal fun CompactCustomizationScreen(
                             if (previewBackgroundId != null) {
                                 val particleType =
                                     when {
-                                        previewBackgroundId.contains(
-                                            "snow",
-                                        ) -> com.monsters.mobimon.core.ui.ParticleType.SNOW
+                                        previewBackgroundId.contains("snow") -> ParticleType.SNOW
                                         previewBackgroundId.contains(
                                             "petal",
                                         ) ||
-                                            previewBackgroundId.contains(
-                                                "flower",
-                                            ) -> com.monsters.mobimon.core.ui.ParticleType.PETAL
-                                        else -> com.monsters.mobimon.core.ui.ParticleType.STAR
+                                            previewBackgroundId.contains("flower") -> ParticleType.PETAL
+                                        else -> ParticleType.STAR
                                     }
-                                com.monsters.mobimon.core.ui.FallingParticlesEffect(
+                                FallingParticlesEffect(
                                     particleType = particleType,
                                     modifier = Modifier.fillMaxSize().testTag("preview-background-particles"),
                                 )
@@ -352,6 +351,7 @@ internal fun CompactCustomizationScreen(
                                                 modifier =
                                                     Modifier
                                                         .size(70.dp)
+                                                        .clip(CircleShape)
                                                         .background(
                                                             color = MaterialTheme.colorScheme.primaryContainer,
                                                             shape = CircleShape,
@@ -363,6 +363,25 @@ internal fun CompactCustomizationScreen(
                                                         ?: CharacterArtwork.itemIcons[item.id]
                                                 if (iconAsset != null) {
                                                     CharacterAssetImage(iconAsset, Modifier.size(64.dp))
+                                                } else if (item.slot == CosmeticSlot.BACKGROUND ||
+                                                    item.id.startsWith("background:")
+                                                ) {
+                                                    val particleType =
+                                                        when {
+                                                            item.id.contains("snow") -> ParticleType.SNOW
+                                                            item.id.contains(
+                                                                "petal",
+                                                            ) ||
+                                                                item.id.contains("flower") -> ParticleType.PETAL
+                                                            else -> ParticleType.STAR
+                                                        }
+                                                    FallingParticlesEffect(
+                                                        particleType = particleType,
+                                                        modifier = Modifier.fillMaxSize(),
+                                                        particleCount = 12,
+                                                        minSize = 4.dp,
+                                                        maxSize = 10.dp,
+                                                    )
                                                 } else {
                                                     Icon(
                                                         imageVector = Icons.Default.Check,
@@ -503,5 +522,8 @@ internal fun cosmeticName(itemId: String): String =
         itemId == "accessory:mobi_goggles" -> stringResource(R.string.pet_item_mobi_goggles)
         itemId == "accessory:luna_cap" -> stringResource(R.string.pet_item_luna_cap)
         itemId == "accessory:luna_sunglasses" -> stringResource(R.string.pet_item_luna_sunglasses)
+        itemId == "background:star" -> stringResource(R.string.pet_background_star)
+        itemId == "background:snow" -> stringResource(R.string.pet_background_snow)
+        itemId == "background:petal" -> stringResource(R.string.pet_background_petal)
         else -> itemId
     }
