@@ -60,6 +60,16 @@ class DebugPointRepository(
             DebugPointResult.UPDATED
         }
 
+    suspend fun resetStoreInventory(): DebugPointResult =
+        transact {
+            clearOwnedNonDefault(profileId)
+            clearAllEquipped(profileId)
+            insertOwned(OwnedCosmeticEntity(profileId, "friend:mobi"))
+            insertOwned(OwnedCosmeticEntity(profileId, "friend:luna"))
+            putEquipped(EquippedCosmeticEntity(profileId, "FRIEND", "friend:mobi"))
+            DebugPointResult.UPDATED
+        }
+
     private suspend fun transact(block: suspend PointEconomyDao.() -> DebugPointResult): DebugPointResult =
         try {
             database.withTransaction {

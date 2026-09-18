@@ -11,6 +11,7 @@ import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertWidthIsAtLeast
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
@@ -298,6 +299,12 @@ class PetHomeScreenTest {
     }
 
     @Test
+    fun backgroundDecorationDisplaysFallingParticles() {
+        render(backgroundId = "background:star")
+        compose.onNodeWithTag("home-background-particles").assertExists()
+    }
+
+    @Test
     fun initialLoadingDoesNotOfferRetryOrSavedValues() {
         compose.setContent { MobiMonTheme { PetHomeLoadingScreen(false, {}) } }
         compose.onNodeWithText("친구를 불러오고 있어요.").assertIsDisplayed()
@@ -328,6 +335,7 @@ class PetHomeScreenTest {
         pointLoadFailed: Boolean = false,
         pointBalance: Long? = null,
         friendId: String? = "friend:mobi",
+        backgroundId: String? = null,
         inventoryLoaded: Boolean = true,
         inventoryLoadFailed: Boolean = false,
         fontScale: Float = 1f,
@@ -348,6 +356,7 @@ class PetHomeScreenTest {
                         pointLoadFailed = pointLoadFailed,
                         pointBalance = pointBalance,
                         friendId = friendId,
+                        backgroundId = backgroundId,
                         inventoryLoaded = inventoryLoaded,
                         inventoryLoadFailed = inventoryLoadFailed,
                         onRetryProfile = onRetry,

@@ -126,4 +126,10 @@ interface PointEconomyDao {
         profileId: String,
         friendId: String,
     )
+
+    @Query("DELETE FROM owned_cosmetics WHERE profileId = :profileId AND itemId NOT IN ('friend:mobi', 'friend:luna')")
+    fun clearOwnedNonDefault(profileId: String): Int
+
+    @Query("DELETE FROM equipped_cosmetics WHERE profileId = :profileId")
+    fun clearAllEquipped(profileId: String): Int
 }

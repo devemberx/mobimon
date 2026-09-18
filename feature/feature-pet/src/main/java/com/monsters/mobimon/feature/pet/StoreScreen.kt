@@ -1,5 +1,6 @@
 package com.monsters.mobimon.feature.pet
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -36,6 +37,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
@@ -149,13 +151,27 @@ fun CustomizationScreen(
                                 }
                             listOf(NONE_ACCESSORY_ITEM) + accessories
                         }
+                        CosmeticSlot.BACKGROUND -> {
+                            val backgrounds =
+                                catalog.filter {
+                                    it.slot == CosmeticSlot.BACKGROUND &&
+                                        !isObsoleteItem(it.id)
+                                }
+                            listOf(NONE_BACKGROUND_ITEM) + backgrounds
+                        }
                         else -> catalog.filter { it.slot == tab && !isObsoleteItem(it.id) }
                     }
                 val selected =
                     items.firstOrNull { it.id == selectedItemId }
                         ?: items.firstOrNull {
                             if (it.id.startsWith("none")) {
-                                inventory.equippedItemIds[CosmeticSlot.ACCESSORY] == null
+                                when (it.slot) {
+                                    CosmeticSlot.ACCESSORY -> inventory.equippedItemIds[CosmeticSlot.ACCESSORY] == null
+                                    CosmeticSlot.BACKGROUND ->
+                                        inventory.equippedItemIds[CosmeticSlot.BACKGROUND] ==
+                                            null
+                                    else -> false
+                                }
                             } else {
                                 it.id == inventory.equippedItemIds[it.slot]
                             }
@@ -177,13 +193,21 @@ fun CustomizationScreen(
                         else -> equipment[CosmeticSlot.ACCESSORY]
                     }
                 val background =
-                    selected?.takeIf { it.slot == CosmeticSlot.BACKGROUND }?.id
-                        ?: inventory.equippedItemIds[CosmeticSlot.BACKGROUND]
+                    when {
+                        tab == CosmeticSlot.BACKGROUND -> selected?.takeIf { !it.id.startsWith("none") }?.id
+                        else -> inventory.equippedItemIds[CosmeticSlot.BACKGROUND]
+                    }
                 val equipped =
                     selected != null &&
                         (
                             if (selected.id.startsWith("none")) {
-                                inventory.equippedItemIds[selected.slot] == null
+                                when (selected.slot) {
+                                    CosmeticSlot.ACCESSORY -> inventory.equippedItemIds[CosmeticSlot.ACCESSORY] == null
+                                    CosmeticSlot.BACKGROUND ->
+                                        inventory.equippedItemIds[CosmeticSlot.BACKGROUND] ==
+                                            null
+                                    else -> false
+                                }
                             } else {
                                 inventory.equippedItemIds[selected.slot] == selected.id
                             }
@@ -208,23 +232,51 @@ fun CustomizationScreen(
                         verticalArrangement = Arrangement.Center,
                     ) {
                         Box(Modifier.fillMaxWidth().weight(1f), contentAlignment = Alignment.Center) {
-                            background?.let { CharacterArtwork.backgrounds[it] }?.let {
-                                CharacterAssetImage(it, Modifier.fillMaxSize().testTag("preview-background"))
-                            }
-                            PetAvatar(
-                                Modifier
-                                    .fillMaxSize()
-                                    .graphicsLayer {
-                                        scaleX = if (previewFriend == "friend:luna") 1.10f else 0.92f
-                                        scaleY = scaleX
-                                    }.testTag("preview-character"),
-                                friendId = previewFriend,
-                                accessoryId = accessory,
-                                outfitId = outfit,
+                            Image(
+                                painter = painterResource(R.drawable.pet_home_background_v4),
+                                contentDescription = null,
+                                contentScale = ContentScale.Crop,
+                                modifier = Modifier.fillMaxSize().testTag("preview-background"),
                             )
+                            if (background != null) {
+                                val particleType =
+                                    when {
+                                        background.contains("snow") -> com.monsters.mobimon.core.ui.ParticleType.SNOW
+                                        background.contains(
+                                            "petal",
+                                        ) ||
+                                            background.contains(
+                                                "flower",
+                                            ) -> com.monsters.mobimon.core.ui.ParticleType.PETAL
+                                        else -> com.monsters.mobimon.core.ui.ParticleType.STAR
+                                    }
+                                com.monsters.mobimon.core.ui.FallingParticlesEffect(
+                                    particleType = particleType,
+                                    modifier = Modifier.fillMaxSize().testTag("store-preview-particles"),
+                                )
+                            }
+                            if (tab != CosmeticSlot.BACKGROUND) {
+                                PetAvatar(
+                                    Modifier
+                                        .fillMaxSize()
+                                        .graphicsLayer {
+                                            scaleX = if (previewFriend == "friend:luna") 1.10f else 0.92f
+                                            scaleY = scaleX
+                                        }.testTag("preview-character"),
+                                    friendId = previewFriend,
+                                    accessoryId = accessory,
+                                    outfitId = outfit,
+                                )
+                            }
                         }
+                        val previewTitle =
+                            if (tab == CosmeticSlot.BACKGROUND) {
+                                selected?.id?.let { cosmeticName(it) } ?: stringResource(R.string.pet_item_none)
+                            } else {
+                                storeFriendName(previewFriend)
+                            }
                         Text(
-                            storeFriendName(previewFriend),
+                            previewTitle,
                             fontSize = (48f * scale).sp,
                             color = StoreText,
                             fontWeight = FontWeight.Bold,
@@ -344,7 +396,13 @@ fun CustomizationScreen(
                         val isNone = item.id.startsWith("none")
                         val active =
                             if (isNone) {
-                                inventory.equippedItemIds[CosmeticSlot.ACCESSORY] == null
+                                when (item.slot) {
+                                    CosmeticSlot.ACCESSORY -> inventory.equippedItemIds[CosmeticSlot.ACCESSORY] == null
+                                    CosmeticSlot.BACKGROUND ->
+                                        inventory.equippedItemIds[CosmeticSlot.BACKGROUND] ==
+                                            null
+                                    else -> false
+                                }
                             } else {
                                 inventory.equippedItemIds[item.slot] == item.id
                             }
@@ -358,6 +416,36 @@ fun CustomizationScreen(
                                 Box(Modifier.fillMaxWidth().weight(1f), contentAlignment = Alignment.Center) {
                                     if (item.slot == CosmeticSlot.FRIEND) {
                                         PetAvatar(Modifier.fillMaxSize(), friendId = item.id)
+                                    } else if (isNone) {
+                                        Icon(
+                                            painterResource(R.drawable.store_check),
+                                            null,
+                                            Modifier.size(80.dp * scale),
+                                            tint = StoreSky,
+                                        )
+                                    } else if (item.slot == CosmeticSlot.BACKGROUND ||
+                                        item.id.startsWith("background:")
+                                    ) {
+                                        val particleType =
+                                            when {
+                                                item.id.contains(
+                                                    "snow",
+                                                ) -> com.monsters.mobimon.core.ui.ParticleType.SNOW
+                                                item.id.contains(
+                                                    "petal",
+                                                ) ||
+                                                    item.id.contains(
+                                                        "flower",
+                                                    ) -> com.monsters.mobimon.core.ui.ParticleType.PETAL
+                                                else -> com.monsters.mobimon.core.ui.ParticleType.STAR
+                                            }
+                                        com.monsters.mobimon.core.ui.FallingParticlesEffect(
+                                            particleType = particleType,
+                                            modifier = Modifier.fillMaxSize().clip(RoundedCornerShape(16.dp)),
+                                            particleCount = 18,
+                                            minSize = 6.dp,
+                                            maxSize = 12.dp,
+                                        )
                                     } else {
                                         (CharacterArtwork.itemIcons[item.id] ?: CharacterArtwork.backgrounds[item.id])
                                             ?.let {
