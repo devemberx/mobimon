@@ -102,6 +102,21 @@ interface PointEconomyDao {
     @Query("SELECT * FROM equipped_cosmetics WHERE profileId = :profileId")
     fun observeEquipped(profileId: String): Flow<List<EquippedCosmeticEntity>>
 
+    @Query("DELETE FROM equipped_cosmetics WHERE profileId = :profileId AND slot = :slot")
+    suspend fun deleteEquipped(
+        profileId: String,
+        slot: String,
+    ): Int
+
+    @Query("DELETE FROM equipped_cosmetics WHERE itemId IN ('accessory:necklace', 'accessory:mint_scarf')")
+    suspend fun deleteEquippedObsolete(): Int
+
+    @Query("DELETE FROM owned_cosmetics WHERE itemId IN ('accessory:necklace', 'accessory:mint_scarf')")
+    suspend fun deleteOwnedObsolete(): Int
+
+    @Query("DELETE FROM cosmetic_items WHERE id IN ('accessory:necklace', 'accessory:mint_scarf')")
+    suspend fun deleteCosmeticObsolete(): Int
+
     @Query(
         "DELETE FROM equipped_cosmetics WHERE profileId = :profileId AND slot != 'FRIEND' AND slot NOT LIKE '%:%' " +
             "AND itemId IN (SELECT id FROM cosmetic_items WHERE compatibleFriendId IS NOT NULL " +

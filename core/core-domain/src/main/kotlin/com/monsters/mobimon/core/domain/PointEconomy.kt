@@ -22,6 +22,11 @@ interface PointEconomy {
 
     suspend fun equip(itemId: String): EquipResult
 
+    suspend fun unequip(
+        slot: CosmeticSlot,
+        friendId: String? = null,
+    ): EquipResult = EquipResult.Applied
+
     suspend fun awardQuest(
         questId: String,
         displayedSnapshot: VehicleSnapshot,

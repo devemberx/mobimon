@@ -99,7 +99,9 @@ class CosmeticInventoryViewModel(
     }
 
     fun equipItem(itemId: String) {
-        if (state.value.saving ||
+        val isNone = itemId.startsWith("none")
+        if (state.value.saving) return
+        if (!isNone &&
             state.value.inventory
                 ?.ownedItemIds
                 ?.contains(itemId) != true

@@ -1,0 +1,174 @@
+{
+  "name": "mobi_idle_breath_v1",
+  "generation": "built-in image_gen; individual AI keyframes; no geometric pixel warping",
+  "frame_size": [
+    1254,
+    1254
+  ],
+  "format": "PNG RGBA8",
+  "frames": [
+    {
+      "file": "mobi_idle_breath_01.png",
+      "duration_ms": 220,
+      "keyframe": 1,
+      "sha256": "3539ad63f2777c284937fa3a45ce10343358ce8e63735426ec4fe6242361623a",
+      "opaque_bounds": [
+        177,
+        57,
+        1066,
+        1156
+      ],
+      "transparent_pixel_fraction": 0.5918
+    },
+    {
+      "file": "mobi_idle_breath_02.png",
+      "duration_ms": 160,
+      "keyframe": 2,
+      "sha256": "3403e90b1b20df66ef5cbfe352bfb342f81a83209c8ee8919dbd217e9caf1b04",
+      "opaque_bounds": [
+        176,
+        60,
+        1068,
+        1156
+      ],
+      "transparent_pixel_fraction": 0.5926
+    },
+    {
+      "file": "mobi_idle_breath_03.png",
+      "duration_ms": 150,
+      "keyframe": 3,
+      "sha256": "49add93a0a9e09fe3ea4235a733195080501fc56374061588f193ea10e68c3bc",
+      "opaque_bounds": [
+        176,
+        54,
+        1067,
+        1157
+      ],
+      "transparent_pixel_fraction": 0.593
+    },
+    {
+      "file": "mobi_idle_breath_04.png",
+      "duration_ms": 140,
+      "keyframe": 4,
+      "sha256": "8a9be97d4fdfeae129044a5c455145a63ac1f6b499f150831e134c9cd8e25bf4",
+      "opaque_bounds": [
+        175,
+        55,
+        1072,
+        1157
+      ],
+      "transparent_pixel_fraction": 0.5896
+    },
+    {
+      "file": "mobi_idle_breath_05.png",
+      "duration_ms": 140,
+      "keyframe": 5,
+      "sha256": "cebd5751c09bba22db7863d6c89809d7f6bb98347f267399fe93fc11a47ee884",
+      "opaque_bounds": [
+        172,
+        50,
+        1072,
+        1156
+      ],
+      "transparent_pixel_fraction": 0.5852
+    },
+    {
+      "file": "mobi_idle_breath_06.png",
+      "duration_ms": 180,
+      "keyframe": 6,
+      "sha256": "ea78b8d6e57a50cd25acda0751f558a22403658532393eb43a8bb10353214f5f",
+      "opaque_bounds": [
+        175,
+        55,
+        1069,
+        1157
+      ],
+      "transparent_pixel_fraction": 0.5908
+    },
+    {
+      "file": "mobi_idle_breath_07.png",
+      "duration_ms": 180,
+      "keyframe": 6,
+      "sha256": "ea78b8d6e57a50cd25acda0751f558a22403658532393eb43a8bb10353214f5f",
+      "opaque_bounds": [
+        175,
+        55,
+        1069,
+        1157
+      ],
+      "transparent_pixel_fraction": 0.5908
+    },
+    {
+      "file": "mobi_idle_breath_08.png",
+      "duration_ms": 160,
+      "keyframe": 8,
+      "sha256": "2eeb310c28f6dedd9375d3292d4b99d754ae2b53653a32dbdb5a46cd3982343e",
+      "opaque_bounds": [
+        177,
+        56,
+        1070,
+        1159
+      ],
+      "transparent_pixel_fraction": 0.5914
+    },
+    {
+      "file": "mobi_idle_breath_09.png",
+      "duration_ms": 170,
+      "keyframe": 9,
+      "sha256": "216f43341098f3acd5aecc6ee170213c6c8396ae3060b7f0fb1da449e18431e3",
+      "opaque_bounds": [
+        176,
+        60,
+        1069,
+        1157
+      ],
+      "transparent_pixel_fraction": 0.5904
+    },
+    {
+      "file": "mobi_idle_breath_10.png",
+      "duration_ms": 180,
+      "keyframe": 3,
+      "sha256": "49add93a0a9e09fe3ea4235a733195080501fc56374061588f193ea10e68c3bc",
+      "opaque_bounds": [
+        176,
+        54,
+        1067,
+        1157
+      ],
+      "transparent_pixel_fraction": 0.593
+    },
+    {
+      "file": "mobi_idle_breath_11.png",
+      "duration_ms": 180,
+      "keyframe": 2,
+      "sha256": "3403e90b1b20df66ef5cbfe352bfb342f81a83209c8ee8919dbd217e9caf1b04",
+      "opaque_bounds": [
+        176,
+        60,
+        1068,
+        1156
+      ],
+      "transparent_pixel_fraction": 0.5926
+    },
+    {
+      "file": "mobi_idle_breath_12.png",
+      "duration_ms": 340,
+      "keyframe": 1,
+      "sha256": "3539ad63f2777c284937fa3a45ce10343358ce8e63735426ec4fe6242361623a",
+      "opaque_bounds": [
+        177,
+        57,
+        1066,
+        1156
+      ],
+      "transparent_pixel_fraction": 0.5918
+    }
+  ],
+  "frame_count": 12,
+  "unique_keyframes": 8,
+  "loop": true,
+  "cycle_duration_ms": 2200,
+  "sequence": "inhale 01-06; apex hold 06-07; exhale 08-11; rest/seam 12-01",
+  "integration": "asset-only; no existing render loop found; no UI or Kotlin edits",
+  "quality_note": "AI generated: small edge/registration differences remain; not pixel-identical to original. First and last frames are byte-identical."
+}

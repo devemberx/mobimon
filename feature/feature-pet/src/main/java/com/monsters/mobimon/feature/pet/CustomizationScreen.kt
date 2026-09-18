@@ -32,7 +32,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -57,6 +57,20 @@ import com.monsters.mobimon.core.ui.MobiMonTab
 import com.monsters.mobimon.core.ui.MobiMonTabs
 import com.monsters.mobimon.core.ui.PetAvatar
 
+private fun isObsoleteItem(itemId: String): Boolean =
+    itemId == "accessory:necklace" ||
+        itemId == "accessory:mint_scarf" ||
+        itemId.contains("necklace") ||
+        itemId.contains("mint_scarf")
+
+internal val NONE_ACCESSORY_ITEM =
+    CosmeticItem(
+        id = "none:accessory",
+        slot = CosmeticSlot.ACCESSORY,
+        price = 0,
+        compatibleFriendId = null,
+    )
+
 @Composable
 internal fun CompactCustomizationScreen(
     inventory: CosmeticInventory?,
@@ -78,7 +92,7 @@ internal fun CompactCustomizationScreen(
     activeTab: CosmeticSlot,
     onTabChange: (CosmeticSlot) -> Unit,
 ) {
-    var subTab by rememberSaveable { mutableStateOf(0) } // 0: 전체, 1: 보유 중
+    var subTab by rememberSaveable { mutableIntStateOf(0) } // 0: 전체, 1: 보유 중
 
     if (inventory == null) {
         Column(
@@ -106,15 +120,13 @@ internal fun CompactCustomizationScreen(
     val effectiveSelectedId =
         selectedItemId ?: when (activeTab) {
             CosmeticSlot.FRIEND -> currentEquippedFriendId
-            CosmeticSlot.ACCESSORY -> currentEquippedAccessoryId
+            CosmeticSlot.ACCESSORY -> currentEquippedAccessoryId ?: "none:accessory"
             CosmeticSlot.BACKGROUND -> inventory.equippedItemIds[CosmeticSlot.BACKGROUND]
             else -> null
         }
 
     val previewFriendId =
-        if (activeTab ==
-            CosmeticSlot.FRIEND
-        ) {
+        if (activeTab == CosmeticSlot.FRIEND) {
             effectiveSelectedId ?: "friend:mobi"
         } else {
             currentEquippedFriendId
@@ -122,8 +134,14 @@ internal fun CompactCustomizationScreen(
     val previewAccessoryId =
         when {
             activeTab == CosmeticSlot.ACCESSORY ->
-                effectiveSelectedId?.takeIf { id -> catalog.any { it.id == id && it.slot == CosmeticSlot.ACCESSORY } }
-                    ?: currentEquippedAccessoryId
+                if ((effectiveSelectedId == "none:accessory") || (effectiveSelectedId?.startsWith("none:") == true)) {
+                    null
+                } else {
+                    effectiveSelectedId?.takeIf { id ->
+                        catalog.any { it.id == id && it.slot == CosmeticSlot.ACCESSORY }
+                    }
+                        ?: currentEquippedAccessoryId
+                }
             previewFriendId == currentEquippedFriendId -> currentEquippedAccessoryId
             else -> inventory.equippedByFriend[previewFriendId]?.get(CosmeticSlot.ACCESSORY)
         }
@@ -137,22 +155,26 @@ internal fun CompactCustomizationScreen(
     // Filter items based on active categories
     val tabItems =
         when (activeTab) {
-            CosmeticSlot.FRIEND -> catalog.filter { it.slot == CosmeticSlot.FRIEND }
-            CosmeticSlot.ACCESSORY ->
-                catalog.filter {
-                    (it.slot == CosmeticSlot.ACCESSORY || it.slot == CosmeticSlot.OUTFIT) &&
-                        (
-                            it.compatibleFriendId == currentEquippedFriendId ||
-                                (currentEquippedFriendId == "friend:mobi" && it.compatibleFriendId == null)
-                        )
-                }
-            CosmeticSlot.BACKGROUND -> catalog.filter { it.slot == CosmeticSlot.BACKGROUND }
+            CosmeticSlot.FRIEND -> catalog.filter { it.slot == CosmeticSlot.FRIEND && !isObsoleteItem(it.id) }
+            CosmeticSlot.ACCESSORY -> {
+                val accessories =
+                    catalog.filter {
+                        !isObsoleteItem(it.id) &&
+                            (it.slot == CosmeticSlot.ACCESSORY || it.slot == CosmeticSlot.OUTFIT) &&
+                            (
+                                it.compatibleFriendId == currentEquippedFriendId ||
+                                    (currentEquippedFriendId == "friend:mobi" && it.compatibleFriendId == null)
+                            )
+                    }
+                listOf(NONE_ACCESSORY_ITEM) + accessories
+            }
+            CosmeticSlot.BACKGROUND -> catalog.filter { it.slot == CosmeticSlot.BACKGROUND && !isObsoleteItem(it.id) }
             else -> emptyList()
         }
 
     val filteredItems =
         if (subTab == 1) {
-            tabItems.filter { inventory.ownedItemIds.contains(it.id) }
+            tabItems.filter { it.id.startsWith("none:") || inventory.ownedItemIds.contains(it.id) }
         } else {
             tabItems
         }
@@ -202,7 +224,8 @@ internal fun CompactCustomizationScreen(
                     when {
                         effectiveSelectedId == null -> ""
                         effectiveSelectedId == currentEquippedFriendId ||
-                            effectiveSelectedId == currentEquippedAccessoryId -> {
+                            effectiveSelectedId == currentEquippedAccessoryId ||
+                            (effectiveSelectedId == "none:accessory" && currentEquippedAccessoryId == null) -> {
                             val name = cosmeticName(effectiveSelectedId)
                             "$name · 현재 착용"
                         }
@@ -284,11 +307,16 @@ internal fun CompactCustomizationScreen(
                             verticalArrangement = Arrangement.spacedBy(12.dp),
                         ) {
                             items(filteredItems, key = { it.id }) { item ->
+                                val isNoneItem = item.id.startsWith("none:")
                                 val isSelected = item.id == effectiveSelectedId
-                                val isOwned = inventory.ownedItemIds.contains(item.id)
+                                val isOwned = isNoneItem || inventory.ownedItemIds.contains(item.id)
                                 val isEquipped =
-                                    inventory.equippedItemIds[item.slot] == item.id ||
-                                        (item.slot == CosmeticSlot.FRIEND && currentEquippedFriendId == item.id)
+                                    if (isNoneItem) {
+                                        currentEquippedAccessoryId == null
+                                    } else {
+                                        inventory.equippedItemIds[item.slot] == item.id ||
+                                            (item.slot == CosmeticSlot.FRIEND && currentEquippedFriendId == item.id)
+                                    }
 
                                 MobiMonSelectionCard(
                                     selected = isSelected,
@@ -317,22 +345,11 @@ internal fun CompactCustomizationScreen(
                                                 if (iconAsset != null) {
                                                     CharacterAssetImage(iconAsset, Modifier.size(64.dp))
                                                 } else {
-                                                    // accessory placeholder
-                                                    Box(
-                                                        modifier =
-                                                            Modifier
-                                                                .size(36.dp)
-                                                                .background(
-                                                                    color =
-                                                                        if (item.id ==
-                                                                            "accessory:mint_scarf"
-                                                                        ) {
-                                                                            Color(0xFF7FC1A5)
-                                                                        } else {
-                                                                            Color(0xFF8B5A2B)
-                                                                        },
-                                                                    shape = MaterialTheme.shapes.small,
-                                                                ),
+                                                    Icon(
+                                                        imageVector = Icons.Default.Check,
+                                                        contentDescription = null,
+                                                        tint = MaterialTheme.colorScheme.primary,
+                                                        modifier = Modifier.size(32.dp),
                                                     )
                                                 }
                                             }
@@ -394,29 +411,26 @@ internal fun CompactCustomizationScreen(
                 if (saveFailed) MobiMonMessage(stringResource(R.string.pet_inventory_save_failed), isError = true)
 
                 // Bottom action button matching contextual selection states
-                val selectedItem = catalog.firstOrNull { it.id == effectiveSelectedId }
+                val selectedItem =
+                    tabItems.firstOrNull { it.id == effectiveSelectedId }
+                        ?: NONE_ACCESSORY_ITEM.takeIf { activeTab == CosmeticSlot.ACCESSORY }
                 if (selectedItem != null) {
-                    val isOwned = inventory.ownedItemIds.contains(selectedItem.id)
+                    val isNoneItem = selectedItem.id.startsWith("none:")
+                    val isOwned = isNoneItem || inventory.ownedItemIds.contains(selectedItem.id)
                     val isEquipped =
-                        inventory.equippedItemIds[selectedItem.slot] == selectedItem.id ||
-                            (selectedItem.slot == CosmeticSlot.FRIEND && currentEquippedFriendId == selectedItem.id)
+                        if (isNoneItem) {
+                            currentEquippedAccessoryId == null
+                        } else {
+                            inventory.equippedItemIds[selectedItem.slot] == selectedItem.id ||
+                                (selectedItem.slot == CosmeticSlot.FRIEND && currentEquippedFriendId == selectedItem.id)
+                        }
 
                     val buttonText =
                         when {
                             purchasing -> stringResource(R.string.pet_action_purchasing)
                             saving -> stringResource(R.string.pet_action_equipping)
                             isEquipped -> stringResource(R.string.pet_action_equipped)
-                            isOwned -> {
-                                if (selectedItem.id == "accessory:mint_scarf") {
-                                    stringResource(R.string.pet_action_equip_scarf)
-                                } else if (selectedItem.id ==
-                                    "accessory:necklace"
-                                ) {
-                                    stringResource(R.string.pet_action_equip_necklace)
-                                } else {
-                                    stringResource(R.string.pet_appearance_apply)
-                                }
-                            }
+                            isOwned -> stringResource(R.string.pet_appearance_apply)
                             else -> {
                                 if (pointBalance != null && pointBalance < selectedItem.price) {
                                     stringResource(R.string.pet_action_insufficient_points, selectedItem.price)
@@ -437,7 +451,9 @@ internal fun CompactCustomizationScreen(
 
                     MobiMonButton(
                         onClick = {
-                            if (isOwned) {
+                            if (isNoneItem) {
+                                onEquipItem(selectedItem.id)
+                            } else if (isOwned) {
                                 if (selectedItem.slot == CosmeticSlot.FRIEND) {
                                     onEquipFriend(selectedItem.id)
                                 } else {
@@ -460,14 +476,13 @@ internal fun CompactCustomizationScreen(
 
 @Composable
 internal fun cosmeticName(itemId: String): String =
-    when (itemId) {
-        "friend:mobi" -> stringResource(R.string.pet_friend_mobi)
-        "friend:luna" -> stringResource(R.string.pet_friend_luna)
-        "accessory:necklace" -> stringResource(R.string.pet_item_necklace)
-        "accessory:mint_scarf" -> stringResource(R.string.pet_item_mint_scarf)
-        "accessory:mobi_headphones" -> stringResource(R.string.pet_item_mobi_headphones)
-        "accessory:mobi_goggles" -> stringResource(R.string.pet_item_mobi_goggles)
-        "accessory:luna_cap" -> stringResource(R.string.pet_item_luna_cap)
-        "accessory:luna_sunglasses" -> stringResource(R.string.pet_item_luna_sunglasses)
+    when {
+        itemId.startsWith("none") -> stringResource(R.string.pet_item_none)
+        itemId == "friend:mobi" -> stringResource(R.string.pet_friend_mobi)
+        itemId == "friend:luna" -> stringResource(R.string.pet_friend_luna)
+        itemId == "accessory:mobi_headphones" -> stringResource(R.string.pet_item_mobi_headphones)
+        itemId == "accessory:mobi_goggles" -> stringResource(R.string.pet_item_mobi_goggles)
+        itemId == "accessory:luna_cap" -> stringResource(R.string.pet_item_luna_cap)
+        itemId == "accessory:luna_sunglasses" -> stringResource(R.string.pet_item_luna_sunglasses)
         else -> itemId
     }

@@ -47,18 +47,18 @@ class PetAvatarTest {
                         appearanceKey = "CREAM",
                     )
                     PetAvatar(
-                        modifier = Modifier.testTag("necklace"),
-                        accessoryId = "accessory:necklace",
+                        modifier = Modifier.testTag("headphones"),
+                        accessoryId = "accessory:mobi_headphones",
                     )
                     PetAvatar(
-                        modifier = Modifier.testTag("scarf"),
-                        accessoryId = "accessory:mint_scarf",
+                        modifier = Modifier.testTag("goggles"),
+                        accessoryId = "accessory:mobi_goggles",
                     )
                 }
             }
         }
 
-        val tags = listOf("default", "cream", "necklace", "scarf")
+        val tags = listOf("default", "cream", "headphones", "goggles")
         val bounds = tags.associateWith { compose.onNodeWithTag(it).fetchSemanticsNode().boundsInRoot }
         lateinit var signatures: Map<String, List<Int>>
         compose.runOnIdle {
@@ -83,7 +83,14 @@ class PetAvatarTest {
         }
         assertTrue(signatures.getValue("default").toSet().size > 1_000)
         assertTrue(0xFFF2E4C8.toInt() in signatures.getValue("cream"))
-        assertTrue(0xFFFFD700.toInt() in signatures.getValue("necklace"))
-        assertTrue(0xFF7FC1A5.toInt() in signatures.getValue("scarf"))
+    }
+
+    @Test
+    fun mobiAnimationCacheLoadsTwelveFramesFromAssets() {
+        val context =
+            androidx.test.core.app.ApplicationProvider
+                .getApplicationContext<android.content.Context>()
+        val frames = MobiAnimationCache.getOrLoadFrames(context)
+        org.junit.Assert.assertEquals(12, frames.size)
     }
 }

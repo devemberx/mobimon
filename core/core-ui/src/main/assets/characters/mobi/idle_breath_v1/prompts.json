@@ -1,0 +1,33 @@
+{
+  "generator": "built-in image_gen",
+  "prompts": [
+    {
+      "frame": 2,
+      "prompt": "Edit the attached single Mobi image into idle breathing animation frame 2/12. SAME square 1254x1254 canvas, same framing and pixel registration. Preserve original identity, colors, eyes, smile, sprout, wheel, star, hands, feet, and all glossy shading exactly. REAL alpha transparency outside the character. Remove stray white/cyan pixels outside silhouette, clean antialiased cutout. Motion is very subtle INHALE: chest expands by 0.12% horizontally, upper torso rises 0.6px. Face and sprout follow that tiny rise without changing shape. Feet remain planted at precisely their current baseline, wheel remains rigid circular and centered, no tilt, no side movement. No redesign, no alternate facial expression, no new objects, no shadow, no changes in overall scale or crop. Only one character, NOT a sprite sheet. Output final PNG."
+    },
+    {
+      "frame": 3,
+      "prompt": "Edit the attached single Mobi image into idle breathing animation frame 3/12. SAME square 1254x1254 canvas, same framing and pixel registration. Preserve original identity, colors, eyes, smile, sprout, wheel, star, hands, feet, and all glossy shading exactly. REAL alpha transparency outside the character. Remove stray white/cyan pixels outside silhouette, clean antialiased cutout. Motion is very subtle INHALE: chest expands by 0.4% horizontally, upper torso rises 2px. Face and sprout follow that tiny rise without changing shape. Feet remain planted at precisely their current baseline, wheel remains rigid circular and centered, no tilt, no side movement. No redesign, no alternate facial expression, no new objects, no shadow, no changes in overall scale or crop. Only one character, NOT a sprite sheet. Output final PNG."
+    },
+    {
+      "frame": 4,
+      "prompt": "Edit the attached single Mobi image into idle breathing animation frame 4/12. SAME square 1254x1254 canvas, same framing and pixel registration. Preserve original identity, colors, eyes, smile, sprout, wheel, star, hands, feet, and all glossy shading exactly. REAL alpha transparency outside the character. Remove stray white/cyan pixels outside silhouette, clean antialiased cutout. Motion is very subtle INHALE: chest expands by 0.85% horizontally, upper torso rises 4.25px. Face and sprout follow that tiny rise without changing shape. Feet remain planted at precisely their current baseline, wheel remains rigid circular and centered, no tilt, no side movement. No redesign, no alternate facial expression, no new objects, no shadow, no changes in overall scale or crop. Only one character, NOT a sprite sheet. Output final PNG."
+    },
+    {
+      "frame": 5,
+      "prompt": "Make one production idle breathing frame 5/12 (late inhale) by precisely editing the attached single Mobi. Keep exactly the same 1254x1254 square canvas and registration, same grounded feet at y1156, wheel rigid circular centered at x625,y900, same sprout and face design, same pastel colors and glossy lighting. Very subtle breathing only: chest expanded by 1.3% horizontally and upper body raised 6.5px from the neutral reference. No camera movement, no rotation, no side sway, no blinking, no mouth change, no scale change, no cropping. Head and sprout follow the tiny chest lift. Preserve feet and lower wheel region. Clean transparent RGBA PNG. Eliminate stray opaque white/cyan pixels beyond the silhouette and preserve smooth alpha edges. No background, shadow, texture, particles, text or labels. ONLY ONE character, not a sheet."
+    },
+    {
+      "frame": 6,
+      "prompt": "Make one production idle breathing frame 6/12 (full inhale apex) by precisely editing the attached single Mobi. Keep exactly the same 1254x1254 square canvas and registration, same grounded feet at y1156, wheel rigid circular centered at x625,y900, same sprout and face design, same pastel colors and glossy lighting. Very subtle breathing only: chest expanded by 1.5% horizontally and upper body raised 7.5px from the neutral reference. No camera movement, no rotation, no side sway, no blinking, no mouth change, no scale change, no cropping. Head and sprout follow the tiny chest lift. Preserve feet and lower wheel region. Clean transparent RGBA PNG. Eliminate stray opaque white/cyan pixels beyond the silhouette and preserve smooth alpha edges. No background, shadow, texture, particles, text or labels. ONLY ONE character, not a sheet."
+    },
+    {
+      "frame": 8,
+      "prompt": "Make one production idle breathing frame 8/12 (early exhale) by precisely editing the attached single Mobi. Keep exactly the same 1254x1254 square canvas and registration, same grounded feet at y1156, wheel rigid circular centered at x625,y900, same sprout and face design, same pastel colors and glossy lighting. Very subtle breathing only: chest expanded by 1.25% horizontally and upper body raised 6.25px from the neutral reference. No camera movement, no rotation, no side sway, no blinking, no mouth change, no scale change, no cropping. Head and sprout follow the tiny chest lift. Preserve feet and lower wheel region. Clean transparent RGBA PNG. Eliminate stray opaque white/cyan pixels beyond the silhouette and preserve smooth alpha edges. No background, shadow, texture, particles, text or labels. ONLY ONE character, not a sheet."
+    },
+    {
+      "frame": 9,
+      "prompt": "Edit this single Mobi into a mid-exhale idle breathing keyframe. Preserve exact character design, pastel material, facial expression, sprout, feet, wheel and cyan star. Same 1254x1254 square canvas, same position, no camera shift, no side sway, no rotation, no resizing. Tiny breath: chest 0.65 percent wider than neutral, head and upper body raised 3 pixels; feet fixed at the original y1156 baseline and steering wheel stays circular and centered. Almost identical to neutral, just naturally relaxed between apex and rest. REAL transparent alpha background, smooth clean cutout, remove all isolated white/cyan artifacts outside silhouette. No background, no drop shadow, no particles, no labels. One complete character only. Do not crop."
+    }
+  ]
+}

@@ -148,4 +148,47 @@ class CustomizationScreenTest {
         compose.onNodeWithTag("preview-background").assertExists()
         compose.onNodeWithTag("preview-character").assertExists()
     }
+
+    @Test fun selectingDefaultNoneAccessoryAllowsUnequipping() {
+        var unequippedSlot: String? = null
+        val catalog =
+            listOf(
+                CosmeticItem("friend:mobi", CosmeticSlot.FRIEND, 0),
+                CosmeticItem("accessory:mobi_headphones", CosmeticSlot.ACCESSORY, 300, "friend:mobi"),
+            )
+        val inventory =
+            CosmeticInventory(
+                ownedItemIds = setOf("friend:mobi", "accessory:mobi_headphones"),
+                equippedItemIds =
+                    mapOf(
+                        CosmeticSlot.FRIEND to "friend:mobi",
+                        CosmeticSlot.ACCESSORY to "accessory:mobi_headphones",
+                    ),
+            )
+
+        compose.setContent {
+            var selectedId by androidx.compose.runtime.remember { mutableStateOf<String?>(null) }
+            MobiMonTheme {
+                CustomizationScreen(
+                    inventory = inventory,
+                    catalog = catalog,
+                    selectedItemId = selectedId,
+                    purchasing = false,
+                    purchaseFailed = false,
+                    onSelectItem = { selectedId = it },
+                    onPurchaseItem = { _, _ -> },
+                    onEquipItem = { unequippedSlot = it },
+                    onEquipFriend = {},
+                    pointBalance = 300,
+                    pointLoadFailed = false,
+                )
+            }
+        }
+
+        compose.onNodeWithText("옷과 소품").performClick()
+        compose.onNodeWithTag("shop-items").performScrollTo().performScrollToIndex(0)
+        compose.onNodeWithText("기본 (미착용)").performScrollTo().performClick()
+        compose.onNodeWithText("이 모습 적용").performScrollTo().performClick()
+        org.junit.Assert.assertEquals("none:accessory", unequippedSlot)
+    }
 }
