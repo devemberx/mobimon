@@ -62,23 +62,20 @@ class RoomCompanionRepository(
                 ),
             )
             val economy = database.economyDao()
+            economy.deleteEquippedObsolete()
+            economy.deleteOwnedObsolete()
+            economy.deleteCosmeticObsolete()
             economy.insertAccount(PointAccountEntity(identity.profileId, 0))
             economy.insertItem(CosmeticItemEntity("friend:mobi", "FRIEND", 0, null))
             economy.insertItem(CosmeticItemEntity("friend:luna", "FRIEND", 0, null))
-            economy.insertItem(CosmeticItemEntity("accessory:necklace", "ACCESSORY", 0, null))
-            economy.insertItem(CosmeticItemEntity("accessory:mint_scarf", "ACCESSORY", 300, null))
             economy.insertItem(CosmeticItemEntity("accessory:mobi_headphones", "ACCESSORY", 300, "friend:mobi"))
             economy.insertItem(CosmeticItemEntity("accessory:mobi_goggles", "ACCESSORY", 300, "friend:mobi"))
             economy.insertItem(CosmeticItemEntity("accessory:luna_cap", "ACCESSORY", 300, "friend:luna"))
             economy.insertItem(CosmeticItemEntity("accessory:luna_sunglasses", "ACCESSORY", 300, "friend:luna"))
             economy.insertOwned(OwnedCosmeticEntity(identity.profileId, "friend:mobi"))
             economy.insertOwned(OwnedCosmeticEntity(identity.profileId, "friend:luna"))
-            economy.insertOwned(OwnedCosmeticEntity(identity.profileId, "accessory:necklace"))
             if (economy.equipped(identity.profileId, "FRIEND") == null) {
                 economy.putEquipped(EquippedCosmeticEntity(identity.profileId, "FRIEND", "friend:mobi"))
-            }
-            if (economy.equipped(identity.profileId, "ACCESSORY") == null) {
-                economy.putEquipped(EquippedCosmeticEntity(identity.profileId, "ACCESSORY", "accessory:necklace"))
             }
         }
     }

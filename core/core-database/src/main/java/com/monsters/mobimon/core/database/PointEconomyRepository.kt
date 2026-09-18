@@ -157,6 +157,20 @@ class PointEconomyRepository(
                 ) {
                     return@withTransaction EquipResult.InteractionRestricted
                 }
+                if (itemId.startsWith("none")) {
+                    val rawSlot = itemId.substringAfter("none:").uppercase().ifEmpty { "ACCESSORY" }
+                    val activeFriend = dao.equipped(profileId, "FRIEND")?.itemId ?: "friend:mobi"
+                    val storageSlot =
+                        if (rawSlot != "FRIEND" && rawSlot != "BACKGROUND") {
+                            "$rawSlot:$activeFriend"
+                        } else {
+                            rawSlot
+                        }
+                    dao.deleteEquipped(profileId, storageSlot)
+                    dao.deleteEquipped(profileId, rawSlot)
+                    dao.deleteEquipped(profileId, "ACCESSORY")
+                    return@withTransaction EquipResult.Applied
+                }
                 val item = dao.item(itemId) ?: return@withTransaction EquipResult.ItemUnavailable
                 if (dao.owned(profileId, itemId) == null) return@withTransaction EquipResult.NotOwned
                 if (!item.isCompatible()) return@withTransaction EquipResult.Incompatible
@@ -179,6 +193,11 @@ class PointEconomyRepository(
         } catch (_: SQLiteException) {
             EquipResult.StorageFailure
         }
+
+    override suspend fun unequip(
+        slot: CosmeticSlot,
+        friendId: String?,
+    ): EquipResult = equip("none:${slot.name.lowercase()}")
 
     override suspend fun awardQuest(
         questId: String,

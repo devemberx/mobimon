@@ -62,7 +62,26 @@ class CosmeticInventoryViewModelTest {
             assertEquals(expected, model.state.value.inventory)
         }
 
-    private class FakePoints(
+    @Test fun equipItemNonePassesThroughWithoutOwnedCheck() =
+        runTest(dispatcher) {
+            var equippedId: String? = null
+            val points =
+                object : FakePoints(flowOf(CosmeticInventory(emptySet(), emptyMap()))) {
+                    override suspend fun equip(itemId: String): EquipResult {
+                        equippedId = itemId
+                        return EquipResult.Applied
+                    }
+                }
+            val model = CosmeticInventoryViewModel(points)
+            runCurrent()
+
+            model.equipItem("none:accessory")
+            runCurrent()
+
+            assertEquals("none:accessory", equippedId)
+        }
+
+    private open class FakePoints(
         override val inventory: Flow<CosmeticInventory>,
     ) : PointEconomy {
         override val wallet = flowOf(PointWallet(0))
