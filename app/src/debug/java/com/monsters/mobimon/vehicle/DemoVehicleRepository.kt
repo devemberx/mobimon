@@ -89,6 +89,7 @@ class DemoVehicleRepository(
                                 isNavigating = debugState.isNavigating,
                                 distanceToDestination = debugState.distanceToDestination,
                                 isEngineOn = debugState.isEngineOn,
+                                timeOfDay = debugState.timeOfDay,
                             )
                         } else {
                             VehicleSnapshot(

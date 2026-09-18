@@ -1012,6 +1012,14 @@ private fun DebugInterpretationSection(
             onManualValueChange = { onOverridesChange(overrides.copy(isEngineOn = it.toBooleanOverride())) },
             onClearManualValue = { onOverridesChange(overrides.copy(isEngineOn = null)) },
         )
+        DebugSegmentedRow(
+            label = "timeOfDay",
+            options = listOf("아침", "낮", "밤"),
+            selectedValue = state.timeOfDay,
+            onValueChange = { selected ->
+                onOverridesChange(overrides.copy(timeOfDay = selected))
+            },
+        )
     }
 }
 

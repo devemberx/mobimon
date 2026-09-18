@@ -50,6 +50,7 @@ data class VehicleSnapshot(
     val isNavigating: Boolean? = null,
     val distanceToDestination: Int? = null,
     val isEngineOn: Boolean? = null,
+    val timeOfDay: String? = null,
     /** Derived UI metadata; never used as quest evidence. */
     val parkingAgeMillis: Long? = null,
     val batteryAgeMillis: Long? = null,

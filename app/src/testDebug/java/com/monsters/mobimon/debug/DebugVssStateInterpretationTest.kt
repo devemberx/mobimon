@@ -72,4 +72,22 @@ class DebugVssStateInterpretationTest {
         assertEquals("N", state.gear)
         assertFalse(state.isMoving)
     }
+
+    @Test
+    fun timeOfDayDefaultsToDayAndAcceptsOverrides() {
+        val defaultState = DebugVssState()
+        assertEquals("낮", defaultState.timeOfDay)
+
+        val overriddenState =
+            DebugVssState(
+                overrides = DebugInterpretationOverrides(timeOfDay = "아침"),
+            )
+        assertEquals("아침", overriddenState.timeOfDay)
+
+        val nightState =
+            DebugVssState(
+                overrides = DebugInterpretationOverrides(timeOfDay = "밤"),
+            )
+        assertEquals("밤", nightState.timeOfDay)
+    }
 }

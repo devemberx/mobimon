@@ -1,5 +1,7 @@
 package com.monsters.mobimon.feature.pet
 
+import androidx.compose.animation.Crossfade
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -33,7 +35,6 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
@@ -72,12 +73,25 @@ fun PetHomeScreen(
     val talkText = if (connectionAvailable) R.string.pet_talk_action else R.string.pet_talk_unavailable
     Surface(modifier = modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
         BoxWithConstraints(Modifier.fillMaxSize()) {
-            Image(
-                painter = painterResource(R.drawable.pet_home_background_v4),
-                contentDescription = null,
-                contentScale = ContentScale.Crop,
+            val backgroundRes =
+                when (snapshot.timeOfDay) {
+                    "아침" -> R.drawable.pet_home_background_morning_v4
+                    "낮" -> R.drawable.pet_home_background_day_v4
+                    else -> R.drawable.pet_home_background_v4
+                }
+            Crossfade(
+                targetState = backgroundRes,
+                animationSpec = tween(durationMillis = 1000),
                 modifier = Modifier.fillMaxSize(),
-            )
+                label = "pet_home_background_crossfade",
+            ) { targetRes ->
+                Image(
+                    painter = painterResource(targetRes),
+                    contentDescription = null,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.fillMaxSize(),
+                )
+            }
             Box(
                 Modifier
                     .fillMaxSize()
@@ -90,12 +104,12 @@ fun PetHomeScreen(
                     ),
             )
             val fontScale = LocalDensity.current.fontScale
-            val wide = maxWidth / fontScale >= 1200.dp
+            val wide = this.maxWidth / fontScale >= 1200.dp
             val horizontalEdge =
-                if (wide) (maxWidth * 0.028125f).coerceIn(48.dp, 72.dp) else 24.dp
-            val verticalEdge = (maxHeight * 0.04f).coerceIn(24.dp, 52.dp)
-            val sceneHeight = (maxHeight * if (wide) 0.52f else 0.4f).coerceIn(320.dp, 680.dp)
-            val avatarSize = (maxHeight * if (wide) 0.42f else 0.32f).coerceIn(220.dp, 620.dp)
+                if (wide) (this.maxWidth * 0.028125f).coerceIn(48.dp, 72.dp) else 24.dp
+            val verticalEdge = (this.maxHeight * 0.04f).coerceIn(24.dp, 52.dp)
+            val sceneHeight = (this.maxHeight * if (wide) 0.52f else 0.4f).coerceIn(320.dp, 680.dp)
+            val avatarSize = (this.maxHeight * if (wide) 0.42f else 0.32f).coerceIn(220.dp, 620.dp)
             Column(
                 Modifier
                     .fillMaxWidth()
@@ -314,7 +328,7 @@ private fun HomeHeader(
     val menuDescription = stringResource(R.string.pet_open_menu)
     val fontScale = LocalDensity.current.fontScale
     BoxWithConstraints(modifier.fillMaxWidth()) {
-        val wide = maxWidth / fontScale >= 1180.dp
+        val wide = this.maxWidth / fontScale >= 1180.dp
         val brand: @Composable () -> Unit = {
             Row(
                 verticalAlignment = Alignment.CenterVertically,

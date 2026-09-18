@@ -85,6 +85,7 @@ data class DebugInterpretationOverrides(
     val isNavigating: Boolean? = null,
     val distanceToDestination: Int? = null,
     val isEngineOn: Boolean? = null,
+    val timeOfDay: String? = null,
 )
 
 data class DebugVssState(
@@ -169,6 +170,9 @@ data class DebugVssState(
 
     val isEngineOn: Boolean
         get() = overrides.isEngineOn ?: raw.combustionEngineRunning
+
+    val timeOfDay: String
+        get() = overrides.timeOfDay ?: "낮"
 }
 
 interface DebugVssProvider {
@@ -282,6 +286,7 @@ class DebugStore
                         isNavigating = prefs.booleanOverride("override.isNavigating"),
                         distanceToDestination = prefs.intOverride("override.distanceToDestination"),
                         isEngineOn = prefs.booleanOverride("override.isEngineOn"),
+                        timeOfDay = prefs.stringOverride("override.timeOfDay"),
                     ),
             )
 
@@ -368,6 +373,7 @@ class DebugStore
             putOverride("override.isNavigating", overrides.isNavigating)
             putOverride("override.distanceToDestination", overrides.distanceToDestination)
             putOverride("override.isEngineOn", overrides.isEngineOn)
+            putOverride("override.timeOfDay", overrides.timeOfDay)
         }
     }
 
