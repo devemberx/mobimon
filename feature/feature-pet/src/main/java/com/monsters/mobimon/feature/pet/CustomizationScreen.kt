@@ -1,5 +1,6 @@
 package com.monsters.mobimon.feature.pet
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -40,8 +41,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -202,12 +205,26 @@ internal fun CompactCustomizationScreen(
                         Box(
                             Modifier
                                 .fillMaxSize()
-                                .testTag("preview-background")
-                                .background(Brush.verticalGradient(listOf(Color(0xFF1B3856), Color(0xFF0A192D)))),
+                                .testTag("preview-background"),
                         ) {
-                            previewBackgroundId?.let { CharacterArtwork.backgrounds[it] }?.let { background ->
-                                CharacterAssetImage(background, Modifier.fillMaxSize())
-                            }
+                            Image(
+                                painter = painterResource(R.drawable.pet_home_background_v4),
+                                contentDescription = null,
+                                contentScale = ContentScale.Crop,
+                                modifier = Modifier.fillMaxSize(),
+                            )
+                            Box(
+                                Modifier
+                                    .fillMaxSize()
+                                    .background(
+                                        Brush.verticalGradient(
+                                            listOf(
+                                                Color.Black.copy(alpha = 0.2f),
+                                                Color.Black.copy(alpha = 0.35f),
+                                            ),
+                                        ),
+                                    ),
+                            )
                             if (previewBackgroundId != null) {
                                 val particleType =
                                     when {
@@ -224,17 +241,19 @@ internal fun CompactCustomizationScreen(
                                 )
                             }
                         }
-                        PetAvatar(
-                            modifier = Modifier.fillMaxSize(0.88f).testTag("preview-character"),
-                            friendId = previewFriendId,
-                            accessoryId = previewAccessoryId,
-                            outfitId =
-                                catalog
-                                    .firstOrNull {
-                                        it.id == effectiveSelectedId && it.slot == CosmeticSlot.OUTFIT
-                                    }?.id
-                                    ?: inventory.equippedByFriend[previewFriendId]?.get(CosmeticSlot.OUTFIT),
-                        )
+                        if (activeTab != CosmeticSlot.BACKGROUND) {
+                            PetAvatar(
+                                modifier = Modifier.fillMaxSize(0.88f).testTag("preview-character"),
+                                friendId = previewFriendId,
+                                accessoryId = previewAccessoryId,
+                                outfitId =
+                                    catalog
+                                        .firstOrNull {
+                                            it.id == effectiveSelectedId && it.slot == CosmeticSlot.OUTFIT
+                                        }?.id
+                                        ?: inventory.equippedByFriend[previewFriendId]?.get(CosmeticSlot.OUTFIT),
+                            )
+                        }
                     }
                 }
                 Spacer(modifier = Modifier.height(16.dp))

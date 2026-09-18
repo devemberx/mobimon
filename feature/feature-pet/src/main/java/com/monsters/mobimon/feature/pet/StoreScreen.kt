@@ -1,5 +1,6 @@
 package com.monsters.mobimon.feature.pet
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -36,6 +37,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
@@ -208,9 +210,12 @@ fun CustomizationScreen(
                         verticalArrangement = Arrangement.Center,
                     ) {
                         Box(Modifier.fillMaxWidth().weight(1f), contentAlignment = Alignment.Center) {
-                            background?.let { CharacterArtwork.backgrounds[it] }?.let {
-                                CharacterAssetImage(it, Modifier.fillMaxSize().testTag("preview-background"))
-                            }
+                            Image(
+                                painter = painterResource(R.drawable.pet_home_background_v4),
+                                contentDescription = null,
+                                contentScale = ContentScale.Crop,
+                                modifier = Modifier.fillMaxSize().testTag("preview-background"),
+                            )
                             if (background != null) {
                                 val particleType =
                                     when {
@@ -228,17 +233,19 @@ fun CustomizationScreen(
                                     modifier = Modifier.fillMaxSize().testTag("store-preview-particles"),
                                 )
                             }
-                            PetAvatar(
-                                Modifier
-                                    .fillMaxSize()
-                                    .graphicsLayer {
-                                        scaleX = if (previewFriend == "friend:luna") 1.10f else 0.92f
-                                        scaleY = scaleX
-                                    }.testTag("preview-character"),
-                                friendId = previewFriend,
-                                accessoryId = accessory,
-                                outfitId = outfit,
-                            )
+                            if (tab != CosmeticSlot.BACKGROUND) {
+                                PetAvatar(
+                                    Modifier
+                                        .fillMaxSize()
+                                        .graphicsLayer {
+                                            scaleX = if (previewFriend == "friend:luna") 1.10f else 0.92f
+                                            scaleY = scaleX
+                                        }.testTag("preview-character"),
+                                    friendId = previewFriend,
+                                    accessoryId = accessory,
+                                    outfitId = outfit,
+                                )
+                            }
                         }
                         Text(
                             storeFriendName(previewFriend),
