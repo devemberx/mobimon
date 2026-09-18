@@ -1,5 +1,6 @@
 package com.monsters.mobimon.feature.pet
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -37,10 +38,13 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -50,11 +54,13 @@ import com.monsters.mobimon.core.domain.CosmeticItem
 import com.monsters.mobimon.core.domain.CosmeticSlot
 import com.monsters.mobimon.core.ui.CharacterArtwork
 import com.monsters.mobimon.core.ui.CharacterAssetImage
+import com.monsters.mobimon.core.ui.FallingParticlesEffect
 import com.monsters.mobimon.core.ui.MobiMonButton
 import com.monsters.mobimon.core.ui.MobiMonMessage
 import com.monsters.mobimon.core.ui.MobiMonSelectionCard
 import com.monsters.mobimon.core.ui.MobiMonTab
 import com.monsters.mobimon.core.ui.MobiMonTabs
+import com.monsters.mobimon.core.ui.ParticleType
 import com.monsters.mobimon.core.ui.PetAvatar
 
 private fun isObsoleteItem(itemId: String): Boolean =
@@ -67,6 +73,14 @@ internal val NONE_ACCESSORY_ITEM =
     CosmeticItem(
         id = "none:accessory",
         slot = CosmeticSlot.ACCESSORY,
+        price = 0,
+        compatibleFriendId = null,
+    )
+
+internal val NONE_BACKGROUND_ITEM =
+    CosmeticItem(
+        id = "none:background",
+        slot = CosmeticSlot.BACKGROUND,
         price = 0,
         compatibleFriendId = null,
     )
@@ -116,12 +130,13 @@ internal fun CompactCustomizationScreen(
 
     val currentEquippedFriendId = inventory.equippedItemIds[CosmeticSlot.FRIEND] ?: "friend:mobi"
     val currentEquippedAccessoryId = inventory.equippedItemIds[CosmeticSlot.ACCESSORY]
+    val currentEquippedBackgroundId = inventory.equippedItemIds[CosmeticSlot.BACKGROUND]
 
     val effectiveSelectedId =
         selectedItemId ?: when (activeTab) {
             CosmeticSlot.FRIEND -> currentEquippedFriendId
             CosmeticSlot.ACCESSORY -> currentEquippedAccessoryId ?: "none:accessory"
-            CosmeticSlot.BACKGROUND -> inventory.equippedItemIds[CosmeticSlot.BACKGROUND]
+            CosmeticSlot.BACKGROUND -> currentEquippedBackgroundId ?: "none:background"
             else -> null
         }
 
@@ -146,10 +161,14 @@ internal fun CompactCustomizationScreen(
             else -> inventory.equippedByFriend[previewFriendId]?.get(CosmeticSlot.ACCESSORY)
         }
     val previewBackgroundId =
-        if (activeTab == CosmeticSlot.BACKGROUND) {
-            effectiveSelectedId
-        } else {
-            inventory.equippedItemIds[CosmeticSlot.BACKGROUND]
+        when {
+            activeTab == CosmeticSlot.BACKGROUND ->
+                if ((effectiveSelectedId == "none:background") || (effectiveSelectedId?.startsWith("none:") == true)) {
+                    null
+                } else {
+                    effectiveSelectedId
+                }
+            else -> currentEquippedBackgroundId
         }
 
     // Filter items based on active categories
@@ -168,7 +187,10 @@ internal fun CompactCustomizationScreen(
                     }
                 listOf(NONE_ACCESSORY_ITEM) + accessories
             }
-            CosmeticSlot.BACKGROUND -> catalog.filter { it.slot == CosmeticSlot.BACKGROUND && !isObsoleteItem(it.id) }
+            CosmeticSlot.BACKGROUND -> {
+                val backgrounds = catalog.filter { it.slot == CosmeticSlot.BACKGROUND && !isObsoleteItem(it.id) }
+                listOf(NONE_BACKGROUND_ITEM) + backgrounds
+            }
             else -> emptyList()
         }
 
@@ -199,33 +221,73 @@ internal fun CompactCustomizationScreen(
                         Box(
                             Modifier
                                 .fillMaxSize()
-                                .testTag("preview-background")
-                                .background(Brush.verticalGradient(listOf(Color(0xFF1B3856), Color(0xFF0A192D)))),
+                                .testTag("preview-background"),
                         ) {
-                            previewBackgroundId?.let { CharacterArtwork.backgrounds[it] }?.let { background ->
-                                CharacterAssetImage(background, Modifier.fillMaxSize())
+                            Image(
+                                painter = painterResource(R.drawable.pet_home_background_v4),
+                                contentDescription = null,
+                                contentScale = ContentScale.Crop,
+                                modifier = Modifier.fillMaxSize(),
+                            )
+                            Box(
+                                Modifier
+                                    .fillMaxSize()
+                                    .background(
+                                        Brush.verticalGradient(
+                                            listOf(
+                                                Color.Black.copy(alpha = 0.2f),
+                                                Color.Black.copy(alpha = 0.35f),
+                                            ),
+                                        ),
+                                    ),
+                            )
+                            if (previewBackgroundId != null) {
+                                val particleType =
+                                    when {
+                                        previewBackgroundId.contains("snow") -> ParticleType.SNOW
+                                        previewBackgroundId.contains(
+                                            "petal",
+                                        ) ||
+                                            previewBackgroundId.contains("flower") -> ParticleType.PETAL
+                                        else -> ParticleType.STAR
+                                    }
+                                FallingParticlesEffect(
+                                    particleType = particleType,
+                                    modifier = Modifier.fillMaxSize().testTag("preview-background-particles"),
+                                )
                             }
                         }
-                        PetAvatar(
-                            modifier = Modifier.fillMaxSize(0.88f).testTag("preview-character"),
-                            friendId = previewFriendId,
-                            accessoryId = previewAccessoryId,
-                            outfitId =
-                                catalog
-                                    .firstOrNull {
-                                        it.id == effectiveSelectedId && it.slot == CosmeticSlot.OUTFIT
-                                    }?.id
-                                    ?: inventory.equippedByFriend[previewFriendId]?.get(CosmeticSlot.OUTFIT),
-                        )
+                        if (activeTab != CosmeticSlot.BACKGROUND) {
+                            PetAvatar(
+                                modifier = Modifier.fillMaxSize(0.88f).testTag("preview-character"),
+                                friendId = previewFriendId,
+                                accessoryId = previewAccessoryId,
+                                outfitId =
+                                    catalog
+                                        .firstOrNull {
+                                            it.id == effectiveSelectedId && it.slot == CosmeticSlot.OUTFIT
+                                        }?.id
+                                        ?: inventory.equippedByFriend[previewFriendId]?.get(CosmeticSlot.OUTFIT),
+                            )
+                        }
                     }
                 }
                 Spacer(modifier = Modifier.height(16.dp))
+                val isEquippedSelection =
+                    when (activeTab) {
+                        CosmeticSlot.FRIEND -> effectiveSelectedId == currentEquippedFriendId
+                        CosmeticSlot.ACCESSORY ->
+                            effectiveSelectedId == currentEquippedAccessoryId ||
+                                (effectiveSelectedId == "none:accessory" && currentEquippedAccessoryId == null)
+                        CosmeticSlot.BACKGROUND ->
+                            effectiveSelectedId == currentEquippedBackgroundId ||
+                                (effectiveSelectedId == "none:background" && currentEquippedBackgroundId == null)
+                        else -> false
+                    }
                 val previewText =
                     when {
                         effectiveSelectedId == null -> ""
-                        effectiveSelectedId == currentEquippedFriendId ||
-                            effectiveSelectedId == currentEquippedAccessoryId ||
-                            (effectiveSelectedId == "none:accessory" && currentEquippedAccessoryId == null) -> {
+                        isEquippedSelection -> {
                             val name = cosmeticName(effectiveSelectedId)
                             "$name · 현재 착용"
                         }
@@ -312,7 +374,11 @@ internal fun CompactCustomizationScreen(
                                 val isOwned = isNoneItem || inventory.ownedItemIds.contains(item.id)
                                 val isEquipped =
                                     if (isNoneItem) {
-                                        currentEquippedAccessoryId == null
+                                        when (item.slot) {
+                                            CosmeticSlot.ACCESSORY -> currentEquippedAccessoryId == null
+                                            CosmeticSlot.BACKGROUND -> currentEquippedBackgroundId == null
+                                            else -> false
+                                        }
                                     } else {
                                         inventory.equippedItemIds[item.slot] == item.id ||
                                             (item.slot == CosmeticSlot.FRIEND && currentEquippedFriendId == item.id)
@@ -333,6 +399,7 @@ internal fun CompactCustomizationScreen(
                                                 modifier =
                                                     Modifier
                                                         .size(70.dp)
+                                                        .clip(CircleShape)
                                                         .background(
                                                             color = MaterialTheme.colorScheme.primaryContainer,
                                                             shape = CircleShape,
@@ -344,6 +411,25 @@ internal fun CompactCustomizationScreen(
                                                         ?: CharacterArtwork.itemIcons[item.id]
                                                 if (iconAsset != null) {
                                                     CharacterAssetImage(iconAsset, Modifier.size(64.dp))
+                                                } else if (item.slot == CosmeticSlot.BACKGROUND ||
+                                                    item.id.startsWith("background:")
+                                                ) {
+                                                    val particleType =
+                                                        when {
+                                                            item.id.contains("snow") -> ParticleType.SNOW
+                                                            item.id.contains(
+                                                                "petal",
+                                                            ) ||
+                                                                item.id.contains("flower") -> ParticleType.PETAL
+                                                            else -> ParticleType.STAR
+                                                        }
+                                                    FallingParticlesEffect(
+                                                        particleType = particleType,
+                                                        modifier = Modifier.fillMaxSize(),
+                                                        particleCount = 12,
+                                                        minSize = 4.dp,
+                                                        maxSize = 10.dp,
+                                                    )
                                                 } else {
                                                     Icon(
                                                         imageVector = Icons.Default.Check,
@@ -414,12 +500,17 @@ internal fun CompactCustomizationScreen(
                 val selectedItem =
                     tabItems.firstOrNull { it.id == effectiveSelectedId }
                         ?: NONE_ACCESSORY_ITEM.takeIf { activeTab == CosmeticSlot.ACCESSORY }
+                        ?: NONE_BACKGROUND_ITEM.takeIf { activeTab == CosmeticSlot.BACKGROUND }
                 if (selectedItem != null) {
                     val isNoneItem = selectedItem.id.startsWith("none:")
                     val isOwned = isNoneItem || inventory.ownedItemIds.contains(selectedItem.id)
                     val isEquipped =
                         if (isNoneItem) {
-                            currentEquippedAccessoryId == null
+                            when (selectedItem.slot) {
+                                CosmeticSlot.ACCESSORY -> currentEquippedAccessoryId == null
+                                CosmeticSlot.BACKGROUND -> currentEquippedBackgroundId == null
+                                else -> false
+                            }
                         } else {
                             inventory.equippedItemIds[selectedItem.slot] == selectedItem.id ||
                                 (selectedItem.slot == CosmeticSlot.FRIEND && currentEquippedFriendId == selectedItem.id)
@@ -484,5 +575,8 @@ internal fun cosmeticName(itemId: String): String =
         itemId == "accessory:mobi_goggles" -> stringResource(R.string.pet_item_mobi_goggles)
         itemId == "accessory:luna_cap" -> stringResource(R.string.pet_item_luna_cap)
         itemId == "accessory:luna_sunglasses" -> stringResource(R.string.pet_item_luna_sunglasses)
+        itemId == "background:star" -> stringResource(R.string.pet_background_star)
+        itemId == "background:snow" -> stringResource(R.string.pet_background_snow)
+        itemId == "background:petal" -> stringResource(R.string.pet_background_petal)
         else -> itemId
     }

@@ -244,6 +244,32 @@ fun DebugOverlay() {
                         }
                     }
 
+                    DebugSection("상점 (Store)") {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Text(
+                                text = "소유/착용 아이템 초기화",
+                                color = Color(0xFFF4F7FC),
+                                fontSize = 13.sp,
+                                modifier = Modifier.weight(1f),
+                            )
+                            Button(
+                                onClick = {
+                                    scope.launch { debugPoints.resetStoreInventory() }
+                                },
+                                modifier = Modifier.testTag("debug-store-reset"),
+                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF802020)),
+                                shape = RoundedCornerShape(8.dp),
+                                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
+                            ) {
+                                Text("Reset", color = Color.White, fontSize = 12.sp)
+                            }
+                        }
+                    }
+
                     DebugSection("차량 신호 (VSS)") {
                         DebugVssRawSection(state.raw) { raw -> updateState { it.copy(raw = raw) } }
                     }
