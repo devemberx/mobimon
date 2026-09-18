@@ -74,20 +74,27 @@ class DebugVssStateInterpretationTest {
     }
 
     @Test
-    fun timeOfDayDefaultsToDayAndAcceptsOverrides() {
+    fun timeOfDayDerivesFromCurrentLocationTimestampAndAcceptsOverrides() {
         val defaultState = DebugVssState()
-        assertEquals("낮", defaultState.timeOfDay)
+        assertEquals("아침", defaultState.timeOfDay)
 
-        val overriddenState =
+        val dayState =
             DebugVssState(
-                overrides = DebugInterpretationOverrides(timeOfDay = "아침"),
+                raw = DebugRawVssState(currentLocationTimestamp = "2026-10-08T12:00:00Z"),
             )
-        assertEquals("아침", overriddenState.timeOfDay)
+        assertEquals("낮", dayState.timeOfDay)
 
         val nightState =
             DebugVssState(
-                overrides = DebugInterpretationOverrides(timeOfDay = "밤"),
+                raw = DebugRawVssState(currentLocationTimestamp = "2026-10-08T19:00:00Z"),
             )
         assertEquals("밤", nightState.timeOfDay)
+
+        val overriddenState =
+            DebugVssState(
+                raw = DebugRawVssState(currentLocationTimestamp = "2026-10-08T19:00:00Z"),
+                overrides = DebugInterpretationOverrides(timeOfDay = "아침"),
+            )
+        assertEquals("아침", overriddenState.timeOfDay)
     }
 }
