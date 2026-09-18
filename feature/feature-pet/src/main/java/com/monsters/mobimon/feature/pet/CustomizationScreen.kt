@@ -77,6 +77,14 @@ internal val NONE_ACCESSORY_ITEM =
         compatibleFriendId = null,
     )
 
+internal val NONE_BACKGROUND_ITEM =
+    CosmeticItem(
+        id = "none:background",
+        slot = CosmeticSlot.BACKGROUND,
+        price = 0,
+        compatibleFriendId = null,
+    )
+
 @Composable
 internal fun CompactCustomizationScreen(
     inventory: CosmeticInventory?,
@@ -122,12 +130,13 @@ internal fun CompactCustomizationScreen(
 
     val currentEquippedFriendId = inventory.equippedItemIds[CosmeticSlot.FRIEND] ?: "friend:mobi"
     val currentEquippedAccessoryId = inventory.equippedItemIds[CosmeticSlot.ACCESSORY]
+    val currentEquippedBackgroundId = inventory.equippedItemIds[CosmeticSlot.BACKGROUND]
 
     val effectiveSelectedId =
         selectedItemId ?: when (activeTab) {
             CosmeticSlot.FRIEND -> currentEquippedFriendId
             CosmeticSlot.ACCESSORY -> currentEquippedAccessoryId ?: "none:accessory"
-            CosmeticSlot.BACKGROUND -> inventory.equippedItemIds[CosmeticSlot.BACKGROUND]
+            CosmeticSlot.BACKGROUND -> currentEquippedBackgroundId ?: "none:background"
             else -> null
         }
 
@@ -152,10 +161,14 @@ internal fun CompactCustomizationScreen(
             else -> inventory.equippedByFriend[previewFriendId]?.get(CosmeticSlot.ACCESSORY)
         }
     val previewBackgroundId =
-        if (activeTab == CosmeticSlot.BACKGROUND) {
-            effectiveSelectedId
-        } else {
-            inventory.equippedItemIds[CosmeticSlot.BACKGROUND]
+        when {
+            activeTab == CosmeticSlot.BACKGROUND ->
+                if ((effectiveSelectedId == "none:background") || (effectiveSelectedId?.startsWith("none:") == true)) {
+                    null
+                } else {
+                    effectiveSelectedId
+                }
+            else -> currentEquippedBackgroundId
         }
 
     // Filter items based on active categories
@@ -174,7 +187,10 @@ internal fun CompactCustomizationScreen(
                     }
                 listOf(NONE_ACCESSORY_ITEM) + accessories
             }
-            CosmeticSlot.BACKGROUND -> catalog.filter { it.slot == CosmeticSlot.BACKGROUND && !isObsoleteItem(it.id) }
+            CosmeticSlot.BACKGROUND -> {
+                val backgrounds = catalog.filter { it.slot == CosmeticSlot.BACKGROUND && !isObsoleteItem(it.id) }
+                listOf(NONE_BACKGROUND_ITEM) + backgrounds
+            }
             else -> emptyList()
         }
 
@@ -257,12 +273,21 @@ internal fun CompactCustomizationScreen(
                     }
                 }
                 Spacer(modifier = Modifier.height(16.dp))
+                val isEquippedSelection =
+                    when (activeTab) {
+                        CosmeticSlot.FRIEND -> effectiveSelectedId == currentEquippedFriendId
+                        CosmeticSlot.ACCESSORY ->
+                            effectiveSelectedId == currentEquippedAccessoryId ||
+                                (effectiveSelectedId == "none:accessory" && currentEquippedAccessoryId == null)
+                        CosmeticSlot.BACKGROUND ->
+                            effectiveSelectedId == currentEquippedBackgroundId ||
+                                (effectiveSelectedId == "none:background" && currentEquippedBackgroundId == null)
+                        else -> false
+                    }
                 val previewText =
                     when {
                         effectiveSelectedId == null -> ""
-                        effectiveSelectedId == currentEquippedFriendId ||
-                            effectiveSelectedId == currentEquippedAccessoryId ||
-                            (effectiveSelectedId == "none:accessory" && currentEquippedAccessoryId == null) -> {
+                        isEquippedSelection -> {
                             val name = cosmeticName(effectiveSelectedId)
                             "$name · 현재 착용"
                         }
@@ -349,7 +374,11 @@ internal fun CompactCustomizationScreen(
                                 val isOwned = isNoneItem || inventory.ownedItemIds.contains(item.id)
                                 val isEquipped =
                                     if (isNoneItem) {
-                                        currentEquippedAccessoryId == null
+                                        when (item.slot) {
+                                            CosmeticSlot.ACCESSORY -> currentEquippedAccessoryId == null
+                                            CosmeticSlot.BACKGROUND -> currentEquippedBackgroundId == null
+                                            else -> false
+                                        }
                                     } else {
                                         inventory.equippedItemIds[item.slot] == item.id ||
                                             (item.slot == CosmeticSlot.FRIEND && currentEquippedFriendId == item.id)
@@ -471,12 +500,17 @@ internal fun CompactCustomizationScreen(
                 val selectedItem =
                     tabItems.firstOrNull { it.id == effectiveSelectedId }
                         ?: NONE_ACCESSORY_ITEM.takeIf { activeTab == CosmeticSlot.ACCESSORY }
+                        ?: NONE_BACKGROUND_ITEM.takeIf { activeTab == CosmeticSlot.BACKGROUND }
                 if (selectedItem != null) {
                     val isNoneItem = selectedItem.id.startsWith("none:")
                     val isOwned = isNoneItem || inventory.ownedItemIds.contains(selectedItem.id)
                     val isEquipped =
                         if (isNoneItem) {
-                            currentEquippedAccessoryId == null
+                            when (selectedItem.slot) {
+                                CosmeticSlot.ACCESSORY -> currentEquippedAccessoryId == null
+                                CosmeticSlot.BACKGROUND -> currentEquippedBackgroundId == null
+                                else -> false
+                            }
                         } else {
                             inventory.equippedItemIds[selectedItem.slot] == selectedItem.id ||
                                 (selectedItem.slot == CosmeticSlot.FRIEND && currentEquippedFriendId == selectedItem.id)
