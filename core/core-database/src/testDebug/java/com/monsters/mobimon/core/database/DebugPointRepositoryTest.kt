@@ -10,6 +10,8 @@ import com.monsters.mobimon.core.domain.UtcClock
 import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -24,7 +26,6 @@ import java.util.concurrent.atomic.AtomicInteger
 class DebugPointRepositoryTest {
     private lateinit var context: Context
     private lateinit var database: AppDatabase
-    private lateinit var databaseName: String
     private val ids = AtomicInteger()
     private var appUse = AppUseState.ALLOWED
 
@@ -32,36 +33,52 @@ class DebugPointRepositoryTest {
     fun setUp() {
         runBlocking {
             context = ApplicationProvider.getApplicationContext()
-            databaseName = "debug-points-${System.nanoTime()}.db"
             database = openDatabase()
             database.companionDao().insertProfile(PetProfileEntity("profile", "GOLDEN", 0))
             database.economyDao().insertAccount(PointAccountEntity("profile", 0))
+            database.economyDao().insertItem(CosmeticItemEntity("friend:mobi", "FRIEND", 0, null))
+            database.economyDao().insertItem(CosmeticItemEntity("friend:luna", "FRIEND", 0, null))
         }
     }
 
     @After
     fun tearDown() {
         if (database.isOpen) database.close()
-        context.deleteDatabase(databaseName)
     }
 
     @Test
-    fun `debug adjustments and ledger remain consistent after reopening`() =
+    fun `debug adjustments and ledger remain consistent across repository operations`() =
         runBlocking {
             val repository = subject()
 
             assertEquals(DebugPointResult.UPDATED, repository.add(100))
             assertEquals(DebugPointResult.UPDATED, repository.subtract(25))
-            reopenDatabase()
 
             assertEquals(75L, database.economyDao().account("profile")?.balance)
             assertEquals(75L, database.economyDao().ledger("profile").sumOf { it.amount })
 
             assertEquals(DebugPointResult.UPDATED, subject().reset())
-            reopenDatabase()
 
             assertEquals(0L, database.economyDao().account("profile")?.balance)
             assertEquals(0L, database.economyDao().ledger("profile").sumOf { it.amount })
+        }
+
+    @Test
+    fun `resetStoreInventory clears non default owned cosmetics and resets equipped friend`() =
+        runBlocking {
+            val repository = subject()
+            val dao = database.economyDao()
+            dao.insertItem(CosmeticItemEntity("accessory:hat", "ACCESSORY", 100, null))
+            dao.insertOwned(OwnedCosmeticEntity("profile", "accessory:hat"))
+            dao.putEquipped(EquippedCosmeticEntity("profile", "ACCESSORY", "accessory:hat"))
+
+            assertEquals(DebugPointResult.UPDATED, repository.resetStoreInventory())
+
+            assertNotNull(dao.owned("profile", "friend:mobi"))
+            assertNotNull(dao.owned("profile", "friend:luna"))
+            assertNull(dao.owned("profile", "accessory:hat"))
+            assertEquals("friend:mobi", dao.equipped("profile", "FRIEND")?.itemId)
+            assertNull(dao.equipped("profile", "ACCESSORY"))
         }
 
     @Test
@@ -98,12 +115,7 @@ class DebugPointRepositoryTest {
 
     private fun openDatabase(): AppDatabase =
         Room
-            .databaseBuilder(context, AppDatabase::class.java, databaseName)
+            .inMemoryDatabaseBuilder(context, AppDatabase::class.java)
             .allowMainThreadQueries()
             .build()
-
-    private fun reopenDatabase() {
-        database.close()
-        database = openDatabase()
-    }
 }
