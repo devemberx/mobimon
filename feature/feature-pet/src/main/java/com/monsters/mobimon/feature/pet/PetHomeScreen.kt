@@ -103,6 +103,21 @@ fun PetHomeScreen(
                         ),
                     ),
             )
+            if (backgroundId != null) {
+                val particleType =
+                    when {
+                        backgroundId.contains("snow") -> com.monsters.mobimon.core.ui.ParticleType.SNOW
+                        backgroundId.contains(
+                            "petal",
+                        ) ||
+                            backgroundId.contains("flower") -> com.monsters.mobimon.core.ui.ParticleType.PETAL
+                        else -> com.monsters.mobimon.core.ui.ParticleType.STAR
+                    }
+                com.monsters.mobimon.core.ui.FallingParticlesEffect(
+                    particleType = particleType,
+                    modifier = Modifier.fillMaxSize().testTag("home-background-particles"),
+                )
+            }
             val fontScale = LocalDensity.current.fontScale
             val wide = this.maxWidth / fontScale >= 1200.dp
             val horizontalEdge =

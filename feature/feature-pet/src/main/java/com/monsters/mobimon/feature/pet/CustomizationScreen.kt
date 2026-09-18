@@ -205,6 +205,25 @@ internal fun CompactCustomizationScreen(
                             previewBackgroundId?.let { CharacterArtwork.backgrounds[it] }?.let { background ->
                                 CharacterAssetImage(background, Modifier.fillMaxSize())
                             }
+                            if (previewBackgroundId != null) {
+                                val particleType =
+                                    when {
+                                        previewBackgroundId.contains(
+                                            "snow",
+                                        ) -> com.monsters.mobimon.core.ui.ParticleType.SNOW
+                                        previewBackgroundId.contains(
+                                            "petal",
+                                        ) ||
+                                            previewBackgroundId.contains(
+                                                "flower",
+                                            ) -> com.monsters.mobimon.core.ui.ParticleType.PETAL
+                                        else -> com.monsters.mobimon.core.ui.ParticleType.STAR
+                                    }
+                                com.monsters.mobimon.core.ui.FallingParticlesEffect(
+                                    particleType = particleType,
+                                    modifier = Modifier.fillMaxSize().testTag("preview-background-particles"),
+                                )
+                            }
                         }
                         PetAvatar(
                             modifier = Modifier.fillMaxSize(0.88f).testTag("preview-character"),
