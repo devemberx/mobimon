@@ -75,8 +75,8 @@ fun PetHomeScreen(
         BoxWithConstraints(Modifier.fillMaxSize()) {
             val backgroundRes =
                 when (snapshot.timeOfDay) {
-                    "아침" -> R.drawable.pet_home_background_morning_v4
-                    "낮" -> R.drawable.pet_home_background_day_v4
+                    "Morning" -> R.drawable.pet_home_background_morning_v4
+                    "Day" -> R.drawable.pet_home_background_day_v4
                     else -> R.drawable.pet_home_background_v4
                 }
             Crossfade(

@@ -6,6 +6,8 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import java.time.OffsetDateTime
+import java.time.format.DateTimeParseException
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.math.atan2
@@ -57,6 +59,7 @@ data class DebugRawVssState(
     val rightIndicatorSignaling: Boolean = false,
     val destinationLatitude: Double = 0.0,
     val destinationLongitude: Double = 0.0,
+    val currentLocationTimestamp: String = DEFAULT_CURRENT_LOCATION_TIMESTAMP,
     val currentLatitude: Double = 0.0,
     val currentLongitude: Double = 0.0,
     val combustionEngineRunning: Boolean = false,
@@ -172,7 +175,7 @@ data class DebugVssState(
         get() = overrides.isEngineOn ?: raw.combustionEngineRunning
 
     val timeOfDay: String
-        get() = overrides.timeOfDay ?: "낮"
+        get() = overrides.timeOfDay ?: raw.currentLocationTimestamp.toTimeOfDay()
 }
 
 interface DebugVssProvider {
@@ -257,6 +260,11 @@ class DebugStore
                             prefs.double("Vehicle.Cabin.Infotainment.Navigation.DestinationSet.Latitude", 0.0),
                         destinationLongitude =
                             prefs.double("Vehicle.Cabin.Infotainment.Navigation.DestinationSet.Longitude", 0.0),
+                        currentLocationTimestamp =
+                            prefs.getString(
+                                "Vehicle.CurrentLocation.Timestamp",
+                                DEFAULT_CURRENT_LOCATION_TIMESTAMP,
+                            ) ?: DEFAULT_CURRENT_LOCATION_TIMESTAMP,
                         currentLatitude = prefs.double("Vehicle.CurrentLocation.Latitude", 0.0),
                         currentLongitude = prefs.double("Vehicle.CurrentLocation.Longitude", 0.0),
                         combustionEngineRunning =
@@ -343,6 +351,7 @@ class DebugStore
             putBoolean("Vehicle.Body.Lights.DirectionIndicator.Right.IsSignaling", raw.rightIndicatorSignaling)
             putDouble("Vehicle.Cabin.Infotainment.Navigation.DestinationSet.Latitude", raw.destinationLatitude)
             putDouble("Vehicle.Cabin.Infotainment.Navigation.DestinationSet.Longitude", raw.destinationLongitude)
+            putString("Vehicle.CurrentLocation.Timestamp", raw.currentLocationTimestamp)
             putDouble("Vehicle.CurrentLocation.Latitude", raw.currentLatitude)
             putDouble("Vehicle.CurrentLocation.Longitude", raw.currentLongitude)
             putBoolean("Vehicle.Powertrain.CombustionEngine.IsRunning", raw.combustionEngineRunning)
@@ -381,6 +390,7 @@ private const val DISTRACTION_THRESHOLD_PERCENT = 70f
 private const val FATIGUE_THRESHOLD_PERCENT = 70f
 private const val ARRIVAL_THRESHOLD_METERS = 100
 private const val EARTH_RADIUS_METERS = 6_371_000.0
+private const val DEFAULT_CURRENT_LOCATION_TIMESTAMP = "2026-10-08T10:00:00Z"
 
 private fun Int.toGearLabel(): String =
     when {
@@ -407,6 +417,20 @@ private fun distanceMeters(
             cos(fromLatRad) * cos(toLatRad) * sin(lonDelta / 2) * sin(lonDelta / 2)
     val c = 2 * atan2(sqrt(a), sqrt(1 - a))
     return EARTH_RADIUS_METERS * c
+}
+
+private fun String.toTimeOfDay(): String {
+    val hour =
+        try {
+            OffsetDateTime.parse(this).hour
+        } catch (_: DateTimeParseException) {
+            return "Day"
+        }
+    return when (hour) {
+        in 8..11 -> "Morning"
+        in 12..18 -> "Day"
+        else -> "Night"
+    }
 }
 
 private fun SharedPreferences.bool(
