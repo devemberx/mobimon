@@ -175,8 +175,7 @@ fun QuestScreen(
                     when (q01Status) {
                         QuestItemStatus.CLAIMABLE -> QuestActionType.CLAIM_REWARD
                         QuestItemStatus.COMPLETED -> QuestActionType.ALREADY_CLAIMED
-                        QuestItemStatus.IN_PROGRESS ->
-                            if (q01RunActive) QuestActionType.VIEW_DETAIL else QuestActionType.START
+                        QuestItemStatus.IN_PROGRESS -> QuestActionType.VIEW_DETAIL
                     },
                 completedDate = "2026.09.14",
             ),
@@ -874,81 +873,6 @@ private fun QuestListContent(
 }
 
 @Composable
-private fun LegacyQuestControls(
-    progress: QuestProgress,
-    canManageQuest: Boolean,
-    isBusy: Boolean,
-    onCancelQuest: () -> Unit,
-    pointBalance: Long? = null,
-    onAcknowledgeVehicle: (String) -> Unit,
-    vehicleSnapshot: VehicleSnapshot,
-    canAcknowledgeVehicle: Boolean,
-    errorMessage: String?,
-    modifier: Modifier = Modifier,
-) {
-    val completion = progress.completions.firstOrNull { it.type == QuestType.Q01 }
-    val active = progress.activeRun
-
-    Column(
-        modifier = modifier,
-        verticalArrangement = Arrangement.spacedBy(12.dp),
-    ) {
-        when {
-            completion != null -> {
-                val rewardText =
-                    if (pointBalance != null) {
-                        stringResource(R.string.quest_point_reward_received, pointBalance)
-                    } else {
-                        stringResource(R.string.quest_reward_received, completion.awardedXp)
-                    }
-                Text(rewardText)
-            }
-
-            active?.type == QuestType.Q01 -> {
-                QuestVehicleCard(
-                    snapshot = vehicleSnapshot,
-                    questActive = true,
-                    questCompleted = false,
-                    canAcknowledge = canAcknowledgeVehicle,
-                    onAcknowledge = onAcknowledgeVehicle,
-                    isBusy = isBusy,
-                    errorMessage = errorMessage,
-                )
-                LegacyQuestAction(
-                    text = stringResource(R.string.quest_cancel),
-                    enabled = canManageQuest && !isBusy,
-                    onClick = onCancelQuest,
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun LegacyQuestAction(
-    text: String,
-    enabled: Boolean,
-    onClick: () -> Unit,
-) {
-    Box(
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .heightIn(min = 76.dp)
-                .clip(RoundedCornerShape(24.dp))
-                .background(if (enabled) Colors.button else Colors.raised)
-                .clickable(enabled = enabled, onClick = onClick)
-                .padding(16.dp),
-        contentAlignment = Alignment.Center,
-    ) {
-        Text(
-            text = text,
-            style = questTextStyle(28f, 1f, bold = true, color = Colors.onButton),
-        )
-    }
-}
-
-@Composable
 private fun QuestRightPanel(
     quests: List<QuestItemUiModel>,
     scale: Float,
@@ -978,20 +902,13 @@ private fun QuestRightPanel(
         }
 
     Column(modifier = modifier) {
-        LegacyQuestControls(
-            progress = progress,
-            canManageQuest = canManageQuest,
-            isBusy = isBusy,
-            onCancelQuest = onCancelQuest,
-            pointBalance = pointBalance,
-            onAcknowledgeVehicle = onAcknowledgeVehicle,
-            vehicleSnapshot = vehicleSnapshot,
-            canAcknowledgeVehicle = canAcknowledgeVehicle,
-            errorMessage = errorMessage,
-            modifier = Modifier.fillMaxWidth(),
-        )
-
-        Spacer(Modifier.height(24.dp * scale))
+        if (pointBalance != null) {
+            Text(
+                text = stringResource(R.string.quest_point_reward_received, pointBalance),
+                style = questTextStyle(34f, scale, bold = false, color = Colors.muted),
+            )
+            Spacer(Modifier.height(20.dp * scale))
+        }
 
         Text(
             text = stringResource(R.string.quest_section_title),
@@ -1086,8 +1003,6 @@ private fun QuestRightPanel(
                         onClick = { onSelectQuest(quest.id) },
                         onClaimReward = { onClaimReward(quest.id) },
                         onChat = onChat,
-                        onStart = { quest.type?.let { onStartQuest(it) } },
-                        startEnabled = canManageQuest && !isBusy,
                     )
                 }
                 Spacer(Modifier.height(80.dp * scale))
@@ -1157,8 +1072,6 @@ private fun QuestCardItem(
     onChat: () -> Unit,
     modifier: Modifier = Modifier,
     isCompact: Boolean = false,
-    onStart: () -> Unit = {},
-    startEnabled: Boolean = true,
 ) {
     val buttonWidth = if (isCompact) 280.dp * scale else 368.dp * scale
     Row(
@@ -1236,31 +1149,6 @@ private fun QuestCardItem(
 
         // Action button on right
         when (quest.actionType) {
-            QuestActionType.START -> {
-                Box(
-                    modifier =
-                        Modifier
-                            .width(buttonWidth)
-                            .height(108.dp * scale)
-                            .clip(RoundedCornerShape(20.dp * scale))
-                            .background(if (startEnabled) Colors.button else Colors.raised)
-                            .clickable(enabled = startEnabled, onClick = onStart)
-                            .testTag("quest-btn-start-${quest.id}"),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Text(
-                        text = stringResource(R.string.quest_action_start),
-                        style =
-                            questTextStyle(
-                                38f,
-                                scale,
-                                bold = true,
-                                color = if (startEnabled) Colors.onButton else Colors.muted,
-                            ),
-                    )
-                }
-            }
-
             QuestActionType.CLAIM_REWARD -> {
                 Row(
                     modifier =

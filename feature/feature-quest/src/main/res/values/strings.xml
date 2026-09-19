@@ -57,7 +57,6 @@
     <string name="quest_action_claim">보상 받기</string>
     <string name="quest_action_chat">대화하기</string>
     <string name="quest_action_view_detail">자세히 보기</string>
-    <string name="quest_action_start">시작하기</string>
     <string name="quest_action_received">받았어요</string>
     <string name="quest_action_execute">수행하러 가기</string>
     <string name="quest_action_already_claimed">이미 보상을 받았어요</string>
