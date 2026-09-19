@@ -35,6 +35,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
@@ -45,6 +46,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.monsters.mobimon.core.domain.CosmeticInventory
@@ -91,6 +93,7 @@ fun CustomizationScreen(
     saveFailed: Boolean = false,
     onRetry: () -> Unit = {},
     onBack: () -> Unit = {},
+    timeOfDay: String? = null,
 ) {
     var tab by rememberSaveable { mutableStateOf(CosmeticSlot.FRIEND) }
     BoxWithConstraints(modifier.fillMaxSize().background(StoreNight)) {
@@ -118,6 +121,7 @@ fun CustomizationScreen(
                     onRetry,
                     activeTab = tab,
                     onTabChange = { tab = it },
+                    timeOfDay = timeOfDay,
                 )
             }
         } else {
@@ -231,9 +235,9 @@ fun CustomizationScreen(
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.Center,
                     ) {
-                        Box(Modifier.fillMaxWidth().weight(1f), contentAlignment = Alignment.Center) {
+                        Box(Modifier.fillMaxWidth().weight(1f).clipToBounds(), contentAlignment = Alignment.Center) {
                             Image(
-                                painter = painterResource(R.drawable.pet_home_background_v4),
+                                painter = painterResource(petHomeBackgroundRes(timeOfDay)),
                                 contentDescription = null,
                                 contentScale = ContentScale.Crop,
                                 modifier = Modifier.fillMaxSize().testTag("preview-background"),
@@ -260,7 +264,7 @@ fun CustomizationScreen(
                                     Modifier
                                         .fillMaxSize()
                                         .graphicsLayer {
-                                            scaleX = if (previewFriend == "friend:luna") 1.10f else 0.92f
+                                            scaleX = 0.92f
                                             scaleY = scaleX
                                         }.testTag("preview-character"),
                                     friendId = previewFriend,
@@ -275,13 +279,20 @@ fun CustomizationScreen(
                             } else {
                                 storeFriendName(previewFriend)
                             }
-                        Text(
-                            previewTitle,
-                            fontSize = (48f * scale).sp,
-                            color = StoreText,
-                            fontWeight = FontWeight.Bold,
-                        )
-                        Spacer(Modifier.height(40.dp * scale))
+                        Box(
+                            Modifier
+                                .fillMaxWidth()
+                                .height(108.dp * scale),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Text(
+                                previewTitle,
+                                fontSize = (48f * scale).sp,
+                                color = StoreText,
+                                fontWeight = FontWeight.Bold,
+                                textAlign = TextAlign.Center,
+                            )
+                        }
                     }
                     Row(
                         Modifier.fillMaxWidth().height(154.dp * scale).padding(start = 28.dp * scale),
@@ -299,8 +310,15 @@ fun CustomizationScreen(
                                 ),
                         )
                         Spacer(Modifier.width(44.dp * scale))
+                        val previewSubtitle =
+                            storePreviewDescription(
+                                tab = tab,
+                                selectedItemId = selected?.id,
+                                previewFriend = previewFriend,
+                                equipped = equipped,
+                            )
                         Text(
-                            if (equipped) "내 친구에게 작은 선물을" else "아직 적용되지 않았어요",
+                            previewSubtitle,
                             color = StoreMuted,
                             fontSize =
                                 (
@@ -644,3 +662,35 @@ private fun StoreHeader(
 }
 
 private fun storeFriendName(id: String): String = if (id == "friend:luna") "루나" else "모비"
+
+@Composable
+internal fun storePreviewDescription(
+    tab: CosmeticSlot,
+    selectedItemId: String?,
+    previewFriend: String,
+    equipped: Boolean,
+): String =
+    when (tab) {
+        CosmeticSlot.FRIEND ->
+            when (previewFriend) {
+                "friend:luna" -> stringResource(R.string.pet_preview_desc_friend_luna)
+                else -> stringResource(R.string.pet_preview_desc_friend_mobi)
+            }
+        CosmeticSlot.ACCESSORY ->
+            when (selectedItemId) {
+                "accessory:luna_cap" -> stringResource(R.string.pet_preview_desc_luna_cap)
+                "accessory:luna_sunglasses" -> stringResource(R.string.pet_preview_desc_luna_sunglasses)
+                "accessory:mobi_headphones" -> stringResource(R.string.pet_preview_desc_mobi_headphones)
+                "accessory:mobi_goggles" -> stringResource(R.string.pet_preview_desc_mobi_goggles)
+                else -> stringResource(R.string.pet_preview_desc_none)
+            }
+        CosmeticSlot.BACKGROUND ->
+            when (selectedItemId) {
+                "background:star" -> stringResource(R.string.pet_preview_desc_background_star)
+                "background:snow" -> stringResource(R.string.pet_preview_desc_background_snow)
+                "background:petal" -> stringResource(R.string.pet_preview_desc_background_petal)
+                else -> stringResource(R.string.pet_preview_desc_background_none)
+            }
+        else ->
+            if (equipped) "내 친구에게 작은 선물을" else "아직 적용되지 않았어요"
+    }

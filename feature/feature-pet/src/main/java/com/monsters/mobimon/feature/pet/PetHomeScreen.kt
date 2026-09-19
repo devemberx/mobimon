@@ -73,12 +73,7 @@ fun PetHomeScreen(
     val talkText = if (connectionAvailable) R.string.pet_talk_action else R.string.pet_talk_unavailable
     Surface(modifier = modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
         BoxWithConstraints(Modifier.fillMaxSize()) {
-            val backgroundRes =
-                when (snapshot.timeOfDay) {
-                    "Morning" -> R.drawable.pet_home_background_morning_v4
-                    "Day" -> R.drawable.pet_home_background_day_v4
-                    else -> R.drawable.pet_home_background_v4
-                }
+            val backgroundRes = petHomeBackgroundRes(snapshot.timeOfDay)
             Crossfade(
                 targetState = backgroundRes,
                 animationSpec = tween(durationMillis = 1000),
@@ -445,3 +440,21 @@ fun PetHomeLoadingScreen(
         }
     }
 }
+
+internal fun petHomeBackgroundRes(timeOfDay: String?): Int =
+    when (timeOfDay) {
+        "Morning" -> R.drawable.pet_home_background_morning_v4
+        "Day" -> R.drawable.pet_home_background_day_v4
+        "Night" -> R.drawable.pet_home_background_v4
+        else -> {
+            val hour =
+                java.util.Calendar
+                    .getInstance()
+                    .get(java.util.Calendar.HOUR_OF_DAY)
+            when (hour) {
+                in 8..11 -> R.drawable.pet_home_background_morning_v4
+                in 12..18 -> R.drawable.pet_home_background_day_v4
+                else -> R.drawable.pet_home_background_v4
+            }
+        }
+    }

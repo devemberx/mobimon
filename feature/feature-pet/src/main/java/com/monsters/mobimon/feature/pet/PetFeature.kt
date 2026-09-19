@@ -150,6 +150,7 @@ class PetFeature(
                     loadFailed = inventoryState.loadFailed,
                     saveFailed = inventoryState.saveFailed,
                     onRetry = onRetry,
+                    timeOfDay = vehicleSnapshot.timeOfDay,
                 )
             else -> error("Unsupported companion route: $route")
         }

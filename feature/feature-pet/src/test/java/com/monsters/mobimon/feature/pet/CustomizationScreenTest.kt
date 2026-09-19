@@ -191,4 +191,42 @@ class CustomizationScreenTest {
         compose.onNodeWithText("이 모습 적용").performScrollTo().performClick()
         org.junit.Assert.assertEquals("none:accessory", unequippedSlot)
     }
+
+    @Test fun selectingBackgroundPreviewsParticlesAndRendersPreviewText() {
+        val catalog =
+            listOf(
+                CosmeticItem("friend:mobi", CosmeticSlot.FRIEND, 0),
+                CosmeticItem("background:star", CosmeticSlot.BACKGROUND, 200),
+            )
+        val inventory =
+            CosmeticInventory(
+                ownedItemIds = setOf("friend:mobi"),
+                equippedItemIds = mapOf(CosmeticSlot.FRIEND to "friend:mobi"),
+            )
+
+        compose.setContent {
+            var selectedId by androidx.compose.runtime.remember { mutableStateOf<String?>(null) }
+            MobiMonTheme {
+                CustomizationScreen(
+                    inventory = inventory,
+                    catalog = catalog,
+                    selectedItemId = selectedId,
+                    purchasing = false,
+                    purchaseFailed = false,
+                    onSelectItem = { selectedId = it },
+                    onPurchaseItem = { _, _ -> },
+                    onEquipItem = {},
+                    onEquipFriend = {},
+                    pointBalance = 500,
+                    pointLoadFailed = false,
+                )
+            }
+        }
+
+        compose.onNodeWithText("배경").performClick()
+        compose.onNodeWithTag("shop-items").performScrollTo().performScrollToIndex(0)
+        compose.onNodeWithText("반짝이는 별").performScrollTo().performClick()
+        compose.onNodeWithText("반짝이는 별 · 착용 미리보기").assertIsDisplayed()
+        compose.onNodeWithTag("preview-background-particles").assertIsDisplayed()
+    }
 }

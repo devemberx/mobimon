@@ -10,6 +10,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.painter.BitmapPainter
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -21,6 +22,8 @@ data class CharacterAsset(
     @DrawableRes val resourceId: Int,
     val crop: AssetCrop? = null,
     val visualScale: Float = 1f,
+    val translationXFraction: Float = 0f,
+    val translationYFraction: Float = 0f,
 )
 
 data class AssetCrop(
@@ -42,19 +45,29 @@ object CharacterArtwork {
         mapOf(
             "accessory:mobi_headphones" to CharacterAsset(R.drawable.mobimon_mobi_headphones_v4, visualScale = 0.93f),
             "accessory:mobi_goggles" to CharacterAsset(R.drawable.mobimon_mobi_goggles_v4),
-            "accessory:luna_cap" to CharacterAsset(R.drawable.mobimon_luna_cap_v4),
-            "accessory:luna_sunglasses" to CharacterAsset(R.drawable.mobimon_luna_sunglasses_v4, visualScale = 0.96f),
+            "accessory:luna_cap" to
+                CharacterAsset(
+                    R.drawable.mobimon_luna_cap_v4,
+                    visualScale = 0.97f,
+                    translationXFraction = 0.022f,
+                    translationYFraction = -0.075f,
+                ),
+            "accessory:luna_sunglasses" to
+                CharacterAsset(
+                    R.drawable.mobimon_luna_sunglasses_v4,
+                    visualScale = 0.97f,
+                ),
         )
 
     val itemIcons =
         mapOf(
-            "accessory:mobi_headphones" to CharacterAsset(R.drawable.mobimon_mobi_items_v4, AssetCrop(0, 0, 450, 724)),
-            "accessory:mobi_goggles" to CharacterAsset(R.drawable.mobimon_mobi_items_v4, AssetCrop(450, 0, 450, 724)),
-            "accessory:luna_cap" to CharacterAsset(R.drawable.mobimon_luna_items_v4, AssetCrop(0, 0, 455, 724)),
+            "accessory:mobi_headphones" to CharacterAsset(R.drawable.mobimon_mobi_items_v4, AssetCrop(0, 0, 475, 724)),
+            "accessory:mobi_goggles" to CharacterAsset(R.drawable.mobimon_mobi_items_v4, AssetCrop(480, 0, 468, 724)),
+            "accessory:luna_cap" to CharacterAsset(R.drawable.mobimon_luna_items_v4, AssetCrop(0, 0, 500, 724)),
             "accessory:luna_sunglasses" to
                 CharacterAsset(
                     R.drawable.mobimon_luna_items_v4,
-                    AssetCrop(470, 0, 455, 724),
+                    AssetCrop(510, 0, 460, 724),
                 ),
         )
 
@@ -91,7 +104,13 @@ fun CharacterAssetImage(
         Image(
             painter,
             contentDescription,
-            modifier = Modifier.fillMaxSize(asset.visualScale),
+            modifier =
+                Modifier
+                    .fillMaxSize(asset.visualScale)
+                    .graphicsLayer {
+                        translationX = size.width * asset.translationXFraction
+                        translationY = size.height * asset.translationYFraction
+                    },
             contentScale = ContentScale.Fit,
         )
     }
