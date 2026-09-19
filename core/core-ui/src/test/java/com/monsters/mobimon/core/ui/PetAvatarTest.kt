@@ -10,7 +10,9 @@ import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Rule
@@ -30,7 +32,14 @@ class PetAvatarTest {
     @Test
     fun equippedLooksUseIsolatedAssetsAndLunaIsNormalized() {
         CharacterArtwork.equippedLooks.values.forEach { assertNull(it.crop) }
-        assertTrue(CharacterArtwork.characters.getValue("friend:luna").visualScale < 1f)
+        val lunaScale = CharacterArtwork.characters.getValue("friend:luna").visualScale
+        assertTrue(lunaScale < 1f)
+        assertTrue(CharacterArtwork.equippedLooks.getValue("accessory:luna_cap").visualScale < 1f)
+        assertTrue(CharacterArtwork.equippedLooks.getValue("accessory:luna_sunglasses").visualScale < 1f)
+        assertEquals(0.97f, CharacterArtwork.equippedLooks.getValue("accessory:luna_cap").visualScale)
+        assertEquals(0.97f, CharacterArtwork.equippedLooks.getValue("accessory:luna_sunglasses").visualScale)
+        assertEquals(0.022f, CharacterArtwork.equippedLooks.getValue("accessory:luna_cap").translationXFraction)
+        assertEquals(-0.075f, CharacterArtwork.equippedLooks.getValue("accessory:luna_cap").translationYFraction)
     }
 
     @Test
@@ -92,5 +101,28 @@ class PetAvatarTest {
                 .getApplicationContext<android.content.Context>()
         val frames = MobiAnimationCache.getOrLoadFrames(context)
         org.junit.Assert.assertEquals(12, frames.size)
+    }
+
+    @Test
+    fun itemIconsCropBoundsMatchItemSpans() {
+        val headphonesCrop = CharacterArtwork.itemIcons.getValue("accessory:mobi_headphones").crop
+        assertNotNull(headphonesCrop)
+        assertEquals(0, headphonesCrop!!.x)
+        assertEquals(475, headphonesCrop.width)
+
+        val gogglesCrop = CharacterArtwork.itemIcons.getValue("accessory:mobi_goggles").crop
+        assertNotNull(gogglesCrop)
+        assertEquals(480, gogglesCrop!!.x)
+        assertEquals(468, gogglesCrop.width)
+
+        val capCrop = CharacterArtwork.itemIcons.getValue("accessory:luna_cap").crop
+        assertNotNull(capCrop)
+        assertEquals(0, capCrop!!.x)
+        assertEquals(500, capCrop.width)
+
+        val sunglassesCrop = CharacterArtwork.itemIcons.getValue("accessory:luna_sunglasses").crop
+        assertNotNull(sunglassesCrop)
+        assertEquals(510, sunglassesCrop!!.x)
+        assertEquals(460, sunglassesCrop.width)
     }
 }

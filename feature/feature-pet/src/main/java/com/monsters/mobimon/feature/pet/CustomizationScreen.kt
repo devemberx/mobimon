@@ -105,6 +105,7 @@ internal fun CompactCustomizationScreen(
     onRetry: () -> Unit = {},
     activeTab: CosmeticSlot,
     onTabChange: (CosmeticSlot) -> Unit,
+    timeOfDay: String? = null,
 ) {
     var subTab by rememberSaveable { mutableIntStateOf(0) } // 0: 전체, 1: 보유 중
 
@@ -213,7 +214,12 @@ internal fun CompactCustomizationScreen(
                 verticalArrangement = Arrangement.Center,
             ) {
                 Card(
-                    modifier = Modifier.widthIn(max = 540.dp).fillMaxWidth().aspectRatio(1.35f),
+                    modifier =
+                        Modifier
+                            .widthIn(max = 540.dp)
+                            .fillMaxWidth()
+                            .aspectRatio(1.35f)
+                            .clip(MaterialTheme.shapes.extraLarge),
                     shape = MaterialTheme.shapes.extraLarge,
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
                 ) {
@@ -221,10 +227,11 @@ internal fun CompactCustomizationScreen(
                         Box(
                             Modifier
                                 .fillMaxSize()
+                                .clip(MaterialTheme.shapes.extraLarge)
                                 .testTag("preview-background"),
                         ) {
                             Image(
-                                painter = painterResource(R.drawable.pet_home_background_v4),
+                                painter = painterResource(petHomeBackgroundRes(timeOfDay)),
                                 contentDescription = null,
                                 contentScale = ContentScale.Crop,
                                 modifier = Modifier.fillMaxSize(),

@@ -84,6 +84,53 @@ class StoreReferenceScreenTest {
         capture(view, "P22-backgrounds")
     }
 
+    @Test fun previewDescriptionMatchesItemTypes() {
+        val descriptions = mutableMapOf<String, String>()
+        compose.setContent {
+            MobiMonTheme {
+                descriptions["friend:mobi"] =
+                    storePreviewDescription(CosmeticSlot.FRIEND, null, "friend:mobi", true)
+                descriptions["friend:luna"] =
+                    storePreviewDescription(CosmeticSlot.FRIEND, null, "friend:luna", false)
+                descriptions["none:accessory"] =
+                    storePreviewDescription(CosmeticSlot.ACCESSORY, "none:accessory", "friend:mobi", true)
+                descriptions["accessory:luna_cap"] =
+                    storePreviewDescription(CosmeticSlot.ACCESSORY, "accessory:luna_cap", "friend:luna", false)
+                descriptions["accessory:luna_sunglasses"] =
+                    storePreviewDescription(CosmeticSlot.ACCESSORY, "accessory:luna_sunglasses", "friend:luna", false)
+                descriptions["accessory:mobi_headphones"] =
+                    storePreviewDescription(CosmeticSlot.ACCESSORY, "accessory:mobi_headphones", "friend:mobi", false)
+                descriptions["accessory:mobi_goggles"] =
+                    storePreviewDescription(CosmeticSlot.ACCESSORY, "accessory:mobi_goggles", "friend:mobi", false)
+                descriptions["none:background"] =
+                    storePreviewDescription(CosmeticSlot.BACKGROUND, "none:background", "friend:mobi", true)
+                descriptions["background:star"] =
+                    storePreviewDescription(CosmeticSlot.BACKGROUND, "background:star", "friend:mobi", false)
+                descriptions["background:snow"] =
+                    storePreviewDescription(CosmeticSlot.BACKGROUND, "background:snow", "friend:mobi", false)
+                descriptions["background:petal"] =
+                    storePreviewDescription(CosmeticSlot.BACKGROUND, "background:petal", "friend:mobi", false)
+            }
+        }
+        assertEquals("우리들의 작은 친구 모비에요", descriptions["friend:mobi"])
+        assertEquals("귀여운 애교쟁이 루나랍니다냥", descriptions["friend:luna"])
+        assertEquals("내추럴한 모습이에요", descriptions["none:accessory"])
+        assertEquals("함께 항해를 떠나볼까요?", descriptions["accessory:luna_cap"])
+        assertEquals("눈부실 때는 선글라스만한게 없죠~", descriptions["accessory:luna_sunglasses"])
+        assertEquals("노이즈캔슬링으로 운전에 집중!", descriptions["accessory:mobi_headphones"])
+        assertEquals("빈티지 느낌에는 고글만한게 없죠~", descriptions["accessory:mobi_goggles"])
+        assertEquals("깔끔한 배경화면이에요", descriptions["none:background"])
+        assertEquals("반짝반짝 별이 내려요~", descriptions["background:star"])
+        assertEquals("소복소복 눈이 내려요~", descriptions["background:snow"])
+        assertEquals("살랑살랑 꽃이 내려요~", descriptions["background:petal"])
+    }
+
+    @Test fun previewBackgroundFollowsTimeOfDay() {
+        assertEquals(R.drawable.pet_home_background_morning_v4, petHomeBackgroundRes("Morning"))
+        assertEquals(R.drawable.pet_home_background_day_v4, petHomeBackgroundRes("Day"))
+        assertEquals(R.drawable.pet_home_background_v4, petHomeBackgroundRes("Night"))
+    }
+
     private fun capture(
         view: View,
         name: String,
