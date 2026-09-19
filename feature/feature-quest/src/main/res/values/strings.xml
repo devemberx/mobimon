@@ -8,7 +8,6 @@
     <string name="quest_reward_once">이 퀘스트의 보상은 한 번만 받을 수 있어요.</string>
     <string name="quest_completed">완료</string>
     <string name="quest_active">진행 중</string>
-    <string name="quest_start_q01">Q01 시작하기</string>
     <string name="quest_cancel">퀘스트 취소</string>
     <string name="quest_other_active">진행 중인 퀘스트를 먼저 마치거나 취소해 주세요.</string>
     <string name="quest_parked_required">최신 차량 정보로 주차가 확인되면 시작하거나 취소할 수 있어요.</string>
@@ -58,6 +57,7 @@
     <string name="quest_action_claim">보상 받기</string>
     <string name="quest_action_chat">대화하기</string>
     <string name="quest_action_view_detail">자세히 보기</string>
+    <string name="quest_action_start">시작하기</string>
     <string name="quest_action_received">받았어요</string>
     <string name="quest_action_execute">수행하러 가기</string>
     <string name="quest_action_already_claimed">이미 보상을 받았어요</string>

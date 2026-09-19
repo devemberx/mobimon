@@ -16,6 +16,7 @@ enum class QuestItemStatus {
 }
 
 enum class QuestActionType {
+    START,
     CLAIM_REWARD,
     CHAT,
     VIEW_DETAIL,

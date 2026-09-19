@@ -40,7 +40,7 @@ class QuestScreenTest {
             }
         }
 
-        compose.onNodeWithText("Q01 시작하기").performScrollTo().performClick()
+        compose.onNodeWithText("시작하기").performScrollTo().performClick()
         assertEquals(QuestType.Q01, started)
         compose.onNodeWithText("Q02", substring = true).assertDoesNotExist()
         compose.onNodeWithText("Q03", substring = true).assertDoesNotExist()
@@ -50,7 +50,7 @@ class QuestScreenTest {
     fun unavailableVehicleDisablesStartingAQuest() {
         render(QuestProgress(), canManageQuest = false)
 
-        compose.onNodeWithText("Q01 시작하기").performScrollTo().assertIsNotEnabled()
+        compose.onNodeWithText("시작하기").performScrollTo().assertIsNotEnabled()
     }
 
     @Test
@@ -76,7 +76,7 @@ class QuestScreenTest {
 
         assertEquals("displayed", acknowledged)
         assertTrue(cancelled)
-        compose.onNodeWithText("Q01 시작하기").assertDoesNotExist()
+        compose.onNodeWithText("시작하기").assertDoesNotExist()
     }
 
     @Test
@@ -93,7 +93,7 @@ class QuestScreenTest {
         render(QuestProgress(completions = listOf(completion)), canManageQuest = true)
 
         compose.onNodeWithText("80 XP를 받았어요").performScrollTo().assertIsDisplayed()
-        compose.onNodeWithText("Q01 시작하기").assertDoesNotExist()
+        compose.onNodeWithText("시작하기").assertDoesNotExist()
         compose.onNodeWithText("퀘스트 취소").assertDoesNotExist()
     }
 

@@ -175,7 +175,8 @@ fun QuestScreen(
                     when (q01Status) {
                         QuestItemStatus.CLAIMABLE -> QuestActionType.CLAIM_REWARD
                         QuestItemStatus.COMPLETED -> QuestActionType.ALREADY_CLAIMED
-                        QuestItemStatus.IN_PROGRESS -> QuestActionType.VIEW_DETAIL
+                        QuestItemStatus.IN_PROGRESS ->
+                            if (q01RunActive) QuestActionType.VIEW_DETAIL else QuestActionType.START
                     },
                 completedDate = "2026.09.14",
             ),
@@ -877,7 +878,6 @@ private fun LegacyQuestControls(
     progress: QuestProgress,
     canManageQuest: Boolean,
     isBusy: Boolean,
-    onStartQuest: (QuestType) -> Unit,
     onCancelQuest: () -> Unit,
     pointBalance: Long? = null,
     onAcknowledgeVehicle: (String) -> Unit,
@@ -918,14 +918,6 @@ private fun LegacyQuestControls(
                     text = stringResource(R.string.quest_cancel),
                     enabled = canManageQuest && !isBusy,
                     onClick = onCancelQuest,
-                )
-            }
-
-            else -> {
-                LegacyQuestAction(
-                    text = stringResource(R.string.quest_start_q01),
-                    enabled = canManageQuest && !isBusy && active == null,
-                    onClick = { onStartQuest(QuestType.Q01) },
                 )
             }
         }
@@ -990,7 +982,6 @@ private fun QuestRightPanel(
             progress = progress,
             canManageQuest = canManageQuest,
             isBusy = isBusy,
-            onStartQuest = onStartQuest,
             onCancelQuest = onCancelQuest,
             pointBalance = pointBalance,
             onAcknowledgeVehicle = onAcknowledgeVehicle,
@@ -1095,6 +1086,8 @@ private fun QuestRightPanel(
                         onClick = { onSelectQuest(quest.id) },
                         onClaimReward = { onClaimReward(quest.id) },
                         onChat = onChat,
+                        onStart = { quest.type?.let { onStartQuest(it) } },
+                        startEnabled = canManageQuest && !isBusy,
                     )
                 }
                 Spacer(Modifier.height(80.dp * scale))
@@ -1131,8 +1124,8 @@ private fun QuestFilterTabButton(
     Row(
         modifier =
             modifier
-                .then(if (isCompact) Modifier else Modifier.width(336.dp * scale))
-                .height(88.dp * scale)
+                .then(if (isCompact) Modifier else Modifier.width(300.dp * scale))
+                .height(72.dp * scale)
                 .clip(RoundedCornerShape(24.dp * scale))
                 .background(bg)
                 .then(borderMod)
@@ -1144,13 +1137,13 @@ private fun QuestFilterTabButton(
         Image(
             painter = painterResource(iconRes),
             contentDescription = null,
-            modifier = Modifier.size(32.dp * scale),
+            modifier = Modifier.size(28.dp * scale),
             colorFilter = ColorFilter.tint(fg),
         )
-        Spacer(Modifier.width(16.dp * scale))
+        Spacer(Modifier.width(14.dp * scale))
         Text(
             text = title,
-            style = questTextStyle(38f, scale, bold = true, color = fg),
+            style = questTextStyle(34f, scale, bold = true, color = fg),
         )
     }
 }
@@ -1164,6 +1157,8 @@ private fun QuestCardItem(
     onChat: () -> Unit,
     modifier: Modifier = Modifier,
     isCompact: Boolean = false,
+    onStart: () -> Unit = {},
+    startEnabled: Boolean = true,
 ) {
     val buttonWidth = if (isCompact) 280.dp * scale else 368.dp * scale
     Row(
@@ -1241,6 +1236,31 @@ private fun QuestCardItem(
 
         // Action button on right
         when (quest.actionType) {
+            QuestActionType.START -> {
+                Box(
+                    modifier =
+                        Modifier
+                            .width(buttonWidth)
+                            .height(108.dp * scale)
+                            .clip(RoundedCornerShape(20.dp * scale))
+                            .background(if (startEnabled) Colors.button else Colors.raised)
+                            .clickable(enabled = startEnabled, onClick = onStart)
+                            .testTag("quest-btn-start-${quest.id}"),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(
+                        text = stringResource(R.string.quest_action_start),
+                        style =
+                            questTextStyle(
+                                38f,
+                                scale,
+                                bold = true,
+                                color = if (startEnabled) Colors.onButton else Colors.muted,
+                            ),
+                    )
+                }
+            }
+
             QuestActionType.CLAIM_REWARD -> {
                 Row(
                     modifier =

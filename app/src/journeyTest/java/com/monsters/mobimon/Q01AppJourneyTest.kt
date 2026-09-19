@@ -74,8 +74,8 @@ class Q01AppJourneyTest {
     fun q01AwardsOnceThroughUiAndSurvivesActivityRecreation() {
         ActivityScenario.launch(MainActivity::class.java).use { scenario ->
             openQuests()
-            waitFor(hasText(text(QuestR.string.quest_start_q01)) and isEnabled())
-            clickScrollable(QuestR.string.quest_start_q01)
+            waitFor(hasText(text(QuestR.string.quest_action_start)) and isEnabled())
+            clickScrollable(QuestR.string.quest_action_start)
             waitFor(hasText(text(QuestR.string.quest_vehicle_q01_waiting)))
             compose.onNodeWithText(text(QuestR.string.quest_vehicle_acknowledge)).assertIsNotEnabled()
 
@@ -107,7 +107,7 @@ class Q01AppJourneyTest {
             assertHomePoints(0)
             openQuests()
             waitFor(hasText(text(QuestR.string.quest_point_reward_received, 0)))
-            compose.onNodeWithText(text(QuestR.string.quest_start_q01)).assertDoesNotExist()
+            compose.onNodeWithText(text(QuestR.string.quest_action_start)).assertDoesNotExist()
             compose.onNodeWithText(text(QuestR.string.quest_cancel)).assertDoesNotExist()
             runBlocking(Dispatchers.IO) {
                 withTimeout(5_000) {
@@ -150,9 +150,9 @@ class Q01AppJourneyTest {
         vehicle.publish(state, quality)
         ActivityScenario.launch(MainActivity::class.java).use {
             openQuests()
-            waitFor(hasText(text(QuestR.string.quest_start_q01)) and !isEnabled())
-            compose.onNodeWithText(text(QuestR.string.quest_start_q01)).assertIsNotEnabled()
-            compose.onNodeWithText(text(QuestR.string.quest_start_q01)).performClick()
+            waitFor(hasText(text(QuestR.string.quest_action_start)) and !isEnabled())
+            compose.onNodeWithText(text(QuestR.string.quest_action_start)).assertIsNotEnabled()
+            compose.onNodeWithText(text(QuestR.string.quest_action_start)).performClick()
             runBlocking(Dispatchers.IO) {
                 withTimeout(5_000) {
                     assertNull(
@@ -175,8 +175,8 @@ class Q01AppJourneyTest {
                 }
             }
             vehicle.publish()
-            waitFor(hasText(text(QuestR.string.quest_start_q01)) and isEnabled())
-            clickScrollable(QuestR.string.quest_start_q01)
+            waitFor(hasText(text(QuestR.string.quest_action_start)) and isEnabled())
+            clickScrollable(QuestR.string.quest_action_start)
             waitFor(hasText(text(QuestR.string.quest_vehicle_acknowledge)))
             runBlocking(Dispatchers.IO) {
                 withTimeout(5_000) {
