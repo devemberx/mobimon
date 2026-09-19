@@ -42,6 +42,20 @@ information; they never diagnose a vehicle or replace its warnings.
 - Order screen-reader/rotary focus by title, information, primary action and
   secondary actions. Trap dialog focus and return it to the trigger on close.
 
+### Launcher icon and native splash
+
+The launcher reuses the shared [Mobi artwork](../core/core-ui/src/main/res/drawable-nodpi/mobimon_mobi_v4.png)
+on Night, without a wordmark. The [foreground inset](../app/src/main/res/drawable/ic_launcher_foreground.xml)
+preserves its proportions and adaptive-mask clearance; the
+[monochrome vector](../app/src/main/res/drawable/ic_launcher_monochrome.xml) retains
+the sprout, face and steering-wheel motif for themed launchers. These are icon
+adaptations of the current character, not an exported Figma launcher design.
+
+[Theme.MobiMon](../app/src/main/res/values/themes.xml) supplies the same Night
+background and icon to the native splash. Android dismisses it on the first app
+frame; there is no custom splash Activity or hold. API 34 is the minimum, so
+adaptive resources replace the obsolete density-specific launcher bitmaps.
+
 ## Reusable Compose library and asset handoff
 
 Use [core-ui](../core/core-ui/src/main/java/com/monsters/mobimon/core/ui) before
