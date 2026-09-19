@@ -25,6 +25,10 @@ data class DriveEvaluationData(
     val totalDistanceKm: Float = 0f,
     val safeDriveDaysCount: Int = 0,
     val weather: WeatherCondition = WeatherCondition.CLEAR,
+    val isBatteryChargedProperly: Boolean = false,
+    val hasRestedDuringLongDrive: Boolean = false,
+    val isWasherFluidRefilled: Boolean = false,
+    val isTirePressureNormalWeekly: Boolean = false,
 )
 
 data class DrivingQuestResult(

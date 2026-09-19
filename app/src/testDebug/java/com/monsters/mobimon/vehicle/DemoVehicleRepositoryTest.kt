@@ -243,4 +243,68 @@ class DemoVehicleRepositoryTest {
             worker.shutdownNow()
         }
     }
+
+    @Test
+    fun debugRawVssSignalsPropagateToVehicleSnapshot() =
+        runTest {
+            val settings = FakeSettingsRepository()
+            settings.mutableSettings.value = CompanionSettings(debugModeEnabled = true)
+            val debug = FakeDebugStore()
+            val repository =
+                DemoVehicleRepository(
+                    Clock { testScheduler.currentTime },
+                    IdGenerator { "epoch" },
+                    settings,
+                    debug,
+                    backgroundScope,
+                )
+            repository.start()
+            runCurrent()
+
+            debug.mutableState.value =
+                DebugVssState(
+                    raw =
+                        DebugRawVssState(
+                            tractionBatterySocDisplayed = 45f,
+                            vehicleSpeedKmh = 60f,
+                            selectedGear = 127,
+                            vehicleIsMoving = true,
+                            exteriorAirTemperature = 25f,
+                            rainIntensity = 3,
+                            driverDistractionLevel = 80f,
+                            driverFatigueLevel = 75f,
+                            dmsIsWarning = true,
+                            driverEmergencyBrakingDetected = true,
+                            obstacleFrontCenterDistance = 15f,
+                            tractionBatteryChargingIsCharging = true,
+                            washerFluidLevel = 30,
+                            row1LeftTirePressureLow = true,
+                            obdMilOn = true,
+                            combustionEngineRunning = true,
+                            currentLocationTimestamp = "2026-10-08T14:00:00Z",
+                        ),
+                )
+            runCurrent()
+
+            val snapshot = repository.snapshots.value
+            assertEquals(45, snapshot.batteryPercent)
+            assertEquals(60, snapshot.speed)
+            assertEquals("D", snapshot.gear)
+            assertEquals(DrivingState.MOVING, snapshot.drivingState)
+            assertEquals(25, snapshot.outsideTemperature)
+            assertEquals(true, snapshot.isRaining)
+            assertEquals(true, snapshot.isDistracted)
+            assertEquals(true, snapshot.isDrowsy)
+            assertEquals(20, snapshot.attentionLevel)
+            assertEquals(true, snapshot.isEmergencyBraking)
+            assertEquals(15, snapshot.distanceToFrontVehicle)
+            assertEquals(true, snapshot.isCharging)
+            assertEquals(30, snapshot.washerFluidLevel)
+            assertEquals("NG", snapshot.tirePressureStatus)
+            assertEquals(true, snapshot.isEngineWarning)
+            assertEquals(true, snapshot.isEngineOn)
+            assertEquals("Day", snapshot.timeOfDay)
+
+            repository.stop()
+        }
 }

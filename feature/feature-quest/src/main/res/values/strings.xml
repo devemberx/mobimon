@@ -44,7 +44,6 @@
     <string name="quest_companion_sub_ready">준비가 끝나면 보상을 받아요.</string>
     <string name="quest_companion_sub_completed">미션을 멋지게 완료했어요!</string>
     <string name="quest_section_title">함께 해 볼까요?</string>
-    <string name="quest_badge_example">퀘스트 예시</string>
     <string name="quest_tab_all">전체</string>
     <string name="quest_tab_ongoing">진행 중</string>
     <string name="quest_tab_completed">완료</string>
@@ -63,6 +62,8 @@
     <string name="quest_action_execute">수행하러 가기</string>
     <string name="quest_action_already_claimed">이미 보상을 받았어요</string>
     <string name="quest_action_confirm">확인</string>
+    <string name="quest_back_to_list">목록으로</string>
+    <string name="quest_back_action">뒤로가기</string>
     <string name="quest_empty_ongoing_title">진행 중인 퀘스트가 없어요</string>
     <string name="quest_empty_ongoing_subtitle">다음 드라이브에서 만나요!</string>
     <string name="quest_empty_completed_title">아직 완료한 퀘스트가 없어요</string>
@@ -79,7 +80,7 @@
     <string name="quest_modal_chip">보상 · %1$d Point</string>
 
     <!-- Quests content -->
-    <string name="quest_q01_name">출발 전 차 살피기</string>
+    <string name="quest_q01_name">차량 점검 이상무!</string>
     <string name="quest_q01_short_desc">주차 중 배터리와 타이어 정보 확인</string>
     <string name="quest_q01_detail_line1">주차 중 차량 상태 화면에서</string>
     <string name="quest_q01_detail_line2">배터리와 타이어 정보를 확인해 주세요.</string>
@@ -99,53 +100,92 @@
     <string name="quest_q03_detail_line2">동행할 친구와 의상을 골라보세요.</string>
 
     <!-- Driving Quests from specification -->
-    <string name="quest_seatbelt_name">안전벨트 착용 상태로 주행 시작</string>
+    <string name="quest_seatbelt_name">놓지마 생명줄!</string>
     <string name="quest_seatbelt_short_desc">주행 시작 전 안전벨트 착용 후 5km 이상 주행</string>
     <string name="quest_seatbelt_detail_line1">안전벨트를 착용한 상태로</string>
     <string name="quest_seatbelt_detail_line2">5km 이상 안전하게 주행을 완료해 보세요.</string>
 
-    <string name="quest_safe_drive_name">안전 주행 종료</string>
+    <string name="quest_safe_drive_name">엉덩이 뗄 때까지 안전하게</string>
     <string name="quest_safe_drive_short_desc">5km 이상 주행 후 안전점수 달성하여 주행 종료</string>
     <string name="quest_safe_drive_detail_line1">안전점수 80점 이상을 유지하며</string>
     <string name="quest_safe_drive_detail_line2">5km 이상 주행을 마쳐보세요.</string>
 
-    <string name="quest_100km_name">100km 주행 완료</string>
+    <string name="quest_100km_name">우리가 함께 달린 100km</string>
     <string name="quest_100km_short_desc">모비와 함께 누적 100km 주행 달성</string>
     <string name="quest_100km_detail_line1">꾸준히 안전 주행을 실천하여</string>
     <string name="quest_100km_detail_line2">누적 100km 주행 목표를 달성해 보세요.</string>
 
-    <string name="quest_clean_drive_name">급가속/급제동/과속 없음 보너스</string>
+    <string name="quest_clean_drive_name">발끝의 미학</string>
     <string name="quest_clean_drive_short_desc">급가속·급제동·과속 없는 클린 주행 완료</string>
     <string name="quest_clean_drive_detail_line1">급가속, 급제동, 과속 없이 부드럽게</string>
     <string name="quest_clean_drive_detail_line2">5km 이상 완벽한 클린 주행을 실천해 보세요.</string>
 
-    <string name="quest_first_drive_name">하루 첫 주행 완료</string>
+    <string name="quest_first_drive_name">모비와 함께 여는 활기찬 하루</string>
     <string name="quest_first_drive_short_desc">오늘 하루의 첫 번째 주행을 안전하게 완주</string>
     <string name="quest_first_drive_detail_line1">오늘의 첫 주행을 안전하게 마치고</string>
     <string name="quest_first_drive_detail_line2">기분 좋은 보너스 포인트를 받아보세요.</string>
 
-    <string name="quest_focus_drive_name">집중 운전 완료</string>
+    <string name="quest_focus_drive_name">눈은 반짝, 핸들은 꽉!</string>
     <string name="quest_focus_drive_short_desc">부주의 없이 30km 연속 집중 운전 달성</string>
     <string name="quest_focus_drive_detail_line1">전방 주시와 주의력을 유지하며</string>
     <string name="quest_focus_drive_detail_line2">30km 이상 연속으로 안전하게 운행해 보세요.</string>
 
-    <string name="quest_lane_keep_name">차선 지키기 완료</string>
+    <string name="quest_lane_keep_name">흔들리지 않는 나의 핸들</string>
     <string name="quest_lane_keep_short_desc">차선 이탈 없이 30km 연속 주행 완료</string>
     <string name="quest_lane_keep_detail_line1">차로를 안정적으로 유지하며</string>
     <string name="quest_lane_keep_detail_line2">30km 이상 연속 주행을 달성해 보세요.</string>
 
-    <string name="quest_maintenance_name">정비소 방문</string>
+    <string name="quest_maintenance_name">차량 건강검진</string>
     <string name="quest_maintenance_short_desc">차량 관리를 위한 정비소 방문 완료</string>
     <string name="quest_maintenance_detail_line1">차량 점검과 정기 정비를 위해</string>
     <string name="quest_maintenance_detail_line2">정비소를 방문하고 차량을 점검해 보세요.</string>
 
-    <string name="quest_turn_signal_name">차선 변경 시 깜빡이 매너점수</string>
+    <string name="quest_turn_signal_name">텔레파시는 이제 그만!</string>
     <string name="quest_turn_signal_short_desc">차선 변경 시 방향지시등 점등 매너점수</string>
     <string name="quest_turn_signal_detail_line1">차선 변경 전 방향지시등을 켜는 매너 운전으로</string>
     <string name="quest_turn_signal_detail_line2">주변 차량을 배려해 보세요. (일일 최대 10P)</string>
 
-    <string name="quest_5days_safe_name">5일 연속 안전 주행</string>
+    <string name="quest_5days_safe_name">작심오일은 없다! 5일 연속 무사고</string>
     <string name="quest_5days_safe_short_desc">5일 연속으로 안전 운전 달성</string>
     <string name="quest_5days_safe_detail_line1">매일 안전 운전을 이어가며</string>
     <string name="quest_5days_safe_detail_line2">주간 5일 연속 안전 주행 보너스를 받아보세요.</string>
+
+    <!-- New Regular Driving Quests -->
+    <string name="quest_battery_care_name">배터리 지킴이</string>
+    <string name="quest_battery_care_short_desc">방전 전 충전 시작하여 80% 이상 충전 완료</string>
+    <string name="quest_battery_care_detail_line1">배터리 20% 이하에서 충전을 시작하여</string>
+    <string name="quest_battery_care_detail_line2">80% 이상 충전을 완료해 보세요.</string>
+
+    <string name="quest_long_trip_rest_name">쉼표가 있는 여정</string>
+    <string name="quest_long_trip_rest_short_desc">2시간 이상 연속 주행 중 10분 이상 휴식</string>
+    <string name="quest_long_trip_rest_detail_line1">2시간 이상 연속 주행 시 휴게소나 쉼터에서</string>
+    <string name="quest_long_trip_rest_detail_line2">10분 이상 충분한 휴식을 취해 보세요.</string>
+
+    <string name="quest_washer_fluid_name">시야를 맑게!</string>
+    <string name="quest_washer_fluid_short_desc">워셔액 부족 경고 확인 후 보충 완료</string>
+    <string name="quest_washer_fluid_detail_line1">워셔액 부족 경고등 확인 후</string>
+    <string name="quest_washer_fluid_detail_line2">워셔액을 보충하여 시야를 확보해 보세요.</string>
+
+    <string name="quest_tire_check_name">네 바퀴의 균형</string>
+    <string name="quest_tire_check_short_desc">1주일 동안 타이어 공기압 정상 유지</string>
+    <string name="quest_tire_check_detail_line1">타이어 공기압 경고 없이</string>
+    <string name="quest_tire_check_detail_line2">1주일 동안 네 바퀴의 균형을 유지해 보세요.</string>
+
+    <!-- Hidden Quests and Dialog -->
+    <string name="quest_hidden_badge">히든 퀘스트 달성!</string>
+    <string name="quest_hidden_dismiss">닫기</string>
+    <string name="quest_hidden_costume_name">멋쟁이 모비몬</string>
+    <string name="quest_hidden_costume_desc">새로운 코스튬을 멋지게 착용했어요!</string>
+    <string name="quest_hidden_costume_detail_line1">상점에서 획득한 멋진 아이템을 착용하고</string>
+    <string name="quest_hidden_costume_detail_line2">나만의 스타일을 뽐내보세요.</string>
+
+    <string name="quest_hidden_background_name">특수효과 뿜뿜!!</string>
+    <string name="quest_hidden_background_desc">새로운 배경으로 특별한 효과를 적용했어요!</string>
+    <string name="quest_hidden_background_detail_line1">상점에서 획득한 특별한 배경을 적용하고</string>
+    <string name="quest_hidden_background_detail_line2">화려한 특수효과를 경험해 보세요.</string>
+
+    <string name="quest_hidden_new_friend_name">새로운 나의 작은 친구</string>
+    <string name="quest_hidden_new_friend_desc">새로운 동행 친구와 특별한 첫 만남을 가졌어요!</string>
+    <string name="quest_hidden_new_friend_detail_line1">기본 모비 외에 새로운 친구와 함께</string>
+    <string name="quest_hidden_new_friend_detail_line2">새로운 드라이브 여정을 시작해 보세요.</string>
 </resources>

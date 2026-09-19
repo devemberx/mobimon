@@ -1,5 +1,6 @@
 package com.monsters.mobimon.feature.quest
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -21,6 +22,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
@@ -110,6 +112,10 @@ fun QuestScreen(
         onDismissRewardModal()
     }
 
+    BackHandler(enabled = currentSelectedQuestId != null) {
+        handleSelectQuest(null)
+    }
+
     val q01Completed = progress.completions.any { it.type == QuestType.Q01 } || internalCompletions.contains("q01")
     val q01RunActive = progress.activeRun != null
     val displaySnapshot = snapshot ?: vehicleSnapshot
@@ -149,6 +155,10 @@ fun QuestScreen(
     val maintenanceStatus = drivingQuestStatus(DrivingQuestIds.MAINTENANCE)
     val turnSignalStatus = drivingQuestStatus(DrivingQuestIds.TURN_SIGNAL)
     val safe5DaysStatus = drivingQuestStatus(DrivingQuestIds.SAFE_5DAYS)
+    val batteryCareStatus = drivingQuestStatus(DrivingQuestIds.BATTERY_CARE)
+    val longTripRestStatus = drivingQuestStatus(DrivingQuestIds.LONG_TRIP_REST)
+    val washerFluidStatus = drivingQuestStatus(DrivingQuestIds.WASHER_FLUID)
+    val tireCheckStatus = drivingQuestStatus(DrivingQuestIds.TIRE_CHECK)
 
     val quests =
         listOf(
@@ -309,16 +319,112 @@ fun QuestScreen(
                 actionType = drivingQuestAction(safe5DaysStatus),
                 targetRoute = VehicleRoute.VEHICLE_INFO,
             ),
+            QuestItemUiModel(
+                id = DrivingQuestIds.BATTERY_CARE,
+                type = null,
+                title = stringResource(R.string.quest_battery_care_name),
+                description = stringResource(R.string.quest_battery_care_short_desc),
+                detailLine1 = stringResource(R.string.quest_battery_care_detail_line1),
+                detailLine2 = stringResource(R.string.quest_battery_care_detail_line2),
+                scheduleText = stringResource(R.string.quest_schedule_weekly_short),
+                scheduleFullText = stringResource(R.string.quest_schedule_weekly_short),
+                rewardPoints = 20,
+                status = batteryCareStatus,
+                actionType = drivingQuestAction(batteryCareStatus),
+                targetRoute = VehicleRoute.VEHICLE_INFO,
+            ),
+            QuestItemUiModel(
+                id = DrivingQuestIds.LONG_TRIP_REST,
+                type = null,
+                title = stringResource(R.string.quest_long_trip_rest_name),
+                description = stringResource(R.string.quest_long_trip_rest_short_desc),
+                detailLine1 = stringResource(R.string.quest_long_trip_rest_detail_line1),
+                detailLine2 = stringResource(R.string.quest_long_trip_rest_detail_line2),
+                scheduleText = stringResource(R.string.quest_schedule_per_drive_short),
+                scheduleFullText = stringResource(R.string.quest_schedule_per_drive_short),
+                rewardPoints = 25,
+                status = longTripRestStatus,
+                actionType = drivingQuestAction(longTripRestStatus),
+                targetRoute = VehicleRoute.VEHICLE_INFO,
+            ),
+            QuestItemUiModel(
+                id = DrivingQuestIds.WASHER_FLUID,
+                type = null,
+                title = stringResource(R.string.quest_washer_fluid_name),
+                description = stringResource(R.string.quest_washer_fluid_short_desc),
+                detailLine1 = stringResource(R.string.quest_washer_fluid_detail_line1),
+                detailLine2 = stringResource(R.string.quest_washer_fluid_detail_line2),
+                scheduleText = stringResource(R.string.quest_schedule_once_short),
+                scheduleFullText = stringResource(R.string.quest_schedule_once),
+                rewardPoints = 15,
+                status = washerFluidStatus,
+                actionType = drivingQuestAction(washerFluidStatus),
+                targetRoute = VehicleRoute.VEHICLE_INFO,
+            ),
+            QuestItemUiModel(
+                id = DrivingQuestIds.TIRE_CHECK,
+                type = null,
+                title = stringResource(R.string.quest_tire_check_name),
+                description = stringResource(R.string.quest_tire_check_short_desc),
+                detailLine1 = stringResource(R.string.quest_tire_check_detail_line1),
+                detailLine2 = stringResource(R.string.quest_tire_check_detail_line2),
+                scheduleText = stringResource(R.string.quest_schedule_weekly_short),
+                scheduleFullText = stringResource(R.string.quest_schedule_weekly_short),
+                rewardPoints = 15,
+                status = tireCheckStatus,
+                actionType = drivingQuestAction(tireCheckStatus),
+                targetRoute = VehicleRoute.VEHICLE_INFO,
+            ),
         )
+
+    var dismissedHiddenQuestIds by remember { mutableStateOf(emptySet<String>()) }
+
+    val isCostumeEquipped = !accessoryId.isNullOrBlank() || !outfitId.isNullOrBlank()
+    val isBackgroundEquipped =
+        !backgroundId.isNullOrBlank() && backgroundId != "none" && backgroundId != "background:default"
+    val isNewFriendEquipped = !friendId.isNullOrBlank() && friendId != "friend:mobi"
+
+    val hiddenQuests =
+        listOf(
+            HiddenQuestUiModel(
+                id = DrivingQuestIds.HIDDEN_COSTUME,
+                title = stringResource(R.string.quest_hidden_costume_name),
+                description = stringResource(R.string.quest_hidden_costume_desc),
+                rewardPoints = 30L,
+                isSatisfied = isCostumeEquipped || satisfiedQuestIds.contains(DrivingQuestIds.HIDDEN_COSTUME),
+            ),
+            HiddenQuestUiModel(
+                id = DrivingQuestIds.HIDDEN_BACKGROUND,
+                title = stringResource(R.string.quest_hidden_background_name),
+                description = stringResource(R.string.quest_hidden_background_desc),
+                rewardPoints = 30L,
+                isSatisfied = isBackgroundEquipped || satisfiedQuestIds.contains(DrivingQuestIds.HIDDEN_BACKGROUND),
+            ),
+            HiddenQuestUiModel(
+                id = DrivingQuestIds.HIDDEN_NEW_FRIEND,
+                title = stringResource(R.string.quest_hidden_new_friend_name),
+                description = stringResource(R.string.quest_hidden_new_friend_desc),
+                rewardPoints = 30L,
+                isSatisfied = isNewFriendEquipped || satisfiedQuestIds.contains(DrivingQuestIds.HIDDEN_NEW_FRIEND),
+            ),
+        )
+
+    val activeHiddenQuest =
+        hiddenQuests.firstOrNull {
+            it.isSatisfied && !internalCompletions.contains(it.id) && !dismissedHiddenQuestIds.contains(it.id)
+        }
 
     val handleClaimReward: (String) -> Unit = { questId ->
         internalCompletions = internalCompletions + questId
         val quest = quests.firstOrNull { it.id == questId }
-        if (quest != null) {
+        val hiddenQuest = hiddenQuests.firstOrNull { it.id == questId }
+        val points = quest?.rewardPoints?.toLong() ?: hiddenQuest?.rewardPoints ?: 0L
+        val questTitle = quest?.title ?: hiddenQuest?.title ?: ""
+        if (points > 0L) {
             internalRewardModal =
                 RewardSuccessModalState(
-                    points = quest.rewardPoints,
-                    questTitle = quest.title,
+                    points = points,
+                    questTitle = questTitle,
                 )
         }
         onClaimReward(questId)
@@ -351,6 +457,12 @@ fun QuestScreen(
                             isParked = isParked,
                             friendId = friendId,
                             scale = scale,
+                            onBackToList =
+                                if (selectedQuest != null) {
+                                    { handleSelectQuest(null) }
+                                } else {
+                                    null
+                                },
                             modifier =
                                 Modifier
                                     .offset(72.dp * scale, 54.dp * scale)
@@ -367,6 +479,7 @@ fun QuestScreen(
                                 outfitId = outfitId,
                                 backgroundId = backgroundId,
                                 scale = scale,
+                                onBackToList = { handleSelectQuest(null) },
                                 onExecute = {
                                     if (selectedQuest.id == "q01" && !q01RunActive && !q01Completed) {
                                         onStartQuest(QuestType.Q01)
@@ -425,6 +538,12 @@ fun QuestScreen(
                         isParked = isParked,
                         friendId = friendId,
                         scale = compactScale,
+                        onBackToList =
+                            if (selectedQuest != null) {
+                                { handleSelectQuest(null) }
+                            } else {
+                                null
+                            },
                         modifier = Modifier.fillMaxWidth(),
                     )
 
@@ -437,6 +556,7 @@ fun QuestScreen(
                             outfitId = outfitId,
                             backgroundId = backgroundId,
                             scale = compactScale,
+                            onBackToList = { handleSelectQuest(null) },
                             onExecute = {
                                 if (selectedQuest.id == "q01" && !q01RunActive && !q01Completed) {
                                     onStartQuest(QuestType.Q01)
@@ -477,6 +597,18 @@ fun QuestScreen(
                     }
                 }
             }
+            if (activeHiddenQuest != null && currentRewardModal == null) {
+                QuestHiddenClaimModal(
+                    quest = activeHiddenQuest,
+                    friendId = friendId,
+                    accessoryId = accessoryId,
+                    outfitId = outfitId,
+                    backgroundId = backgroundId,
+                    scale = scale,
+                    onClaim = { handleClaimReward(activeHiddenQuest.id) },
+                    onDismiss = { dismissedHiddenQuestIds = dismissedHiddenQuestIds + activeHiddenQuest.id },
+                )
+            }
 
             if (currentRewardModal != null) {
                 QuestRewardSuccessModal(
@@ -499,11 +631,34 @@ private fun QuestHeader(
     friendId: String,
     scale: Float,
     modifier: Modifier = Modifier,
+    onBackToList: (() -> Unit)? = null,
 ) {
     Row(
         modifier = modifier,
         verticalAlignment = Alignment.CenterVertically,
     ) {
+        if (onBackToList != null) {
+            Box(
+                modifier =
+                    Modifier
+                        .size(52.dp * scale)
+                        .clip(CircleShape)
+                        .background(Colors.panel)
+                        .border(1.5.dp * scale, Colors.border, CircleShape)
+                        .clickable(onClick = onBackToList)
+                        .testTag("quest-header-back-button"),
+                contentAlignment = Alignment.Center,
+            ) {
+                Image(
+                    painter = painterResource(R.drawable.quest_icon_back),
+                    contentDescription = stringResource(R.string.quest_back_to_list),
+                    modifier = Modifier.size(24.dp * scale),
+                    colorFilter = ColorFilter.tint(Colors.text),
+                )
+            }
+            Spacer(Modifier.width(16.dp * scale))
+        }
+
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = stringResource(R.string.quest_header_title),
@@ -847,30 +1002,10 @@ private fun QuestRightPanel(
 
         Spacer(Modifier.height(36.dp * scale))
 
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween,
-        ) {
-            Text(
-                text = stringResource(R.string.quest_section_title),
-                style = questTextStyle(48f, scale, bold = true, color = Colors.text),
-            )
-            Box(
-                modifier =
-                    Modifier
-                        .width(292.dp * scale)
-                        .height(60.dp * scale)
-                        .clip(RoundedCornerShape(16.dp * scale))
-                        .background(Colors.raised),
-                contentAlignment = Alignment.Center,
-            ) {
-                Text(
-                    text = stringResource(R.string.quest_badge_example),
-                    style = questTextStyle(26f, scale, bold = false, color = Colors.accent),
-                )
-            }
-        }
+        Text(
+            text = stringResource(R.string.quest_section_title),
+            style = questTextStyle(48f, scale, bold = true, color = Colors.text),
+        )
 
         Spacer(Modifier.height(44.dp * scale))
 
@@ -1278,6 +1413,7 @@ private fun QuestDetailContent(
     outfitId: String?,
     backgroundId: String?,
     scale: Float,
+    onBackToList: () -> Unit,
     onExecute: () -> Unit,
     onClaimReward: () -> Unit,
     modifier: Modifier = Modifier,
@@ -1331,6 +1467,7 @@ private fun QuestDetailContent(
             QuestDetailCard(
                 quest = quest,
                 scale = scale,
+                onBackToList = onBackToList,
                 onExecute = onExecute,
                 onClaimReward = onClaimReward,
                 modifier = Modifier.fillMaxWidth(),
@@ -1385,6 +1522,7 @@ private fun QuestDetailContent(
             QuestDetailCard(
                 quest = quest,
                 scale = scale,
+                onBackToList = onBackToList,
                 onExecute = onExecute,
                 onClaimReward = onClaimReward,
                 modifier =
@@ -1400,6 +1538,7 @@ private fun QuestDetailContent(
 private fun QuestDetailCard(
     quest: QuestItemUiModel,
     scale: Float,
+    onBackToList: () -> Unit,
     onExecute: () -> Unit,
     onClaimReward: () -> Unit,
     modifier: Modifier = Modifier,
@@ -1415,19 +1554,49 @@ private fun QuestDetailCard(
                 .padding(64.dp * scale)
                 .testTag("quest-detail-card"),
     ) {
-        Box(
-            modifier =
-                Modifier
-                    .width(236.dp * scale)
-                    .height(60.dp * scale)
-                    .clip(RoundedCornerShape(16.dp * scale))
-                    .background(Colors.raised),
-            contentAlignment = Alignment.Center,
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
         ) {
-            Text(
-                text = quest.scheduleFullText,
-                style = questTextStyle(26f, scale, bold = false, color = Colors.accent),
-            )
+            Box(
+                modifier =
+                    Modifier
+                        .width(236.dp * scale)
+                        .height(60.dp * scale)
+                        .clip(RoundedCornerShape(16.dp * scale))
+                        .background(Colors.raised),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(
+                    text = quest.scheduleFullText,
+                    style = questTextStyle(26f, scale, bold = false, color = Colors.accent),
+                )
+            }
+
+            Row(
+                modifier =
+                    Modifier
+                        .clip(RoundedCornerShape(20.dp * scale))
+                        .background(Colors.raised)
+                        .border(1.dp * scale, Colors.border, RoundedCornerShape(20.dp * scale))
+                        .clickable(onClick = onBackToList)
+                        .padding(horizontal = 20.dp * scale, vertical = 10.dp * scale)
+                        .testTag("quest-detail-back-button"),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp * scale),
+            ) {
+                Image(
+                    painter = painterResource(R.drawable.quest_icon_back),
+                    contentDescription = stringResource(R.string.quest_back_to_list),
+                    modifier = Modifier.size(20.dp * scale),
+                    colorFilter = ColorFilter.tint(Colors.text),
+                )
+                Text(
+                    text = stringResource(R.string.quest_back_to_list),
+                    style = questTextStyle(24f, scale, bold = false, color = Colors.text),
+                )
+            }
         }
 
         Spacer(Modifier.height(36.dp * scale))
@@ -1722,6 +1891,154 @@ private fun QuestRewardSuccessModal(
                         text = stringResource(R.string.quest_action_confirm),
                         style = questTextStyle(38f, scale, bold = true, color = Colors.onButton),
                     )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun QuestHiddenClaimModal(
+    quest: HiddenQuestUiModel,
+    friendId: String,
+    accessoryId: String?,
+    outfitId: String?,
+    backgroundId: String?,
+    scale: Float,
+    onClaim: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    Dialog(
+        onDismissRequest = onDismiss,
+        properties = DialogProperties(usePlatformDefaultWidth = false),
+    ) {
+        Box(
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .background(Color(0xE6050C16))
+                    .clickable(onClick = onDismiss),
+            contentAlignment = Alignment.Center,
+        ) {
+            Column(
+                modifier =
+                    Modifier
+                        .width(1040.dp * scale)
+                        .heightIn(max = 880.dp * scale)
+                        .clip(RoundedCornerShape(32.dp * scale))
+                        .background(Colors.panel)
+                        .border(2.dp * scale, Color(0xFFF1C40F), RoundedCornerShape(32.dp * scale))
+                        .clickable(enabled = false) {}
+                        .padding(32.dp * scale)
+                        .verticalScroll(rememberScrollState())
+                        .testTag("quest-hidden-claim-modal"),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center,
+            ) {
+                // Badge
+                Box(
+                    modifier =
+                        Modifier
+                            .width(220.dp * scale)
+                            .height(44.dp * scale)
+                            .clip(RoundedCornerShape(12.dp * scale))
+                            .background(Color(0xFF2E2611)),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(
+                        text = stringResource(R.string.quest_hidden_badge),
+                        style = questTextStyle(24f, scale, bold = true, color = Color(0xFFF1C40F)),
+                    )
+                }
+
+                Spacer(Modifier.height(20.dp * scale))
+
+                // Character avatar
+                PetAvatar(
+                    modifier = Modifier.size(260.dp * scale),
+                    appearanceKey = "GOLDEN",
+                    friendId = friendId,
+                    accessoryId = accessoryId,
+                    outfitId = outfitId,
+                    backgroundId = backgroundId,
+                )
+
+                Spacer(Modifier.height(20.dp * scale))
+
+                Text(
+                    text = quest.title,
+                    style = questTextStyle(42f, scale, bold = true, color = Colors.text),
+                    textAlign = TextAlign.Center,
+                )
+
+                Spacer(Modifier.height(10.dp * scale))
+
+                Text(
+                    text = quest.description,
+                    style = questTextStyle(28f, scale, bold = false, color = Colors.muted),
+                    textAlign = TextAlign.Center,
+                )
+
+                Spacer(Modifier.height(24.dp * scale))
+
+                // Reward chip
+                Box(
+                    modifier =
+                        Modifier
+                            .width(520.dp * scale)
+                            .height(64.dp * scale)
+                            .clip(RoundedCornerShape(16.dp * scale))
+                            .background(Color(0xFF0E2034))
+                            .border(1.dp * scale, Color(0xFF2A4968), RoundedCornerShape(16.dp * scale)),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(
+                        text = stringResource(R.string.quest_modal_chip, quest.rewardPoints),
+                        style = questTextStyle(32f, scale, bold = true, color = Colors.success),
+                    )
+                }
+
+                Spacer(Modifier.height(30.dp * scale))
+
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(16.dp * scale),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    // Dismiss button
+                    Box(
+                        modifier =
+                            Modifier
+                                .width(200.dp * scale)
+                                .height(88.dp * scale)
+                                .clip(RoundedCornerShape(20.dp * scale))
+                                .background(Colors.raised)
+                                .clickable(onClick = onDismiss)
+                                .testTag("quest-hidden-btn-dismiss"),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Text(
+                            text = stringResource(R.string.quest_hidden_dismiss),
+                            style = questTextStyle(32f, scale, bold = false, color = Colors.muted),
+                        )
+                    }
+
+                    // Claim button
+                    Box(
+                        modifier =
+                            Modifier
+                                .width(340.dp * scale)
+                                .height(88.dp * scale)
+                                .clip(RoundedCornerShape(20.dp * scale))
+                                .background(Colors.button)
+                                .clickable(onClick = onClaim)
+                                .testTag("quest-hidden-btn-claim"),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Text(
+                            text = stringResource(R.string.quest_action_claim),
+                            style = questTextStyle(36f, scale, bold = true, color = Colors.onButton),
+                        )
+                    }
                 }
             }
         }

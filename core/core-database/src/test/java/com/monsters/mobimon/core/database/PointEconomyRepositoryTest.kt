@@ -8,6 +8,8 @@ import com.monsters.mobimon.core.domain.Clock
 import com.monsters.mobimon.core.domain.CosmeticSlot
 import com.monsters.mobimon.core.domain.CurrentAppUse
 import com.monsters.mobimon.core.domain.CurrentVehicleEvidence
+import com.monsters.mobimon.core.domain.DefaultPointQuestCatalog
+import com.monsters.mobimon.core.domain.DrivingQuestIds
 import com.monsters.mobimon.core.domain.DrivingState
 import com.monsters.mobimon.core.domain.EquipResult
 import com.monsters.mobimon.core.domain.IdGenerator
@@ -206,5 +208,82 @@ class PointEconomyRepositoryTest {
             assertEquals("mobi-hat", repository.inventory.first().equippedItemIds[CosmeticSlot.ACCESSORY])
             assertTrue(dao.owned("profile", "mobi-hat") != null)
             assertEquals(100L, repository.wallet.first().balance)
+        }
+
+    @Test
+    fun defaultCatalogQuestsAwardPointsAndPersistCompletionsWhenParkedAndRejectWhenMoving() =
+        runBlocking {
+            val defaultCatalog = DefaultPointQuestCatalog()
+            val pointRepo =
+                PointEconomyRepository(
+                    database,
+                    "profile",
+                    UtcClock { utcNow },
+                    IdGenerator { "entry-${ids.incrementAndGet()}" },
+                    SignalSource.REAL,
+                    CurrentVehicleEvidence { vehicle },
+                    CurrentAppUse { appUse },
+                    Clock { 10_000 },
+                    QuestEvaluator(15_000),
+                    defaultCatalog,
+                )
+
+            vehicle = vehicle.copy(drivingState = DrivingState.MOVING)
+            val movingResult = pointRepo.awardQuest(DrivingQuestIds.SEATBELT, vehicle)
+            assertEquals(PointAwardResult.InteractionRestricted, movingResult)
+            assertEquals(100L, pointRepo.wallet.first().balance)
+
+            vehicle = vehicle.copy(drivingState = DrivingState.PARKED)
+            val awardResult = pointRepo.awardQuest(DrivingQuestIds.SEATBELT, vehicle)
+            assertTrue(awardResult is PointAwardResult.Awarded)
+            assertEquals(5L, (awardResult as PointAwardResult.Awarded).points)
+            assertEquals(105L, awardResult.resultingBalance)
+            assertEquals(105L, pointRepo.wallet.first().balance)
+
+            val account = database.economyDao().account("profile")
+            assertEquals(105L, account?.balance)
+            val completions = database.economyDao().questCompletions("profile")
+            assertTrue(completions.any { it.questId == DrivingQuestIds.SEATBELT })
+            val ledger = database.economyDao().ledger("profile")
+            assertTrue(ledger.any { it.referenceKey.startsWith("quest:${DrivingQuestIds.SEATBELT}:") })
+
+            val repeatResult = pointRepo.awardQuest(DrivingQuestIds.SEATBELT, vehicle)
+            assertEquals(PointAwardResult.AlreadyAwarded, repeatResult)
+            assertEquals(105L, pointRepo.wallet.first().balance)
+        }
+
+    @Test
+    fun simulatedVehicleSnapshotInDebugModeAwardsAndPersistsPointsWhenParked() =
+        runBlocking {
+            val simVehicle =
+                VehicleSnapshot(
+                    id = "sim-card-1",
+                    epoch = "sim-epoch",
+                    sequence = 1,
+                    receivedAtMillis = 10_000,
+                    source = SignalSource.SIMULATED,
+                    drivingState = DrivingState.PARKED,
+                    quality = SignalQuality.VALID,
+                )
+            val defaultCatalog = DefaultPointQuestCatalog()
+            val debugPointRepo =
+                PointEconomyRepository(
+                    database,
+                    "profile",
+                    UtcClock { utcNow },
+                    IdGenerator { "entry-${ids.incrementAndGet()}" },
+                    SignalSource.SIMULATED,
+                    CurrentVehicleEvidence { simVehicle },
+                    CurrentAppUse { appUse },
+                    Clock { 10_000 },
+                    QuestEvaluator(15_000),
+                    defaultCatalog,
+                )
+
+            val awardResult = debugPointRepo.awardQuest(DrivingQuestIds.SAFE_DRIVE, simVehicle)
+            assertTrue(awardResult is PointAwardResult.Awarded)
+            assertEquals(20L, (awardResult as PointAwardResult.Awarded).points)
+            assertEquals(120L, debugPointRepo.wallet.first().balance)
+            assertEquals(120L, database.economyDao().account("profile")?.balance)
         }
 }

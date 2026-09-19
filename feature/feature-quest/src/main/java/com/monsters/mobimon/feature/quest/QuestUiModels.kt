@@ -42,3 +42,11 @@ data class RewardSuccessModalState(
     val points: Long,
     val questTitle: String,
 )
+
+data class HiddenQuestUiModel(
+    val id: String,
+    val title: String,
+    val description: String,
+    val rewardPoints: Long = 30L,
+    val isSatisfied: Boolean,
+)

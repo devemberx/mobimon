@@ -97,4 +97,52 @@ class DebugVssStateInterpretationTest {
             )
         assertEquals("Morning", overriddenState.timeOfDay)
     }
+
+    @Test
+    fun timeOfDayAcceptsVariousTimeFormatsAndHours() {
+        fun stateFor(time: String) =
+            DebugVssState(
+                overrides = DebugInterpretationOverrides(timeOfDay = time),
+            ).timeOfDay
+
+        assertEquals("Morning", stateFor("8"))
+        assertEquals("Morning", stateFor("08"))
+        assertEquals("Morning", stateFor("11"))
+        assertEquals("Morning", stateFor("09:00"))
+        assertEquals("Morning", stateFor("morning"))
+        assertEquals("Morning", stateFor("아침"))
+        assertEquals("Morning", stateFor("9시"))
+
+        assertEquals("Day", stateFor("12"))
+        assertEquals("Day", stateFor("14"))
+        assertEquals("Day", stateFor("18"))
+        assertEquals("Day", stateFor("14:30"))
+        assertEquals("Day", stateFor("day"))
+        assertEquals("Day", stateFor("낮"))
+        assertEquals("Day", stateFor("14시"))
+
+        assertEquals("Night", stateFor("0"))
+        assertEquals("Night", stateFor("7"))
+        assertEquals("Night", stateFor("19"))
+        assertEquals("Night", stateFor("23"))
+        assertEquals("Night", stateFor("20:00"))
+        assertEquals("Night", stateFor("night"))
+        assertEquals("Night", stateFor("밤"))
+        assertEquals("Night", stateFor("21시"))
+    }
+
+    @Test
+    fun rawCurrentLocationTimestampAcceptsVariousFormats() {
+        fun rawStateFor(timestamp: String) =
+            DebugVssState(
+                raw = DebugRawVssState(currentLocationTimestamp = timestamp),
+            ).timeOfDay
+
+        assertEquals("Morning", rawStateFor("09:00"))
+        assertEquals("Day", rawStateFor("14:00"))
+        assertEquals("Night", rawStateFor("21:00"))
+        assertEquals("Morning", rawStateFor("9"))
+        assertEquals("Day", rawStateFor("15"))
+        assertEquals("Night", rawStateFor("23"))
+    }
 }

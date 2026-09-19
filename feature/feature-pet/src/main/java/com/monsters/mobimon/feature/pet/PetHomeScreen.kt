@@ -441,20 +441,28 @@ fun PetHomeLoadingScreen(
     }
 }
 
-internal fun petHomeBackgroundRes(timeOfDay: String?): Int =
-    when (timeOfDay) {
-        "Morning" -> R.drawable.pet_home_background_morning_v4
-        "Day" -> R.drawable.pet_home_background_day_v4
-        "Night" -> R.drawable.pet_home_background_v4
-        else -> {
-            val hour =
-                java.util.Calendar
-                    .getInstance()
-                    .get(java.util.Calendar.HOUR_OF_DAY)
-            when (hour) {
-                in 8..11 -> R.drawable.pet_home_background_morning_v4
-                in 12..18 -> R.drawable.pet_home_background_day_v4
-                else -> R.drawable.pet_home_background_v4
-            }
+internal fun petHomeBackgroundRes(timeOfDay: String?): Int {
+    val trimmed = timeOfDay?.trim()
+    when (trimmed?.lowercase()) {
+        "morning", "아침" -> return R.drawable.pet_home_background_morning_v4
+        "day", "낮" -> return R.drawable.pet_home_background_day_v4
+        "night", "밤" -> return R.drawable.pet_home_background_v4
+    }
+    val hour = trimmed?.toIntOrNull()
+    if (hour != null) {
+        return when (hour) {
+            in 8..11 -> R.drawable.pet_home_background_morning_v4
+            in 12..18 -> R.drawable.pet_home_background_day_v4
+            else -> R.drawable.pet_home_background_v4
         }
     }
+    val currentHour =
+        java.util.Calendar
+            .getInstance()
+            .get(java.util.Calendar.HOUR_OF_DAY)
+    return when (currentHour) {
+        in 8..11 -> R.drawable.pet_home_background_morning_v4
+        in 12..18 -> R.drawable.pet_home_background_day_v4
+        else -> R.drawable.pet_home_background_v4
+    }
+}
