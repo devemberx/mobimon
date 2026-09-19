@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Keep the original shared artwork and its proportions within the adaptive safe circle. -->
+<inset xmlns:android="http://schemas.android.com/apk/res/android"
+    android:inset="18%">
+    <bitmap
+        android:src="@drawable/mobimon_mobi_v4"
+        android:gravity="fill"
+        android:filter="true" />
+</inset>

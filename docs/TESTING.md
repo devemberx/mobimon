@@ -112,7 +112,7 @@ owned by [ARCHITECTURE.md](ARCHITECTURE.md#planned-features).
 | Isolated Debug rehearsal navigation and recreation | [CopilotPreviewJourneyTest](../app/src/journeyTest/java/com/monsters/mobimon/preview/CopilotPreviewJourneyTest.kt) | Shared Debug Activity journey; local/device |
 | Single provider connection across repeated foreground notifications | [CompanionRuntimeTest](../app/src/test/java/com/monsters/mobimon/runtime/CompanionRuntimeTest.kt) | Runtime unit test |
 | Real-source rejection of simulated evidence and unavailable real adapter | Room local suite, [UnavailableVehicleRepositoryTest](../core/core-vss/src/test/kotlin/com/monsters/mobimon/core/vss/UnavailableVehicleRepositoryTest.kt) | JVM and local SQLite |
-| Debug application ID and launcher label | [BrandingTest](../app/src/testDebug/java/com/monsters/mobimon/BrandingTest.kt) | Debug and Robolectric |
+| Debug identity, launch/Home background agreement and adaptive artwork clearance | [BrandingTest](../app/src/testDebug/java/com/monsters/mobimon/BrandingTest.kt) | Native Robolectric; 48/64/96px color/themed review images in `app/build/reports/branding`, no golden; native splash and launcher need device review |
 | Fourteen driving conditions, weather calculation and seventeen catalog definitions | [DrivingQuestEvaluatorTest](../core/core-domain/src/test/kotlin/com/monsters/mobimon/core/domain/DrivingQuestEvaluatorTest.kt) | Plain JVM; does not verify real signals or transactional driving evidence |
 
 ## Integration boundaries
