@@ -15,6 +15,7 @@
       android:supportsRtl="true"
       android:theme="@style/Theme.MobiMon">
     <uses-library android:name="android.car" android:required="false" />
+    <uses-library android:name="mobis.framework" android:required="false" />
     <activity
         android:name=".MainActivity"
         android:windowSoftInputMode="adjustResize"
