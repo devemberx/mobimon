@@ -37,17 +37,7 @@ fun MobiMonDestination(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(MobiMonDimensions.contentGap),
         ) {
-            MobiMonButton(
-                style = MobiMonButtonStyle.SECONDARY,
-                onClick = onBack,
-                modifier =
-                    Modifier.sizeIn(
-                        minWidth = MobiMonDimensions.touchTarget,
-                        minHeight = MobiMonDimensions.touchTarget,
-                    ),
-            ) {
-                Text(stringResource(R.string.mobimon_back))
-            }
+            MobiMonBackButton(onClick = onBack)
             Text(title, Modifier.weight(1f).semantics { heading() }, style = MaterialTheme.typography.headlineMedium)
             MobiMonButton(
                 style = MobiMonButtonStyle.SECONDARY,

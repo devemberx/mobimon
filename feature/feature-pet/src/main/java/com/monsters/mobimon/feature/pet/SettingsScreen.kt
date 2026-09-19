@@ -21,7 +21,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
-import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.disabled
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.liveRegion
@@ -29,8 +28,8 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.monsters.mobimon.core.domain.CompanionSettings
+import com.monsters.mobimon.core.ui.MobiMonBackButton
 import com.monsters.mobimon.core.ui.MobiMonButton
-import com.monsters.mobimon.core.ui.MobiMonButtonStyle
 import com.monsters.mobimon.core.ui.MobiMonContentColumn
 import com.monsters.mobimon.core.ui.MobiMonDimensions
 import com.monsters.mobimon.core.ui.MobiMonListItem
@@ -68,11 +67,11 @@ fun SettingsScreen(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(MobiMonDimensions.contentGap),
             ) {
-                MobiMonButton(
-                    onBack,
-                    Modifier.testTag("settings-back").semantics { contentDescription = backDescription },
-                    style = MobiMonButtonStyle.SECONDARY,
-                ) { Text(stringResource(com.monsters.mobimon.core.ui.R.string.mobimon_back)) }
+                MobiMonBackButton(
+                    onClick = onBack,
+                    modifier = Modifier.testTag("settings-back"),
+                    contentDescription = backDescription,
+                )
                 Text(
                     stringResource(R.string.pet_settings_title),
                     Modifier.weight(1f).semantics { heading() },
