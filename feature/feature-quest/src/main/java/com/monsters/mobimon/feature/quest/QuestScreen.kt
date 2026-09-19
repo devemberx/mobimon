@@ -873,90 +873,6 @@ private fun QuestListContent(
 }
 
 @Composable
-private fun LegacyQuestControls(
-    progress: QuestProgress,
-    canManageQuest: Boolean,
-    isBusy: Boolean,
-    onStartQuest: (QuestType) -> Unit,
-    onCancelQuest: () -> Unit,
-    pointBalance: Long? = null,
-    onAcknowledgeVehicle: (String) -> Unit,
-    vehicleSnapshot: VehicleSnapshot,
-    canAcknowledgeVehicle: Boolean,
-    errorMessage: String?,
-    modifier: Modifier = Modifier,
-) {
-    val completion = progress.completions.firstOrNull { it.type == QuestType.Q01 }
-    val active = progress.activeRun
-
-    Column(
-        modifier = modifier,
-        verticalArrangement = Arrangement.spacedBy(12.dp),
-    ) {
-        when {
-            completion != null -> {
-                val rewardText =
-                    if (pointBalance != null) {
-                        stringResource(R.string.quest_point_reward_received, pointBalance)
-                    } else {
-                        stringResource(R.string.quest_reward_received, completion.awardedXp)
-                    }
-                Text(rewardText)
-            }
-
-            active?.type == QuestType.Q01 -> {
-                QuestVehicleCard(
-                    snapshot = vehicleSnapshot,
-                    questActive = true,
-                    questCompleted = false,
-                    canAcknowledge = canAcknowledgeVehicle,
-                    onAcknowledge = onAcknowledgeVehicle,
-                    isBusy = isBusy,
-                    errorMessage = errorMessage,
-                )
-                LegacyQuestAction(
-                    text = stringResource(R.string.quest_cancel),
-                    enabled = canManageQuest && !isBusy,
-                    onClick = onCancelQuest,
-                )
-            }
-
-            else -> {
-                LegacyQuestAction(
-                    text = stringResource(R.string.quest_start_q01),
-                    enabled = canManageQuest && !isBusy && active == null,
-                    onClick = { onStartQuest(QuestType.Q01) },
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun LegacyQuestAction(
-    text: String,
-    enabled: Boolean,
-    onClick: () -> Unit,
-) {
-    Box(
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .heightIn(min = 76.dp)
-                .clip(RoundedCornerShape(24.dp))
-                .background(if (enabled) Colors.button else Colors.raised)
-                .clickable(enabled = enabled, onClick = onClick)
-                .padding(16.dp),
-        contentAlignment = Alignment.Center,
-    ) {
-        Text(
-            text = text,
-            style = questTextStyle(28f, 1f, bold = true, color = Colors.onButton),
-        )
-    }
-}
-
-@Composable
 private fun QuestRightPanel(
     quests: List<QuestItemUiModel>,
     scale: Float,
@@ -986,28 +902,20 @@ private fun QuestRightPanel(
         }
 
     Column(modifier = modifier) {
-        LegacyQuestControls(
-            progress = progress,
-            canManageQuest = canManageQuest,
-            isBusy = isBusy,
-            onStartQuest = onStartQuest,
-            onCancelQuest = onCancelQuest,
-            pointBalance = pointBalance,
-            onAcknowledgeVehicle = onAcknowledgeVehicle,
-            vehicleSnapshot = vehicleSnapshot,
-            canAcknowledgeVehicle = canAcknowledgeVehicle,
-            errorMessage = errorMessage,
-            modifier = Modifier.fillMaxWidth(),
-        )
-
-        Spacer(Modifier.height(36.dp * scale))
+        if (pointBalance != null) {
+            Text(
+                text = stringResource(R.string.quest_point_reward_received, pointBalance),
+                style = questTextStyle(34f, scale, bold = false, color = Colors.muted),
+            )
+            Spacer(Modifier.height(20.dp * scale))
+        }
 
         Text(
             text = stringResource(R.string.quest_section_title),
             style = questTextStyle(48f, scale, bold = true, color = Colors.text),
         )
 
-        Spacer(Modifier.height(44.dp * scale))
+        Spacer(Modifier.height(24.dp * scale))
 
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -1057,7 +965,7 @@ private fun QuestRightPanel(
             )
         }
 
-        Spacer(Modifier.height(36.dp * scale))
+        Spacer(Modifier.height(24.dp * scale))
 
         if (displayedQuests.isEmpty()) {
             val emptyModifier =
@@ -1131,8 +1039,8 @@ private fun QuestFilterTabButton(
     Row(
         modifier =
             modifier
-                .then(if (isCompact) Modifier else Modifier.width(336.dp * scale))
-                .height(88.dp * scale)
+                .then(if (isCompact) Modifier else Modifier.width(300.dp * scale))
+                .height(72.dp * scale)
                 .clip(RoundedCornerShape(24.dp * scale))
                 .background(bg)
                 .then(borderMod)
@@ -1144,13 +1052,13 @@ private fun QuestFilterTabButton(
         Image(
             painter = painterResource(iconRes),
             contentDescription = null,
-            modifier = Modifier.size(32.dp * scale),
+            modifier = Modifier.size(28.dp * scale),
             colorFilter = ColorFilter.tint(fg),
         )
-        Spacer(Modifier.width(16.dp * scale))
+        Spacer(Modifier.width(14.dp * scale))
         Text(
             text = title,
-            style = questTextStyle(38f, scale, bold = true, color = fg),
+            style = questTextStyle(34f, scale, bold = true, color = fg),
         )
     }
 }

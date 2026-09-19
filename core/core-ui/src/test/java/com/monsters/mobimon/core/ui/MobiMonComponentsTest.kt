@@ -7,6 +7,7 @@ import androidx.compose.ui.test.assertHeightIsAtLeast
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertWidthIsAtLeast
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -53,7 +54,7 @@ class MobiMonComponentsTest {
         }
         compose.onNodeWithText("Feature content").assertExists()
         compose
-            .onNodeWithText("뒤로")
+            .onNodeWithContentDescription("뒤로")
             .assertWidthIsAtLeast(76.dp)
             .assertHeightIsAtLeast(76.dp)
             .performClick()
