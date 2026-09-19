@@ -1,4 +1,0 @@
-feat(pet): implement pet avatar v4 and customization
-
-- Support v4 character artwork assets and customization options in pet avatar
-- Update customization screen, companion menu, and point economy persistence

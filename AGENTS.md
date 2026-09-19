@@ -1,45 +1,32 @@
-# Repository Guidelines
+# Repository guidelines
 
 ## Workflow
 
-- Before development or Git/GitHub operations, read and follow [CONTRIBUTING.md](.github/CONTRIBUTING.md). It is the source of truth for environment setup, dependency locks, branches, commits, issues, pull requests, required checks, and squash merges.
-- Prefer `gh pr merge --squash` when merging and follow the [pull request and merge rules](.github/CONTRIBUTING.md#pull-requests-and-merges).
-- Inspect source and build configuration before assuming that a planned module, dependency, test task, or integration exists. Report only verification actually performed.
-- Read the relevant sections of [ARCHITECTURE.md](docs/ARCHITECTURE.md) before changing feature behavior or module boundaries.
-- Follow [DESIGN.md](docs/DESIGN.md) for UI changes and [TESTING.md](docs/TESTING.md) for behavior changes or tests.
-- Before using `ui-ux-pro-max`, read its [project integration rules](.agents/skills/README.md#uiux-design-guidance).
-- Mirror subject modules/packages for focused tests; do not require one test file per source file. Update the current requirement map in `TESTING.md` for changed critical behavior.
-- When the user asks "description 적어줘" or "description 써줘" (or asks for PR/commit description), the response must start directly with `- ` with no preamble or code block: write exactly two single-line English bullets starting with `- ` (first bullet: why the change is needed; second bullet: what was changed; max 120 characters per bullet).
+- Read [CONTRIBUTING.md](.github/CONTRIBUTING.md) before development or Git/GitHub work. It owns setup, dependencies, checks, branches, commits, PRs and squash merges; prefer `gh pr merge --squash` when merging.
+- Inspect source/build configuration before claiming a module, integration or task exists. Read [ARCHITECTURE.md](docs/ARCHITECTURE.md) for structural/behavior changes, [DESIGN.md](docs/DESIGN.md) for UI, and [TESTING.md](docs/TESTING.md) for tests.
+- Before using `ui-ux-pro-max`, read the [project integration rules](.agents/skills/README.md#uiux-design-guidance).
+- For PR/commit description requests (including "description 적어줘/써줘"), output exactly two single-line English bullets starting directly with `- `: why, then what changed; at most 120 characters each.
 
-## Code Quality
+## Code and safety
 
-- Prefer clear names and structure over explanatory comments.
-- Do not add comments that merely restate what the code does.
-- Add a comment only when it preserves non-obvious intent, a constraint, a safety condition, or the reason for a workaround. Keep it concise and update or remove it when the code changes.
-- Keep required API documentation and externally meaningful contract documentation accurate; the comment rule does not replace those requirements.
-
-## Architecture and Safety
-
-- Preserve the [module boundaries](docs/ARCHITECTURE.md#target-modules-and-dependencies): keep `core-domain` independent of Android, keep feature modules independent of each other and concrete data implementations, and assemble bindings in `app`.
-- Keep simulated providers in Debug/demo source sets with explicit labels and separate application IDs, profiles, and databases. Release must report unavailable vehicle data until a verified real adapter is connected; unknown driving state cannot authorize quest commands.
-- Keep example accounts, codes and simulated connection results in Debug/test sources. Follow the [connection UI boundary](docs/ARCHITECTURE.md#copilot-connection-ui); a rendered success state does not verify a provider connection.
-- Route quest rewards through the repository's atomic Room transaction. Preserve evidence validation, ownership/revision checks, and completion uniqueness per reward occurrence; UI code must not grant rewards directly.
-- Use only the current v4 visual specification and shared `core-ui` primitives. Feature owners finish their own screens; shared-component readiness does not mean full-screen visual acceptance. Do not restore XP/progression UI from obsolete Figma labels.
-- Keep character artwork replaceable through [PetAvatar](core/core-ui/src/main/java/com/monsters/mobimon/core/ui/PetAvatar.kt). Keep rewards, ownership, equipment and interaction state outside the renderer, and limit placeholder artwork work while separate character assets are being prepared.
+- Prefer clear names and structure. Comment only non-obvious intent, constraints or workarounds; keep comments and API contracts current.
+- Keep domain code independent of Android, features independent of each other/concrete data implementations, and bindings in `app`. Follow the [module boundaries](docs/ARCHITECTURE.md#target-modules-and-dependencies).
+- Keep simulations in Debug/test sources with separate IDs, profiles and databases. Release vehicle data stays unavailable until a real adapter is verified; unknown driving state cannot authorize commands.
+- Example accounts/codes and rendered connection success are not provider verification. Follow the [connection boundary](docs/ARCHITECTURE.md#copilot-connection-ui).
+- Reward writes must use atomic repository transactions with evidence, ownership/revision and occurrence-uniqueness checks. UI/AI must not grant rewards directly.
+- Use the current [visual specification](docs/DESIGN.md), shared `core-ui` primitives and replaceable [PetAvatar](core/core-ui/src/main/java/com/monsters/mobimon/core/ui/PetAvatar.kt). Preserve character identity; keep rewards, equipment and authorization outside the renderer. Do not restore obsolete XP/progression UI.
 
 ## Documentation
 
-- Keep one authoritative home per topic: `CONTRIBUTING.md` for workflow and required checks; `ARCHITECTURE.md` for structure and contracts; `DESIGN.md` for UI behavior; `TESTING.md` for test strategy and coverage; `AGENTS.md` for essential agent rules.
-- Link to that section or source/configuration instead of repeating commands, versions, settings, test inventories or general tutorials. Repeat only brief safety reminders.
-- Revise existing sections instead of appending overlapping explanations. Keep planned contracts separate from current implementation; put task breakdowns, ownership, schedules and run logs in issues/PRs.
-- Update the current implementation sections in `ARCHITECTURE.md` and `TESTING.md` when adding modules or integrations.
-- Update `CONTRIBUTING.md` and CI together when build or verification commands change.
-- Before committing documentation, remove stale or duplicate guidance and verify relative links, including heading anchors. Preserve safety contracts and verification limits when shortening.
-- Local plans under `docs/superpowers/` remain ignored and must not be committed.
-- When updating shared skills, edit `.agents/skills/`, then copy the entire affected skill folder, including references and licenses, to `.claude/skills/`. Keep both copies identical in the same commit.
+- Write briefly and plainly. Include only information needed to understand, implement or verify the project; remove unnecessary, stale and verbose content.
+- Keep one authoritative home per topic: CONTRIBUTING for workflow, ARCHITECTURE for technical contracts, DESIGN for UX, TESTING for coverage, `docs/ui/README.md` for exports, and AGENTS for essential agent rules. Link instead of repeating content; keep safety reminders brief.
+- When code changes make documentation or AGENTS.md inaccurate or incomplete, update the affected files in the same change. Keep current implementation separate from planned work, and update the test requirement map for changed critical behavior.
+- Revise existing sections instead of adding overlapping ones. Keep assignments, plans and run logs in issues/PRs; local `docs/superpowers/` plans remain ignored.
+- Review AGENTS.md itself for unnecessary detail and duplication. Before committing docs, check relative links/anchors and preserve safety contracts and verification limits when shortening.
+- Update CONTRIBUTING and CI together when required checks change. For shared skill changes, edit `.agents/skills/` and copy the entire affected folder, including references/licenses, to `.claude/skills/` in the same commit.
 
 ## Verification
 
-Run the [canonical checks](.github/CONTRIBUTING.md#verification) for the change type, including device checks when available. Report only the layers actually executed; APK assembly and Robolectric do not establish device-test execution.
-
-For Figma-driven UI, complete [final visual acceptance](docs/TESTING.md#final-figma-visual-acceptance) after the final code change. Build or behavior-test success alone does not establish a visual match.
+- Run the [canonical checks](.github/CONTRIBUTING.md#verification) for the change type. Place focused tests in the subject module/package; one test file per source file is unnecessary.
+- Complete [final visual acceptance](docs/TESTING.md#final-figma-visual-acceptance) after the final UI code change. Feature owners own screen acceptance; shared-component or build success is insufficient.
+- Report only checks actually executed. APK assembly and Robolectric do not prove device tests or real integrations ran.

@@ -7,17 +7,13 @@ technical contracts. Record test executions in the implementation issue or PR.
 
 ## Current setup and test locations
 
-The project uses JUnit 4, coroutines-test, Robolectric, Compose Testing, Hilt
-integration tests and Room device tests. Kover reports local JVM coverage with
-no percentage gate. Copilot UI tests generate native Robolectric review images;
-golden-image comparison and system-UI automation are not configured. Shared
-component readiness and full-screen migration are separate acceptance layers.
-Owners complete their feature-specific screen verification after consuming the
-shared library; missing future screens do not invalidate a tested primitive.
+The project uses JUnit 4, coroutines-test, Robolectric, Compose Testing, Hilt and
+Room device tests. Kover is informational, with no percentage gate. Review-image
+generation exists; golden comparisons and system-UI automation are not configured.
 
 | Location | Scope and host |
 | --- | --- |
-| `core/core-domain/src/test/kotlin` | Legacy reward rules, evidence and per-signal freshness; plain JVM |
+| `core/core-domain/src/test/kotlin` | Driving/legacy reward rules, evidence and freshness; plain JVM |
 | `core/core-navigation/src/test/java` | Complete, unique route registration; JVM |
 | `core/core-presentation/src/test/java` | Wallet failure/loading and vehicle display freshness; JVM |
 | `core/core-ui/src/test/java` | Shared component actions and touch targets; Robolectric |
@@ -27,7 +23,7 @@ shared library; missing future screens do not invalidate a tested primitive.
 | `core/core-database/src/migrationTest/java` | Shared v3 upgrade and persistence contracts; local and device wrappers in the database module |
 | Feature `src/test/java` | Constructor-injected ViewModels and Compose state/callback contracts; JVM or Robolectric |
 | `app/src/test/java`, `src/testDebug/java` | Runtime, shell, Q01 repository integration, branding and demo provider behavior |
-| `app/src/journeyTest/java` | MainActivity quest/connection journeys with Hilt and Room, plus isolated CopilotPreviewActivity journeys; Robolectric and device |
+| `app/src/journeyTest/java` | MainActivity connection journeys with Hilt and Room, plus isolated CopilotPreviewActivity journeys; Robolectric and device |
 
 The journey source sets and instrumentation runner are configured in
 [app/build.gradle.kts](../app/build.gradle.kts); local host settings are in
@@ -55,178 +51,126 @@ Other test directories are not automatically shared across source sets or module
 
 ## Final Figma visual acceptance
 
-After changing a shared component or completing a feature screen, compare the
-affected v4 states referenced by
-[DESIGN.md](DESIGN.md) with its full-resolution Figma export. Match the app content
-area, display scale, font scale and displayed data before comparing side by side
-or with an overlay. Check original artwork, font family and weight, text size and
-baselines, wrapping, colors, panel proportions, spacing, alignment, corners, icons
-and button bounds. Fix discrepancies and repeat the comparison after the final
-code change; inspect compact and enlarged-text layouts separately for usability.
-Exclude the SVG's drawn system bars and any Debug review controls from the
-reference comparison. Inspect the actual device app window separately: its
-compatibility density and available height can select a different layout from a
-native Robolectric reference render. A rehearsal toolbar must not hide controls
-or inadvertently force the compact layout at the reference app window.
+After the final UI code change, compare affected states with the full-resolution
+[v5 exports](ui/README.md). Match data, window size, display/font scale and the
+app content area; exclude drawn system bars and Debug review controls. Inspect
+artwork, typography/baselines, wrapping, colors, proportions, spacing, corners,
+icons and touch bounds. Check compact/enlarged-text layouts and the actual AAOS
+app window separately; device density/insets can select another layout.
 
-Record the references, rendered images and remaining differences in the
-implementation issue or PR. Distinguish font antialiasing differences from layout
-or styling errors. Passing builds, behavior tests or generating review images
-does not establish visual parity. Do not report an exact match while any screen
-lacks a full-resolution reference or still has an unresolved visual difference.
+Include menu safe insets, shared navigation/parking controls, vehicle expression
+and visible scale, aligned status banners/badges, and centered quest empty states.
+Verify keyboard/dialog focus, pending/recovery actions and interruption during
+motion. Static SVGs do not verify animations, persistence or provider integration.
+
+Record reference paths, review images and unresolved differences in the PR.
+Missing reference states remain explicit in the export index. Builds, behavioral
+tests and generated images alone do not establish visual parity. Source-only SVG
+renames require XML/render checks and byte-preservation checks, not an Android
+visual acceptance claim.
 
 ## Current requirement map
 
-Map changed critical behavior to implemented suites. The point economy and
-full-screen shell now have tests; the production quest and paid-item catalogs
-remain undefined. Future cases follow [DESIGN.md](DESIGN.md) and the
-[planned contracts](ARCHITECTURE.md#planned-features). Suite links identify
-coverage, not a passing result at a particular revision.
+These links describe existing coverage, not results at a particular revision.
+Update the map when critical behavior changes. Current implementation gaps are
+owned by [ARCHITECTURE.md](ARCHITECTURE.md#planned-features).
 
-| Requirement | Test suite | Scope |
+| Requirement | Suite | Scope |
 | --- | --- | --- |
-| Declared feature project dependencies stay within allowed core modules; selected domain platform imports are rejected | `verifyModuleBoundaries` in [root build](../build.gradle.kts) | Configured project declarations and main Kotlin imports; [audit limits](ARCHITECTURE.md#state-and-lifecycle) apply |
-| Missing/duplicate routes cannot silently render an arbitrary feature | [FeatureRegistryTest](../core/core-navigation/src/test/java/com/monsters/mobimon/core/navigation/FeatureRegistryTest.kt) | JVM |
-| AI observes committed companion context independently; failed observation retains it and supports retry without duplicate observers; cancellation propagates | [AiCompanionViewModelTest](../feature/feature-auth/src/test/java/com/monsters/mobimon/feature/auth/AiCompanionViewModelTest.kt) | ViewModel |
-| AI route exposes initial and later observation failures, retains the displayed companion across revisits, and retries to current equipment without duplicate observers or authorizing unknown parking | [AiFeatureTest](../feature/feature-auth/src/test/java/com/monsters/mobimon/feature/auth/AiFeatureTest.kt) | Production feature entry, real ViewModels and fake repositories on Robolectric; includes enlarged-text and keyboard retry |
-| Shared actions and selection controls retain 76dp targets; disabled callbacks cannot dispatch; selection stays caller-owned; account content is vertically centered; tabs and rows reflow at enlarged text | [MobiMonComponentsTest](../core/core-ui/src/test/java/com/monsters/mobimon/core/ui/MobiMonComponentsTest.kt), [MobiMonV4ComponentsTest](../core/core-ui/src/test/java/com/monsters/mobimon/core/ui/MobiMonV4ComponentsTest.kt) | Compose semantics, layout bounds and Robolectric; not Figma pixel parity |
-| Mobi retains the approved v4 artwork with distinct necklace and mint-scarf overlays, while Cream remains visibly distinct | [PetAvatarTest](../core/core-ui/src/test/java/com/monsters/mobimon/core/ui/PetAvatarTest.kt) | Deterministic native Robolectric pixel signatures; fallback regression coverage, not Figma pixel parity |
-| Quest-owned acknowledgment blocks moving/stale/unknown state and forwards the displayed snapshot ID from the Quest route | [QuestVehicleCardTest](../feature/feature-quest/src/test/java/com/monsters/mobimon/feature/quest/QuestVehicleCardTest.kt), shared Q01 journey | Compose and app integration |
-| Historical XP compatibility boundaries; not a product progression feature | [RewardCalculatorTest](../core/core-domain/src/test/kotlin/com/monsters/mobimon/core/domain/RewardCalculatorTest.kt) | JVM |
-| Concurrent completion awards once; failures roll back all reward writes | [RoomCompanionRepositoryTest](../core/core-database/src/test/java/com/monsters/mobimon/core/database/RoomCompanionRepositoryTest.kt), [device counterpart](../core/core-database/src/androidTest/java/com/monsters/mobimon/core/database/RoomCompanionRepositoryAndroidTest.kt) | Local SQLite and device |
-| Committed appearance, XP and completion survive file reopening | Same Room suites | File persistence |
-| Old, invalid, wrong-source or wrong-epoch evidence is rejected | [QuestEvaluatorTest](../core/core-domain/src/test/kotlin/com/monsters/mobimon/core/domain/QuestEvaluatorTest.kt), [QuestViewModelTest](../feature/feature-quest/src/test/java/com/monsters/mobimon/feature/quest/QuestViewModelTest.kt) | JVM and ViewModel |
-| Superseded parking or AAOS app-use restriction rejects queued reward writes | [Q01JourneyTest](../app/src/test/java/com/monsters/mobimon/Q01JourneyTest.kt) | Local Room transaction |
-| Parking and battery age are evaluated independently | [VehicleFreshnessPolicyTest](../core/core-domain/src/test/kotlin/com/monsters/mobimon/core/domain/VehicleFreshnessPolicyTest.kt), [VehicleInfoScreenTest](../feature/feature-vehicle-info/src/test/java/com/monsters/mobimon/feature/vehicle/VehicleInfoScreenTest.kt) | Domain and Compose |
-| Point migration preserves XP evidence without minting points | [PointEconomyMigrationTest](../core/core-database/src/test/java/com/monsters/mobimon/core/database/PointEconomyMigrationTest.kt) | Hand-built, file-backed v1 fixture to current v4 through the full migration chain |
-| Original and expanded v3 databases upgrade without losing leveling values, XP evidence, wallet/ledger, point occurrences or equipped ownership; missing fields default to zero and records survive reopening | [LevelingMigrationContract](../core/core-database/src/migrationTest/java/com/monsters/mobimon/core/database/LevelingMigrationContract.kt), [local wrapper](../core/core-database/src/test/java/com/monsters/mobimon/core/database/LevelingMigrationTest.kt), [device wrapper](../core/core-database/src/androidTest/java/com/monsters/mobimon/core/database/LevelingMigrationAndroidTest.kt) | Frozen exported v3 schemas, populated file-backed SQLite fixtures, real Room upgrade and reopen; local and device |
-| Purchases charge once, equipment is separate, and one-time/daily credits have unique occurrences | [PointEconomyRepositoryTest](../core/core-database/src/test/java/com/monsters/mobimon/core/database/PointEconomyRepositoryTest.kt) | Local SQLite |
-| A loading or failed point balance is distinct from saved zero | [PointBalanceViewModelTest](../core/core-presentation/src/test/java/com/monsters/mobimon/core/presentation/PointBalanceViewModelTest.kt) | ViewModel |
-| Home preserves point loading/failure and truthful parking when vehicle data is lost or recovered; it follows the equipped Mobi/Luna external character asset, omits the tagline Simulation badge, battery, Vehicle/Quest artwork shortcuts and vehicle-home preview controls, and keeps conversation disabled without a connection destination | [PetHomeScreenTest](../feature/feature-pet/src/test/java/com/monsters/mobimon/feature/pet/PetHomeScreenTest.kt) | Compose and Robolectric |
-| Fresh readings arriving between timer ticks stay valid, genuine future timestamps remain unavailable, and readings still expire | [VehicleStateViewModelTest](../core/core-presentation/src/test/java/com/monsters/mobimon/core/presentation/VehicleStateViewModelTest.kt) | Coroutine virtual time and controllable clock |
-| Debug Park authorization requires nonmoving Park gear; timer and signal changes allocate one strictly increasing sequence in an epoch | [DemoVehicleRepositoryTest](../app/src/testDebug/java/com/monsters/mobimon/vehicle/DemoVehicleRepositoryTest.kt) | Debug provider with coroutine virtual time, including coincident events |
-| Debug point changes recheck app-use allowance and keep account and ledger deltas atomic across file reopening | [DebugPointRepositoryTest](../core/core-database/src/testDebug/java/com/monsters/mobimon/core/database/DebugPointRepositoryTest.kt) | Debug-only repository with native file-backed SQLite and rollback coverage |
-| Home forwards menu and retry callbacks, keeps Vehicle/Quest handlers outside the Home surface, distinguishes profile loading/failure and loading/empty/failed inventory, keeps primary targets reachable with enlarged text and keyboard focus, and keeps controls reachable at head-unit and tall windows, unclipped parking text at 1.2x scale, and an accessible companion without a visible name caption | Same Home suite | Compose, semantics, text layout and layout/touch target bounds |
-| Failed inventory observation can be retried without losing a saved selection | [CosmeticInventoryViewModelTest](../feature/feature-pet/src/test/java/com/monsters/mobimon/feature/pet/CosmeticInventoryViewModelTest.kt), [CustomizationScreenTest](../feature/feature-pet/src/test/java/com/monsters/mobimon/feature/pet/CustomizationScreenTest.kt) | ViewModel and Compose |
-| All store categories expose independent selected states; preview remains uncommitted until apply; reference renders cover Friends, Accessories and empty Backgrounds | [StoreReferenceScreenTest](../feature/feature-pet/src/test/java/com/monsters/mobimon/feature/pet/StoreReferenceScreenTest.kt) | Native Robolectric review images in `feature/feature-pet/build/reports/store-ui`; not a pixel golden |
-| Committed friend/accessory/background changes reach independent and later companion observers; failures retain the committed look and retry does not duplicate subscriptions | [CompanionAppearanceViewModelTest](../core/core-presentation/src/test/java/com/monsters/mobimon/core/presentation/CompanionAppearanceViewModelTest.kt) | Coroutine ViewModel tests; persistence remains covered by Room suites |
-| Previewing Luna does not apply her until confirmation; character scales are normalized, equipped looks use isolated assets without source-sheet clipping, switching friends filters their separate accessory catalogs, and retained per-friend equipment returns on switching back | [CustomizationScreenTest](../feature/feature-pet/src/test/java/com/monsters/mobimon/feature/pet/CustomizationScreenTest.kt), [PetAvatarTest](../core/core-ui/src/test/java/com/monsters/mobimon/core/ui/PetAvatarTest.kt), [PointEconomyRepositoryTest](../core/core-database/src/test/java/com/monsters/mobimon/core/database/PointEconomyRepositoryTest.kt) | Compose and Room |
-| Debug legacy Q01 acknowledgment retains its historical 80 XP transaction once after Activity recreation; this is not a v4 product reward specification | [Q01AppJourneyTest](../app/src/journeyTest/java/com/monsters/mobimon/Q01AppJourneyTest.kt) | Hilt, MainActivity and Room; local and device |
-| Quest screen offers Q01 without advertising legacy Q02/Q03 | [QuestScreenTest](../feature/feature-quest/src/test/java/com/monsters/mobimon/feature/quest/QuestScreenTest.kt) | Compose and Robolectric |
-| Settings retains committed preferences during independent saves/failures, blocks unknown parking and unavailable services, restores Do Not Disturb, exposes Debug mode only when configured by the Debug app, supports retry and keyboard navigation, and keeps shared rows scrollable and 76dp actions reachable at the head-unit app window | [PetPreferencesScreenTest](../feature/feature-pet/src/test/java/com/monsters/mobimon/feature/pet/PetPreferencesScreenTest.kt) | Compose and Robolectric; responsive controls and keyboard input |
-| Unavailable, unknown or moving state blocks starting; parked recovery enables it | Same app journey suite | Local and device |
-| Failed settings/appearance saves preserve committed state; cancellation propagates; a persisted launcher preference never enables the independent Debug preference during upgrade | [PetViewModelTest](../feature/feature-pet/src/test/java/com/monsters/mobimon/feature/pet/PetViewModelTest.kt), [DataStoreSettingsRepositoryTest](../core/core-database/src/test/java/com/monsters/mobimon/core/database/DataStoreSettingsRepositoryTest.kt) | Local |
-| P02 drawer stays within its window with 76dp targets, takes initial focus, dismisses on backdrop/close/Back, routes to the six menu destinations, and updates the portrait/name when the equipped friend changes; destination Back restores Home; destination changes retain the outgoing frame without exposing its actions; AAOS restrictions preserve the route and remove Debug controls from composition | [MobiMonContentTest](../app/src/test/java/com/monsters/mobimon/ui/MobiMonContentTest.kt), [ShellStateTest](../app/src/test/java/com/monsters/mobimon/ui/ShellStateTest.kt) | Compose with controlled animation clock and JVM |
-| Settings, Home and disconnected Conversation open the connection introduction, restore its origin and unavailable feedback across Activity recreation, and keep QR disabled while the production provider is unavailable or parking becomes unknown | Shell suite, [AiFeatureTest](../feature/feature-auth/src/test/java/com/monsters/mobimon/feature/auth/AiFeatureTest.kt), [CopilotConnectionJourneyTest](../app/src/journeyTest/java/com/monsters/mobimon/CopilotConnectionJourneyTest.kt) | JVM, Compose and shared MainActivity journeys on Robolectric/device |
-| Copilot states expose approval/help/recheck/cancel and disconnect actions, hide expired codes, disable repeated pending actions, distinguish access failures from account approval, and keep large-text controls keyboard-operable | [CopilotConnectionScreenTest](../feature/feature-auth/src/test/java/com/monsters/mobimon/feature/auth/CopilotConnectionScreenTest.kt) | Compose and Robolectric |
-| The eight Copilot reference states retain panel proportions, unavailable introduction keeps the same panel bounds with QR disabled, and reference and compact review images render in `feature/feature-auth/build/reports/copilot-ui` | Same connection suite | Native Robolectric graphics; review artifacts, not golden baselines |
-| Panel transitions suppress outgoing actions, preserve countdown content identity and remove expired or unauthorized content immediately; the saved character-motion preference does not alter panel fades | [CopilotPanelTransitionTest](../feature/feature-auth/src/test/java/com/monsters/mobimon/feature/auth/CopilotPanelTransitionTest.kt) | Compose with controlled animation clock |
-| The isolated Debug rehearsal connects approval help, recreation, success, destination placeholders, disconnect, expiry, reconnect and access review | [CopilotPreviewJourneyTest](../app/src/journeyTest/java/com/monsters/mobimon/preview/CopilotPreviewJourneyTest.kt) | Shared preview Activity journeys on Robolectric/device |
-| Repeated foreground notifications do not duplicate a vehicle connection | [CompanionRuntimeTest](../app/src/test/java/com/monsters/mobimon/runtime/CompanionRuntimeTest.kt) | Runtime unit test |
-| Real reward transactions reject simulated evidence; real adapter reports unavailable | Room local suite, [UnavailableVehicleRepositoryTest](../core/core-vss/src/test/kotlin/com/monsters/mobimon/core/vss/UnavailableVehicleRepositoryTest.kt) | JVM and local SQLite |
-| Debug application ID and launcher label match MobiMon | [BrandingTest](../app/src/testDebug/java/com/monsters/mobimon/BrandingTest.kt) | Debug and Robolectric |
+| Declared module dependencies and selected domain imports | `verifyModuleBoundaries` in [root build](../build.gradle.kts) | Configured project declarations and main Kotlin imports; [audit limits](ARCHITECTURE.md#state-and-lifecycle) apply |
+| Complete, unique destination registration | [FeatureRegistryTest](../core/core-navigation/src/test/java/com/monsters/mobimon/core/navigation/FeatureRegistryTest.kt) | JVM |
+| Committed AI context, observation retry and cancellation | [AiCompanionViewModelTest](../feature/feature-auth/src/test/java/com/monsters/mobimon/feature/auth/AiCompanionViewModelTest.kt) | ViewModel |
+| AI context failure/retry across route revisits and unknown parking | [AiFeatureTest](../feature/feature-auth/src/test/java/com/monsters/mobimon/feature/auth/AiFeatureTest.kt) | Production entry with fake repositories; Robolectric |
+| 76dp controls, disabled callbacks, selection and enlarged-text reflow | [MobiMonComponentsTest](../core/core-ui/src/test/java/com/monsters/mobimon/core/ui/MobiMonComponentsTest.kt), [MobiMonV4ComponentsTest](../core/core-ui/src/test/java/com/monsters/mobimon/core/ui/MobiMonV4ComponentsTest.kt) | Compose semantics/bounds; no pixel parity |
+| Artwork, accessory fallbacks and twelve-frame Mobi animation loading | [PetAvatarTest](../core/core-ui/src/test/java/com/monsters/mobimon/core/ui/PetAvatarTest.kt) | Native Robolectric pixel signatures; no v5 expression coverage |
+| Legacy acknowledgment guards and displayed snapshot identity | [QuestVehicleCardTest](../feature/feature-quest/src/test/java/com/monsters/mobimon/feature/quest/QuestVehicleCardTest.kt) | Compose legacy component |
+| Historical XP calculation compatibility | [RewardCalculatorTest](../core/core-domain/src/test/kotlin/com/monsters/mobimon/core/domain/RewardCalculatorTest.kt) | JVM |
+| Atomic legacy completion, concurrency, rollback and file persistence | [RoomCompanionRepositoryTest](../core/core-database/src/test/java/com/monsters/mobimon/core/database/RoomCompanionRepositoryTest.kt), [device counterpart](../core/core-database/src/androidTest/java/com/monsters/mobimon/core/database/RoomCompanionRepositoryAndroidTest.kt) | Local SQLite and device |
+| Legacy evidence freshness, source, epoch and ownership | [QuestEvaluatorTest](../core/core-domain/src/test/kotlin/com/monsters/mobimon/core/domain/QuestEvaluatorTest.kt), [QuestViewModelTest](../feature/feature-quest/src/test/java/com/monsters/mobimon/feature/quest/QuestViewModelTest.kt) | JVM and ViewModel |
+| Transaction recheck after parking/AAOS restrictions change | [Q01JourneyTest](../app/src/test/java/com/monsters/mobimon/Q01JourneyTest.kt) | Local Room transaction |
+| Independent parking/battery freshness | [VehicleFreshnessPolicyTest](../core/core-domain/src/test/kotlin/com/monsters/mobimon/core/domain/VehicleFreshnessPolicyTest.kt), [VehicleInfoScreenTest](../feature/feature-vehicle-info/src/test/java/com/monsters/mobimon/feature/vehicle/VehicleInfoScreenTest.kt) | Domain and Compose |
+| V1 migration preserves XP without creating point credits | [PointEconomyMigrationTest](../core/core-database/src/test/java/com/monsters/mobimon/core/database/PointEconomyMigrationTest.kt) | File-backed v1 → v4 chain |
+| Original/expanded v3 upgrade preserves records and survives reopening | [LevelingMigrationContract](../core/core-database/src/migrationTest/java/com/monsters/mobimon/core/database/LevelingMigrationContract.kt), [local wrapper](../core/core-database/src/test/java/com/monsters/mobimon/core/database/LevelingMigrationTest.kt), [device wrapper](../core/core-database/src/androidTest/java/com/monsters/mobimon/core/database/LevelingMigrationAndroidTest.kt) | Shared populated schema fixtures; local/device wrappers |
+| Atomic purchases/equipment, occurrence keys and persisted point claims | [PointEconomyRepositoryTest](../core/core-database/src/test/java/com/monsters/mobimon/core/database/PointEconomyRepositoryTest.kt) | Local SQLite |
+| Wallet loading/failure is distinct from committed zero | [PointBalanceViewModelTest](../core/core-presentation/src/test/java/com/monsters/mobimon/core/presentation/PointBalanceViewModelTest.kt) | ViewModel |
+| Home wallet/parking/appearance, navigation callbacks and accessible responsive layout | [PetHomeScreenTest](../feature/feature-pet/src/test/java/com/monsters/mobimon/feature/pet/PetHomeScreenTest.kt) | Compose/Robolectric |
+| Clock sampling, future timestamps and expiry | [VehicleStateViewModelTest](../core/core-presentation/src/test/java/com/monsters/mobimon/core/presentation/VehicleStateViewModelTest.kt) | Virtual time and injected clock |
+| Debug nonmoving Park authorization and serialized epoch sequences | [DemoVehicleRepositoryTest](../app/src/testDebug/java/com/monsters/mobimon/vehicle/DemoVehicleRepositoryTest.kt) | Debug provider and virtual time |
+| Debug account/ledger atomicity, authorization and reopening | [DebugPointRepositoryTest](../core/core-database/src/testDebug/java/com/monsters/mobimon/core/database/DebugPointRepositoryTest.kt) | Debug native SQLite and rollback |
+| Inventory retry preserves committed selection | [CosmeticInventoryViewModelTest](../feature/feature-pet/src/test/java/com/monsters/mobimon/feature/pet/CosmeticInventoryViewModelTest.kt), [CustomizationScreenTest](../feature/feature-pet/src/test/java/com/monsters/mobimon/feature/pet/CustomizationScreenTest.kt) | ViewModel and Compose |
+| Store category semantics and uncommitted preview reference renders | [StoreReferenceScreenTest](../feature/feature-pet/src/test/java/com/monsters/mobimon/feature/pet/StoreReferenceScreenTest.kt) | Native Robolectric review images; no golden |
+| Committed appearance propagation, retained values and subscription retry | [CompanionAppearanceViewModelTest](../core/core-presentation/src/test/java/com/monsters/mobimon/core/presentation/CompanionAppearanceViewModelTest.kt) | ViewModel; Room suites own persistence |
+| Friend preview/apply separation, isolated artwork and per-friend equipment | [CustomizationScreenTest](../feature/feature-pet/src/test/java/com/monsters/mobimon/feature/pet/CustomizationScreenTest.kt), [PetAvatarTest](../core/core-ui/src/test/java/com/monsters/mobimon/core/ui/PetAvatarTest.kt), [PointEconomyRepositoryTest](../core/core-database/src/test/java/com/monsters/mobimon/core/database/PointEconomyRepositoryTest.kt) | Compose and Room |
+| Driving quest list/detail Back and hidden quest dialogs/claim callbacks | [QuestScreenTest](../feature/feature-quest/src/test/java/com/monsters/mobimon/feature/quest/QuestScreenTest.kt) | Compose and Robolectric |
+| Settings independent saves, restrictions, Debug visibility and accessible controls | [PetPreferencesScreenTest](../feature/feature-pet/src/test/java/com/monsters/mobimon/feature/pet/PetPreferencesScreenTest.kt) | Compose/Robolectric |
+| Preference failure/cancellation and independent dormant-launcher/Debug keys | [PetViewModelTest](../feature/feature-pet/src/test/java/com/monsters/mobimon/feature/pet/PetViewModelTest.kt), [DataStoreSettingsRepositoryTest](../core/core-database/src/test/java/com/monsters/mobimon/core/database/DataStoreSettingsRepositoryTest.kt) | Local |
+| Menu bounds/focus/dismissal, navigation state and outgoing/restricted input removal | [MobiMonContentTest](../app/src/test/java/com/monsters/mobimon/ui/MobiMonContentTest.kt), [ShellStateTest](../app/src/test/java/com/monsters/mobimon/ui/ShellStateTest.kt) | JVM/Compose with controlled animation clock |
+| Connection origin/recreation and unavailable or unknown-parking guards | Shell suite, [AiFeatureTest](../feature/feature-auth/src/test/java/com/monsters/mobimon/feature/auth/AiFeatureTest.kt), [CopilotConnectionJourneyTest](../app/src/journeyTest/java/com/monsters/mobimon/CopilotConnectionJourneyTest.kt) | Shell, feature and shared connection journeys |
+| Approval/help/expiry/access/disconnect controls and enlarged-text keyboard use | [CopilotConnectionScreenTest](../feature/feature-auth/src/test/java/com/monsters/mobimon/feature/auth/CopilotConnectionScreenTest.kt) | Compose/Robolectric |
+| Connection panel bounds and reference/compact review renders | Same connection suite | Native Robolectric images; no golden |
+| Panel identity, outgoing input removal and immediate restriction/expiry handling | [CopilotPanelTransitionTest](../feature/feature-auth/src/test/java/com/monsters/mobimon/feature/auth/CopilotPanelTransitionTest.kt) | Controlled Compose animation clock |
+| Isolated Debug rehearsal navigation and recreation | [CopilotPreviewJourneyTest](../app/src/journeyTest/java/com/monsters/mobimon/preview/CopilotPreviewJourneyTest.kt) | Shared Debug Activity journey; local/device |
+| Single provider connection across repeated foreground notifications | [CompanionRuntimeTest](../app/src/test/java/com/monsters/mobimon/runtime/CompanionRuntimeTest.kt) | Runtime unit test |
+| Real-source rejection of simulated evidence and unavailable real adapter | Room local suite, [UnavailableVehicleRepositoryTest](../core/core-vss/src/test/kotlin/com/monsters/mobimon/core/vss/UnavailableVehicleRepositoryTest.kt) | JVM and local SQLite |
+| Debug application ID and launcher label | [BrandingTest](../app/src/testDebug/java/com/monsters/mobimon/BrandingTest.kt) | Debug and Robolectric |
+| Fourteen driving conditions, weather calculation and seventeen catalog definitions | [DrivingQuestEvaluatorTest](../core/core-domain/src/test/kotlin/com/monsters/mobimon/core/domain/DrivingQuestEvaluatorTest.kt) | Plain JVM; does not verify real signals or transactional driving evidence |
 
 ## Integration boundaries
 
-`PointEconomyMigrationTest` builds its v1 fixture directly with SQL and exercises
-the complete v1-to-v4 chain. `LevelingMigrationContract` creates populated v3
-files from frozen exports, including their Room identity hashes, then opens and
-reopens them through the current Room builder. Its
-[original v3 fixture](../core/core-database/src/migrationTest/assets/legacy-v3.json)
-comes from commit `ef2fa07`, before the leveling fields were added; the
-[expanded v3 export](../core/core-database/schemas/com.monsters.mobimon.core.database.AppDatabase/3.json)
-checks that nonzero values are retained. The tests read every affected record
-through DAOs after migration and reopening. Their shared source and test-only
-schema assets are configured in
-[the database build](../core/core-database/build.gradle.kts).
-These suites do not use `MigrationTestHelper` or exercise a separately populated
-v2 fixture. Fresh creation and exports alone do not establish upgrade coverage.
+- Migration tests use real file-backed Room upgrades/reopening. The v1 fixture
+  exercises the full v1-to-v4 chain. The shared v3 contract uses the
+  [original fixture](../core/core-database/src/migrationTest/assets/legacy-v3.json)
+  from `ef2fa07` and the [expanded v3 schema](../core/core-database/schemas/com.monsters.mobimon.core.database.AppDatabase/3.json).
+  They preserve populated records/identity hashes; they do not use
+  `MigrationTestHelper` or a separately populated v2 fixture.
+- [JourneyTestModule](../app/src/journeyTest/java/com/monsters/mobimon/testing/JourneyTestModule.kt)
+  uses `HiltTestApplication`, fake platform/vehicle/app-use providers, an injected
+  clock, in-memory Room and isolated DataStore. MainActivity, feature ViewModels
+  and repository bindings remain real. Current shared MainActivity journeys cover
+  connection, not the retired Q01 UI journey.
+- `CopilotPreviewJourneyTest` uses a plain Debug Activity and sample data without
+  Hilt/Room or authentication. Presentation success does not verify OAuth, QR
+  approval, polling, credentials, Copilot readiness or disconnect.
+- Recreation, file reopening and process restart are distinct. Existing journeys
+  cover recreation and Room suites cover persistence; neither proves real
+  providers, process restart, OEM launcher support or Release runtime behavior.
+  APK assembly, packaging inspection and `NO-SOURCE` tasks are not device execution.
+- Driving evaluator tests verify formulas and supplied data. Point repository
+  tests verify parked authorization, keys and transactions; they do not establish
+  trusted driving evidence, real per-drive identity, repeat eligibility or
+  evaluator-to-award amount agreement. Reduced-motion wiring and v5 hungry/sick
+  rendering also lack acceptance. See the architecture gaps before reporting them
+  as working features.
+- AAOS restriction callbacks, Car-service reconnection and system blocking need
+  the target image. The dormant launcher preference test covers its default only,
+  not a launcher surface. Demo evaluation/vehicle state is intentionally transient.
 
-The MainActivity journeys use `HiltTestApplication`. Their
-[JourneyTestModule](../app/src/journeyTest/java/com/monsters/mobimon/testing/JourneyTestModule.kt)
-replaces platform, vehicle and AAOS use-state providers with a fixed clock, controllable
-simulated vehicle, an allowed app-use state, in-memory Room and isolated DataStore. MainActivity, feature
-ViewModels, repository bindings and reward transactions remain real. They now
-exercise Hilt feature registrations, Quest's shared vehicle observation and
-saved route state end to end; shell-only tests use minimal entries to isolate navigation.
-
-`CopilotPreviewJourneyTest` launches the plain Debug preview Activity without
-Hilt injection or Room interaction. It verifies presentation navigation and
-Activity recreation with sample data; it does not exercise the production
-connection host, vehicle authorization or an authentication provider.
-
-Activity recreation, file-backed database reopening and process restart prove
-different guarantees. The journeys cover recreation; the Room suites cover file
-persistence. Production Application lifecycle, process restart, Release behavior,
-custom CSTD services and real vehicle/AI integration still require separate
-acceptance. APK assembly or a task with `NO-SOURCE` does not prove test execution.
-`DebugPointRepositoryTest` reopens the same `AppDatabase` file and compares the
-saved account with the sum of Debug ledger deltas. Demo vehicle state is
-intentionally transient and has no secondary Room database to reopen.
-
-Define future acceptance cases and record executions in their implementation
-issues/PRs; extend the map above when suites exist. Reports must identify the
-revision, executed layers, skipped checks and reasons. Device records also need
-the image, signal source, scenario and outcome, without credentials or private logs.
-Before enabling launcher character support, verify that new and existing installs
-start with launcher visibility off. The current DataStore test covers the dormant
-off-by-default preference; it does not verify a launcher surface or supported UI.
-`CarAppUseMonitor` uses the current display's UX
-restrictions, but its callbacks, system blocking behavior and reconnection must
-be tested on the target AAOS image. No Copilot SDK/CLI runtime or launcher OEM
-contract is connected, so these experiences remain unavailable and have no
-end-to-end acceptance result.
-Copilot connection UI tests use explicit display states and Debug-only examples.
-They do not execute GitHub OAuth, QR approval, provider polling, token storage,
-Copilot readiness checks or real disconnect. The production route shows only the
-introduction and unavailable feedback until those integrations are implemented.
-The separate Debug launcher **Copilot UI 체험** is a manual UI rehearsal, with
-explicitly simulated accounts, a fixed timer and no network or credential storage.
-Its scenario controls and destination placeholders are outside the Figma design.
-Release manifest/resource inspection is evidence of packaging boundaries;
-it does not establish live authentication or Release runtime behavior.
+Record executions, revision, skipped layers/reasons and device image/signal source
+in the issue/PR, without credentials or private logs. Future test plans belong
+there until implemented suites can be linked here.
 
 ## Focused commands and reports
 
-Run from the repository root; on Windows use `gradlew.bat`. The full required
-check sequence and connected-test command are in
-[CONTRIBUTING.md](../.github/CONTRIBUTING.md#verification).
+Use [CONTRIBUTING.md](../.github/CONTRIBUTING.md#verification) for required checks.
+A filtered module test task does not run dependency modules or device tests.
+For local focus, select the suite with `--tests <qualified-name>` on its module's
+`testDebugUnitTest`; pure Kotlin modules use `test`.
 
-```bash
-# Shared Q01 journeys on Robolectric.
-./gradlew :app:testDebugUnitTest --tests com.monsters.mobimon.Q01AppJourneyTest
-
-# Isolated Copilot rehearsal journeys on Robolectric.
-./gradlew :app:testDebugUnitTest --tests com.monsters.mobimon.preview.CopilotPreviewJourneyTest
-
-# Informational local coverage.
-./gradlew :app:koverHtmlReportDebug :app:koverXmlReportDebug
-```
-
-The filtered journey command does not run device tests. App test tasks do not
-run their library dependencies' tests or replace the required check sequence.
-
-[Android CI](../.github/workflows/android-ci.yml) defines report paths, upload
-conditions and retention for `local-reports-*` and `device-reports-*`. Device
-artifacts include host properties, features and display metrics. CI generates
-Kover reports on main pushes; they cover local JVM tests only.
+Informational coverage: `./gradlew :app:koverHtmlReportDebug :app:koverXmlReportDebug`.
+[Android CI](../.github/workflows/android-ci.yml) owns report paths, retention and
+upload conditions; Kover covers local JVM tests only. Device reports include host
+properties, features and display metrics.
 
 ### CI AAOS environment
 
-The [workflow](../.github/workflows/android-ci.yml) defines the official Google
-APIs image, API extension, ABI and emulator resources; [cstd.ini](../.github/avd/cstd.ini)
-defines display and heap settings. The required
-[host check](../scripts/check-aaos-environment.sh) verifies automotive support,
-API, ABI, resolution and density before device tests.
+The [workflow](../.github/workflows/android-ci.yml) owns the official Google APIs
+image, API extension, ABI and emulator resources; [cstd.ini](../.github/avd/cstd.ini)
+owns display/heap settings. The required [host check](../scripts/check-aaos-environment.sh)
+verifies automotive support, API, ABI, resolution and density before device tests.
 
-CI uses a fresh AVD with a disposable data partition, headless software rendering
-and disabled animations. Supplied local CSTD images and AVDs are separate inputs,
-not used by CI. Matching metadata does not establish identical image binaries or
-custom CSTD services; the SDK resolves the available image revision.
-
-For local reproduction, install the workflow's image with `sdkmanager`, use
-emulator 35.1.9 or newer, and configure the AVD from the workflow and `cstd.ini`.
-Use the supplied AVD for CSTD-specific acceptance. With only the intended emulator
-connected, run `bash scripts/check-aaos-environment.sh` (Git Bash on Windows),
-then the connected-test command in CONTRIBUTING. Passing the host check identifies
-the environment; connected-test results establish that the Room and app journeys ran.
+CI uses a fresh disposable AVD, headless software rendering and disabled
+animations. Local CSTD images are separate inputs: matching metadata does not
+prove identical binaries or custom services. For local reproduction, use the
+workflow's image/configuration and emulator 35.1.9 or newer. With only the intended
+emulator connected, run the host check, then the canonical connected tests. A
+passing host check identifies the environment; test results establish execution.

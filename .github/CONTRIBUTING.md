@@ -95,40 +95,17 @@ verification with `--write-locks`.
 
 ## Parallel feature development
 
-Use a separate checkout/worktree and topic branch for each task. Do not run four
-agents or developers against one mutable working directory. Integrate structural
-migrations before rebasing dependent feature branches; keep file moves
-separate from visual or behavioral changes so Git can detect renames.
+Use a separate checkout/worktree and topic branch for each task. Keep normal
+screen changes in the owning feature and use the shared
+[UI contracts](../docs/DESIGN.md#reusable-compose-library-and-asset-handoff).
+The [module map](../docs/ARCHITECTURE.md#target-modules-and-dependencies) defines
+boundaries and registrations. Coordinate shared API, schema and dependency changes
+with their consumers; integrate structural changes before rebasing dependent work.
 
-Work inside the feature's source, resources, tests and route declaration. The
-[module boundary table](../docs/ARCHITECTURE.md#target-modules-and-dependencies)
-links each entry and its app registration. A normal screen edit should not change
-`MainActivity`, `MobiMonApp`, another feature, or a shared Gradle file. Add an
-internal destination to that feature's enum and entry; the registry checks that
-all destinations are registered exactly once. Request another feature through a
-navigation callback or a narrow, app-assembled contribution interface.
-
-Use `mobimon.android.feature` for a feature, `mobimon.android.compose` for a
-stateless UI library, `mobimon.android.library` for Android storage, and
-`mobimon.kotlin.library` for plain Kotlin. Module build files declare their
-namespace and exceptional dependencies. Shared configuration lives in
-[build-logic](../build-logic/src/main/kotlin); versions stay in the catalog.
-Run the affected module's `testDebugUnitTest` while iterating; the full checks
-above remain required before integration.
-
-Integrate shared v4 component APIs and tokens before parallel screen branches
-adopt them. Feature owners implement their screen layouts using those primitives;
-shared work does not require completing every screen. Coordinate an API change
-with its current consumers in one integration change, then rebase dependent
-branches. Keep the authoritative component contract in [DESIGN.md](../docs/DESIGN.md#reusable-compose-library-and-asset-handoff),
-and leave assignments and acceptance run logs in the issue/PR.
-
-Shared contract, token, version-catalog and Room-schema changes deserve a small
-integration PR agreed with affected feature authors first. Keep each migration,
-component and domain contract in its own file. Never resolve a lockfile or schema
-conflict by taking one side blindly: regenerate against the combined dependency
-or schema change and inspect the result. Assign reviewers in the implementation
-issue; repository CODEOWNERS requires the team's actual GitHub handles.
+Use the existing convention plugins in [build-logic](../build-logic/src/main/kotlin)
+and the version catalog. Regenerate combined lock/schema changes rather than
+choosing one side of a conflict. Keep assignments and execution logs in issues/PRs;
+component readiness and final screen acceptance are separate.
 
 ## Branches and commits
 
