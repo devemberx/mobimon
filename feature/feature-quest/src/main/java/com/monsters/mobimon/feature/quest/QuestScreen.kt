@@ -1000,14 +1000,14 @@ private fun QuestRightPanel(
             modifier = Modifier.fillMaxWidth(),
         )
 
-        Spacer(Modifier.height(36.dp * scale))
+        Spacer(Modifier.height(24.dp * scale))
 
         Text(
             text = stringResource(R.string.quest_section_title),
             style = questTextStyle(48f, scale, bold = true, color = Colors.text),
         )
 
-        Spacer(Modifier.height(44.dp * scale))
+        Spacer(Modifier.height(24.dp * scale))
 
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -1057,7 +1057,7 @@ private fun QuestRightPanel(
             )
         }
 
-        Spacer(Modifier.height(36.dp * scale))
+        Spacer(Modifier.height(24.dp * scale))
 
         if (displayedQuests.isEmpty()) {
             val emptyModifier =
@@ -1131,8 +1131,8 @@ private fun QuestFilterTabButton(
     Row(
         modifier =
             modifier
-                .then(if (isCompact) Modifier else Modifier.width(336.dp * scale))
-                .height(88.dp * scale)
+                .then(if (isCompact) Modifier else Modifier.width(260.dp * scale))
+                .height(64.dp * scale)
                 .clip(RoundedCornerShape(24.dp * scale))
                 .background(bg)
                 .then(borderMod)
@@ -1144,13 +1144,13 @@ private fun QuestFilterTabButton(
         Image(
             painter = painterResource(iconRes),
             contentDescription = null,
-            modifier = Modifier.size(32.dp * scale),
+            modifier = Modifier.size(26.dp * scale),
             colorFilter = ColorFilter.tint(fg),
         )
-        Spacer(Modifier.width(16.dp * scale))
+        Spacer(Modifier.width(12.dp * scale))
         Text(
             text = title,
-            style = questTextStyle(38f, scale, bold = true, color = fg),
+            style = questTextStyle(32f, scale, bold = true, color = fg),
         )
     }
 }
