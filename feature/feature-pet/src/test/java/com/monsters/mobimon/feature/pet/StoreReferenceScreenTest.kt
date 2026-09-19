@@ -129,6 +129,15 @@ class StoreReferenceScreenTest {
         assertEquals(R.drawable.pet_home_background_morning_v4, petHomeBackgroundRes("Morning"))
         assertEquals(R.drawable.pet_home_background_day_v4, petHomeBackgroundRes("Day"))
         assertEquals(R.drawable.pet_home_background_v4, petHomeBackgroundRes("Night"))
+        assertEquals(R.drawable.pet_home_background_morning_v4, petHomeBackgroundRes("morning"))
+        assertEquals(R.drawable.pet_home_background_day_v4, petHomeBackgroundRes("day"))
+        assertEquals(R.drawable.pet_home_background_v4, petHomeBackgroundRes("night"))
+        assertEquals(R.drawable.pet_home_background_morning_v4, petHomeBackgroundRes("09"))
+        assertEquals(R.drawable.pet_home_background_day_v4, petHomeBackgroundRes("14"))
+        assertEquals(R.drawable.pet_home_background_v4, petHomeBackgroundRes("20"))
+        assertEquals(R.drawable.pet_home_background_morning_v4, petHomeBackgroundRes("아침"))
+        assertEquals(R.drawable.pet_home_background_day_v4, petHomeBackgroundRes("낮"))
+        assertEquals(R.drawable.pet_home_background_v4, petHomeBackgroundRes("밤"))
     }
 
     private fun capture(

@@ -88,4 +88,28 @@ class DebugInterpretationRowTest {
             .onNodeWithTag("debug-interpretation-input-gear")
             .assertIsDisplayed()
     }
+
+    @Test
+    fun presetsRenderQuickButtonsAndApplyValues() {
+        var manualValue by mutableStateOf("")
+        compose.setContent {
+            DebugInterpretationRow(
+                label = "timeOfDay",
+                value = "Morning",
+                formula = "hour test",
+                manualValue = manualValue,
+                onManualValueChange = { manualValue = it },
+                onClearManualValue = { manualValue = "" },
+                presets =
+                    listOf(
+                        "Morning (09시)" to "09:00",
+                        "Day (14시)" to "14:00",
+                        "Night (20시)" to "20:00",
+                    ),
+            )
+        }
+
+        compose.onNodeWithTag("debug-interpretation-preset-timeOfDay-14:00").assertIsDisplayed().performClick()
+        org.junit.Assert.assertEquals("14:00", manualValue)
+    }
 }

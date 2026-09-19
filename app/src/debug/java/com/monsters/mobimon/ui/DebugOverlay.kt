@@ -374,6 +374,13 @@ fun DebugOverlay() {
                                             DrivingQuestIds.MAINTENANCE,
                                             DrivingQuestIds.TURN_SIGNAL,
                                             DrivingQuestIds.SAFE_5DAYS,
+                                            DrivingQuestIds.BATTERY_CARE,
+                                            DrivingQuestIds.LONG_TRIP_REST,
+                                            DrivingQuestIds.WASHER_FLUID,
+                                            DrivingQuestIds.TIRE_CHECK,
+                                            DrivingQuestIds.HIDDEN_COSTUME,
+                                            DrivingQuestIds.HIDDEN_BACKGROUND,
+                                            DrivingQuestIds.HIDDEN_NEW_FRIEND,
                                         )
                                     var awardedCount = 0
                                     var alreadyCount = 0
@@ -392,7 +399,7 @@ fun DebugOverlay() {
                             shape = RoundedCornerShape(8.dp),
                         ) {
                             Text(
-                                "10종 퀘스트 전체 일괄 지급",
+                                "전체 퀘스트 일괄 지급",
                                 color = Color.White,
                                 fontSize = 12.sp,
                                 fontWeight = FontWeight.Bold,
@@ -503,11 +510,15 @@ fun DebugOverlay() {
                                             overspeedCount = 0,
                                             isDestinationMaintenanceCenter = true,
                                             isDestinationReached = true,
+                                            isBatteryChargedProperly = true,
+                                            hasRestedDuringLongDrive = true,
+                                            isWasherFluidRefilled = true,
+                                            isTirePressureNormalWeekly = true,
                                             weather = questWeather,
                                         )
                                     evalResults = DrivingQuestEvaluator().evaluateAll(allSatisfiedData)
                                     pointEconomy.updateDriveEvaluation(allSatisfiedData)
-                                    questStatusMessage = "10종 퀘스트 전체 조건 만족 설정됨 (완료 가능)"
+                                    questStatusMessage = "전체 주행 퀘스트 조건 만족 설정됨 (완료 가능)"
                                 },
                                 modifier = Modifier.weight(1f),
                                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1E5B42)),
@@ -1049,6 +1060,12 @@ private fun DebugInterpretationSection(
             formula = "Vehicle.CurrentLocation.Timestamp hour: 08-11=Morning, 12-18=Day, else=Night",
             onManualValueChange = { onOverridesChange(overrides.copy(timeOfDay = it.ifBlank { null })) },
             onClearManualValue = { onOverridesChange(overrides.copy(timeOfDay = null)) },
+            presets =
+                listOf(
+                    "Morning (09시)" to "09:00",
+                    "Day (14시)" to "14:00",
+                    "Night (20시)" to "20:00",
+                ),
         )
     }
 }
@@ -1067,6 +1084,7 @@ fun DebugInterpretationRow(
     onManualValueChange: (String) -> Unit,
     onClearManualValue: () -> Unit,
     manualValue: String = "",
+    presets: List<Pair<String, String>> = emptyList(),
 ) {
     var expanded by remember { mutableStateOf(false) }
     Column(
@@ -1160,6 +1178,41 @@ fun DebugInterpretationRow(
         }
         if (expanded) {
             Text(formula, color = Color(0xFFBFD7EA), fontSize = 12.sp)
+        }
+        if (presets.isNotEmpty()) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = "빠른 선택:",
+                    color = Color(0xFF8DA9C4),
+                    fontSize = 11.sp,
+                )
+                presets.forEach { (title, valToSet) ->
+                    val isSelected =
+                        manualValue == valToSet ||
+                            (manualValue.isBlank() && value.equals(title.substringBefore(" "), ignoreCase = true))
+                    Button(
+                        onClick = { onManualValueChange(valToSet) },
+                        colors =
+                            ButtonDefaults.buttonColors(
+                                containerColor = if (isSelected) Color(0xFF71E5C5) else Color(0xFF203C58),
+                            ),
+                        shape = RoundedCornerShape(6.dp),
+                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
+                        modifier = Modifier.testTag("debug-interpretation-preset-$label-$valToSet"),
+                    ) {
+                        Text(
+                            title,
+                            color = if (isSelected) Color.Black else Color.White,
+                            fontSize = 11.sp,
+                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                        )
+                    }
+                }
+            }
         }
     }
 }

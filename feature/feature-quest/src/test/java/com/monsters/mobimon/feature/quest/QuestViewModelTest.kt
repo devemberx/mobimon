@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModelStore
 import com.monsters.mobimon.core.domain.Clock
 import com.monsters.mobimon.core.domain.CosmeticInventory
 import com.monsters.mobimon.core.domain.CosmeticItem
+import com.monsters.mobimon.core.domain.DriveEvaluationData
 import com.monsters.mobimon.core.domain.DrivingQuestIds
 import com.monsters.mobimon.core.domain.DrivingState
 import com.monsters.mobimon.core.domain.EquipResult
@@ -299,10 +300,12 @@ class QuestViewModelTest {
         var lastAwardQuestId: String? = null
         var result: PointAwardResult = PointAwardResult.Awarded(5, 105, "occurrence")
         val completionsFlow = MutableStateFlow<Set<String>>(emptySet())
+        val evalFlow = MutableStateFlow(DriveEvaluationData())
         override val wallet = emptyFlow<PointWallet>()
         override val inventory = emptyFlow<CosmeticInventory>()
         override val catalog = emptyFlow<List<CosmeticItem>>()
         override val completedQuestIds = completionsFlow
+        override val driveEvaluation = evalFlow
 
         override suspend fun purchase(
             itemId: String,
@@ -350,5 +353,63 @@ class QuestViewModelTest {
                 vm.state.value.completedPointQuestIds
                     .contains(DrivingQuestIds.SEATBELT),
             )
+        }
+
+    @Test
+    fun driveEvaluationUpdatesSatisfiedQuestsAndVssStateControlsClaimability() =
+        runModelTest {
+            val testEconomy = TestEconomy()
+            val vm =
+                QuestViewModel(
+                    local,
+                    local,
+                    vehicle,
+                    ProgressionIdentity("profile", SignalSource.REAL),
+                    Clock { now },
+                    QuestEvaluator(15_000),
+                    testEconomy,
+                ).also { store.put("quest-driving", it) }
+            runCurrent()
+
+            assertTrue(
+                vm.state.value.satisfiedDrivingQuestIds
+                    .isEmpty(),
+            )
+
+            testEconomy.evalFlow.value =
+                DriveEvaluationData(
+                    distanceKm = 10f,
+                    safeBeltMinutes = 15,
+                    safeDriveScore = 90,
+                )
+            runCurrent()
+
+            assertTrue(
+                vm.state.value.satisfiedDrivingQuestIds
+                    .contains(DrivingQuestIds.SEATBELT),
+            )
+            assertTrue(
+                vm.state.value.satisfiedDrivingQuestIds
+                    .contains(DrivingQuestIds.SAFE_DRIVE),
+            )
+            assertTrue(vm.state.value.canManageQuest)
+
+            vehicle.snapshots.value = vehicle.snapshots.value.copy(drivingState = DrivingState.MOVING)
+            runCurrent()
+            assertFalse(vm.state.value.canManageQuest)
+
+            vm.claimPointQuest(DrivingQuestIds.SEATBELT)
+            runCurrent()
+            assertEquals(0, testEconomy.awardCalls)
+            assertEquals(QuestMessage.NOT_PARKED, vm.state.value.message)
+
+            vehicle.snapshots.value = vehicle.snapshots.value.copy(drivingState = DrivingState.PARKED)
+            runCurrent()
+            assertTrue(vm.state.value.canManageQuest)
+            assertNull(vm.state.value.message)
+
+            vm.claimPointQuest(DrivingQuestIds.SEATBELT)
+            runCurrent()
+            assertEquals(1, testEconomy.awardCalls)
         }
 }

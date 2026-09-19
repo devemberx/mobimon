@@ -209,7 +209,63 @@ class DrivingQuestEvaluatorTest {
     }
 
     @Test
-    fun evaluateAllProducesAllTenQuestResults() {
+    fun batteryCareQuestRequiresProperCharging() {
+        val notCharged = DriveEvaluationData(isBatteryChargedProperly = false)
+        val notChargedResult = evaluator.evaluateBatteryCare(notCharged)
+        assertFalse(notChargedResult.isSatisfied)
+        assertEquals(0L, notChargedResult.earnedPoints)
+
+        val charged = DriveEvaluationData(isBatteryChargedProperly = true)
+        val chargedResult = evaluator.evaluateBatteryCare(charged)
+        assertTrue(chargedResult.isSatisfied)
+        assertEquals(20L, chargedResult.basePoints)
+        assertEquals(20L, chargedResult.earnedPoints)
+    }
+
+    @Test
+    fun longTripRestQuestRequiresRestDuringLongDrive() {
+        val noRest = DriveEvaluationData(hasRestedDuringLongDrive = false)
+        val noRestResult = evaluator.evaluateLongTripRest(noRest)
+        assertFalse(noRestResult.isSatisfied)
+        assertEquals(0L, noRestResult.earnedPoints)
+
+        val rested = DriveEvaluationData(hasRestedDuringLongDrive = true)
+        val restedResult = evaluator.evaluateLongTripRest(rested)
+        assertTrue(restedResult.isSatisfied)
+        assertEquals(25L, restedResult.basePoints)
+        assertEquals(25L, restedResult.earnedPoints)
+    }
+
+    @Test
+    fun washerFluidQuestRequiresRefillConfirmation() {
+        val notRefilled = DriveEvaluationData(isWasherFluidRefilled = false)
+        val notRefilledResult = evaluator.evaluateWasherFluid(notRefilled)
+        assertFalse(notRefilledResult.isSatisfied)
+        assertEquals(0L, notRefilledResult.earnedPoints)
+
+        val refilled = DriveEvaluationData(isWasherFluidRefilled = true)
+        val refilledResult = evaluator.evaluateWasherFluid(refilled)
+        assertTrue(refilledResult.isSatisfied)
+        assertEquals(15L, refilledResult.basePoints)
+        assertEquals(15L, refilledResult.earnedPoints)
+    }
+
+    @Test
+    fun tireCheckQuestRequiresNormalTirePressureWeekly() {
+        val abnormal = DriveEvaluationData(isTirePressureNormalWeekly = false)
+        val abnormalResult = evaluator.evaluateTireCheck(abnormal)
+        assertFalse(abnormalResult.isSatisfied)
+        assertEquals(0L, abnormalResult.earnedPoints)
+
+        val normal = DriveEvaluationData(isTirePressureNormalWeekly = true)
+        val normalResult = evaluator.evaluateTireCheck(normal)
+        assertTrue(normalResult.isSatisfied)
+        assertEquals(15L, normalResult.basePoints)
+        assertEquals(15L, normalResult.earnedPoints)
+    }
+
+    @Test
+    fun evaluateAllProducesAllFourteenQuestResults() {
         val perfectDrive =
             DriveEvaluationData(
                 date = "2026-09-17",
@@ -227,15 +283,19 @@ class DrivingQuestEvaluatorTest {
                 isDestinationReached = true,
                 totalDistanceKm = 120.0f,
                 safeDriveDaysCount = 5,
+                isBatteryChargedProperly = true,
+                hasRestedDuringLongDrive = true,
+                isWasherFluidRefilled = true,
+                isTirePressureNormalWeekly = true,
                 weather = WeatherCondition.CLEAR,
             )
         val results = evaluator.evaluateAll(perfectDrive)
-        assertEquals(10, results.size)
+        assertEquals(14, results.size)
         assertTrue(results.all { it.isSatisfied })
     }
 
     @Test
-    fun defaultCatalogDefinesAllTenQuests() {
+    fun defaultCatalogDefinesAllSeventeenQuests() {
         val catalog = DefaultPointQuestCatalog("Asia/Seoul")
         val ids =
             listOf(
@@ -249,6 +309,13 @@ class DrivingQuestEvaluatorTest {
                 DrivingQuestIds.MAINTENANCE,
                 DrivingQuestIds.TURN_SIGNAL,
                 DrivingQuestIds.SAFE_5DAYS,
+                DrivingQuestIds.BATTERY_CARE,
+                DrivingQuestIds.LONG_TRIP_REST,
+                DrivingQuestIds.WASHER_FLUID,
+                DrivingQuestIds.TIRE_CHECK,
+                DrivingQuestIds.HIDDEN_COSTUME,
+                DrivingQuestIds.HIDDEN_BACKGROUND,
+                DrivingQuestIds.HIDDEN_NEW_FRIEND,
             )
         for (id in ids) {
             val def = catalog.find(id)

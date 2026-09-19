@@ -43,6 +43,15 @@ object DrivingQuestIds {
     const val MAINTENANCE = "quest_maintenance"
     const val TURN_SIGNAL = "quest_turn_signal"
     const val SAFE_5DAYS = "quest_5days_safe"
+
+    const val BATTERY_CARE = "quest_battery_care"
+    const val LONG_TRIP_REST = "quest_long_trip_rest"
+    const val WASHER_FLUID = "quest_washer_fluid"
+    const val TIRE_CHECK = "quest_tire_check"
+
+    const val HIDDEN_COSTUME = "quest_hidden_costume"
+    const val HIDDEN_BACKGROUND = "quest_hidden_background"
+    const val HIDDEN_NEW_FRIEND = "quest_hidden_new_friend"
 }
 
 class DefaultPointQuestCatalog(
@@ -109,6 +118,48 @@ class DefaultPointQuestCatalog(
                     id = DrivingQuestIds.SAFE_5DAYS,
                     rewardPoints = 50L,
                     schedule = PointQuestSchedule.Weekly(resetZoneId),
+                ),
+            DrivingQuestIds.BATTERY_CARE to
+                PointQuestDefinition(
+                    id = DrivingQuestIds.BATTERY_CARE,
+                    rewardPoints = 20L,
+                    schedule = PointQuestSchedule.Weekly(resetZoneId),
+                ),
+            DrivingQuestIds.LONG_TRIP_REST to
+                PointQuestDefinition(
+                    id = DrivingQuestIds.LONG_TRIP_REST,
+                    rewardPoints = 25L,
+                    schedule = PointQuestSchedule.PerDrive("default"),
+                ),
+            DrivingQuestIds.WASHER_FLUID to
+                PointQuestDefinition(
+                    id = DrivingQuestIds.WASHER_FLUID,
+                    rewardPoints = 15L,
+                    schedule = PointQuestSchedule.OneTime,
+                ),
+            DrivingQuestIds.TIRE_CHECK to
+                PointQuestDefinition(
+                    id = DrivingQuestIds.TIRE_CHECK,
+                    rewardPoints = 15L,
+                    schedule = PointQuestSchedule.Weekly(resetZoneId),
+                ),
+            DrivingQuestIds.HIDDEN_COSTUME to
+                PointQuestDefinition(
+                    id = DrivingQuestIds.HIDDEN_COSTUME,
+                    rewardPoints = 30L,
+                    schedule = PointQuestSchedule.OneTime,
+                ),
+            DrivingQuestIds.HIDDEN_BACKGROUND to
+                PointQuestDefinition(
+                    id = DrivingQuestIds.HIDDEN_BACKGROUND,
+                    rewardPoints = 30L,
+                    schedule = PointQuestSchedule.OneTime,
+                ),
+            DrivingQuestIds.HIDDEN_NEW_FRIEND to
+                PointQuestDefinition(
+                    id = DrivingQuestIds.HIDDEN_NEW_FRIEND,
+                    rewardPoints = 30L,
+                    schedule = PointQuestSchedule.OneTime,
                 ),
         )
 

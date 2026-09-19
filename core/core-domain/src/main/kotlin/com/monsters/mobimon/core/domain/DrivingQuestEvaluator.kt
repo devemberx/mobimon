@@ -205,6 +205,66 @@ class DrivingQuestEvaluator(
         )
     }
 
+    fun evaluateBatteryCare(data: DriveEvaluationData): DrivingQuestResult {
+        val basePoints = 20L
+        val satisfied = data.isBatteryChargedProperly
+        val earned = if (satisfied) calculatePoints(basePoints, data.weather) else 0L
+        val reason = if (satisfied) "배터리 헬스케어 충전 완료" else "배터리 적정 충전 조건 미충족"
+        return DrivingQuestResult(
+            questId = DrivingQuestIds.BATTERY_CARE,
+            isSatisfied = satisfied,
+            basePoints = basePoints,
+            earnedPoints = earned,
+            weatherCondition = data.weather,
+            reason = reason,
+        )
+    }
+
+    fun evaluateLongTripRest(data: DriveEvaluationData): DrivingQuestResult {
+        val basePoints = 25L
+        val satisfied = data.hasRestedDuringLongDrive
+        val earned = if (satisfied) calculatePoints(basePoints, data.weather) else 0L
+        val reason = if (satisfied) "장거리 주행 중 권장 휴식 완료" else "장거리 주행 중 휴식 조건 미충족"
+        return DrivingQuestResult(
+            questId = DrivingQuestIds.LONG_TRIP_REST,
+            isSatisfied = satisfied,
+            basePoints = basePoints,
+            earnedPoints = earned,
+            weatherCondition = data.weather,
+            reason = reason,
+        )
+    }
+
+    fun evaluateWasherFluid(data: DriveEvaluationData): DrivingQuestResult {
+        val basePoints = 15L
+        val satisfied = data.isWasherFluidRefilled
+        val earned = if (satisfied) calculatePoints(basePoints, data.weather) else 0L
+        val reason = if (satisfied) "워셔액 보충 완료" else "워셔액 보충 미확인"
+        return DrivingQuestResult(
+            questId = DrivingQuestIds.WASHER_FLUID,
+            isSatisfied = satisfied,
+            basePoints = basePoints,
+            earnedPoints = earned,
+            weatherCondition = data.weather,
+            reason = reason,
+        )
+    }
+
+    fun evaluateTireCheck(data: DriveEvaluationData): DrivingQuestResult {
+        val basePoints = 15L
+        val satisfied = data.isTirePressureNormalWeekly
+        val earned = if (satisfied) calculatePoints(basePoints, data.weather) else 0L
+        val reason = if (satisfied) "1주일 타이어 공기압 정상 유지 달성" else "타이어 공기압 경고 발생 또는 미달성"
+        return DrivingQuestResult(
+            questId = DrivingQuestIds.TIRE_CHECK,
+            isSatisfied = satisfied,
+            basePoints = basePoints,
+            earnedPoints = earned,
+            weatherCondition = data.weather,
+            reason = reason,
+        )
+    }
+
     fun evaluateAll(data: DriveEvaluationData): List<DrivingQuestResult> =
         listOf(
             evaluateSeatbelt(data),
@@ -217,6 +277,10 @@ class DrivingQuestEvaluator(
             evaluateMaintenanceVisit(data),
             evaluateTurnSignalManner(data),
             evaluate5DaysSafeDrive(data),
+            evaluateBatteryCare(data),
+            evaluateLongTripRest(data),
+            evaluateWasherFluid(data),
+            evaluateTireCheck(data),
         )
 
     companion object {
