@@ -33,10 +33,16 @@ paid item catalog have been approved yet.
 - `CompanionRuntime` follows process foreground lifecycle and owns one vehicle
   provider and the AAOS UX restriction listener. Q01 completion is a user
   command; no background care tracker or system overlay service exists.
-- Debug uses the simulated provider, `com.monsters.mobimon.demo`,
-  `mobimon-demo.db` and `demo-profile`. Release uses the REAL unavailable
-  provider, `mobimon.db` and `local-profile`. The demo freshness window is
-  15 seconds; a real adapter needs a verified provider-specific policy.
+- Debug uses `com.monsters.mobimon.demo`, `mobimon-demo.db` and
+  `demo-profile`. With Debug mode enabled, vehicle snapshots are interpreted
+  from the Debug VSS controls as simulated data. With Debug mode disabled, the
+  same repository interprets the injected `VssRawVehicleSource` as REAL data;
+  the open-source default source reports Park gear, no movement and zero speed
+  so Debug mode can be re-enabled without a real VSS connection. A
+  closed-network VSS adapter replaces that source with raw signals. Release uses
+  the REAL unavailable provider, `mobimon.db` and `local-profile`. The demo
+  freshness window is 15 seconds; a real adapter needs a verified
+  provider-specific policy.
   Display freshness samples the clock on every snapshot or timer emission, so a
   new reading is never compared against a cached, older timer timestamp.
   Debug vehicle changes and timer ticks publish through one serialized stream;

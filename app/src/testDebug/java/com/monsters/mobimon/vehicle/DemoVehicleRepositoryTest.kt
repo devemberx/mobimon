@@ -9,6 +9,9 @@ import com.monsters.mobimon.core.domain.SignalQuality
 import com.monsters.mobimon.core.domain.SignalSource
 import com.monsters.mobimon.core.domain.VehicleSnapshot
 import com.monsters.mobimon.core.domain.WriteResult
+import com.monsters.mobimon.core.vss.DefaultParkedVssRawVehicleSource
+import com.monsters.mobimon.core.vss.VssRawVehicleSource
+import com.monsters.mobimon.core.vss.VssRawVehicleState
 import com.monsters.mobimon.debug.DebugRawVssState
 import com.monsters.mobimon.debug.DebugVssProvider
 import com.monsters.mobimon.debug.DebugVssState
@@ -54,20 +57,58 @@ class FakeDebugStore : DebugVssProvider {
     override val state: StateFlow<DebugVssState> = mutableState
 }
 
+class FakeVssRawSource : VssRawVehicleSource {
+    val mutableState = MutableStateFlow<VssRawVehicleState?>(null)
+    override val state: StateFlow<VssRawVehicleState?> = mutableState
+    var starts = 0
+    var stops = 0
+
+    override fun start() {
+        starts++
+    }
+
+    override fun stop() {
+        stops++
+    }
+}
+
 @OptIn(ExperimentalCoroutinesApi::class)
 class DemoVehicleRepositoryTest {
+    @Test
+    fun initialSnapshotUsesDefaultParkedVssBeforeRuntimeStarts() =
+        runTest {
+            val repository =
+                DemoVehicleRepository(
+                    Clock { testScheduler.currentTime },
+                    IdGenerator { "epoch" },
+                    FakeSettingsRepository(),
+                    FakeDebugStore(),
+                    DefaultParkedVssRawVehicleSource(),
+                    backgroundScope,
+                )
+
+            val snapshot = repository.snapshots.value
+            assertEquals(SignalSource.REAL, snapshot.source)
+            assertEquals(DrivingState.PARKED, snapshot.drivingState)
+            assertEquals(SignalQuality.VALID, snapshot.quality)
+            assertEquals("P", snapshot.gear)
+            assertEquals(0, snapshot.speed)
+        }
+
     @Test
     fun debugParkingRequiresParkGearAndNonContradictoryMotion() =
         runTest {
             val settings = FakeSettingsRepository()
             settings.mutableSettings.value = CompanionSettings(debugModeEnabled = true)
             val debug = FakeDebugStore()
+            val vss = FakeVssRawSource()
             val repository =
                 DemoVehicleRepository(
                     Clock { testScheduler.currentTime },
                     IdGenerator { "epoch" },
                     settings,
                     debug,
+                    vss,
                     backgroundScope,
                 )
             repository.start()
@@ -120,12 +161,14 @@ class DemoVehicleRepositoryTest {
             val settings = FakeSettingsRepository()
             settings.mutableSettings.value = CompanionSettings(debugModeEnabled = true)
             val debug = FakeDebugStore()
+            val vss = FakeVssRawSource()
             val repository =
                 DemoVehicleRepository(
                     Clock { testScheduler.currentTime },
                     IdGenerator { "epoch" },
                     settings,
                     debug,
+                    vss,
                     backgroundScope,
                 )
             val published = mutableListOf<VehicleSnapshot>()
@@ -175,14 +218,15 @@ class DemoVehicleRepositoryTest {
                     IdGenerator { "id-${++id}" },
                     FakeSettingsRepository(),
                     FakeDebugStore(),
+                    FakeVssRawSource(),
                     backgroundScope,
                 )
             repository.start()
             runCurrent()
             val first = repository.snapshots.value
-            assertEquals(SignalSource.SIMULATED, first.source)
-            assertEquals(DrivingState.PARKED, first.drivingState)
-            assertEquals(SignalQuality.VALID, first.quality)
+            assertEquals(SignalSource.REAL, first.source)
+            assertEquals(DrivingState.UNKNOWN, first.drivingState)
+            assertEquals(SignalQuality.UNAVAILABLE, first.quality)
             repository.start()
             assertEquals(first.epoch, repository.snapshots.value.epoch)
             advanceTimeBy(2_000)
@@ -213,7 +257,7 @@ class DemoVehicleRepositoryTest {
             DemoVehicleRepository(
                 clock =
                     Clock {
-                        if (clockCalls.incrementAndGet() == 2) {
+                        if (clockCalls.incrementAndGet() == 3) {
                             publishEntered.countDown()
                             check(releasePublish.await(5, TimeUnit.SECONDS))
                         }
@@ -222,6 +266,7 @@ class DemoVehicleRepositoryTest {
                 ids = IdGenerator { "epoch" },
                 settingsRepository = FakeSettingsRepository(),
                 debugStore = FakeDebugStore(),
+                vssRawSource = FakeVssRawSource(),
                 scope = scope,
             )
 
@@ -250,12 +295,14 @@ class DemoVehicleRepositoryTest {
             val settings = FakeSettingsRepository()
             settings.mutableSettings.value = CompanionSettings(debugModeEnabled = true)
             val debug = FakeDebugStore()
+            val vss = FakeVssRawSource()
             val repository =
                 DemoVehicleRepository(
                     Clock { testScheduler.currentTime },
                     IdGenerator { "epoch" },
                     settings,
                     debug,
+                    vss,
                     backgroundScope,
                 )
             repository.start()
@@ -304,6 +351,98 @@ class DemoVehicleRepositoryTest {
             assertEquals(true, snapshot.isEngineWarning)
             assertEquals(true, snapshot.isEngineOn)
             assertEquals("Day", snapshot.timeOfDay)
+
+            repository.stop()
+        }
+
+    @Test
+    fun debugDisabledUsesVssRawSourceForVehicleSnapshotInterpretation() =
+        runTest {
+            val settings = FakeSettingsRepository()
+            settings.mutableSettings.value = CompanionSettings(debugModeEnabled = false)
+            val debug = FakeDebugStore()
+            val vss = FakeVssRawSource()
+            vss.mutableState.value =
+                VssRawVehicleState(
+                    tractionBatterySocDisplayed = 33f,
+                    vehicleSpeedKmh = 48f,
+                    selectedGear = 127,
+                    vehicleIsMoving = true,
+                    exteriorAirTemperature = 28f,
+                    rainIntensity = 2,
+                    driverDistractionLevel = 90f,
+                    driverFatigueLevel = 80f,
+                    dmsIsWarning = true,
+                    driverEmergencyBrakingDetected = true,
+                    obstacleFrontCenterDistance = 12f,
+                    tractionBatteryChargingIsCharging = true,
+                    washerFluidLevel = 44,
+                    row2RightTirePressureLow = true,
+                    diagnosticsDtcCount = 1,
+                    combustionEngineRunning = true,
+                    currentLocationTimestamp = "2026-10-08T21:00:00Z",
+                )
+            val repository =
+                DemoVehicleRepository(
+                    Clock { testScheduler.currentTime },
+                    IdGenerator { "epoch" },
+                    settings,
+                    debug,
+                    vss,
+                    backgroundScope,
+                )
+
+            repository.start()
+            runCurrent()
+
+            val snapshot = repository.snapshots.value
+            assertEquals(1, vss.starts)
+            assertEquals(SignalSource.REAL, snapshot.source)
+            assertEquals(SignalQuality.VALID, snapshot.quality)
+            assertEquals(DrivingState.MOVING, snapshot.drivingState)
+            assertEquals(33, snapshot.batteryPercent)
+            assertEquals(48, snapshot.speed)
+            assertEquals("D", snapshot.gear)
+            assertEquals(28, snapshot.outsideTemperature)
+            assertEquals(true, snapshot.isRaining)
+            assertEquals(true, snapshot.isDistracted)
+            assertEquals(true, snapshot.isDrowsy)
+            assertEquals(10, snapshot.attentionLevel)
+            assertEquals(true, snapshot.isEmergencyBraking)
+            assertEquals(12, snapshot.distanceToFrontVehicle)
+            assertEquals(true, snapshot.isCharging)
+            assertEquals(44, snapshot.washerFluidLevel)
+            assertEquals("NG", snapshot.tirePressureStatus)
+            assertEquals(true, snapshot.isEngineWarning)
+            assertEquals(true, snapshot.isEngineOn)
+            assertEquals("Night", snapshot.timeOfDay)
+
+            repository.stop()
+            assertEquals(1, vss.stops)
+        }
+
+    @Test
+    fun debugDisabledWithDefaultVssSourcePublishesParkedRealSnapshot() =
+        runTest {
+            val repository =
+                DemoVehicleRepository(
+                    Clock { testScheduler.currentTime },
+                    IdGenerator { "epoch" },
+                    FakeSettingsRepository(),
+                    FakeDebugStore(),
+                    DefaultParkedVssRawVehicleSource(),
+                    backgroundScope,
+                )
+
+            repository.start()
+            runCurrent()
+
+            val snapshot = repository.snapshots.value
+            assertEquals(SignalSource.REAL, snapshot.source)
+            assertEquals(DrivingState.PARKED, snapshot.drivingState)
+            assertEquals(SignalQuality.VALID, snapshot.quality)
+            assertEquals("P", snapshot.gear)
+            assertEquals(0, snapshot.speed)
 
             repository.stop()
         }

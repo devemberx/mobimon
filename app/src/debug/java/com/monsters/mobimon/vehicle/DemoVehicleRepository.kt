@@ -8,8 +8,13 @@ import com.monsters.mobimon.core.domain.SignalQuality
 import com.monsters.mobimon.core.domain.SignalSource
 import com.monsters.mobimon.core.domain.VehicleRepository
 import com.monsters.mobimon.core.domain.VehicleSnapshot
+import com.monsters.mobimon.core.vss.VssInterpretationOverrides
+import com.monsters.mobimon.core.vss.VssRawVehicleSource
+import com.monsters.mobimon.core.vss.VssRawVehicleState
+import com.monsters.mobimon.core.vss.VssVehicleInterpreter
+import com.monsters.mobimon.debug.DebugInterpretationOverrides
+import com.monsters.mobimon.debug.DebugRawVssState
 import com.monsters.mobimon.debug.DebugVssProvider
-import com.monsters.mobimon.debug.DebugVssState
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -28,18 +33,18 @@ class DemoVehicleRepository(
     private val ids: IdGenerator,
     private val settingsRepository: SettingsRepository,
     private val debugStore: DebugVssProvider,
+    private val vssRawSource: VssRawVehicleSource,
     private val scope: CoroutineScope,
 ) : VehicleRepository {
     private val mutableSnapshots =
         MutableStateFlow(
-            VehicleSnapshot(
-                "unavailable",
-                "none",
-                0,
-                0,
-                SignalSource.SIMULATED,
-                DrivingState.UNKNOWN,
-                SignalQuality.UNAVAILABLE,
+            VssVehicleInterpreter.snapshot(
+                raw = vssRawSource.state.value,
+                id = INITIAL_SNAPSHOT_ID,
+                epoch = INITIAL_SNAPSHOT_EPOCH,
+                sequence = 0,
+                observedAtMillis = clock.nowMillis(),
+                source = SignalSource.REAL,
             ),
         )
     override val snapshots = mutableSnapshots.asStateFlow()
@@ -51,6 +56,7 @@ class DemoVehicleRepository(
         if (observation?.isActive == true) return
         val currentGeneration = ++generation
         val epoch = ids.nextId()
+        vssRawSource.start()
         observation =
             scope.launch {
                 var sequence = 0L
@@ -60,49 +66,25 @@ class DemoVehicleRepository(
                     val isDebugOn = settingsRepository.settings.first().debugModeEnabled
                     val debugState = debugStore.state.value
 
-                    val snapshot =
+                    val snapshot: VehicleSnapshot =
                         if (isDebugOn) {
-                            VehicleSnapshot(
+                            VssVehicleInterpreter.snapshot(
+                                raw = debugState.raw.toVssRawVehicleState(),
                                 id = "$epoch-$nextSequence",
                                 epoch = epoch,
                                 sequence = nextSequence,
-                                receivedAtMillis = observedAt,
+                                observedAtMillis = observedAt,
                                 source = SignalSource.SIMULATED,
-                                drivingState = debugState.drivingState(),
-                                quality = SignalQuality.VALID,
-                                batteryPercent = debugState.batteryPercent,
-                                batteryReceivedAtMillis = observedAt,
-                                batteryQuality = SignalQuality.VALID,
-                                isDistracted = debugState.isDistracted,
-                                isDrowsy = debugState.isDrowsy,
-                                attentionLevel = debugState.attentionLevel,
-                                isEmergencyBraking = debugState.isEmergencyBraking,
-                                distanceToFrontVehicle = debugState.distanceToFrontVehicle,
-                                isCharging = debugState.isCharging,
-                                outsideTemperature = debugState.outsideTemperature,
-                                isRaining = debugState.isRaining,
-                                washerFluidLevel = debugState.washerFluidLevel,
-                                isEngineWarning = debugState.isEngineWarning,
-                                tirePressureStatus = debugState.tirePressureStatus,
-                                speed = debugState.speed,
-                                gear = debugState.gear,
-                                isNavigating = debugState.isNavigating,
-                                distanceToDestination = debugState.distanceToDestination,
-                                isEngineOn = debugState.isEngineOn,
-                                timeOfDay = debugState.timeOfDay,
+                                overrides = debugState.overrides.toVssInterpretationOverrides(),
                             )
                         } else {
-                            VehicleSnapshot(
+                            VssVehicleInterpreter.snapshot(
+                                raw = vssRawSource.state.value,
                                 id = "$epoch-$nextSequence",
                                 epoch = epoch,
                                 sequence = nextSequence,
-                                receivedAtMillis = observedAt,
-                                source = SignalSource.SIMULATED,
-                                drivingState = DrivingState.PARKED,
-                                quality = SignalQuality.VALID,
-                                batteryPercent = 72,
-                                batteryReceivedAtMillis = observedAt,
-                                batteryQuality = SignalQuality.VALID,
+                                observedAtMillis = observedAt,
+                                source = SignalSource.REAL,
                             )
                         }
 
@@ -124,6 +106,7 @@ class DemoVehicleRepository(
                     emit(Unit)
                 }
             },
+            vssRawSource.state.drop(1).map { Unit },
             debugStore.state.drop(1).map { Unit },
             settingsRepository.settings
                 .map { it.debugModeEnabled }
@@ -137,6 +120,7 @@ class DemoVehicleRepository(
         generation++
         observation?.cancel()
         observation = null
+        vssRawSource.stop()
         mutableSnapshots.value =
             mutableSnapshots.value.copy(
                 quality = SignalQuality.UNAVAILABLE,
@@ -146,10 +130,59 @@ class DemoVehicleRepository(
     }
 }
 
-private fun DebugVssState.drivingState(): DrivingState =
-    when {
-        isMoving || speed > 0 -> DrivingState.MOVING
-        speed < 0 -> DrivingState.UNKNOWN
-        gear == "P" -> DrivingState.PARKED
-        else -> DrivingState.UNKNOWN
-    }
+private const val INITIAL_SNAPSHOT_ID = "initial"
+private const val INITIAL_SNAPSHOT_EPOCH = "initial"
+
+private fun DebugRawVssState.toVssRawVehicleState(): VssRawVehicleState =
+    VssRawVehicleState(
+        driverFatigueLevel = driverFatigueLevel,
+        driverDistractionLevel = driverDistractionLevel,
+        dmsIsWarning = dmsIsWarning,
+        driverEmergencyBrakingDetected = driverEmergencyBrakingDetected,
+        obstacleFrontCenterDistance = obstacleFrontCenterDistance,
+        tractionBatterySocDisplayed = tractionBatterySocDisplayed,
+        chargingCableConnected = chargingCableConnected,
+        tractionBatteryChargingIsCharging = tractionBatteryChargingIsCharging,
+        chargingAveragePowerKw = chargingAveragePowerKw,
+        exteriorAirTemperature = exteriorAirTemperature,
+        rainIntensity = rainIntensity,
+        washerFluidLevel = washerFluidLevel,
+        row1LeftTirePressureLow = row1LeftTirePressureLow,
+        row1RightTirePressureLow = row1RightTirePressureLow,
+        row2LeftTirePressureLow = row2LeftTirePressureLow,
+        row2RightTirePressureLow = row2RightTirePressureLow,
+        diagnosticsDtcCount = diagnosticsDtcCount,
+        obdMilOn = obdMilOn,
+        vehicleIsMoving = vehicleIsMoving,
+        vehicleSpeedKmh = vehicleSpeedKmh,
+        selectedGear = selectedGear,
+        destinationLatitude = destinationLatitude,
+        destinationLongitude = destinationLongitude,
+        currentLocationTimestamp = currentLocationTimestamp,
+        currentLatitude = currentLatitude,
+        currentLongitude = currentLongitude,
+        combustionEngineRunning = combustionEngineRunning,
+    )
+
+private fun DebugInterpretationOverrides.toVssInterpretationOverrides(): VssInterpretationOverrides =
+    VssInterpretationOverrides(
+        isDistracted = isDistracted,
+        isDrowsy = isDrowsy,
+        attentionLevel = attentionLevel,
+        isEmergencyBraking = isEmergencyBraking,
+        distanceToFrontVehicle = distanceToFrontVehicle,
+        isCharging = isCharging,
+        batteryPercent = batteryPercent,
+        outsideTemperature = outsideTemperature,
+        isRaining = isRaining,
+        washerFluidLevel = washerFluidLevel,
+        isEngineWarning = isEngineWarning,
+        tirePressureStatus = tirePressureStatus,
+        isMoving = isMoving,
+        speed = speed,
+        gear = gear,
+        isNavigating = isNavigating,
+        distanceToDestination = distanceToDestination,
+        isEngineOn = isEngineOn,
+        timeOfDay = timeOfDay,
+    )
