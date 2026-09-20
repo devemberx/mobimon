@@ -10,16 +10,20 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.click
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.unit.Density
+import com.monsters.mobimon.core.navigation.AppRoute
 import com.monsters.mobimon.core.navigation.CompanionRoute
 import com.monsters.mobimon.core.ui.LocalMobiMonMotionEnabled
 import com.monsters.mobimon.core.ui.MobiMonTheme
@@ -68,7 +72,32 @@ class CompanionMenuReviewTest {
         compose.onNodeWithTag("companion-menu").assertDoesNotExist()
     }
 
-    private fun show(fontScale: Float = 1f) {
+    @Test
+    @Config(qualifiers = "ko-rKR-w1400dp-h864dp-mdpi")
+    fun narrowLandscapeMenuKeepsDestinationTargetsSeparate() {
+        var selected: AppRoute? = null
+        show(onNavigate = { selected = it })
+        val labels = listOf("홈", "대화하기", "퀘스트", "차량 상태", "꾸미기", "설정")
+        capture("menu-narrow-landscape")
+        labels.zipWithNext().forEach { (upperLabel, lowerLabel) ->
+            val lower =
+                compose
+                    .onNodeWithText(lowerLabel)
+                    .performScrollTo()
+                    .fetchSemanticsNode()
+                    .boundsInRoot
+            val upper = compose.onNodeWithText(upperLabel).fetchSemanticsNode().boundsInRoot
+            assertTrue("$upperLabel $upper overlaps $lowerLabel $lower", upper.bottom <= lower.top)
+        }
+
+        compose.onNodeWithText("홈").performScrollTo().performTouchInput { click(Offset(width / 2f, height - 5f)) }
+        assertEquals(CompanionRoute.HOME, selected)
+    }
+
+    private fun show(
+        fontScale: Float = 1f,
+        onNavigate: (AppRoute) -> Unit = {},
+    ) {
         val visible = mutableStateOf(true)
         compose.setContent {
             CompositionLocalProvider(
@@ -82,7 +111,7 @@ class CompanionMenuReviewTest {
                             visible.value,
                             CompanionRoute.HOME,
                             { visible.value = false },
-                            {},
+                            onNavigate,
                             activeFriendId = "friend:mobi",
                         )
                     }

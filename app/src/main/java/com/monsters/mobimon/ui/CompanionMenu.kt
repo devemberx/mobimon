@@ -90,6 +90,9 @@ private data class DrawerDestination(
     val route: AppRoute,
 )
 
+// Below this scale, the 76dp minimum targets outgrow the reference row spacing.
+private const val MIN_REFERENCE_MENU_SCALE = 0.75f
+
 private val destinations =
     listOf(
         DrawerDestination(R.string.drawer_menu_home, R.drawable.drawer_home, CompanionRoute.HOME),
@@ -187,8 +190,13 @@ private fun MenuPanel(
     backgroundId: String?,
     first: FocusRequester,
 ) {
-    val reference = windowWidth >= 1400 && windowHeight >= 800 && LocalDensity.current.fontScale <= 1f
-    val scale = if (reference) minOf(windowWidth / 2560f, windowHeight / 1268f) else 1f
+    val referenceScale = minOf(windowWidth / 2560f, windowHeight / 1268f)
+    val reference =
+        windowWidth >= 1400 &&
+            windowHeight >= 800 &&
+            LocalDensity.current.fontScale <= 1f &&
+            referenceScale >= MIN_REFERENCE_MENU_SCALE
+    val scale = if (reference) referenceScale else 1f
     val width = if (reference) 690 * scale else minOf(520f, windowWidth)
     val shape =
         remember(scale) {
