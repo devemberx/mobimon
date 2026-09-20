@@ -162,7 +162,7 @@ class PetHomeScreenTest {
                 )
         }
         assertEquals(friend, compose.onNodeWithContentDescription("Mobi 강아지").fetchSemanticsNode().boundsInRoot)
-        compose.onNodeWithText("주차 여부 확인 불가").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText("주차 확인 불가").performScrollTo().assertIsDisplayed()
         compose.onNodeWithText("배터리 72%").assertDoesNotExist()
         compose.onNodeWithText("대화하기 · 연결 불가").performScrollTo().assertIsNotEnabled()
         compose.runOnIdle { snapshot.value = parkedSnapshot() }
@@ -174,7 +174,7 @@ class PetHomeScreenTest {
     fun realUnavailableHomeDoesNotClaimParkedState() {
         render()
 
-        compose.onNodeWithText("주차 여부 확인 불가").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText("주차 확인 불가").performScrollTo().assertIsDisplayed()
         compose.onNodeWithContentDescription("주차 확인됨").assertDoesNotExist()
     }
 
@@ -232,7 +232,7 @@ class PetHomeScreenTest {
     fun staleParkingDoesNotClaimParked() {
         render(snapshot = parkedSnapshot().copy(quality = SignalQuality.STALE, batteryQuality = SignalQuality.VALID))
 
-        compose.onNodeWithText("주차 여부 확인 불가").assertExists()
+        compose.onNodeWithText("주차 확인 불가").assertExists()
         compose.onNodeWithText("배터리 72%").assertDoesNotExist()
         compose.onNodeWithContentDescription("주차 확인됨").assertDoesNotExist()
     }

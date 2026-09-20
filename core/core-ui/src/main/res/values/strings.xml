@@ -8,4 +8,6 @@
   <string name="mobimon_points_failed">포인트를 확인할 수 없어요</string>
     <string name="mobimon_back">뒤로</string>
     <string name="mobimon_home">홈으로</string>
+  <string name="mobimon_parking_confirmed">주차 확인됨</string>
+  <string name="mobimon_parking_unconfirmed">주차 확인 불가</string>
 </resources>

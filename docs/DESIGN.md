@@ -35,7 +35,12 @@ information; they never diagnose a vehicle or replace its warnings.
   Combine color with a label or shape for every status.
 - Reuse circular navigation controls with distinct Home menu and child Back glyphs.
   Parking badges need the same icon, wording and dimensions across screens;
-  point balances remain separate information.
+  point balances remain separate information. Home, Copilot, Quest, Vehicle and
+  Settings reuse
+  [MobiMonParkingBadge](../core/core-ui/src/main/java/com/monsters/mobimon/core/ui/MobiMonParkingBadge.kt)
+  with Copilot's icon, baseline and capsule geometry;
+  enlarged text uses a content-sized layout. Confirmed/unconfirmed wording is
+  shared; Home retains charging/moving labels and simulation stays separate.
 - Order screen-reader/rotary focus by title, information, primary action and
   secondary actions. Trap dialog focus and return it to the trigger on close.
 
@@ -71,7 +76,8 @@ Do not use whole-screen SVGs as runtime UI or duplicate shared artwork.
 | Shared character poses and equipped appearances | `core/core-ui/src/main/res/drawable-nodpi/mobimon_*.png` |
 | Store accessory thumbnails | `mobimon_mobi_items.png` and `mobimon_luna_items.png` in the same shared drawable folder; `CharacterArtwork` selects crops |
 | Home and store-preview backgrounds | `core/core-ui/src/main/res/drawable-nodpi/pet_home_background_{morning,day,afternoon,sunset,night}.webp` |
-| Home menu, conversation, parking and speech-bubble vectors | `feature/feature-pet/src/main/res/drawable/pet_*.xml` |
+| Home menu, conversation and speech-bubble vectors | `feature/feature-pet/src/main/res/drawable/pet_*.xml` |
+| Shared parking icon | `core/core-ui/src/main/res/drawable/mobimon_parking.xml` |
 | Store navigation/category icons | `feature/feature-customization/src/main/res/drawable/store_*.xml` |
 | Menu artwork | `app/src/main/res/drawable-nodpi/drawer_*.png` |
 | Quest artwork and icons | `feature/feature-quest/src/main/res/drawable-nodpi/` and `res/drawable/` |
