@@ -19,6 +19,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -31,20 +32,7 @@ import java.util.Locale
 import kotlin.time.Duration.Companion.milliseconds
 
 private val MOBI_IDLE_BREATH_FRAME_DURATIONS_MS =
-    intArrayOf(
-        220,
-        160,
-        150,
-        140,
-        140,
-        180,
-        180,
-        160,
-        170,
-        180,
-        180,
-        340,
-    )
+    IntArray(24) { if (it == 23) 130 else 90 }
 
 internal object MobiAnimationCache {
     @Volatile
@@ -58,11 +46,46 @@ internal object MobiAnimationCache {
                 val assetManager = context.applicationContext?.assets ?: context.assets
                 val decodeOptions = BitmapFactory.Options().apply { inSampleSize = 2 }
                 val frames =
-                    (1..12).map { i ->
+                    (1..24).map { i ->
                         val path =
                             String.format(
                                 Locale.US,
                                 "characters/mobi/idle_breath_v1/mobi_idle_breath_%02d.png",
+                                i,
+                            )
+                        assetManager.open(path).use { stream ->
+                            BitmapFactory.decodeStream(stream, null, decodeOptions)!!.asImageBitmap()
+                        }
+                    }
+                cachedFrames = frames
+                frames
+            } catch (_: Exception) {
+                emptyList()
+            }
+        }
+    }
+}
+
+private val LUNA_IDLE_BREATH_FRAME_DURATIONS_MS =
+    IntArray(24) { if (it == 23) 130 else 90 }
+
+internal object LunaAnimationCache {
+    @Volatile
+    private var cachedFrames: List<ImageBitmap>? = null
+
+    fun getOrLoadFrames(context: Context): List<ImageBitmap> {
+        cachedFrames?.let { return it }
+        return synchronized(this) {
+            cachedFrames?.let { return it }
+            try {
+                val assetManager = context.applicationContext?.assets ?: context.assets
+                val decodeOptions = BitmapFactory.Options().apply { inSampleSize = 2 }
+                val frames =
+                    (1..24).map { i ->
+                        val path =
+                            String.format(
+                                Locale.US,
+                                "characters/luna/idle_breath_v1/luna_idle_%02d.png",
                                 i,
                             )
                         assetManager.open(path).use { stream ->
@@ -103,6 +126,11 @@ fun PetAvatar(
             val equippedLook = CharacterArtwork.equippedLooks[accessoryId ?: outfitId]
             if (isAnimated && (friendId == "friend:mobi") && (equippedLook == null)) {
                 MobiIdleBreathAnimation(
+                    modifier = Modifier.fillMaxSize(),
+                    fallbackAsset = CharacterArtwork.preview(friendId, accessoryId ?: outfitId),
+                )
+            } else if (isAnimated && (friendId == "friend:luna") && (equippedLook == null)) {
+                LunaIdleBreathAnimation(
                     modifier = Modifier.fillMaxSize(),
                     fallbackAsset = CharacterArtwork.preview(friendId, accessoryId ?: outfitId),
                 )
@@ -153,6 +181,54 @@ fun MobiIdleBreathAnimation(
             }
         }
         Box(modifier = modifier, contentAlignment = Alignment.Center) {
+            Image(
+                bitmap = frames[currentFrameIndex],
+                contentDescription = contentDescription,
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.Fit,
+            )
+        }
+    }
+}
+
+@Composable
+fun LunaIdleBreathAnimation(
+    modifier: Modifier = Modifier,
+    contentDescription: String? = null,
+    fallbackAsset: CharacterAsset = CharacterArtwork.characters.getValue("friend:luna"),
+) {
+    val context = LocalContext.current
+    val frames = remember(context) { LunaAnimationCache.getOrLoadFrames(context) }
+
+    if (frames.isEmpty()) {
+        CharacterAssetImage(
+            asset = fallbackAsset,
+            modifier = modifier,
+            contentDescription = contentDescription,
+        )
+    } else {
+        var currentFrameIndex by remember { mutableIntStateOf(0) }
+        LaunchedEffect(frames) {
+            while (isActive) {
+                val durationMs =
+                    LUNA_IDLE_BREATH_FRAME_DURATIONS_MS[
+                        currentFrameIndex %
+                            LUNA_IDLE_BREATH_FRAME_DURATIONS_MS.size,
+                    ]
+                delay(durationMs.milliseconds)
+                currentFrameIndex = (currentFrameIndex + 1) % frames.size
+            }
+        }
+        Box(
+            modifier =
+                modifier.graphicsLayer {
+                    scaleX = fallbackAsset.visualScale
+                    scaleY = fallbackAsset.visualScale
+                    translationX = size.width * fallbackAsset.translationXFraction
+                    translationY = size.height * fallbackAsset.translationYFraction
+                },
+            contentAlignment = Alignment.Center,
+        ) {
             Image(
                 bitmap = frames[currentFrameIndex],
                 contentDescription = contentDescription,

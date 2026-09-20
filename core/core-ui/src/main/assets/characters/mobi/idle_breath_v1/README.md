@@ -1,10 +1,10 @@
-Mobi idle breathing: 12 RGBA PNG frames, 1254 x 1254; 8 distinct AI keyframes.
+Mobi idle breathing: 24 RGBA PNG frames, 1254 x 1254; 24 keyframes.
 
-Loop duration: 2200 ms. Read per-frame timing from manifest.json.
+Loop duration: 2200 ms (~11 FPS). Read per-frame timing from manifest.json.
 
-Frame 07 holds 06. Frames 10/11 reuse 03/02 for the return. Frame 12 equals 01 exactly.
+Sequence: Inhale (01-12), Apex hold (12-13), Exhale (14-22), Rest / return seam (23-24).
 
-Generated with built-in image_gen; final prompts in prompts.json. No pixel warping, alpha cleanup or color edits after generation. Small AI edge and registration differences remain. Review before production integration.
+Generated with built-in image_gen; final prompts in prompts.json. Individual keyframes with consistent framing and registration. Clean transparent cutout.
 
-Asset path: C:/mobimon/core/core-ui/src/main/assets/characters/mobi/idle_breath_v1/
-UI/composables were not changed for this animation task. No automatic integration.
+Asset path: core/core-ui/src/main/assets/characters/mobi/idle_breath_v1/
+Files: mobi_idle_breath_01.png to mobi_idle_breath_24.png

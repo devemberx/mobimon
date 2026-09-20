@@ -95,12 +95,21 @@ class PetAvatarTest {
     }
 
     @Test
-    fun mobiAnimationCacheLoadsTwelveFramesFromAssets() {
+    fun mobiAnimationCacheLoadsTwentyFourFramesFromAssets() {
         val context =
             androidx.test.core.app.ApplicationProvider
                 .getApplicationContext<android.content.Context>()
         val frames = MobiAnimationCache.getOrLoadFrames(context)
-        org.junit.Assert.assertEquals(12, frames.size)
+        org.junit.Assert.assertEquals(24, frames.size)
+    }
+
+    @Test
+    fun lunaAnimationCacheLoadsTwentyFourFramesFromAssets() {
+        val context =
+            androidx.test.core.app.ApplicationProvider
+                .getApplicationContext<android.content.Context>()
+        val frames = LunaAnimationCache.getOrLoadFrames(context)
+        org.junit.Assert.assertEquals(24, frames.size)
     }
 
     @Test
