@@ -76,10 +76,10 @@ Do not use whole-screen SVGs as runtime UI or duplicate shared artwork.
 | Shared character poses and equipped appearances | `core/core-ui/src/main/res/drawable-nodpi/mobimon_*.png` |
 | Store accessory thumbnails | `mobimon_mobi_items.png` and `mobimon_luna_items.png` in the same shared drawable folder; `CharacterArtwork` selects crops |
 | Home and store-preview backgrounds | `core/core-ui/src/main/res/drawable-nodpi/pet_home_background_{morning,day,afternoon,sunset,night}.webp` |
-| Home menu, conversation and speech-bubble vectors | `feature/feature-pet/src/main/res/drawable/pet_*.xml` |
+| Home menu, Settings, conversation and speech-bubble vectors | `feature/feature-pet/src/main/res/drawable/pet_*.xml` |
 | Shared parking icon | `core/core-ui/src/main/res/drawable/mobimon_parking.xml` |
 | Store navigation/category icons | `feature/feature-customization/src/main/res/drawable/store_*.xml` |
-| Menu artwork | `app/src/main/res/drawable-nodpi/drawer_*.png` |
+| Menu artwork and icons | `app/src/main/res/drawable-nodpi/drawer_*.png` and `app/src/main/res/drawable/drawer_*.xml` |
 | Quest artwork and icons | `feature/feature-quest/src/main/res/drawable-nodpi/` and `res/drawable/` |
 | Full-screen design references | [docs/ui](ui/README.md); not packaged in the app |
 | Local generation drafts | `output/imagegen/` (ignored); intermediate files go in ignored `tmp/imagegen/` and are deleted after use |
@@ -123,7 +123,9 @@ The [export index](ui/README.md#screen-index) owns the screen and state inventor
 
 The menu opens from Home and closes through its close control, backdrop or Back.
 Its footer stays above the bottom system bar. Selecting a destination closes the
-menu; its portrait/name follow the equipped friend. Back closes the keyboard,
+menu; its portrait/name follow the equipped friend. Mobi uses the supplied head
+portrait (`drawer_mobi.png`); other friends use `PetAvatar`. The footer uses the app
+version. Back closes the keyboard,
 then a dialog/menu, then the current destination. Menu destinations return Home;
 connection screens preserve their Home/Settings origin. Purchase cancellation
 returns to the same preview. An explicit Home action always opens Home.
@@ -207,14 +209,14 @@ prove fresh tire information. Unavailable readings are neither zero nor healthy.
 Preferences save independently and immediately; Done closes the screen. Preserve
 the last committed value and expose save failures. Unknown parking disables
 changes. Debugger is Debug-only and defaults off; Release omits it. Spoken replies
-and Do Not Disturb remain unavailable in current implementation.
+remain unavailable; Settings omits Do Not Disturb.
 
 The supplied Settings export shows a vehicle-home placeholder and says the
 character is static. It does not enable a launcher feature. Current code contains
 Mobi/Luna breathing frames. The committed reduced-motion preference pauses
 character and particle loops and removes shell destination motion; unknown or
-failed preference reads keep decoration static. The existing unsupported Do Not
-Disturb row is not removed merely because the export omits it.
+failed preference reads keep decoration static. The vehicle-home row is
+informational and cannot enable a launcher.
 
 ### Copilot connection UI
 

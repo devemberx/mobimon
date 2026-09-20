@@ -49,9 +49,9 @@ class PetPreferencesScreenTest {
             }
         }
         compose.onNodeWithText("GitHub Copilot").performScrollTo().assertIsDisplayed()
-        compose.onNodeWithText("방해 금지").performScrollTo().assertIsDisplayed()
-        compose.onNodeWithText("디버깅용 모드").performScrollTo().assertIsDisplayed()
-        compose.onNodeWithText("시뮬레이션 신호와 포인트 도구를 표시해요.").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText("차량 홈 캐릭터").performScrollTo().assertIsNotEnabled()
+        compose.onNodeWithText("방해 금지").assertDoesNotExist()
+        compose.onNodeWithText("Debugger").performScrollTo().assertIsDisplayed()
         compose.onNodeWithTag("settings-done").assertIsDisplayed().assertHeightIsAtLeast(76.dp)
         compose.onNodeWithTag("settings-back").assertHeightIsAtLeast(76.dp)
     }
@@ -71,7 +71,7 @@ class PetPreferencesScreenTest {
             }
         }
 
-        compose.onNodeWithText("디버깅용 모드").performScrollTo().performClick()
+        compose.onNodeWithText("Debugger").performScrollTo().performClick()
 
         assertEquals(true, requested)
     }
@@ -95,7 +95,7 @@ class PetPreferencesScreenTest {
         compose.onNodeWithText("주차 확인 불가").assertExists()
         compose.onNodeWithText("GitHub Copilot").assertIsNotEnabled()
         compose.onNodeWithText("움직임 줄이기").performScrollTo().performClick()
-        compose.onNodeWithText("디버깅용 모드").performScrollTo().performClick()
+        compose.onNodeWithText("Debugger").performScrollTo().performClick()
         assertEquals(0, motionCalls)
         assertEquals(0, debugCalls)
     }
@@ -200,7 +200,7 @@ class PetPreferencesScreenTest {
     }
 
     @Test
-    fun productionSettingsKeepsDoNotDisturbAndHidesDebugMode() {
+    fun productionSettingsOmitsDoNotDisturbAndDebugMode() {
         compose.setContent {
             MobiMonTheme {
                 SettingsScreen(
@@ -211,7 +211,7 @@ class PetPreferencesScreenTest {
             }
         }
 
-        compose.onNodeWithText("방해 금지").performScrollTo().assertIsDisplayed()
-        compose.onNodeWithText("디버깅용 모드").assertDoesNotExist()
+        compose.onNodeWithText("방해 금지").assertDoesNotExist()
+        compose.onNodeWithText("Debugger").assertDoesNotExist()
     }
 }

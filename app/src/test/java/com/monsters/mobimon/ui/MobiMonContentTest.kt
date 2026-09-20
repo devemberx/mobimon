@@ -9,15 +9,18 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.test.assertHeightIsAtLeast
 import androidx.compose.ui.test.assertIsFocused
 import androidx.compose.ui.test.assertWidthIsAtLeast
+import androidx.compose.ui.test.click
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.unit.dp
 import com.monsters.mobimon.core.domain.AppUseState
 import com.monsters.mobimon.core.navigation.AiRoute
@@ -58,10 +61,12 @@ class MobiMonContentTest {
     fun menuRoutesConversationAndDismissesFromBackdrop() {
         show()
         compose.onNodeWithText("Open menu").performClick()
-        compose.onNodeWithTag("menu-backdrop").performClick()
+        compose.onNodeWithTag("menu-backdrop").performTouchInput {
+            click(Offset(width - 24f, height / 2f))
+        }
         compose.onNodeWithTag("companion-menu").assertDoesNotExist()
         compose.onNodeWithText("Open menu").performClick()
-        clickMenuItem("대화")
+        clickMenuItem("대화하기")
         compose.onNodeWithText("Route COPILOT").assertExists()
     }
 
@@ -180,7 +185,7 @@ class MobiMonContentTest {
         assertTrue(panel.width <= host.width)
         assertTrue(panel.height <= host.height)
         compose.onNodeWithContentDescription("닫기").assertWidthIsAtLeast(76.dp).assertHeightIsAtLeast(76.dp)
-        listOf("홈", "대화", "퀘스트", "차량 상태", "꾸미기", "설정").forEach { label ->
+        listOf("홈", "대화하기", "퀘스트", "차량 상태", "꾸미기", "설정").forEach { label ->
             compose.onNodeWithText(label).assertHeightIsAtLeast(76.dp).assertWidthIsAtLeast(76.dp)
         }
         compose.onNodeWithText("홈").assertIsFocused()
