@@ -4,6 +4,8 @@ import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -19,13 +21,18 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
@@ -49,6 +56,8 @@ import com.monsters.mobimon.core.ui.MobiMonNavigationButton
 import com.monsters.mobimon.core.ui.MobiMonPointSummary
 import com.monsters.mobimon.core.ui.PetAvatar
 import com.monsters.mobimon.core.ui.companionBackgroundRes
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 
 /** Displays the in-app Home from committed state; navigation belongs to the shell. */
 @Composable
@@ -188,6 +197,35 @@ private fun HomeCompanionScene(
     backgroundTimeOfDay: String?,
     modifier: Modifier = Modifier,
 ) {
+    val motionEnabled = LocalMobiMonMotionEnabled.current
+    var speechBubbleVisible by remember { mutableStateOf(false) }
+    var triggerKey by remember { mutableIntStateOf(0) }
+
+    LaunchedEffect(friendId, motionEnabled, triggerKey) {
+        if (!motionEnabled) {
+            speechBubbleVisible = true
+            return@LaunchedEffect
+        }
+
+        if (triggerKey > 0) {
+            speechBubbleVisible = true
+            delay(4500L)
+            speechBubbleVisible = false
+
+            val nextDelay = kotlin.random.Random.nextLong(30_000L, 60_000L)
+            delay(nextDelay)
+        } else {
+            while (isActive) {
+                speechBubbleVisible = true
+                delay(4500L)
+                speechBubbleVisible = false
+
+                val nextDelay = kotlin.random.Random.nextLong(30_000L, 60_000L)
+                delay(nextDelay)
+            }
+        }
+    }
+
     Box(modifier.widthIn(max = 920.dp), contentAlignment = Alignment.Center) {
         AmbientTextHeader(
             backgroundTimeOfDay = backgroundTimeOfDay,
@@ -199,30 +237,42 @@ private fun HomeCompanionScene(
         )
         when {
             friendId != null -> {
-                PetAvatar(
-                    modifier = Modifier.size(avatarSize).align(Alignment.BottomCenter),
-                    appearanceKey = profile.appearance.name,
-                    friendId = friendId,
-                    accessoryId = accessoryId,
-                    outfitId = outfitId,
-                    backgroundId = backgroundId,
-                )
-                Surface(
-                    shape = RoundedCornerShape(36.dp),
-                    color = MaterialTheme.colorScheme.primary,
-                    contentColor = MaterialTheme.colorScheme.onPrimary,
+                val interactionSource = remember { MutableInteractionSource() }
+                Box(
                     modifier =
                         Modifier
-                            .widthIn(max = 300.dp)
-                            .align(Alignment.CenterEnd)
-                            .testTag("home-companion-message"),
+                            .size(avatarSize)
+                            .align(Alignment.BottomCenter)
+                            .clickable(
+                                interactionSource = interactionSource,
+                                indication = null,
+                            ) {
+                                triggerKey++
+                            },
+                    contentAlignment = Alignment.Center,
                 ) {
-                    Text(
-                        stringResource(R.string.pet_home_message),
-                        modifier = Modifier.padding(horizontal = 32.dp, vertical = 22.dp),
-                        style = MaterialTheme.typography.titleLarge,
+                    PetAvatar(
+                        modifier = Modifier.fillMaxSize(),
+                        appearanceKey = profile.appearance.name,
+                        friendId = friendId,
+                        accessoryId = accessoryId,
+                        outfitId = outfitId,
+                        backgroundId = backgroundId,
                     )
                 }
+                com.monsters.mobimon.core.ui.MobiMonSpeechBubble(
+                    text = stringResource(R.string.pet_home_message),
+                    visible = speechBubbleVisible,
+                    backgroundTimeOfDay = backgroundTimeOfDay,
+                    displayDurationMs = 0L,
+                    modifier =
+                        Modifier
+                            .align(Alignment.BottomCenter)
+                            .offset(
+                                x = (avatarSize * 0.54f),
+                                y = (-avatarSize * 0.54f),
+                            ).testTag("home-companion-message"),
+                )
             }
             inventoryLoadFailed -> Unit
             !inventoryLoaded -> {
