@@ -16,6 +16,7 @@ import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.getUnclippedBoundsInRoot
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performSemanticsAction
@@ -28,7 +29,6 @@ import com.monsters.mobimon.core.domain.VehicleSnapshot
 import com.monsters.mobimon.core.domain.VehicleWarning
 import com.monsters.mobimon.core.domain.WarningSeverity
 import com.monsters.mobimon.core.ui.LocalMobiMonMotionEnabled
-import com.monsters.mobimon.core.ui.MobiMonDestination
 import com.monsters.mobimon.core.ui.MobiMonTheme
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -109,7 +109,9 @@ class VehicleReviewTest {
         val directory = File("build/reports/vehicle-ui").apply { mkdirs() }
         samples.forEach { (name, sample) ->
             compose.runOnIdle { snapshot = sample }
-            compose.onNodeWithText("시뮬레이션").performScrollTo()
+            if (variant == "compact") {
+                compose.onNodeWithTag("vehicle-status-banner").performScrollTo()
+            }
             compose.onNodeWithText("차량 정보").assertIsDisplayed()
             capture(view, File(directory, "$variant-$name.png"))
             if (variant == "compact") {
@@ -132,9 +134,7 @@ class VehicleReviewTest {
             ) {
                 MobiMonTheme {
                     Surface(color = MaterialTheme.colorScheme.background) {
-                        MobiMonDestination("차량 정보", {}, {}) {
-                            VehicleInfoScreen(snapshot())
-                        }
+                        VehicleInfoScreen(snapshot = snapshot(), onBack = {}, onHome = {})
                     }
                 }
             }

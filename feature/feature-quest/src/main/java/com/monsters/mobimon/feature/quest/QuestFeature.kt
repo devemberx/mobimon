@@ -6,7 +6,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
@@ -21,7 +20,6 @@ import com.monsters.mobimon.core.presentation.CompanionAppearancePresentation
 import com.monsters.mobimon.core.presentation.PointPresentation
 import com.monsters.mobimon.core.presentation.VehiclePresentation
 import com.monsters.mobimon.core.presentation.parkedVerified
-import com.monsters.mobimon.core.ui.MobiMonDestination
 
 class QuestFeature(
     private val vehicle: VehiclePresentation,
@@ -60,24 +58,20 @@ class QuestFeature(
         val snapshot = reading.snapshot
         val context = LocalContext.current
         val screenState = catalog.present(state, equipped, pointBalance, snapshot.parkedVerified, context::getString)
-        MobiMonDestination(
-            stringResource(R.string.quest_destination_title),
-            navigator.back,
-            navigator.returnHome,
-            modifier,
-        ) {
-            QuestScreen(
-                state = screenState,
-                onClaimReward = { questId ->
-                    if (screenState.canClaim) model.claimPointQuest(questId, reading.evidence)
-                },
-                onDismissHiddenQuest = model::dismissHiddenQuest,
-                onDismissRewardSuccess = model::dismissRewardSuccess,
-                onRetryQuests = model::retry,
-                onRetryWallet = walletModel::retry,
-                onRetryAppearance = appearanceModel::retry,
-                onNavigateRoute = navigator.navigate,
-            )
-        }
+        QuestScreen(
+            state = screenState,
+            onClaimReward = { questId ->
+                if (screenState.canClaim) model.claimPointQuest(questId, reading.evidence)
+            },
+            onDismissHiddenQuest = model::dismissHiddenQuest,
+            onDismissRewardSuccess = model::dismissRewardSuccess,
+            onRetryQuests = model::retry,
+            onRetryWallet = walletModel::retry,
+            onRetryAppearance = appearanceModel::retry,
+            onNavigateRoute = navigator.navigate,
+            onBack = navigator.back,
+            onHome = navigator.returnHome,
+            modifier = modifier,
+        )
     }
 }

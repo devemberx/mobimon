@@ -85,6 +85,7 @@
   <string name="vehicle_banner_unknown_title">차량을 확인할 수 없어요</string>
   <string name="vehicle_banner_unknown_desc">연결 또는 권한 상태를 확인해 주세요</string>
     <string name="vehicle_destination_title">차량 정보</string>
+    <string name="vehicle_header_subtitle">연결 상태 및 실시간 차량 데이터</string>
     <string name="vehicle_appearance_load_failed">친구 정보를 불러오지 못했어요.</string>
     <string name="vehicle_appearance_update_failed">친구 정보를 갱신하지 못했어요.</string>
     <string name="vehicle_retry">다시 시도</string>
