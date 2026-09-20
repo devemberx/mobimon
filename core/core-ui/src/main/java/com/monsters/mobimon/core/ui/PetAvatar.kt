@@ -56,6 +56,7 @@ internal object MobiAnimationCache {
             cachedFrames?.let { return it }
             try {
                 val assetManager = context.applicationContext?.assets ?: context.assets
+                val decodeOptions = BitmapFactory.Options().apply { inSampleSize = 2 }
                 val frames =
                     (1..12).map { i ->
                         val path =
@@ -65,7 +66,7 @@ internal object MobiAnimationCache {
                                 i,
                             )
                         assetManager.open(path).use { stream ->
-                            BitmapFactory.decodeStream(stream).asImageBitmap()
+                            BitmapFactory.decodeStream(stream, null, decodeOptions)!!.asImageBitmap()
                         }
                     }
                 cachedFrames = frames

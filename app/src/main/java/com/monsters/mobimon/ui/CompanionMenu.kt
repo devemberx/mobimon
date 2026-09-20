@@ -48,6 +48,7 @@ import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Popup
 import androidx.compose.ui.window.PopupProperties
 import com.monsters.mobimon.R
@@ -183,7 +184,11 @@ fun CompanionMenu(
                                 Text(
                                     stringResource(R.string.drawer_profile_subtitle),
                                     color = Color(0xFF9FB2CE),
-                                    style = MaterialTheme.typography.bodyMedium,
+                                    style =
+                                        MaterialTheme.typography.bodyMedium.copy(
+                                            fontSize = 18.sp,
+                                            lineHeight = 26.sp,
+                                        ),
                                     maxLines = 1,
                                 )
                             }
