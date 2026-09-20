@@ -23,14 +23,17 @@ class VehiclePresentation(
     private val freshness: VehicleFreshnessPolicy,
 ) {
     @Composable
-    fun snapshot(): VehicleSnapshot {
+    fun snapshot(): VehicleSnapshot = reading().snapshot
+
+    @Composable
+    fun reading(): VehicleReading {
         val factory =
             remember(this) {
                 viewModelFactory { initializer { VehicleStateViewModel(vehicle, identity, clock, freshness) } }
             }
         val model: VehicleStateViewModel = viewModel(factory = factory)
-        val snapshot by model.state.collectAsStateWithLifecycle()
-        return snapshot
+        val reading by model.state.collectAsStateWithLifecycle()
+        return reading
     }
 }
 

@@ -25,7 +25,6 @@ import androidx.compose.ui.semantics.disabled
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.monsters.mobimon.core.domain.CompanionSettings
 import com.monsters.mobimon.core.ui.MobiMonBackButton
@@ -36,9 +35,8 @@ import com.monsters.mobimon.core.ui.MobiMonListItem
 import com.monsters.mobimon.core.ui.MobiMonMessage
 import com.monsters.mobimon.core.ui.MobiMonStatusBadge
 import com.monsters.mobimon.core.ui.MobiMonStatusTone
-import com.monsters.mobimon.core.ui.MobiMonTheme
 
-/** Current preference behavior on v4 primitives; final composition remains feature-owned. */
+/** Independent preference controls; final composition remains feature-owned. */
 @Composable
 fun SettingsScreen(
     settings: CompanionSettings,
@@ -232,11 +230,4 @@ private fun SettingsItem(
             }
         },
     ) { Text(stringResource(title), style = MaterialTheme.typography.titleLarge) }
-}
-
-@Preview(name = "Settings · v4 primitives", widthDp = 1792, heightDp = 888, locale = "ko")
-@Preview(name = "Settings · enlarged text", widthDp = 800, heightDp = 900, fontScale = 1.5f, locale = "ko")
-@Composable
-private fun SettingsPreview() {
-    MobiMonTheme { SettingsScreen(CompanionSettings(), {}, parkedVerified = true) }
 }

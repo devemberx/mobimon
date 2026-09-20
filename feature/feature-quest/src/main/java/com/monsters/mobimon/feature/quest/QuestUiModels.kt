@@ -1,52 +1,46 @@
 package com.monsters.mobimon.feature.quest
 
-import com.monsters.mobimon.core.domain.QuestType
 import com.monsters.mobimon.core.navigation.AppRoute
+import com.monsters.mobimon.core.presentation.CompanionAppearanceState
+import com.monsters.mobimon.core.presentation.PointBalanceState
 
-enum class QuestFilterTab {
-    ALL,
-    IN_PROGRESS,
-    COMPLETED,
-}
+enum class QuestFilterTab { ALL, IN_PROGRESS, COMPLETED }
 
-enum class QuestItemStatus {
-    IN_PROGRESS,
-    CLAIMABLE,
-    COMPLETED,
-}
+enum class QuestItemStatus { IN_PROGRESS, CLAIMABLE, COMPLETED }
 
-enum class QuestActionType {
-    CLAIM_REWARD,
-    CHAT,
-    VIEW_DETAIL,
-    ALREADY_CLAIMED,
-}
+enum class QuestActionType { CLAIM_REWARD, VIEW_DETAIL, ALREADY_CLAIMED }
 
 data class QuestItemUiModel(
     val id: String,
-    val type: QuestType?,
     val title: String,
     val description: String,
     val detailLine1: String,
     val detailLine2: String,
-    val scheduleText: String = "1회",
-    val scheduleFullText: String = "한 번만 완료",
-    val rewardPoints: Long = 50,
-    val status: QuestItemStatus = QuestItemStatus.IN_PROGRESS,
-    val actionType: QuestActionType = QuestActionType.VIEW_DETAIL,
-    val completedDate: String? = null,
-    val targetRoute: AppRoute? = null,
-)
-
-data class RewardSuccessModalState(
-    val points: Long,
-    val questTitle: String,
+    val scheduleText: String,
+    val scheduleFullText: String,
+    val rewardPoints: Long,
+    val status: QuestItemStatus,
+    val actionType: QuestActionType,
+    val targetRoute: AppRoute,
 )
 
 data class HiddenQuestUiModel(
     val id: String,
     val title: String,
     val description: String,
-    val rewardPoints: Long = 30L,
-    val isSatisfied: Boolean,
+    val rewardPoints: Long,
+)
+
+data class QuestScreenState(
+    val quests: List<QuestItemUiModel> = emptyList(),
+    val hiddenQuests: List<HiddenQuestUiModel> = emptyList(),
+    val appearance: CompanionAppearanceState = CompanionAppearanceState(),
+    val pointBalance: PointBalanceState = PointBalanceState.Loading,
+    val parkedVerified: Boolean = false,
+    val canClaim: Boolean = false,
+    val pendingQuestId: String? = null,
+    val isLoading: Boolean = false,
+    val observationFailed: Boolean = false,
+    val errorMessage: String? = null,
+    val rewardSuccess: QuestRewardSuccess? = null,
 )

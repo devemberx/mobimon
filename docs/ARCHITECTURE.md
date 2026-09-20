@@ -18,7 +18,7 @@ importing them does not migrate runtime screens or enable integrations.
 | Quests | Driving and hidden quest UI with point claims; legacy Q01 repository compatibility remains, but Q01 is no longer a current list entry |
 | Catalog | `DefaultPointQuestCatalog` defines driving/hidden rewards; profile initialization seeds free Mobi/Luna, friend-specific accessories and backgrounds |
 | Driving evaluation | In-memory `DriveEvaluationData`, currently populated by Debug controls; no verified real driving collector |
-| Character | External assets through `PetAvatar`, including default Mobi breathing frames; reduced-motion wiring and v5 condition expressions remain incomplete |
+| Character | External assets through `PetAvatar`, including Mobi/Luna breathing frames and reduced-motion control; v5 condition expressions remain incomplete |
 | AI | Production introduction/unavailable state and isolated Debug connection rehearsal; no live provider, credential store, conversation or voice runtime |
 | Vehicle/launcher | Debug simulated vehicle and Release unavailable adapter; no background tracker, overlay service or launcher renderer |
 
@@ -51,7 +51,8 @@ as the package root.
 | `core-ui` | Stateless components, theme, fonts and artwork | None |
 | `core-navigation` | Typed routes, entries and callbacks | None |
 | `core-presentation` | Shared wallet, vehicle and companion read state | `core-domain` |
-| `feature-pet` | Home, customization, Settings; [entry](../feature/feature-pet/src/main/java/com/monsters/mobimon/feature/pet/PetFeature.kt) | Domain, UI, navigation, presentation |
+| `feature-pet` | Home and Settings; [entry](../feature/feature-pet/src/main/java/com/monsters/mobimon/feature/pet/PetFeature.kt) | Domain, UI, navigation, presentation |
+| `feature-customization` | Catalog, preview, purchase and equipment; [entry](../feature/feature-customization/src/main/java/com/monsters/mobimon/feature/customization/CustomizationFeature.kt) | Domain, UI, navigation, presentation |
 | `feature-quest` | Quest progress and commands; [entry](../feature/feature-quest/src/main/java/com/monsters/mobimon/feature/quest/QuestFeature.kt) | Same four core modules |
 | `feature-vehicle-info` | Readings and availability; [entry](../feature/feature-vehicle-info/src/main/java/com/monsters/mobimon/feature/vehicle/VehicleFeature.kt) | Same four core modules |
 | `feature-auth` | Copilot presentation and AI context; [entry](../feature/feature-auth/src/main/java/com/monsters/mobimon/feature/auth/AiFeature.kt) | Same four core modules |
@@ -74,10 +75,12 @@ Activity store and local UI state uses a saveable-state holder. The current
 single-level shell preserves parent/origin behavior; it is not Navigation 3 or a
 multiple-back-stack implementation.
 
-`verifyModuleBoundaries` checks project dependencies in all configurations and
-selected platform imports/plugins in domain main sources. Transitive libraries,
-generated code, other source sets, fully qualified types and SDK DTOs still need
-review; the task is a guardrail, not a complete dependency audit.
+`verifyModuleBoundaries` checks project dependencies in all configurations, production
+external dependencies, resolved JVM graphs, and selected imports in handwritten
+production source sets. Domain and VSS permit Kotlin/coroutines plus their JVM
+annotations; features, UI and navigation cannot own Room, DataStore or Hilt.
+Generated code, fully qualified types and SDK DTOs still need review. The guard
+is not a Kotlin parser or a complete dependency audit.
 
 | State | Owner/lifetime |
 | --- | --- |
@@ -88,18 +91,49 @@ review; the task is a guardrail, not a complete dependency audit.
 | Route and connection origin | Saved shell state; open menu is transient |
 | Preview, geometry and animation progress | Feature/renderer; not committed equipment |
 
+Home, Settings and customization have separate feature entries. Home never creates
+the customization command ViewModel; Settings does not wait for a pet profile or
+wallet. App DI supplies shared presentation factories consistently. Feature routes
+collect state and dispatch callbacks; catalog selection/mapping lives in feature-local
+pure functions rather than layout code. Preview state never enters shared appearance.
+
+Quest presentation uses points only. Pending commands disable duplicate input; only
+`PointAwardResult.Awarded` creates a success state with its returned amount.
+`AlreadyAwarded` reconciles completion without another celebration. Claim confirmations
+bridge delayed observation only until the repository acknowledges them; later completion
+removals, including Debug resets, update the display. Observation and command errors
+have explicit recovery. Q01 presentation and its unused acknowledgment
+card are removed; historical repository/evidence coverage uses test-only controllers.
+Completion display still uses quest IDs rather than occurrence-aware eligibility.
+
+Customization observes inventory and catalog independently. Retry restarts failed
+streams without replacing healthy collectors; wallet errors also expose recovery.
+Committed previews survive unrelated failures.
+Purchase/equip require verified parking at the route and still recheck authorization
+inside the repository transaction.
+
 Shared presentation observes committed wallet, vehicle and appearance state.
 Store preview stays local until equip commits. Friend-specific equipment uses
 scoped slot keys; switching friends preserves their separate selections. Failed
 observations retain committed data and expose retry without duplicate collectors.
-Quest owns its commands; Vehicle does not host quest reward actions.
+Quest owns its commands; Vehicle does not host quest reward actions. Vehicle maps
+missing/stale auxiliary readings to unavailable and never interprets absent warnings
+as a healthy vehicle. The shared `VehicleReading` pairs a freshness-normalized
+display snapshot with its original evidence from the same emission. Commands pass that original evidence;
+render-only ages/quality must not change the transaction's identity comparison.
+The initial display is normalized before asynchronous collection can expose it.
+The shared display ticker runs once per second for the Activity ViewModel lifetime;
+screen collection does not own or restart the foreground-scoped provider connection.
 
 [PetAvatar](../core/core-ui/src/main/java/com/monsters/mobimon/core/ui/PetAvatar.kt)
 and [CharacterArtwork](../core/core-ui/src/main/java/com/monsters/mobimon/core/ui/CharacterArtwork.kt)
 map display inputs to resources. They do not own points, ownership or interaction
 authorization. Current `PetAvatar` has no vehicle-condition input; hungry/sick
-mapping in v5 is a target, not existing renderer behavior. Reduced motion is saved
-but callers do not yet pass it to `isAnimated`.
+mapping in v5 is a target, not existing renderer behavior. The shell observes the
+committed reduced-motion preference and supplies a visual-only composition local.
+Character and particle loops obey it and use Compose frame time. Unknown or failed
+preference reads pause decoration; failed reads retry while the shell is subscribed.
+This does not authorize interaction.
 
 ### Copilot connection UI
 

@@ -2,6 +2,7 @@ package com.monsters.mobimon.core.ui
 
 import android.content.Context
 import android.graphics.BitmapFactory
+import androidx.compose.animation.core.withInfiniteAnimationFrameNanos
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Box
@@ -26,12 +27,10 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import java.util.Locale
-import kotlin.time.Duration.Companion.milliseconds
 
-private val MOBI_IDLE_BREATH_FRAME_DURATIONS_MS =
+private val IDLE_BREATH_FRAME_DURATIONS_MS =
     IntArray(24) { if (it == 23) 130 else 90 }
 
 internal object MobiAnimationCache {
@@ -50,7 +49,7 @@ internal object MobiAnimationCache {
                         val path =
                             String.format(
                                 Locale.US,
-                                "characters/mobi/idle_breath_v1/mobi_idle_breath_%02d.png",
+                                "characters/mobi/idle_breath/mobi_idle_breath_%02d.png",
                                 i,
                             )
                         assetManager.open(path).use { stream ->
@@ -65,9 +64,6 @@ internal object MobiAnimationCache {
         }
     }
 }
-
-private val LUNA_IDLE_BREATH_FRAME_DURATIONS_MS =
-    IntArray(24) { if (it == 23) 130 else 90 }
 
 internal object LunaAnimationCache {
     @Volatile
@@ -85,7 +81,7 @@ internal object LunaAnimationCache {
                         val path =
                             String.format(
                                 Locale.US,
-                                "characters/luna/idle_breath_v1/luna_idle_%02d.png",
+                                "characters/luna/idle_breath/luna_idle_%02d.png",
                                 i,
                             )
                         assetManager.open(path).use { stream ->
@@ -123,6 +119,7 @@ fun PetAvatar(
 ) {
     val cat = friendId == "friend:luna"
     val cream = appearanceKey == "CREAM"
+    val motionEnabled = isAnimated && LocalMobiMonMotionEnabled.current
     val description = stringResource(if (cat) R.string.mobimon_luna_description else R.string.mobimon_mobi_description)
     if (emotion == PetEmotion.HAPPY) {
         val happyAsset = CharacterArtwork.happy(friendId, accessoryId ?: outfitId)
@@ -140,12 +137,12 @@ fun PetAvatar(
                 CharacterAssetImage(it, Modifier.fillMaxSize())
             }
             val equippedLook = CharacterArtwork.equippedLooks[accessoryId ?: outfitId]
-            if (isAnimated && (friendId == "friend:mobi") && (equippedLook == null)) {
+            if (motionEnabled && (friendId == "friend:mobi") && (equippedLook == null)) {
                 MobiIdleBreathAnimation(
                     modifier = Modifier.fillMaxSize(),
                     fallbackAsset = CharacterArtwork.preview(friendId, accessoryId ?: outfitId),
                 )
-            } else if (isAnimated && (friendId == "friend:luna") && (equippedLook == null)) {
+            } else if (motionEnabled && (friendId == "friend:luna") && (equippedLook == null)) {
                 LunaIdleBreathAnimation(
                     modifier = Modifier.fillMaxSize(),
                     fallbackAsset = CharacterArtwork.preview(friendId, accessoryId ?: outfitId),
@@ -174,37 +171,7 @@ fun MobiIdleBreathAnimation(
     contentDescription: String? = null,
     fallbackAsset: CharacterAsset = CharacterArtwork.characters.getValue("friend:mobi"),
 ) {
-    val context = LocalContext.current
-    val frames = remember(context) { MobiAnimationCache.getOrLoadFrames(context) }
-
-    if (frames.isEmpty()) {
-        CharacterAssetImage(
-            asset = fallbackAsset,
-            modifier = modifier,
-            contentDescription = contentDescription,
-        )
-    } else {
-        var currentFrameIndex by remember { mutableIntStateOf(0) }
-        LaunchedEffect(frames) {
-            while (isActive) {
-                val durationMs =
-                    MOBI_IDLE_BREATH_FRAME_DURATIONS_MS[
-                        currentFrameIndex %
-                            MOBI_IDLE_BREATH_FRAME_DURATIONS_MS.size,
-                    ]
-                delay(durationMs.milliseconds)
-                currentFrameIndex = (currentFrameIndex + 1) % frames.size
-            }
-        }
-        Box(modifier = modifier, contentAlignment = Alignment.Center) {
-            Image(
-                bitmap = frames[currentFrameIndex],
-                contentDescription = contentDescription,
-                modifier = Modifier.fillMaxSize(),
-                contentScale = ContentScale.Fit,
-            )
-        }
-    }
+    IdleBreathAnimation(MobiAnimationCache::getOrLoadFrames, false, modifier, contentDescription, fallbackAsset)
 }
 
 @Composable
@@ -213,8 +180,23 @@ fun LunaIdleBreathAnimation(
     contentDescription: String? = null,
     fallbackAsset: CharacterAsset = CharacterArtwork.characters.getValue("friend:luna"),
 ) {
+    IdleBreathAnimation(LunaAnimationCache::getOrLoadFrames, true, modifier, contentDescription, fallbackAsset)
+}
+
+@Composable
+private fun IdleBreathAnimation(
+    loadFrames: (Context) -> List<ImageBitmap>,
+    applyAssetTransform: Boolean,
+    modifier: Modifier,
+    contentDescription: String?,
+    fallbackAsset: CharacterAsset,
+) {
+    if (!LocalMobiMonMotionEnabled.current) {
+        CharacterAssetImage(fallbackAsset, modifier, contentDescription)
+        return
+    }
     val context = LocalContext.current
-    val frames = remember(context) { LunaAnimationCache.getOrLoadFrames(context) }
+    val frames = remember(context, loadFrames) { loadFrames(context) }
 
     if (frames.isEmpty()) {
         CharacterAssetImage(
@@ -223,25 +205,34 @@ fun LunaIdleBreathAnimation(
             contentDescription = contentDescription,
         )
     } else {
-        var currentFrameIndex by remember { mutableIntStateOf(0) }
+        var currentFrameIndex by remember(frames) { mutableIntStateOf(0) }
         LaunchedEffect(frames) {
+            var previousTime = withInfiniteAnimationFrameNanos { it }
+            var elapsedNanos = 0L
             while (isActive) {
-                val durationMs =
-                    LUNA_IDLE_BREATH_FRAME_DURATIONS_MS[
-                        currentFrameIndex %
-                            LUNA_IDLE_BREATH_FRAME_DURATIONS_MS.size,
-                    ]
-                delay(durationMs.milliseconds)
-                currentFrameIndex = (currentFrameIndex + 1) % frames.size
+                val time = withInfiniteAnimationFrameNanos { it }
+                // Resume from a stopped window without jumping through the whole breathing cycle.
+                elapsedNanos += (time - previousTime).coerceAtMost(130_000_000L)
+                previousTime = time
+                var nextFrame = currentFrameIndex
+                while (elapsedNanos >= IDLE_BREATH_FRAME_DURATIONS_MS[nextFrame] * 1_000_000L) {
+                    elapsedNanos -= IDLE_BREATH_FRAME_DURATIONS_MS[nextFrame] * 1_000_000L
+                    nextFrame = (nextFrame + 1) % frames.size
+                }
+                currentFrameIndex = nextFrame
             }
         }
         Box(
             modifier =
-                modifier.graphicsLayer {
-                    scaleX = fallbackAsset.visualScale
-                    scaleY = fallbackAsset.visualScale
-                    translationX = size.width * fallbackAsset.translationXFraction
-                    translationY = size.height * fallbackAsset.translationYFraction
+                if (applyAssetTransform) {
+                    modifier.graphicsLayer {
+                        scaleX = fallbackAsset.visualScale
+                        scaleY = fallbackAsset.visualScale
+                        translationX = size.width * fallbackAsset.translationXFraction
+                        translationY = size.height * fallbackAsset.translationYFraction
+                    }
+                } else {
+                    modifier
                 },
             contentAlignment = Alignment.Center,
         ) {

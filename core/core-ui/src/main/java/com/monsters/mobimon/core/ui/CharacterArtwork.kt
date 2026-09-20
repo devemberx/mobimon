@@ -37,36 +37,36 @@ data class AssetCrop(
 object CharacterArtwork {
     val characters =
         mapOf(
-            "friend:mobi" to CharacterAsset(R.drawable.mobimon_mobi_v4),
-            "friend:luna" to CharacterAsset(R.drawable.mobimon_luna_v4, visualScale = 0.87f),
+            "friend:mobi" to CharacterAsset(R.drawable.mobimon_mobi),
+            "friend:luna" to CharacterAsset(R.drawable.mobimon_luna, visualScale = 0.87f),
         )
 
     val equippedLooks =
         mapOf(
-            "accessory:mobi_headphones" to CharacterAsset(R.drawable.mobimon_mobi_headphones_v4, visualScale = 0.93f),
-            "accessory:mobi_goggles" to CharacterAsset(R.drawable.mobimon_mobi_goggles_v4),
+            "accessory:mobi_headphones" to CharacterAsset(R.drawable.mobimon_mobi_headphones, visualScale = 0.93f),
+            "accessory:mobi_goggles" to CharacterAsset(R.drawable.mobimon_mobi_goggles),
             "accessory:luna_cap" to
                 CharacterAsset(
-                    R.drawable.mobimon_luna_cap_v4,
+                    R.drawable.mobimon_luna_cap,
                     visualScale = 0.97f,
                     translationXFraction = 0.022f,
                     translationYFraction = -0.075f,
                 ),
             "accessory:luna_sunglasses" to
                 CharacterAsset(
-                    R.drawable.mobimon_luna_sunglasses_v4,
+                    R.drawable.mobimon_luna_sunglasses,
                     visualScale = 0.97f,
                 ),
         )
 
     val itemIcons =
         mapOf(
-            "accessory:mobi_headphones" to CharacterAsset(R.drawable.mobimon_mobi_items_v4, AssetCrop(0, 0, 475, 724)),
-            "accessory:mobi_goggles" to CharacterAsset(R.drawable.mobimon_mobi_items_v4, AssetCrop(480, 0, 468, 724)),
-            "accessory:luna_cap" to CharacterAsset(R.drawable.mobimon_luna_items_v4, AssetCrop(0, 0, 500, 724)),
+            "accessory:mobi_headphones" to CharacterAsset(R.drawable.mobimon_mobi_items, AssetCrop(0, 0, 475, 724)),
+            "accessory:mobi_goggles" to CharacterAsset(R.drawable.mobimon_mobi_items, AssetCrop(480, 0, 468, 724)),
+            "accessory:luna_cap" to CharacterAsset(R.drawable.mobimon_luna_items, AssetCrop(0, 0, 500, 724)),
             "accessory:luna_sunglasses" to
                 CharacterAsset(
-                    R.drawable.mobimon_luna_items_v4,
+                    R.drawable.mobimon_luna_items,
                     AssetCrop(510, 0, 460, 724),
                 ),
         )

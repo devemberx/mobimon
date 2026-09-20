@@ -21,3 +21,10 @@ __pycache__/
 /*_recovered.kt
 /emulator_screen*.png
 .DS_Store
+
+# Local image generation drafts and metadata; promote approved images into src/main
+/output/imagegen/
+/tmp/imagegen/
+**/src/*/assets/characters/**/prompts.json
+**/src/*/assets/characters/**/manifest.json
+**/src/*/assets/characters/**/README.md

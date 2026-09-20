@@ -2,7 +2,7 @@ package com.monsters.mobimon.core.ui
 
 import androidx.compose.material3.darkColorScheme
 
-/** V4 semantic roles used by the default app, preview and Debug theme. */
+/** Semantic roles used by the app, preview and Debug theme. */
 val MobiMonTwilightColors =
     darkColorScheme(
         primary = MobiMonColors.button,

@@ -1,5 +1,6 @@
 package com.monsters.mobimon.core.ui
 
+import androidx.compose.animation.core.withInfiniteAnimationFrameNanos
 import androidx.compose.foundation.Canvas
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -17,13 +18,11 @@ import androidx.compose.ui.graphics.drawscope.withTransform
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlin.math.PI
 import kotlin.math.cos
 import kotlin.math.sin
 import kotlin.random.Random
-import kotlin.time.Duration.Companion.milliseconds
 
 enum class ParticleType {
     STAR,
@@ -72,6 +71,7 @@ fun FallingParticlesEffect(
     minSize: Dp = 8.dp,
     maxSize: Dp = 18.dp,
     particleColor: Color? = null,
+    isAnimated: Boolean = true,
 ) {
     val density = LocalDensity.current
     val minSizePx = with(density) { minSize.toPx() }
@@ -86,7 +86,7 @@ fun FallingParticlesEffect(
     val colorToUse = particleColor ?: defaultColor
 
     val particles =
-        remember(particleType, particleCount) {
+        remember(particleType, particleCount, minSizePx, maxSizePx, colorToUse) {
             val random = Random(1337)
             List(particleCount) {
                 Particle(
@@ -108,28 +108,29 @@ fun FallingParticlesEffect(
     val starPath = remember { createStarPath() }
     val petalPath = remember { createPetalPath() }
 
-    var frameTimeNanos by remember { mutableLongStateOf(0L) }
+    var frameTimeNanos by remember(particles) { mutableLongStateOf(0L) }
 
-    LaunchedEffect(particleType, particleCount) {
-        val random = Random(System.currentTimeMillis())
-        var lastMs = System.currentTimeMillis()
-        while (isActive) {
-            delay(16.milliseconds)
-            val currentMs = System.currentTimeMillis()
-            val dt = ((currentMs - lastMs) / 1000f).coerceIn(0.001f, 0.1f)
-            lastMs = currentMs
+    if (isAnimated && LocalMobiMonMotionEnabled.current) {
+        LaunchedEffect(particles) {
+            val random = Random.Default
+            var previousTime = withInfiniteAnimationFrameNanos { it }
+            while (isActive) {
+                val time = withInfiniteAnimationFrameNanos { it }
+                val dt = ((time - previousTime) / 1_000_000_000f).coerceAtMost(0.1f)
+                previousTime = time
 
-            particles.forEach { p ->
-                p.y += p.speedY * dt
-                p.phase += p.swaySpeed * dt
-                p.x += sin(p.phase.toDouble()).toFloat() * p.swayAmount * dt
-                p.rotation = (p.rotation + p.rotationSpeed * dt) % 360f
+                particles.forEach { p ->
+                    p.y += p.speedY * dt
+                    p.phase += p.swaySpeed * dt
+                    p.x += sin(p.phase.toDouble()).toFloat() * p.swayAmount * dt
+                    p.rotation = (p.rotation + p.rotationSpeed * dt) % 360f
 
-                if (p.y > 1.05f) {
-                    p.resetToTop(random, colorToUse)
+                    if (p.y > 1.05f) {
+                        p.resetToTop(random, colorToUse)
+                    }
                 }
+                frameTimeNanos = time
             }
-            frameTimeNanos = currentMs
         }
     }
 
@@ -174,23 +175,6 @@ fun FallingParticlesEffect(
             }
         }
     }
-}
-
-/**
- * Convenience wrapper for falling star background decoration.
- */
-@Composable
-fun FallingStarsEffect(
-    modifier: Modifier = Modifier,
-    particleCount: Int = 30,
-    color: Color = Color(0xFFFFD54F),
-) {
-    FallingParticlesEffect(
-        modifier = modifier,
-        particleType = ParticleType.STAR,
-        particleCount = particleCount,
-        particleColor = color,
-    )
 }
 
 /** Creates a 5-pointed star path centered at (0, 0) in a 24x24 bounding area. */

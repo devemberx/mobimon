@@ -1,266 +1,258 @@
 package com.monsters.mobimon.feature.quest
 
-import androidx.compose.material3.MaterialTheme
+import android.content.Context
+import android.graphics.Bitmap
+import android.graphics.Canvas
+import android.view.View
+import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsNotEnabled
+import androidx.compose.ui.test.assertIsSelected
+import androidx.compose.ui.test.junit4.StateRestorationTester
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
+import androidx.test.core.app.ApplicationProvider
+import com.monsters.mobimon.core.domain.CosmeticInventory
+import com.monsters.mobimon.core.domain.CosmeticSlot
+import com.monsters.mobimon.core.domain.DefaultPointQuestCatalog
 import com.monsters.mobimon.core.domain.DrivingQuestIds
-import com.monsters.mobimon.core.domain.DrivingState
-import com.monsters.mobimon.core.domain.QuestProgress
-import com.monsters.mobimon.core.domain.SignalQuality
-import com.monsters.mobimon.core.domain.SignalSource
-import com.monsters.mobimon.core.domain.VehicleSnapshot
+import com.monsters.mobimon.core.navigation.AppRoute
+import com.monsters.mobimon.core.navigation.VehicleRoute
+import com.monsters.mobimon.core.presentation.CompanionAppearanceState
+import com.monsters.mobimon.core.presentation.PointBalanceState
+import com.monsters.mobimon.core.ui.MobiMonTheme
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
+import org.robolectric.annotation.GraphicsMode
+import java.io.File
 
 @RunWith(RobolectricTestRunner::class)
-@Config(sdk = [34], qualifiers = "ko-rKR")
+@Config(sdk = [34], qualifiers = "ko-rKR-w1000dp-h800dp")
 class QuestScreenTest {
-    @get:Rule
-    val compose = createComposeRule()
-
-    @Test
-    fun drivingQuestsAreRenderedInQuestList() {
-        compose.setContent {
-            MaterialTheme {
-                QuestScreen(QuestProgress(), canManageQuest = true, {}, {}, {}, snapshot(), true)
-            }
-        }
-
-        compose.onNodeWithText("놓지마 생명줄!").performScrollTo().assertIsDisplayed()
-        compose.onNodeWithText("엉덩이 뗄 때까지 안전하게").performScrollTo().assertIsDisplayed()
-        compose.onNodeWithText("우리가 함께 달린 100km").performScrollTo().assertIsDisplayed()
-        compose.onNodeWithText("발끝의 미학").performScrollTo().assertIsDisplayed()
-        compose.onNodeWithText("작심오일은 없다! 5일 연속 무사고").performScrollTo().assertIsDisplayed()
-        compose.onNodeWithText("배터리 지킴이").performScrollTo().assertIsDisplayed()
-        compose.onNodeWithText("쉼표가 있는 여정").performScrollTo().assertIsDisplayed()
-        compose.onNodeWithText("시야를 맑게!").performScrollTo().assertIsDisplayed()
-        compose.onNodeWithText("네 바퀴의 균형").performScrollTo().assertIsDisplayed()
-
-        // Hidden quests must NOT be in regular list
-        compose.onNodeWithText("멋쟁이 모비몬").assertDoesNotExist()
-        compose.onNodeWithText("특수효과 뿜뿜!!").assertDoesNotExist()
-        compose.onNodeWithText("새로운 나의 작은 친구").assertDoesNotExist()
-    }
-
-    @Test
-    fun questDetailDisplaysBackButtonAndReturnsToQuestList() {
-        var selected: String? = "quest_seatbelt"
-        compose.setContent {
-            MaterialTheme {
-                QuestScreen(
-                    progress = QuestProgress(),
-                    canManageQuest = true,
-                    onAcknowledgeVehicle = {},
-                    vehicleSnapshot = snapshot(),
-                    canAcknowledgeVehicle = true,
-                    selectedQuestId = selected,
-                    onSelectQuest = { selected = it },
-                )
-            }
-        }
-
-        compose
-            .onNodeWithTag("quest-detail-back-button")
-            .performScrollTo()
-            .assertIsDisplayed()
-            .performClick()
-        compose.onNodeWithText("놓지마 생명줄!").performScrollTo().assertIsDisplayed()
-    }
+    @get:Rule val compose = createComposeRule()
+    private val context = ApplicationProvider.getApplicationContext<Context>()
+    private val catalog = QuestCatalog(DefaultPointQuestCatalog())
 
     @Test
     @Config(qualifiers = "ko-rKR-w2560dp-h1268dp")
-    fun hiddenQuestDialogPopsUpWhenCostumeIsEquipped() {
-        var claimedQuestId: String? = null
-        compose.setContent {
-            MaterialTheme {
-                QuestScreen(
-                    progress = QuestProgress(),
-                    canManageQuest = true,
-                    onAcknowledgeVehicle = {},
-                    vehicleSnapshot = snapshot(),
-                    canAcknowledgeVehicle = true,
-                    accessoryId = "acc_glasses",
-                    onClaimReward = { claimedQuestId = it },
-                )
-            }
-        }
-
-        compose.onNodeWithTag("quest-hidden-claim-modal").assertIsDisplayed()
-        compose.onNodeWithText("멋쟁이 모비몬").assertIsDisplayed()
-        compose.onNodeWithTag("quest-hidden-btn-claim").assertIsDisplayed().performClick()
-        assertEquals("quest_hidden_costume", claimedQuestId)
-    }
-
-    @Test
-    @Config(qualifiers = "ko-rKR-w2560dp-h1268dp")
-    fun hiddenQuestDialogPopsUpWhenBackgroundIsEquipped() {
-        var claimedQuestId: String? = null
-        compose.setContent {
-            MaterialTheme {
-                QuestScreen(
-                    progress = QuestProgress(),
-                    canManageQuest = true,
-                    onAcknowledgeVehicle = {},
-                    vehicleSnapshot = snapshot(),
-                    canAcknowledgeVehicle = true,
-                    backgroundId = "background:star",
-                    onClaimReward = { claimedQuestId = it },
-                )
-            }
-        }
-
-        compose.onNodeWithTag("quest-hidden-claim-modal").assertIsDisplayed()
-        compose.onNodeWithText("특수효과 뿜뿜!!").assertIsDisplayed()
-        compose.onNodeWithTag("quest-hidden-btn-claim").assertIsDisplayed().performClick()
-        assertEquals("quest_hidden_background", claimedQuestId)
-    }
-
-    @Test
-    @Config(qualifiers = "ko-rKR-w2560dp-h1268dp")
-    fun hiddenQuestDialogPopsUpWhenNewFriendIsEquipped() {
-        var claimedQuestId: String? = null
-        compose.setContent {
-            MaterialTheme {
-                QuestScreen(
-                    progress = QuestProgress(),
-                    canManageQuest = true,
-                    onAcknowledgeVehicle = {},
-                    vehicleSnapshot = snapshot(),
-                    canAcknowledgeVehicle = true,
-                    friendId = "friend:luna",
-                    onClaimReward = { claimedQuestId = it },
-                )
-            }
-        }
-
-        compose.onNodeWithTag("quest-hidden-claim-modal").assertIsDisplayed()
-        compose.onNodeWithText("새로운 나의 작은 친구").assertIsDisplayed()
-        compose.onNodeWithTag("quest-hidden-btn-claim").assertIsDisplayed().performClick()
-        assertEquals("quest_hidden_new_friend", claimedQuestId)
-    }
-
-    @Test
-    @Config(qualifiers = "ko-rKR-w2560dp-h1268dp")
-    fun hiddenQuestDialogCanBeDismissed() {
-        compose.setContent {
-            MaterialTheme {
-                QuestScreen(
-                    progress = QuestProgress(),
-                    canManageQuest = true,
-                    onAcknowledgeVehicle = {},
-                    vehicleSnapshot = snapshot(),
-                    canAcknowledgeVehicle = true,
-                    friendId = "friend:luna",
-                )
-            }
-        }
-
-        compose.onNodeWithTag("quest-hidden-claim-modal").assertIsDisplayed()
-        compose.onNodeWithTag("quest-hidden-btn-dismiss").assertIsDisplayed().performClick()
-        compose.onNodeWithTag("quest-hidden-claim-modal").assertDoesNotExist()
-    }
-
-    @Test
-    @Config(qualifiers = "ko-rKR-w2560dp-h1268dp")
-    fun hiddenQuestDialogDoesNotPopUpWhenAlreadyDismissed() {
-        compose.setContent {
-            MaterialTheme {
-                QuestScreen(
-                    progress = QuestProgress(),
-                    canManageQuest = true,
-                    onAcknowledgeVehicle = {},
-                    vehicleSnapshot = snapshot(),
-                    canAcknowledgeVehicle = true,
-                    friendId = "friend:luna",
-                    dismissedHiddenQuestIds = setOf(DrivingQuestIds.HIDDEN_NEW_FRIEND),
-                )
-            }
-        }
-
-        compose.onNodeWithTag("quest-hidden-claim-modal").assertDoesNotExist()
-    }
-
-    @Test
-    @Config(qualifiers = "ko-rKR-w2560dp-h1268dp")
-    fun hiddenQuestDialogCallsOnDismissHiddenQuestWhenDismissed() {
-        var dismissedId: String? = null
-        compose.setContent {
-            MaterialTheme {
-                QuestScreen(
-                    progress = QuestProgress(),
-                    canManageQuest = true,
-                    onAcknowledgeVehicle = {},
-                    vehicleSnapshot = snapshot(),
-                    canAcknowledgeVehicle = true,
-                    friendId = "friend:luna",
-                    onDismissHiddenQuest = { dismissedId = it },
-                )
-            }
-        }
-
-        compose.onNodeWithTag("quest-hidden-claim-modal").assertIsDisplayed()
-        compose.onNodeWithTag("quest-hidden-btn-dismiss").assertIsDisplayed().performClick()
-        assertEquals(DrivingQuestIds.HIDDEN_NEW_FRIEND, dismissedId)
-        compose.onNodeWithTag("quest-hidden-claim-modal").assertDoesNotExist()
-    }
-
-    @Test
-    @Config(qualifiers = "ko-rKR-w2560dp-h1268dp")
-    fun hiddenQuestDialogCallsOnDismissHiddenQuestWhenClaimed() {
-        var dismissedId: String? = null
+    fun claimDoesNotInventCompletionOrSuccessBeforeCommittedResult() {
         var claimedId: String? = null
+        render(presentation(friend = "friend:luna"), onClaim = { claimedId = it })
+        compose.onNodeWithTag("quest-hidden-btn-claim").performClick()
+        assertEquals(DrivingQuestIds.HIDDEN_NEW_FRIEND, claimedId)
+        compose.onNodeWithTag("quest-reward-success-modal").assertDoesNotExist()
+        compose.onNodeWithTag("quest-hidden-claim-modal").assertIsDisplayed()
+    }
+
+    @Test
+    @Config(qualifiers = "ko-rKR-w2560dp-h1268dp")
+    fun pendingDisablesHiddenClaim() {
+        render(
+            presentation(
+                QuestUiState(isLoading = false, pendingQuestId = DrivingQuestIds.HIDDEN_NEW_FRIEND),
+                friend = "friend:luna",
+            ),
+        )
+        compose.onNodeWithTag("quest-hidden-btn-claim").assertIsNotEnabled()
+        compose.onNodeWithTag("quest-hidden-btn-dismiss").assertIsNotEnabled()
+        compose.onNodeWithTag("quest-reward-success-modal").assertDoesNotExist()
+    }
+
+    @Test
+    fun legacyQ01IsNotOfferedAsAPointQuest() {
+        render(presentation())
+        compose.onNodeWithTag("quest-card-q01").assertDoesNotExist()
+        compose.onNodeWithText("놓지마 생명줄!").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText("네 바퀴의 균형").performScrollTo().assertIsDisplayed()
+    }
+
+    @Test
+    fun pendingDisablesDrivingClaim() {
+        val state =
+            QuestUiState(
+                isLoading = false,
+                satisfiedDrivingQuestIds = setOf(DrivingQuestIds.SEATBELT),
+                pendingQuestId = DrivingQuestIds.SAFE_DRIVE,
+            )
+        render(presentation(state))
+        compose.onNodeWithTag("quest-btn-claim-${DrivingQuestIds.SEATBELT}").performScrollTo().assertIsNotEnabled()
+    }
+
+    @Test
+    fun filterSurvivesDetailBackAndSavedStateRestoration() {
+        val state =
+            presentation(QuestUiState(isLoading = false, completedPointQuestIds = setOf(DrivingQuestIds.SEATBELT)))
+        val restoration = StateRestorationTester(compose)
+        restoration.setContent {
+            MobiMonTheme { QuestScreen(state, {}, {}, {}, {}, {}, {}, {}) }
+        }
+        compose.onNodeWithTag("quest-tab-completed").performScrollTo().performClick()
+        compose.onNodeWithTag("quest-card-${DrivingQuestIds.SEATBELT}").performScrollTo().performClick()
+        restoration.emulateSavedInstanceStateRestore()
+        compose.onNodeWithTag("quest-detail-back-button").performScrollTo().performClick()
+        compose.onNodeWithTag("quest-tab-completed").performScrollTo().assertIsSelected()
+        compose.onNodeWithTag("quest-card-${DrivingQuestIds.SAFE_DRIVE}").assertDoesNotExist()
+        compose.onNodeWithText("2026.09.14", substring = true).assertDoesNotExist()
+    }
+
+    @Test
+    fun drivingDetailExecutesRealNavigationCallback() {
+        var route: AppRoute? = null
+        render(presentation(), onNavigate = { route = it })
+        compose.onNodeWithTag("quest-btn-detail-${DrivingQuestIds.SEATBELT}").performScrollTo().performClick()
+        compose.onNodeWithTag("quest-btn-detail-execute").performScrollTo().performClick()
+        assertEquals(VehicleRoute.VEHICLE_INFO, route)
+    }
+
+    @Test
+    @Config(qualifiers = "ko-rKR-w2560dp-h1268dp")
+    fun failedClaimRemainsVisibleAndCanBeRetried() {
+        var claims = 0
+        val state =
+            presentation(
+                QuestUiState(isLoading = false, message = QuestMessage.STORAGE_FAILURE),
+                friend = "friend:luna",
+            )
+        render(state, onClaim = { claims++ })
+        compose.onNodeWithTag("quest-hidden-claim-modal").assertIsDisplayed()
+        compose.onNodeWithTag("quest-reward-success-modal").assertDoesNotExist()
+        compose.onNodeWithTag("quest-hidden-btn-claim").performClick()
+        assertEquals(1, claims)
+    }
+
+    @Test
+    @Config(qualifiers = "ko-rKR-w2560dp-h1268dp")
+    fun committedSuccessDisplaysActualPointsAndDismissesThroughOwner() {
+        var state by mutableStateOf(
+            presentation(
+                QuestUiState(isLoading = false, rewardSuccess = QuestRewardSuccess(DrivingQuestIds.SEATBELT, 17)),
+            ),
+        )
         compose.setContent {
-            MaterialTheme {
-                QuestScreen(
-                    progress = QuestProgress(),
-                    canManageQuest = true,
-                    onAcknowledgeVehicle = {},
-                    vehicleSnapshot = snapshot(),
-                    canAcknowledgeVehicle = true,
-                    friendId = "friend:luna",
-                    onClaimReward = { claimedId = it },
-                    onDismissHiddenQuest = { dismissedId = it },
-                )
+            MobiMonTheme {
+                QuestScreen(state, {}, {}, { state = state.copy(rewardSuccess = null) }, {}, {}, {}, {})
             }
         }
+        compose.onNodeWithText("17포인트를 획득했어요!!").assertIsDisplayed()
+        compose.onNodeWithTag("quest-modal-btn-confirm").performClick()
+        compose.onNodeWithTag("quest-reward-success-modal").assertDoesNotExist()
+    }
 
-        compose.onNodeWithTag("quest-hidden-claim-modal").assertIsDisplayed()
-        compose.onNodeWithTag("quest-hidden-btn-claim").assertIsDisplayed().performClick()
-        assertEquals(DrivingQuestIds.HIDDEN_NEW_FRIEND, claimedId)
-        assertEquals(DrivingQuestIds.HIDDEN_NEW_FRIEND, dismissedId)
+    @Test
+    @Config(qualifiers = "ko-rKR-w2560dp-h1268dp")
+    fun hiddenDismissalUsesOwnerStateWithoutClaimingReward() {
+        var state by mutableStateOf(presentation(friend = "friend:luna"))
+        var dismissed: String? = null
+        var claims = 0
+        compose.setContent {
+            MobiMonTheme {
+                QuestScreen(state, { claims++ }, {
+                    dismissed = it
+                    state = state.copy(hiddenQuests = emptyList())
+                }, {}, {}, {}, {}, {})
+            }
+        }
+        compose.onNodeWithTag("quest-hidden-btn-dismiss").performClick()
+        assertEquals(DrivingQuestIds.HIDDEN_NEW_FRIEND, dismissed)
+        assertEquals(0, claims)
+        compose.onNodeWithTag("quest-hidden-claim-modal").assertDoesNotExist()
+    }
+
+    @Test
+    fun observationAndWalletFailuresExposeTheirOwnRetries() {
+        var questRetries = 0
+        var walletRetries = 0
+        val state =
+            presentation(
+                QuestUiState(isLoading = false, observationFailed = true),
+            ).copy(pointBalance = PointBalanceState.Failed)
+        compose.setContent {
+            MobiMonTheme { QuestScreen(state, {}, {}, {}, { questRetries++ }, { walletRetries++ }, {}, {}) }
+        }
+        compose.onNodeWithText("퀘스트 기록 다시 확인").performClick()
+        compose.onNodeWithText("포인트 다시 확인").performClick()
+        assertEquals(1, questRetries)
+        assertEquals(1, walletRetries)
+        compose.onNodeWithText("포인트를 확인할 수 없어요").performScrollTo().assertIsDisplayed()
+    }
+
+    @Test
+    fun walletLoadingAndZeroRemainDistinct() {
+        var state by mutableStateOf(presentation().copy(pointBalance = PointBalanceState.Loading))
+        compose.setContent { MobiMonTheme { QuestScreen(state, {}, {}, {}, {}, {}, {}, {}) } }
+        compose.onNodeWithText("포인트 확인 중").performScrollTo().assertIsDisplayed()
+        compose.runOnIdle { state = state.copy(pointBalance = PointBalanceState.Ready(0)) }
+        compose.onNodeWithText("포인트 0 P").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText("0P를 받았어요").assertDoesNotExist()
+    }
+
+    @Test
+    @Config(qualifiers = "ko-rKR-w2560dp-h1332dp-mdpi")
+    @GraphicsMode(GraphicsMode.Mode.NATIVE)
+    fun renderClaimPendingAndFailureForVisualReview() {
+        var state by mutableStateOf(presentation())
+        lateinit var view: View
+        compose.setContent {
+            val currentView = LocalView.current
+            SideEffect { view = currentView }
+            MobiMonTheme { QuestScreen(state, {}, {}, {}, {}, {}, {}, {}) }
+        }
+        capture(viewProvider = { view }, name = "quest-list")
+        compose.runOnIdle {
+            state = presentation(QuestUiState(isLoading = false, pendingQuestId = DrivingQuestIds.SEATBELT))
+        }
+        capture(viewProvider = { view }, name = "quest-claim-pending")
+        compose.runOnIdle {
+            state = presentation(QuestUiState(isLoading = false, message = QuestMessage.STORAGE_FAILURE))
+        }
+        capture(viewProvider = { view }, name = "quest-claim-failure")
     }
 
     private fun render(
-        progress: QuestProgress,
-        canManageQuest: Boolean,
+        state: QuestScreenState,
+        onClaim: (String) -> Unit = {},
+        onNavigate: (AppRoute) -> Unit = {},
     ) {
-        compose.setContent {
-            MaterialTheme {
-                QuestScreen(progress, canManageQuest, {}, {}, {}, snapshot(), canManageQuest)
-            }
-        }
+        compose.setContent { MobiMonTheme { QuestScreen(state, onClaim, {}, {}, {}, {}, {}, onNavigate) } }
     }
 
-    private fun snapshot(
-        id: String = "snapshot-2",
-        quality: SignalQuality = SignalQuality.VALID,
-        drivingState: DrivingState = DrivingState.PARKED,
-    ) = VehicleSnapshot(
-        id = id,
-        epoch = "epoch",
-        sequence = 2,
-        receivedAtMillis = 200,
-        source = SignalSource.SIMULATED,
-        drivingState = drivingState,
-        quality = quality,
-        batteryPercent = 67,
-    )
+    private fun presentation(
+        state: QuestUiState = QuestUiState(isLoading = false),
+        friend: String = "friend:mobi",
+    ): QuestScreenState =
+        catalog.present(
+            state,
+            CompanionAppearanceState(CosmeticInventory(emptySet(), mapOf(CosmeticSlot.FRIEND to friend))),
+            PointBalanceState.Ready(120),
+            parkedVerified = true,
+            context::getString,
+        )
+
+    private fun capture(
+        viewProvider: () -> View,
+        name: String,
+    ) {
+        compose.runOnIdle {
+            val view = viewProvider()
+            val bitmap = Bitmap.createBitmap(view.width, view.height, Bitmap.Config.ARGB_8888)
+            view.draw(Canvas(bitmap))
+            val directory = File("build/reports/quest-ui").apply { mkdirs() }
+            File(directory, "$name.png").outputStream().use {
+                assertTrue(bitmap.compress(Bitmap.CompressFormat.PNG, 100, it))
+            }
+            bitmap.recycle()
+        }
+    }
 }

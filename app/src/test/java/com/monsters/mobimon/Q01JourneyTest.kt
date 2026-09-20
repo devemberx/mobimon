@@ -24,8 +24,8 @@ import com.monsters.mobimon.core.domain.VehicleRepository
 import com.monsters.mobimon.core.domain.VehicleSnapshot
 import com.monsters.mobimon.core.domain.WriteResult
 import com.monsters.mobimon.feature.pet.PetViewModel
-import com.monsters.mobimon.feature.quest.QuestMessage
-import com.monsters.mobimon.feature.quest.QuestViewModel
+import com.monsters.mobimon.testing.legacy.LegacyQuestController
+import com.monsters.mobimon.testing.legacy.LegacyQuestMessage
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.TimeoutCancellationException
@@ -168,11 +168,11 @@ class Q01JourneyTest {
 
                 recreatedQuest.start(QuestType.Q01)
                 recreatedQuest.state.awaitState("repeat start rejected") {
-                    !it.isBusy && it.message == QuestMessage.ALREADY_COMPLETED
+                    !it.isBusy && it.message == LegacyQuestMessage.ALREADY_COMPLETED
                 }
                 recreatedQuest.acknowledge(recreatedQuest.state.value.snapshot.id)
                 recreatedQuest.state.awaitState("repeat acknowledge rejected") {
-                    !it.isBusy && it.message == QuestMessage.REFRESH_REQUIRED
+                    !it.isBusy && it.message == LegacyQuestMessage.REFRESH_REQUIRED
                 }
 
                 assertEquals(80, repository.profile.first().totalXp)
@@ -225,7 +225,7 @@ class Q01JourneyTest {
                 release.countDown()
 
                 quest.state.awaitState("superseded evidence rejected") {
-                    !it.isBusy && it.message == QuestMessage.NO_DATA
+                    !it.isBusy && it.message == LegacyQuestMessage.NO_DATA
                 }
                 assertTrue(
                     repository.progress
@@ -283,10 +283,10 @@ class Q01JourneyTest {
             }
         }
 
-    private fun petModel() = PetViewModel(repository, settings).also { store.put("pet", it) }
+    private fun petModel() = PetViewModel(repository).also { store.put("pet", it) }
 
     private fun questModel() =
-        QuestViewModel(repository, repository, vehicle, identity, Clock { nowMillis }, evaluator)
+        LegacyQuestController(repository, repository, vehicle, identity, Clock { nowMillis }, evaluator)
             .also { store.put("quest", it) }
 
     private suspend fun <T> StateFlow<T>.awaitState(

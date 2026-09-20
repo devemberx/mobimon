@@ -1,7 +1,6 @@
 package com.monsters.mobimon.feature.quest
 
 import androidx.lifecycle.ViewModelStore
-import com.monsters.mobimon.core.domain.Clock
 import com.monsters.mobimon.core.domain.CosmeticInventory
 import com.monsters.mobimon.core.domain.CosmeticItem
 import com.monsters.mobimon.core.domain.DriveEvaluationData
@@ -11,21 +10,11 @@ import com.monsters.mobimon.core.domain.EquipResult
 import com.monsters.mobimon.core.domain.PointAwardResult
 import com.monsters.mobimon.core.domain.PointEconomy
 import com.monsters.mobimon.core.domain.PointWallet
-import com.monsters.mobimon.core.domain.ProgressionIdentity
 import com.monsters.mobimon.core.domain.PurchaseResult
-import com.monsters.mobimon.core.domain.QuestCommandResult
-import com.monsters.mobimon.core.domain.QuestEvaluator
-import com.monsters.mobimon.core.domain.QuestProgress
-import com.monsters.mobimon.core.domain.QuestRepository
-import com.monsters.mobimon.core.domain.QuestRun
-import com.monsters.mobimon.core.domain.QuestStatus
-import com.monsters.mobimon.core.domain.QuestType
-import com.monsters.mobimon.core.domain.RewardRepository
-import com.monsters.mobimon.core.domain.RewardResult
 import com.monsters.mobimon.core.domain.SignalQuality
 import com.monsters.mobimon.core.domain.SignalSource
-import com.monsters.mobimon.core.domain.VehicleRepository
 import com.monsters.mobimon.core.domain.VehicleSnapshot
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -51,14 +40,21 @@ import org.junit.Test
 class QuestViewModelTest {
     private val dispatcher = StandardTestDispatcher()
     private val store = ViewModelStore()
-    private val vehicle = TestVehicle()
-    private val local = TestQuests()
-    private var now = 2_000L
+    private val economy = TestEconomy()
+    private val displayedSnapshot =
+        VehicleSnapshot(
+            "displayed",
+            "epoch",
+            2,
+            100,
+            SignalSource.SIMULATED,
+            DrivingState.PARKED,
+            SignalQuality.VALID,
+            67,
+        )
 
     @Before
-    fun setUp() {
-        Dispatchers.setMain(dispatcher)
-    }
+    fun setUp() = Dispatchers.setMain(dispatcher)
 
     @After
     fun tearDown() {
@@ -71,241 +67,282 @@ class QuestViewModelTest {
             try {
                 block()
             } finally {
-                // Cancel the recurring freshness ticker before runTest drains virtual time.
                 store.clear()
                 runCurrent()
             }
         }
 
-    private fun subject() =
-        QuestViewModel(
-            local,
-            local,
-            vehicle,
-            ProgressionIdentity("profile", SignalSource.REAL),
-            Clock {
-                now
-            },
-            QuestEvaluator(15_000),
-        ).also { store.put("quest", it) }
+    private fun subject() = QuestViewModel(economy).also { store.put("quest", it) }
 
     @Test
-    fun staleDisplayedCardCannotCompleteTheNewerSnapshot() =
+    fun suspendedClaimPreventsDuplicatesWithoutInventingCompletion() =
         runModelTest {
+            economy.gate = CompletableDeferred()
             val vm = subject()
             runCurrent()
-            vm.acknowledge("previous-card")
+            vm.claimPointQuest(DrivingQuestIds.SEATBELT, displayedSnapshot)
+            vm.claimPointQuest(DrivingQuestIds.SAFE_DRIVE, displayedSnapshot)
             runCurrent()
-            assertEquals(0, local.rewardCalls)
-            assertEquals(QuestMessage.REFRESH_REQUIRED, vm.state.value.message)
-        }
 
-    @Test
-    fun movingAndUnknownStateBlockCommands() =
-        runModelTest {
-            val vm = subject()
-            for (driving in listOf(DrivingState.MOVING, DrivingState.UNKNOWN)) {
-                vehicle.snapshots.value = vehicle.snapshots.value.copy(drivingState = driving)
-                runCurrent()
-                vm.start(QuestType.Q01)
-                vm.cancel()
-                vm.acknowledge(vehicle.snapshots.value.id)
-                runCurrent()
-                assertFalse(vm.state.value.canManageQuest)
-                assertFalse(vm.state.value.canAcknowledge)
-            }
-            assertEquals(0, local.commandCalls)
-            assertEquals(0, local.rewardCalls)
-        }
-
-    @Test
-    fun pendingRewardPreventsDoubleTapAndFailureDoesNotInventCompletion() =
-        runModelTest {
-            val vm = subject()
-            runCurrent()
-            assertTrue(vm.state.value.canAcknowledge)
-            vm.acknowledge("card-2")
-            vm.acknowledge("card-2")
-            runCurrent()
-            assertTrue(vm.state.value.isBusy)
-            assertEquals(1, local.rewardCalls)
-            local.rewardGate.complete(RewardResult.StorageFailure)
-            runCurrent()
-            assertFalse(vm.state.value.isBusy)
-            assertEquals(QuestMessage.STORAGE_FAILURE, vm.state.value.message)
+            assertEquals(1, economy.awardCalls)
+            assertEquals(displayedSnapshot, economy.lastSnapshot)
+            assertEquals(DrivingQuestIds.SEATBELT, vm.state.value.pendingQuestId)
             assertTrue(
-                vm.state.value.progress.completions
+                vm.state.value.completedPointQuestIds
+                    .isEmpty(),
+            )
+            assertNull(vm.state.value.rewardSuccess)
+            assertTrue(
+                vm.state.value.dismissedHiddenQuestIds
                     .isEmpty(),
             )
         }
 
     @Test
-    fun snapshotFreshnessExpiresWithoutAnotherVehicleEmission() =
+    fun committedResultPublishesActualAmountAndSurvivesDelayedObservation() =
         runModelTest {
+            economy.result = PointAwardResult.Awarded(17, 117, "verified-occurrence")
             val vm = subject()
             runCurrent()
-            assertTrue(vm.state.value.canAcknowledge)
-            now = 30_000
-            dispatcher.scheduler.advanceTimeBy(1_000)
+            vm.claimPointQuest(DrivingQuestIds.SEATBELT, displayedSnapshot)
             runCurrent()
-            assertFalse(vm.state.value.canAcknowledge)
-            assertEquals(SignalQuality.STALE, vm.state.value.snapshot.quality)
+
+            assertEquals(QuestRewardSuccess(DrivingQuestIds.SEATBELT, 17), vm.state.value.rewardSuccess)
+            assertTrue(DrivingQuestIds.SEATBELT in vm.state.value.completedPointQuestIds)
+            assertFalse(vm.state.value.isBusy)
+            economy.evaluation.value = DriveEvaluationData(distanceKm = 7f)
+            runCurrent()
+            assertTrue(DrivingQuestIds.SEATBELT in vm.state.value.completedPointQuestIds)
+            vm.dismissRewardSuccess()
+            assertNull(vm.state.value.rewardSuccess)
+            assertEquals(1, economy.awardCalls)
         }
 
     @Test
-    fun nonParkedSnapshotFreshnessExpiresWithoutAnotherVehicleEmission() =
+    fun completionResetClearsClaimAfterRepositoryAcknowledgment() =
         runModelTest {
             val vm = subject()
-            val parked = vehicle.snapshots.value
-            for (state in listOf(DrivingState.MOVING, DrivingState.UNKNOWN)) {
-                vehicle.snapshots.value = parked.copy(drivingState = state)
+            runCurrent()
+            vm.claimPointQuest(DrivingQuestIds.SEATBELT, displayedSnapshot)
+            runCurrent()
+            economy.completions.value = setOf(DrivingQuestIds.SEATBELT)
+            runCurrent()
+            assertTrue(DrivingQuestIds.SEATBELT in vm.state.value.completedPointQuestIds)
+
+            economy.completions.value = emptySet()
+            runCurrent()
+
+            assertFalse(DrivingQuestIds.SEATBELT in vm.state.value.completedPointQuestIds)
+        }
+
+    @Test
+    fun completionResetClearsClaimObservedBeforeItsResultReturns() =
+        runModelTest {
+            val result = CompletableDeferred<PointAwardResult>()
+            economy.gate = result
+            val vm = subject()
+            runCurrent()
+            vm.claimPointQuest(DrivingQuestIds.SEATBELT, displayedSnapshot)
+            runCurrent()
+            economy.completions.value = setOf(DrivingQuestIds.SEATBELT)
+            runCurrent()
+            result.complete(PointAwardResult.Awarded(5, 105, "once"))
+            runCurrent()
+            assertTrue(DrivingQuestIds.SEATBELT in vm.state.value.completedPointQuestIds)
+
+            economy.completions.value = emptySet()
+            runCurrent()
+
+            assertFalse(DrivingQuestIds.SEATBELT in vm.state.value.completedPointQuestIds)
+        }
+
+    @Test
+    fun completionResetDuringPendingClaimSurvivesItsLateResult() =
+        runModelTest {
+            val result = CompletableDeferred<PointAwardResult>()
+            economy.gate = result
+            val vm = subject()
+            runCurrent()
+            vm.claimPointQuest(DrivingQuestIds.SEATBELT, displayedSnapshot)
+            runCurrent()
+            economy.completions.value = setOf(DrivingQuestIds.SEATBELT)
+            runCurrent()
+            economy.completions.value = emptySet()
+            runCurrent()
+            assertFalse(DrivingQuestIds.SEATBELT in vm.state.value.completedPointQuestIds)
+
+            result.complete(PointAwardResult.Awarded(5, 105, "once"))
+            runCurrent()
+            economy.evaluation.value = DriveEvaluationData(distanceKm = 7f)
+            runCurrent()
+
+            assertFalse(DrivingQuestIds.SEATBELT in vm.state.value.completedPointQuestIds)
+        }
+
+    @Test
+    fun completionResetClearsAlreadyAwardedReconciliation() =
+        runModelTest {
+            economy.result = PointAwardResult.AlreadyAwarded
+            economy.completions.value = setOf(DrivingQuestIds.SEATBELT)
+            val vm = subject()
+            runCurrent()
+            vm.claimPointQuest(DrivingQuestIds.SEATBELT, displayedSnapshot)
+            runCurrent()
+            assertTrue(DrivingQuestIds.SEATBELT in vm.state.value.completedPointQuestIds)
+
+            economy.completions.value = emptySet()
+            runCurrent()
+
+            assertFalse(DrivingQuestIds.SEATBELT in vm.state.value.completedPointQuestIds)
+            assertNull(vm.state.value.rewardSuccess)
+        }
+
+    @Test
+    fun alreadyAwardedReconcilesWithoutCelebratingAnotherCredit() =
+        runModelTest {
+            economy.result = PointAwardResult.AlreadyAwarded
+            val vm = subject()
+            runCurrent()
+            vm.claimPointQuest(DrivingQuestIds.HIDDEN_NEW_FRIEND, displayedSnapshot)
+            runCurrent()
+
+            assertTrue(DrivingQuestIds.HIDDEN_NEW_FRIEND in vm.state.value.completedPointQuestIds)
+            assertNull(vm.state.value.rewardSuccess)
+            assertNull(vm.state.value.message)
+        }
+
+    @Test
+    fun failedPointClaimKeepsHiddenQuestAvailableForRetry() =
+        runModelTest {
+            economy.result = PointAwardResult.StorageFailure
+            val vm = subject()
+            runCurrent()
+            vm.claimPointQuest(DrivingQuestIds.HIDDEN_NEW_FRIEND, displayedSnapshot)
+            runCurrent()
+
+            assertEquals(QuestMessage.STORAGE_FAILURE, vm.state.value.message)
+            assertFalse(DrivingQuestIds.HIDDEN_NEW_FRIEND in vm.state.value.dismissedHiddenQuestIds)
+            assertFalse(DrivingQuestIds.HIDDEN_NEW_FRIEND in vm.state.value.completedPointQuestIds)
+            assertNull(vm.state.value.rewardSuccess)
+            assertFalse(vm.state.value.isBusy)
+            economy.result = PointAwardResult.Awarded(30, 130, "once")
+            vm.claimPointQuest(DrivingQuestIds.HIDDEN_NEW_FRIEND, displayedSnapshot)
+            runCurrent()
+            assertEquals(2, economy.awardCalls)
+            assertEquals(
+                30,
+                vm.state.value.rewardSuccess
+                    ?.points
+                    ?.toInt(),
+            )
+        }
+
+    @Test
+    fun rejectedEvidenceCannotCreateSuccessOrDismissAHiddenQuest() =
+        runModelTest {
+            val vm = subject()
+            runCurrent()
+            for ((result, message) in listOf(
+                PointAwardResult.EvidenceChanged to QuestMessage.REFRESH_REQUIRED,
+                PointAwardResult.InteractionRestricted to QuestMessage.INTERACTION_RESTRICTED,
+                PointAwardResult.QuestUnavailable to QuestMessage.UNSUPPORTED,
+            )) {
+                economy.result = result
+                vm.claimPointQuest(DrivingQuestIds.HIDDEN_NEW_FRIEND, displayedSnapshot)
                 runCurrent()
-                assertEquals(SignalQuality.VALID, vm.state.value.snapshot.quality)
-                now = 20_000
-                dispatcher.scheduler.advanceTimeBy(1_000)
-                runCurrent()
-                assertEquals(SignalQuality.STALE, vm.state.value.snapshot.quality)
-                now = 2_000
-                dispatcher.scheduler.advanceTimeBy(1_000)
-                runCurrent()
+                assertEquals(message, vm.state.value.message)
+                assertTrue(
+                    vm.state.value.completedPointQuestIds
+                        .isEmpty(),
+                )
+                assertTrue(
+                    vm.state.value.dismissedHiddenQuestIds
+                        .isEmpty(),
+                )
+                assertNull(vm.state.value.rewardSuccess)
             }
         }
 
     @Test
-    fun failedObservationCanBeRetriedWithoutRecreatingViewModel() =
+    fun observationFailureRetainsCommittedDataAndRetryHasOneCollector() =
         runModelTest {
-            local.failObservation = true
+            economy.completions.value = setOf(DrivingQuestIds.SEATBELT)
             val vm = subject()
             runCurrent()
-            assertEquals(QuestMessage.STORAGE_FAILURE, vm.state.value.message)
-            assertTrue(vm.state.value.observationFailed)
-            vm.start(QuestType.Q01)
+            assertTrue(DrivingQuestIds.SEATBELT in vm.state.value.completedPointQuestIds)
+            economy.failObservation.value = true
             runCurrent()
-            assertEquals(0, local.commandCalls)
-            local.failObservation = false
+            assertTrue(vm.state.value.observationFailed)
+            assertTrue(DrivingQuestIds.SEATBELT in vm.state.value.completedPointQuestIds)
+            vm.claimPointQuest(DrivingQuestIds.SAFE_DRIVE, displayedSnapshot)
+            assertEquals(0, economy.awardCalls)
+            economy.failObservation.value = false
+            vm.retry()
             vm.retry()
             runCurrent()
-            assertTrue(vm.state.value.canAcknowledge)
             assertFalse(vm.state.value.observationFailed)
-            assertNull(vm.state.value.message)
+            assertFalse(vm.state.value.isLoading)
+            assertEquals(2, economy.observationStarts)
+            assertEquals(1, economy.activeObservations)
         }
 
     @Test
-    fun validVehicleRecoveryClearsObsoleteValidationError() =
+    fun cancellingPendingClaimDoesNotConvertCancellationIntoStorageFailure() =
         runModelTest {
-            val parked = vehicle.snapshots.value
-            vehicle.snapshots.value = parked.copy(drivingState = DrivingState.UNKNOWN)
+            economy.gate = CompletableDeferred()
             val vm = subject()
             runCurrent()
-            vm.start(QuestType.Q01)
+            vm.claimPointQuest(DrivingQuestIds.SEATBELT, displayedSnapshot)
             runCurrent()
-            assertEquals(QuestMessage.NOT_PARKED, vm.state.value.message)
-            vehicle.snapshots.value = parked
+            store.clear()
             runCurrent()
+            assertTrue(economy.cancelled)
+            assertNull(vm.state.value.rewardSuccess)
             assertNull(vm.state.value.message)
+            assertFalse(vm.state.value.isBusy)
         }
 
     @Test
-    fun freshNewEpochCanCancelInterruptedRunToAllowRestart() =
+    fun drivingEvaluationUpdatesEligibilityWithoutVehicleObservation() =
         runModelTest {
-            vehicle.snapshots.value = vehicle.snapshots.value.copy(epoch = "new-epoch", sequence = 1)
             val vm = subject()
             runCurrent()
-            assertFalse(vm.state.value.canAcknowledge)
-            vm.cancel()
+            economy.evaluation.value = DriveEvaluationData(distanceKm = 10f, safeBeltMinutes = 15, safeDriveScore = 90)
             runCurrent()
-            assertEquals(1, local.commandCalls)
+            assertTrue(DrivingQuestIds.SEATBELT in vm.state.value.satisfiedDrivingQuestIds)
+            assertTrue(DrivingQuestIds.SAFE_DRIVE in vm.state.value.satisfiedDrivingQuestIds)
         }
-
-    private class TestVehicle : VehicleRepository {
-        override val snapshots =
-            MutableStateFlow(
-                VehicleSnapshot(
-                    "card-2",
-                    "epoch",
-                    2,
-                    2_000,
-                    SignalSource.REAL,
-                    DrivingState.PARKED,
-                    SignalQuality.VALID,
-                    72,
-                ),
-            )
-
-        override fun start() = Unit
-
-        override fun stop() = Unit
-    }
-
-    private class TestQuests :
-        QuestRepository,
-        RewardRepository {
-        private val storedProgress =
-            MutableStateFlow(
-                QuestProgress(
-                    QuestRun(
-                        "run",
-                        "profile",
-                        QuestType.Q01,
-                        QuestStatus.ACTIVE,
-                        1,
-                        1,
-                        80,
-                        "epoch",
-                        1,
-                        1_000,
-                        SignalSource.REAL,
-                    ),
-                ),
-            )
-        var failObservation = false
-        override val progress get() =
-            flow {
-                check(!failObservation) { "controlled observation failure" }
-                emitAll(storedProgress)
-            }
-        var commandCalls = 0
-        var rewardCalls = 0
-        val rewardGate = CompletableDeferred<RewardResult>()
-
-        override suspend fun start(
-            type: QuestType,
-            snapshot: VehicleSnapshot,
-        ): QuestCommandResult {
-            commandCalls++
-            return QuestCommandResult.AlreadyActive
-        }
-
-        override suspend fun cancel(
-            runId: String,
-            expectedRevision: Long,
-            snapshot: VehicleSnapshot,
-        ): QuestCommandResult {
-            commandCalls++
-            return QuestCommandResult.Cancelled
-        }
-
-        override suspend fun complete(
-            runId: String,
-            expectedRevision: Long,
-            snapshot: VehicleSnapshot,
-        ): RewardResult {
-            rewardCalls++
-            return rewardGate.await()
-        }
-    }
 
     private class TestEconomy : PointEconomy {
         var awardCalls = 0
-        var lastAwardQuestId: String? = null
-        var result: PointAwardResult = PointAwardResult.Awarded(5, 105, "occurrence")
-        val completionsFlow = MutableStateFlow<Set<String>>(emptySet())
-        val evalFlow = MutableStateFlow(DriveEvaluationData())
+        var lastSnapshot: VehicleSnapshot? = null
+        var result: PointAwardResult = PointAwardResult.Awarded(5, 105, "once")
+        var gate: CompletableDeferred<PointAwardResult>? = null
+        var cancelled = false
+        var observationStarts = 0
+        var activeObservations = 0
+        val completions = MutableStateFlow<Set<String>>(emptySet())
+        val evaluation = MutableStateFlow(DriveEvaluationData())
+        val failObservation = MutableStateFlow(false)
         override val wallet = emptyFlow<PointWallet>()
         override val inventory = emptyFlow<CosmeticInventory>()
         override val catalog = emptyFlow<List<CosmeticItem>>()
-        override val completedQuestIds = completionsFlow
-        override val driveEvaluation = evalFlow
+        override val completedQuestIds =
+            flow {
+                observationStarts++
+                activeObservations++
+                try {
+                    emitAll(
+                        kotlinx.coroutines.flow.combine(completions, failObservation) { ids, fail ->
+                            check(!fail) { "Observation unavailable" }
+                            ids
+                        },
+                    )
+                } finally {
+                    activeObservations--
+                }
+            }
+        override val driveEvaluation = evaluation
 
         override suspend fun purchase(
             itemId: String,
@@ -319,144 +356,13 @@ class QuestViewModelTest {
             displayedSnapshot: VehicleSnapshot,
         ): PointAwardResult {
             awardCalls++
-            lastAwardQuestId = questId
-            return result
+            lastSnapshot = displayedSnapshot
+            return try {
+                gate?.await() ?: result
+            } catch (cancelled: CancellationException) {
+                this.cancelled = true
+                throw cancelled
+            }
         }
     }
-
-    @Test
-    fun claimPointQuestCallsEconomyAwardAndReflectsCompletions() =
-        runModelTest {
-            val testEconomy = TestEconomy()
-            val vm =
-                QuestViewModel(
-                    local,
-                    local,
-                    vehicle,
-                    ProgressionIdentity("profile", SignalSource.REAL),
-                    Clock { now },
-                    QuestEvaluator(15_000),
-                    testEconomy,
-                ).also { store.put("quest-economy", it) }
-            runCurrent()
-
-            vm.claimPointQuest(DrivingQuestIds.SEATBELT)
-            runCurrent()
-
-            assertEquals(1, testEconomy.awardCalls)
-            assertEquals(DrivingQuestIds.SEATBELT, testEconomy.lastAwardQuestId)
-            assertNull(vm.state.value.message)
-
-            testEconomy.completionsFlow.value = setOf(DrivingQuestIds.SEATBELT)
-            runCurrent()
-            assertTrue(
-                vm.state.value.completedPointQuestIds
-                    .contains(DrivingQuestIds.SEATBELT),
-            )
-        }
-
-    @Test
-    fun driveEvaluationUpdatesSatisfiedQuestsAndVssStateControlsClaimability() =
-        runModelTest {
-            val testEconomy = TestEconomy()
-            val vm =
-                QuestViewModel(
-                    local,
-                    local,
-                    vehicle,
-                    ProgressionIdentity("profile", SignalSource.REAL),
-                    Clock { now },
-                    QuestEvaluator(15_000),
-                    testEconomy,
-                ).also { store.put("quest-driving", it) }
-            runCurrent()
-
-            assertTrue(
-                vm.state.value.satisfiedDrivingQuestIds
-                    .isEmpty(),
-            )
-
-            testEconomy.evalFlow.value =
-                DriveEvaluationData(
-                    distanceKm = 10f,
-                    safeBeltMinutes = 15,
-                    safeDriveScore = 90,
-                )
-            runCurrent()
-
-            assertTrue(
-                vm.state.value.satisfiedDrivingQuestIds
-                    .contains(DrivingQuestIds.SEATBELT),
-            )
-            assertTrue(
-                vm.state.value.satisfiedDrivingQuestIds
-                    .contains(DrivingQuestIds.SAFE_DRIVE),
-            )
-            assertTrue(vm.state.value.canManageQuest)
-
-            vehicle.snapshots.value = vehicle.snapshots.value.copy(drivingState = DrivingState.MOVING)
-            runCurrent()
-            assertFalse(vm.state.value.canManageQuest)
-
-            vm.claimPointQuest(DrivingQuestIds.SEATBELT)
-            runCurrent()
-            assertEquals(0, testEconomy.awardCalls)
-            assertEquals(QuestMessage.NOT_PARKED, vm.state.value.message)
-
-            vehicle.snapshots.value = vehicle.snapshots.value.copy(drivingState = DrivingState.PARKED)
-            runCurrent()
-            assertTrue(vm.state.value.canManageQuest)
-            assertNull(vm.state.value.message)
-
-            vm.claimPointQuest(DrivingQuestIds.SEATBELT)
-            runCurrent()
-            assertEquals(1, testEconomy.awardCalls)
-        }
-
-    @Test
-    fun dismissHiddenQuestAddsQuestIdToDismissedHiddenQuestIds() =
-        runModelTest {
-            val vm = subject()
-            runCurrent()
-            assertTrue(
-                vm.state.value.dismissedHiddenQuestIds
-                    .isEmpty(),
-            )
-
-            vm.dismissHiddenQuest(DrivingQuestIds.HIDDEN_NEW_FRIEND)
-            runCurrent()
-            assertTrue(
-                vm.state.value.dismissedHiddenQuestIds
-                    .contains(DrivingQuestIds.HIDDEN_NEW_FRIEND),
-            )
-        }
-
-    @Test
-    fun claimPointQuestAddsQuestIdToDismissedHiddenQuestIds() =
-        runModelTest {
-            val testEconomy = TestEconomy()
-            val vm =
-                QuestViewModel(
-                    local,
-                    local,
-                    vehicle,
-                    ProgressionIdentity("profile", SignalSource.REAL),
-                    Clock { now },
-                    QuestEvaluator(15_000),
-                    testEconomy,
-                ).also { store.put("quest-claim-hidden", it) }
-            runCurrent()
-            assertTrue(
-                vm.state.value.dismissedHiddenQuestIds
-                    .isEmpty(),
-            )
-
-            vm.claimPointQuest(DrivingQuestIds.HIDDEN_NEW_FRIEND)
-            runCurrent()
-            assertTrue(
-                vm.state.value.dismissedHiddenQuestIds
-                    .contains(DrivingQuestIds.HIDDEN_NEW_FRIEND),
-            )
-            assertEquals(1, testEconomy.awardCalls)
-        }
 }

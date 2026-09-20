@@ -1,53 +1,41 @@
 package com.monsters.mobimon.feature.quest
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
-import com.monsters.mobimon.core.domain.Clock
 import com.monsters.mobimon.core.domain.PointEconomy
-import com.monsters.mobimon.core.domain.ProgressionIdentity
-import com.monsters.mobimon.core.domain.QuestEvaluator
-import com.monsters.mobimon.core.domain.QuestRepository
-import com.monsters.mobimon.core.domain.RewardRepository
-import com.monsters.mobimon.core.domain.VehicleRepository
+import com.monsters.mobimon.core.domain.PointQuestCatalog
 import com.monsters.mobimon.core.navigation.AppRoute
 import com.monsters.mobimon.core.navigation.FeatureEntry
 import com.monsters.mobimon.core.navigation.FeatureNavigator
 import com.monsters.mobimon.core.navigation.QuestRoute
 import com.monsters.mobimon.core.presentation.CompanionAppearancePresentation
-import com.monsters.mobimon.core.presentation.PointBalanceState
 import com.monsters.mobimon.core.presentation.PointPresentation
 import com.monsters.mobimon.core.presentation.VehiclePresentation
 import com.monsters.mobimon.core.presentation.parkedVerified
 import com.monsters.mobimon.core.ui.MobiMonDestination
 
 class QuestFeature(
-    private val quests: QuestRepository,
-    private val rewards: RewardRepository,
-    private val source: VehicleRepository,
-    private val identity: ProgressionIdentity,
-    private val clock: Clock,
-    private val evaluator: QuestEvaluator,
     private val vehicle: VehiclePresentation,
     private val wallet: PointPresentation,
-    private val economy: PointEconomy? = null,
+    private val appearance: CompanionAppearancePresentation,
+    private val economy: PointEconomy,
+    catalog: PointQuestCatalog,
 ) : FeatureEntry {
     override val routes = setOf(QuestRoute.QUESTS)
+    private val catalog = QuestCatalog(catalog)
 
     @Composable
     private fun model(): QuestViewModel {
-        val factory =
-            remember(this) {
-                viewModelFactory {
-                    initializer { QuestViewModel(quests, rewards, source, identity, clock, evaluator, economy) }
-                }
-            }
+        val factory = remember(this) { viewModelFactory { initializer { QuestViewModel(economy) } } }
         return viewModel(factory = factory)
     }
 
@@ -58,15 +46,20 @@ class QuestFeature(
         modifier: Modifier,
     ) {
         val model = model()
+        val walletModel = wallet.model()
+        val appearanceModel = appearance.model()
+        LaunchedEffect(model, walletModel, appearanceModel) {
+            model.retry()
+            walletModel.retry()
+            appearanceModel.retry()
+        }
         val state by model.state.collectAsStateWithLifecycle()
-        val pointBalance by wallet.model().state.collectAsStateWithLifecycle()
-        val snapshot = vehicle.snapshot()
-        val appearance = remember(economy) { economy?.let { CompanionAppearancePresentation(it) } }
-        val equipped = appearance?.state()
-        val interactionAllowed = snapshot.parkedVerified
-        val balance = (pointBalance as? PointBalanceState.Ready)?.balance
-        val balanceFailed = pointBalance == PointBalanceState.Failed
-        val questError = error(state)
+        val pointBalance by walletModel.state.collectAsStateWithLifecycle()
+        val equipped by appearanceModel.state.collectAsStateWithLifecycle()
+        val reading = vehicle.reading()
+        val snapshot = reading.snapshot
+        val context = LocalContext.current
+        val screenState = catalog.present(state, equipped, pointBalance, snapshot.parkedVerified, context::getString)
         MobiMonDestination(
             stringResource(R.string.quest_destination_title),
             navigator.back,
@@ -74,34 +67,17 @@ class QuestFeature(
             modifier,
         ) {
             QuestScreen(
-                progress = state.progress,
-                friendId = equipped?.friendId ?: "friend:mobi",
-                accessoryId = equipped?.accessoryId,
-                outfitId = equipped?.outfitId,
-                backgroundId = equipped?.backgroundId,
-                canManageQuest = state.canManageQuest && interactionAllowed,
-                onStartQuest = model::start,
-                onCancelQuest = model::cancel,
-                onAcknowledgeVehicle = model::acknowledge,
-                vehicleSnapshot = snapshot,
-                canAcknowledgeVehicle = state.canAcknowledge && interactionAllowed,
-                isBusy = state.isBusy,
-                errorMessage = questError,
-                pointBalance = balance,
-                pointLoadFailed = balanceFailed,
-                snapshot = snapshot,
-                customCompletions = state.completedPointQuestIds,
-                satisfiedQuestIds = state.satisfiedDrivingQuestIds,
-                dismissedHiddenQuestIds = state.dismissedHiddenQuestIds,
-                onClaimReward = model::claimPointQuest,
+                state = screenState,
+                onClaimReward = { questId ->
+                    if (screenState.canClaim) model.claimPointQuest(questId, reading.evidence)
+                },
                 onDismissHiddenQuest = model::dismissHiddenQuest,
+                onDismissRewardSuccess = model::dismissRewardSuccess,
+                onRetryQuests = model::retry,
+                onRetryWallet = walletModel::retry,
+                onRetryAppearance = appearanceModel::retry,
+                onNavigateRoute = navigator.navigate,
             )
         }
-    }
-
-    @Composable
-    private fun error(state: QuestUiState): String? {
-        val observationChanged = state.progress.activeRun?.let { it.startEpoch != state.snapshot.epoch } == true
-        return questErrorText(state.message ?: if (observationChanged) QuestMessage.OBSERVATION_CHANGED else null)
     }
 }

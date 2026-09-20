@@ -20,7 +20,6 @@ import androidx.lifecycle.viewmodel.viewModelFactory
 import com.monsters.mobimon.core.domain.CosmeticSlot
 import com.monsters.mobimon.core.domain.PetRepository
 import com.monsters.mobimon.core.domain.PointEconomy
-import com.monsters.mobimon.core.domain.SettingsRepository
 import com.monsters.mobimon.core.domain.SignalSource
 import com.monsters.mobimon.core.navigation.AiRoute
 import com.monsters.mobimon.core.navigation.AppRoute
@@ -37,7 +36,6 @@ import com.monsters.mobimon.core.ui.MobiMonMessage
 /** AI-owned routes. A real connection adapter is deliberately not inferred from UI state. */
 class AiFeature(
     private val pets: PetRepository,
-    private val settings: SettingsRepository,
     private val points: PointEconomy,
     private val vehicle: VehiclePresentation,
 ) : FeatureEntry {
@@ -68,7 +66,7 @@ class AiFeature(
             return
         }
         val factory =
-            remember(this) { viewModelFactory { initializer { AiCompanionViewModel(pets, settings, points) } } }
+            remember(this) { viewModelFactory { initializer { AiCompanionViewModel(pets, points) } } }
         val model: AiCompanionViewModel = viewModel(factory = factory)
         val companion by model.state.collectAsStateWithLifecycle()
         val profile = companion.profile

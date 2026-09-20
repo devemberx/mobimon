@@ -1,6 +1,6 @@
 # Project development skills
 
-This project vendors four skills for Android development, UI/UX design, and token-efficient communication.
+This project vendors three skills for Android development and UI/UX design.
 Upstream content is preserved except for trailing whitespace cleanup in
 UI/UX Pro Max's `scripts/design_system.py`, including a docstring. Code logic is unchanged.
 
@@ -9,11 +9,9 @@ UI/UX Pro Max's `scripts/design_system.py`, including a docstring. Code logic is
 | [compose-agent](compose-agent/SKILL.md) | Write and review Jetpack Compose code, state, lifecycle, and animations. | [hamen/compose_skill](https://github.com/hamen/compose_skill/tree/f815c31d6cc1a4af4ce2796d08eb7d8b506785c9/skills/compose-agent) | `f815c31d6cc1a4af4ce2796d08eb7d8b506785c9` | [MIT](compose-agent/LICENSE) |
 | [testing-setup](testing-setup/SKILL.md) | Review and configure Android unit, UI, screenshot, and device testing. | [android/skills](https://github.com/android/skills/tree/bac232fd02b0855df9275281a2a7a47643768719/testing/testing-setup) | `bac232fd02b0855df9275281a2a7a47643768719` | [Apache-2.0](testing-setup/LICENSE.txt) |
 | [ui-ux-pro-max](ui-ux-pro-max/SKILL.md) | Review visual hierarchy, interaction, accessibility, and design consistency. | [nextlevelbuilder/ui-ux-pro-max-skill](https://github.com/nextlevelbuilder/ui-ux-pro-max-skill/tree/7f69fed6a2717900085f1bc3b263721f8ba025e2/.claude/skills/ui-ux-pro-max) | `7f69fed6a2717900085f1bc3b263721f8ba025e2` | [MIT](ui-ux-pro-max/LICENSE) |
-| [caveman](caveman/SKILL.md) | Ultra-compressed communication mode that cuts output tokens while keeping technical accuracy. | [JuliusBrussee/caveman](https://github.com/JuliusBrussee/caveman/tree/main/skills/caveman) | `main` | MIT |
 
 The Android skills were imported on 2026-09-09 and UI/UX Pro Max on 2026-09-12
-using the Codex skill installer. Caveman was imported on 2026-09-17.
-Repository-level licenses are included with each skill.
+using the Codex skill installer.
 
 ## Usage
 

@@ -2,12 +2,10 @@ package com.monsters.mobimon.feature.auth
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.monsters.mobimon.core.domain.CompanionSettings
 import com.monsters.mobimon.core.domain.CosmeticInventory
 import com.monsters.mobimon.core.domain.PetProfile
 import com.monsters.mobimon.core.domain.PetRepository
 import com.monsters.mobimon.core.domain.PointEconomy
-import com.monsters.mobimon.core.domain.SettingsRepository
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -17,7 +15,6 @@ import kotlinx.coroutines.launch
 
 internal data class AiCompanionState(
     val profile: PetProfile? = null,
-    val settings: CompanionSettings = CompanionSettings(),
     val inventory: CosmeticInventory? = null,
     val failed: Boolean = false,
 )
@@ -25,7 +22,6 @@ internal data class AiCompanionState(
 /** Reads committed companion context without depending on Home or Shop presentation state. */
 internal class AiCompanionViewModel(
     private val pets: PetRepository,
-    private val settings: SettingsRepository,
     private val points: PointEconomy,
 ) : ViewModel() {
     private val mutableState = MutableStateFlow(AiCompanionState())
@@ -43,8 +39,8 @@ internal class AiCompanionViewModel(
             viewModelScope.launch {
                 try {
                     pets.initialize()
-                    combine(pets.profile, settings.settings, points.inventory) { profile, preferences, inventory ->
-                        AiCompanionState(profile, preferences, inventory)
+                    combine(pets.profile, points.inventory) { profile, inventory ->
+                        AiCompanionState(profile, inventory)
                     }.collect { mutableState.value = it }
                 } catch (cancelled: CancellationException) {
                     throw cancelled

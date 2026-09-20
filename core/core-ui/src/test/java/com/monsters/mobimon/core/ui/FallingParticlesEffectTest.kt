@@ -21,8 +21,9 @@ class FallingParticlesEffectTest {
     fun fallingStarsEffectRendersWithoutCrashing() {
         compose.setContent {
             MobiMonTheme {
-                FallingStarsEffect(
+                FallingParticlesEffect(
                     modifier = Modifier.fillMaxSize().testTag("stars-effect"),
+                    particleType = ParticleType.STAR,
                     particleCount = 10,
                 )
             }

@@ -32,6 +32,73 @@ class VehicleInfoScreenTest {
     }
 
     @Test
+    fun missingReadingsDoNotClaimHealthyVehicleOrCheckedAssistance() {
+        render(snapshot(battery = null))
+
+        compose.onNodeWithText("차량의 상태가 좋아요").assertDoesNotExist()
+        compose.onNodeWithText("저압 경고 없음").assertDoesNotExist()
+        compose.onNodeWithText("주의 경고 없음").assertDoesNotExist()
+        compose.onNodeWithText("타이어 정보 없음").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText("운전자 보조 정보 없음").performScrollTo().assertIsDisplayed()
+    }
+
+    @Test
+    fun partialAssistReadingsDoNotEstablishNoWarnings() {
+        render(snapshot().copy(isEmergencyBraking = false, isDrowsy = false))
+
+        compose.onNodeWithText("주의 경고 없음").assertDoesNotExist()
+        compose.onNodeWithText("운전자 보조 정보 없음").performScrollTo().assertIsDisplayed()
+    }
+
+    @Test
+    fun uninterpretedTireStatusDoesNotEstablishNoWarnings() {
+        render(snapshot().copy(tirePressureStatus = "NG"))
+
+        compose.onNodeWithText("NG").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText("저압 경고 없음").assertDoesNotExist()
+    }
+
+    @Test
+    fun staleAuxiliaryReadingsDoNotRemainCurrent() {
+        render(
+            snapshot(quality = SignalQuality.STALE).copy(
+                tirePressureStatus = "정상",
+                isEmergencyBraking = false,
+                isDrowsy = false,
+                isDistracted = false,
+                attentionLevel = 85,
+                outsideTemperature = 18,
+                isRaining = false,
+            ),
+        )
+
+        compose.onNodeWithText("정상").assertDoesNotExist()
+        compose.onNodeWithText("85").assertDoesNotExist()
+        compose.onNodeWithText("18°").assertDoesNotExist()
+        compose.onNodeWithText("저압 경고 없음").assertDoesNotExist()
+        compose.onNodeWithText("주의 경고 없음").assertDoesNotExist()
+    }
+
+    @Test
+    fun explicitlyCheckedReadingsRemainVisible() {
+        render(
+            snapshot().copy(
+                tirePressureStatus = "정상",
+                isEmergencyBraking = false,
+                isDrowsy = false,
+                isDistracted = false,
+                attentionLevel = 85,
+                outsideTemperature = 18,
+                isRaining = false,
+            ),
+        )
+
+        compose.onNodeWithText("정상").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText("주의 경고 없음").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText("18°").performScrollTo().assertIsDisplayed()
+    }
+
+    @Test
     fun staleSnapshotShowsIndependentSignalAges() {
         render(
             snapshot(quality = SignalQuality.STALE).copy(
@@ -67,6 +134,7 @@ class VehicleInfoScreenTest {
         render(snapshot().copy(warnings = listOf(warning)))
         compose.onNodeWithText("이전 경고 · 주의 · 앞바퀴").performScrollTo().assertIsDisplayed()
         compose.onNodeWithText("지금 점검").assertDoesNotExist()
+        compose.onNodeWithText("주의").assertDoesNotExist()
     }
 
     private fun render(snapshot: VehicleSnapshot) {
