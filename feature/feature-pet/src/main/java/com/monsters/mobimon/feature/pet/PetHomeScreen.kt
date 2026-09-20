@@ -42,11 +42,13 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import com.monsters.mobimon.core.domain.PetProfile
 import com.monsters.mobimon.core.domain.VehicleSnapshot
+import com.monsters.mobimon.core.ui.LocalMobiMonMotionEnabled
 import com.monsters.mobimon.core.ui.MobiMonButton
 import com.monsters.mobimon.core.ui.MobiMonMessage
 import com.monsters.mobimon.core.ui.MobiMonNavigationButton
 import com.monsters.mobimon.core.ui.MobiMonPointSummary
 import com.monsters.mobimon.core.ui.PetAvatar
+import com.monsters.mobimon.core.ui.companionBackgroundRes
 
 /** Displays the in-app Home from committed state; navigation belongs to the shell. */
 @Composable
@@ -73,10 +75,10 @@ fun PetHomeScreen(
     val talkText = if (connectionAvailable) R.string.pet_talk_action else R.string.pet_talk_unavailable
     Surface(modifier = modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
         BoxWithConstraints(Modifier.fillMaxSize()) {
-            val backgroundRes = petHomeBackgroundRes(snapshot.timeOfDay)
+            val backgroundRes = companionBackgroundRes(snapshot.timeOfDay)
             Crossfade(
                 targetState = backgroundRes,
-                animationSpec = tween(durationMillis = 1000),
+                animationSpec = tween(durationMillis = if (LocalMobiMonMotionEnabled.current) 1000 else 0),
                 modifier = Modifier.fillMaxSize(),
                 label = "pet_home_background_crossfade",
             ) { targetRes ->
@@ -438,31 +440,5 @@ fun PetHomeLoadingScreen(
                 }
             }
         }
-    }
-}
-
-internal fun petHomeBackgroundRes(timeOfDay: String?): Int {
-    val trimmed = timeOfDay?.trim()
-    when (trimmed?.lowercase()) {
-        "morning", "아침" -> return R.drawable.pet_home_background_morning_v4
-        "day", "낮" -> return R.drawable.pet_home_background_day_v4
-        "night", "밤" -> return R.drawable.pet_home_background_v4
-    }
-    val hour = trimmed?.toIntOrNull()
-    if (hour != null) {
-        return when (hour) {
-            in 8..11 -> R.drawable.pet_home_background_morning_v4
-            in 12..18 -> R.drawable.pet_home_background_day_v4
-            else -> R.drawable.pet_home_background_v4
-        }
-    }
-    val currentHour =
-        java.util.Calendar
-            .getInstance()
-            .get(java.util.Calendar.HOUR_OF_DAY)
-    return when (currentHour) {
-        in 8..11 -> R.drawable.pet_home_background_morning_v4
-        in 12..18 -> R.drawable.pet_home_background_day_v4
-        else -> R.drawable.pet_home_background_v4
     }
 }

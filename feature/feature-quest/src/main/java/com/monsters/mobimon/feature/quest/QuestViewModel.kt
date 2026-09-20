@@ -2,84 +2,51 @@ package com.monsters.mobimon.feature.quest
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.monsters.mobimon.core.domain.Clock
-import com.monsters.mobimon.core.domain.DriveEvaluationData
 import com.monsters.mobimon.core.domain.DrivingQuestEvaluator
 import com.monsters.mobimon.core.domain.PointAwardResult
 import com.monsters.mobimon.core.domain.PointEconomy
-import com.monsters.mobimon.core.domain.ProgressionIdentity
-import com.monsters.mobimon.core.domain.QuestCommandResult
-import com.monsters.mobimon.core.domain.QuestEvaluator
-import com.monsters.mobimon.core.domain.QuestProgress
-import com.monsters.mobimon.core.domain.QuestRejection
-import com.monsters.mobimon.core.domain.QuestRepository
-import com.monsters.mobimon.core.domain.QuestType
-import com.monsters.mobimon.core.domain.RewardRepository
-import com.monsters.mobimon.core.domain.RewardResult
-import com.monsters.mobimon.core.domain.SignalQuality
-import com.monsters.mobimon.core.domain.VehicleRepository
 import com.monsters.mobimon.core.domain.VehicleSnapshot
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 enum class QuestMessage {
-    NOT_PARKED,
-    NO_DATA,
-    STALE,
-    WRONG_SOURCE,
-    OBSERVATION_CHANGED,
+    INTERACTION_RESTRICTED,
     REFRESH_REQUIRED,
     UNSUPPORTED,
-    ALREADY_ACTIVE,
-    ALREADY_COMPLETED,
     STORAGE_FAILURE,
-    APP_USE_RESTRICTED,
 }
 
+data class QuestRewardSuccess(
+    val questId: String,
+    val points: Long,
+)
+
 data class QuestUiState(
-    val snapshot: VehicleSnapshot,
-    val progress: QuestProgress = QuestProgress(),
-    val canManageQuest: Boolean = false,
-    val canAcknowledge: Boolean = false,
-    val isBusy: Boolean = false,
-    val observationFailed: Boolean = false,
-    val message: QuestMessage? = null,
     val completedPointQuestIds: Set<String> = emptySet(),
     val satisfiedDrivingQuestIds: Set<String> = emptySet(),
     val dismissedHiddenQuestIds: Set<String> = emptySet(),
-)
-
-private data class ObservationData(
-    val progress: QuestProgress,
-    val snapshot: VehicleSnapshot,
-    val now: Long,
-    val completedIds: Set<String>,
-    val evalData: DriveEvaluationData,
-)
+    val pendingQuestId: String? = null,
+    val isLoading: Boolean = true,
+    val observationFailed: Boolean = false,
+    val message: QuestMessage? = null,
+    val rewardSuccess: QuestRewardSuccess? = null,
+) {
+    val isBusy: Boolean get() = pendingQuestId != null
+}
 
 class QuestViewModel(
-    private val quests: QuestRepository,
-    private val rewards: RewardRepository,
-    private val vehicle: VehicleRepository,
-    private val identity: ProgressionIdentity,
-    private val clock: Clock,
-    private val evaluator: QuestEvaluator,
-    private val economy: PointEconomy? = null,
+    private val economy: PointEconomy,
     private val drivingEvaluator: DrivingQuestEvaluator = DrivingQuestEvaluator(),
 ) : ViewModel() {
-    private val mutableState = MutableStateFlow(QuestUiState(vehicle.snapshots.value))
+    private val mutableState = MutableStateFlow(QuestUiState())
     val state = mutableState.asStateFlow()
     private var observation: Job? = null
+    private val confirmedQuestIds = mutableSetOf<String>()
 
     init {
         retry()
@@ -87,203 +54,87 @@ class QuestViewModel(
 
     fun retry() {
         if (observation?.isActive == true) return
-        val clockTicks =
-            flow {
-                while (true) {
-                    emit(Unit)
-                    delay(1_000)
-                }
-            }
-        val completedFlow: Flow<Set<String>> = economy?.completedQuestIds ?: flowOf(emptySet())
-        val evaluationFlow: Flow<DriveEvaluationData> = economy?.driveEvaluation ?: flowOf(DriveEvaluationData())
+        mutableState.update { it.copy(isLoading = true, observationFailed = false) }
         observation =
             viewModelScope.launch {
-                combine(
-                    quests.progress,
-                    vehicle.snapshots,
-                    clockTicks,
-                    completedFlow,
-                    evaluationFlow,
-                ) { progress, snapshot, _, completedIds, evalData ->
-                    ObservationData(progress, snapshot, clock.nowMillis(), completedIds, evalData)
-                }.catch { cause ->
-                    if (cause is CancellationException) throw cause
-                    mutableState.update {
-                        it.copy(
-                            canManageQuest = false,
-                            canAcknowledge = false,
-                            observationFailed = true,
-                            message = QuestMessage.STORAGE_FAILURE,
-                        )
-                    }
-                }.collect { (progress, snapshot, now, completedIds, evalData) ->
-                    val invalid = evaluator.validateSnapshot(snapshot, identity.source, now)
-                    val displaySnapshot =
-                        when (invalid) {
-                            QuestRejection.STALE -> snapshot.copy(quality = SignalQuality.STALE)
-                            QuestRejection.INVALID_SIGNAL -> snapshot.copy(quality = SignalQuality.UNAVAILABLE)
-                            else -> snapshot
+                try {
+                    combine(economy.completedQuestIds, economy.driveEvaluation) { completedIds, evaluation ->
+                        completedIds to
+                            drivingEvaluator
+                                .evaluateAll(
+                                    evaluation,
+                                ).filter { it.isSatisfied }
+                                .map { it.questId }
+                                .toSet()
+                    }.collect { (completedIds, satisfiedIds) ->
+                        mutableState.update {
+                            it.copy(
+                                completedPointQuestIds = completedIds + confirmedQuestIds,
+                                satisfiedDrivingQuestIds = satisfiedIds,
+                                isLoading = false,
+                                observationFailed = false,
+                            )
                         }
-                    val run = progress.activeRun
-                    val drivingResults = drivingEvaluator.evaluateAll(evalData)
-                    val satisfiedIds = drivingResults.filter { it.isSatisfied }.map { it.questId }.toSet()
-                    mutableState.update {
-                        it.copy(
-                            progress = progress,
-                            snapshot = displaySnapshot,
-                            canManageQuest = invalid == null,
-                            canAcknowledge =
-                                run != null &&
-                                    evaluator.evaluate(
-                                        run,
-                                        run.revision,
-                                        snapshot,
-                                        identity.source,
-                                        now,
-                                    ) == null,
-                            observationFailed = false,
-                            completedPointQuestIds = completedIds,
-                            satisfiedDrivingQuestIds = satisfiedIds,
-                            message =
-                                if (it.observationFailed ||
-                                    it.message.isResolved(invalid, it.snapshot, snapshot)
-                                ) {
-                                    null
-                                } else {
-                                    it.message
-                                },
-                        )
                     }
+                } catch (cancelled: CancellationException) {
+                    throw cancelled
+                } catch (_: Exception) {
+                    mutableState.update { it.copy(isLoading = false, observationFailed = true) }
                 }
             }
     }
 
     fun dismissHiddenQuest(questId: String) {
-        mutableState.update {
-            it.copy(dismissedHiddenQuestIds = it.dismissedHiddenQuestIds + questId)
-        }
+        if (state.value.pendingQuestId == questId) return
+        mutableState.update { it.copy(dismissedHiddenQuestIds = it.dismissedHiddenQuestIds + questId) }
     }
 
-    fun claimPointQuest(questId: String) =
-        command {
-            mutableState.update {
-                it.copy(dismissedHiddenQuestIds = it.dismissedHiddenQuestIds + questId)
-            }
-            val pointEconomy = economy ?: return@command
-            val snapshot = vehicle.snapshots.value
-            if (!validate(snapshot)) return@command
-            when (val result = pointEconomy.awardQuest(questId, snapshot)) {
-                is PointAwardResult.Awarded, PointAwardResult.AlreadyAwarded -> show(null)
-                PointAwardResult.EvidenceChanged -> show(QuestMessage.REFRESH_REQUIRED)
-                PointAwardResult.InteractionRestricted -> show(QuestMessage.NOT_PARKED)
-                PointAwardResult.QuestUnavailable -> show(QuestMessage.UNSUPPORTED)
-                PointAwardResult.StorageFailure -> show(QuestMessage.STORAGE_FAILURE)
-            }
-        }
+    fun dismissRewardSuccess() {
+        mutableState.update { it.copy(rewardSuccess = null) }
+    }
 
-    fun start(type: QuestType) =
-        command {
-            val snapshot = vehicle.snapshots.value
-            if (validate(snapshot)) handle(quests.start(type, snapshot))
-        }
-
-    fun cancel() =
-        command {
-            val snapshot = vehicle.snapshots.value
-            if (validate(snapshot)) {
-                val run = state.value.progress.activeRun
-                if (run == null) {
-                    show(QuestMessage.REFRESH_REQUIRED)
-                } else {
-                    handle(quests.cancel(run.id, run.revision, snapshot))
-                }
-            }
-        }
-
-    fun acknowledge(displayedSnapshotId: String) =
-        command {
-            val snapshot = vehicle.snapshots.value
-            if (snapshot.id != displayedSnapshotId) {
-                show(QuestMessage.REFRESH_REQUIRED)
-                return@command
-            }
-            if (!validate(snapshot)) return@command
-            val run = state.value.progress.activeRun
-            if (run == null) {
-                show(QuestMessage.REFRESH_REQUIRED)
-                return@command
-            }
-            val rejection = evaluator.evaluate(run, run.revision, snapshot, identity.source, clock.nowMillis())
-            if (rejection != null) {
-                show(rejection.message())
-                return@command
-            }
-            when (val result = rewards.complete(run.id, run.revision, snapshot)) {
-                is RewardResult.Applied, RewardResult.AlreadyAwarded -> show(null)
-                is RewardResult.Rejected -> show(result.reason.message())
-                RewardResult.StorageFailure -> show(QuestMessage.STORAGE_FAILURE)
-            }
-        }
-
-    private fun command(action: suspend () -> Unit) {
-        if (state.value.isBusy || state.value.observationFailed) return
-        mutableState.update { it.copy(isBusy = true, message = null) }
+    fun claimPointQuest(
+        questId: String,
+        displayedSnapshot: VehicleSnapshot,
+    ) {
+        if (state.value.isBusy || state.value.isLoading || state.value.observationFailed) return
+        mutableState.update { it.copy(pendingQuestId = questId, message = null, rewardSuccess = null) }
         viewModelScope.launch {
             try {
-                action()
+                when (val result = economy.awardQuest(questId, displayedSnapshot)) {
+                    is PointAwardResult.Awarded -> confirm(questId, QuestRewardSuccess(questId, result.points))
+                    PointAwardResult.AlreadyAwarded -> confirm(questId, null)
+                    PointAwardResult.EvidenceChanged -> show(QuestMessage.REFRESH_REQUIRED)
+                    PointAwardResult.InteractionRestricted -> show(QuestMessage.INTERACTION_RESTRICTED)
+                    PointAwardResult.QuestUnavailable -> show(QuestMessage.UNSUPPORTED)
+                    PointAwardResult.StorageFailure -> show(QuestMessage.STORAGE_FAILURE)
+                }
             } catch (cancelled: CancellationException) {
                 throw cancelled
             } catch (_: Exception) {
                 show(QuestMessage.STORAGE_FAILURE)
             } finally {
-                mutableState.update { it.copy(isBusy = false) }
+                mutableState.update { it.copy(pendingQuestId = null) }
             }
         }
     }
 
-    private fun validate(snapshot: VehicleSnapshot): Boolean {
-        val rejection = evaluator.validateSnapshot(snapshot, identity.source, clock.nowMillis())
-        if (rejection != null) show(rejection.message())
-        return rejection == null
+    private fun confirm(
+        questId: String,
+        rewardSuccess: QuestRewardSuccess?,
+    ) {
+        // A repository result establishes the commit even before its observation reaches this collector.
+        confirmedQuestIds += questId
+        mutableState.update {
+            it.copy(
+                completedPointQuestIds = it.completedPointQuestIds + questId,
+                rewardSuccess = rewardSuccess,
+                message = null,
+            )
+        }
     }
 
-    private fun handle(result: QuestCommandResult) {
-        show(
-            when (result) {
-                is QuestCommandResult.Started, QuestCommandResult.Cancelled -> null
-                QuestCommandResult.AlreadyActive -> QuestMessage.ALREADY_ACTIVE
-                QuestCommandResult.AlreadyCompleted -> QuestMessage.ALREADY_COMPLETED
-                is QuestCommandResult.Rejected -> result.reason.message()
-                QuestCommandResult.StorageFailure -> QuestMessage.STORAGE_FAILURE
-            },
-        )
-    }
-
-    private fun show(message: QuestMessage?) {
+    private fun show(message: QuestMessage) {
         mutableState.update { it.copy(message = message) }
     }
 }
-
-private fun QuestMessage?.isResolved(
-    invalid: QuestRejection?,
-    previous: VehicleSnapshot,
-    current: VehicleSnapshot,
-): Boolean =
-    invalid == null &&
-        when (this) {
-            QuestMessage.NOT_PARKED, QuestMessage.NO_DATA, QuestMessage.STALE, QuestMessage.WRONG_SOURCE -> true
-            QuestMessage.REFRESH_REQUIRED -> previous.id != current.id
-            else -> false
-        }
-
-private fun QuestRejection.message(): QuestMessage =
-    when (this) {
-        QuestRejection.NOT_PARKED -> QuestMessage.NOT_PARKED
-        QuestRejection.UNAVAILABLE, QuestRejection.INVALID_SIGNAL -> QuestMessage.NO_DATA
-        QuestRejection.STALE -> QuestMessage.STALE
-        QuestRejection.WRONG_SOURCE -> QuestMessage.WRONG_SOURCE
-        QuestRejection.WRONG_EPOCH -> QuestMessage.OBSERVATION_CHANGED
-        QuestRejection.BEFORE_START, QuestRejection.RUN_CHANGED -> QuestMessage.REFRESH_REQUIRED
-        QuestRejection.UNSUPPORTED_QUEST -> QuestMessage.UNSUPPORTED
-        QuestRejection.APP_USE_RESTRICTED -> QuestMessage.APP_USE_RESTRICTED
-    }

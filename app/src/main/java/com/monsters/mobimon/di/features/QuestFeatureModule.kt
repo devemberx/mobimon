@@ -1,13 +1,9 @@
 package com.monsters.mobimon.di.features
 
-import com.monsters.mobimon.core.domain.Clock
 import com.monsters.mobimon.core.domain.PointEconomy
-import com.monsters.mobimon.core.domain.ProgressionIdentity
-import com.monsters.mobimon.core.domain.QuestEvaluator
-import com.monsters.mobimon.core.domain.QuestRepository
-import com.monsters.mobimon.core.domain.RewardRepository
-import com.monsters.mobimon.core.domain.VehicleRepository
+import com.monsters.mobimon.core.domain.PointQuestCatalog
 import com.monsters.mobimon.core.navigation.FeatureEntry
+import com.monsters.mobimon.core.presentation.CompanionAppearancePresentation
 import com.monsters.mobimon.core.presentation.PointPresentation
 import com.monsters.mobimon.core.presentation.VehiclePresentation
 import com.monsters.mobimon.feature.quest.QuestFeature
@@ -21,19 +17,12 @@ import javax.inject.Singleton
 @Module
 @InstallIn(SingletonComponent::class)
 object QuestFeatureModule {
-    @Provides @Singleton
-    fun feature(
-        quests: QuestRepository,
-        rewards: RewardRepository,
-        source: VehicleRepository,
-        identity: ProgressionIdentity,
-        clock: Clock,
-        evaluator: QuestEvaluator,
+    @Provides @IntoSet @Singleton
+    fun entry(
         vehicle: VehiclePresentation,
         wallet: PointPresentation,
+        appearance: CompanionAppearancePresentation,
         economy: PointEconomy,
-    ): QuestFeature = QuestFeature(quests, rewards, source, identity, clock, evaluator, vehicle, wallet, economy)
-
-    @Provides @IntoSet
-    fun entry(feature: QuestFeature): FeatureEntry = feature
+        catalog: PointQuestCatalog,
+    ): FeatureEntry = QuestFeature(vehicle, wallet, appearance, economy, catalog)
 }

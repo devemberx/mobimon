@@ -6,11 +6,14 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -22,6 +25,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -48,7 +52,8 @@ fun VehicleInfoScreen(
     outfitId: String? = null,
     backgroundId: String? = null,
 ) {
-    val mood = snapshot.mood()
+    val readings = snapshot.toVehicleInfoUiState()
+    val mood = readings.condition.mood()
     MobiMonContentColumn(
         modifier =
             modifier
@@ -79,6 +84,7 @@ fun VehicleInfoScreen(
                     )
                     VehicleCardGrid(
                         snapshot = snapshot,
+                        readings = readings,
                         modifier = Modifier.weight(1f),
                     )
                 }
@@ -94,7 +100,7 @@ fun VehicleInfoScreen(
                         backgroundId = backgroundId,
                         modifier = Modifier.fillMaxWidth(),
                     )
-                    VehicleCardGrid(snapshot = snapshot, modifier = Modifier.fillMaxWidth())
+                    VehicleCardGrid(snapshot = snapshot, readings = readings, modifier = Modifier.fillMaxWidth())
                 }
             }
         }
@@ -229,28 +235,37 @@ private fun CompanionStatusPanel(
 @Composable
 private fun VehicleCardGrid(
     snapshot: VehicleSnapshot,
+    readings: VehicleInfoUiState,
     modifier: Modifier = Modifier,
 ) {
-    val battery = snapshot.validBattery()
-    Column(
-        modifier = modifier,
-        verticalArrangement = Arrangement.spacedBy(24.dp),
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(24.dp),
+    val minimumCardWidth = 360.dp * LocalDensity.current.fontScale.coerceAtLeast(1f)
+    val cards =
+        listOf<@Composable (Modifier) -> Unit>(
+            { BatteryCard(snapshot, readings.batteryPercent, it) },
+            { DrivingCard(snapshot, it) },
+            { TireCard(readings, it) },
+            { EnvironmentCard(readings, it) },
+            { DriverAssistCard(readings, it) },
+            { ConnectionCard(snapshot, it) },
+        )
+    BoxWithConstraints(modifier) {
+        val columns =
+            when {
+                maxWidth >= minimumCardWidth * 3 + 48.dp -> 3
+                maxWidth >= minimumCardWidth * 2 + 24.dp -> 2
+                else -> 1
+            }
+        Column(
+            verticalArrangement = Arrangement.spacedBy(24.dp),
         ) {
-            BatteryCard(snapshot, battery, Modifier.weight(1f))
-            DrivingCard(snapshot, Modifier.weight(1f))
-            TireCard(snapshot, Modifier.weight(1f))
-        }
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(24.dp),
-        ) {
-            EnvironmentCard(snapshot, Modifier.weight(1f))
-            DriverAssistCard(snapshot, Modifier.weight(1f))
-            ConnectionCard(snapshot, Modifier.weight(1f))
+            cards.chunked(columns).forEach { row ->
+                Row(
+                    modifier = Modifier.fillMaxWidth().height(IntrinsicSize.Min),
+                    horizontalArrangement = Arrangement.spacedBy(24.dp),
+                ) {
+                    row.forEach { card -> card(Modifier.weight(1f).fillMaxHeight()) }
+                }
+            }
         }
     }
 }
@@ -328,32 +343,36 @@ private fun DrivingCard(
 
 @Composable
 private fun TireCard(
-    snapshot: VehicleSnapshot,
+    readings: VehicleInfoUiState,
     modifier: Modifier = Modifier,
 ) {
-    val tireStatus = snapshot.tirePressureStatus
-    val warning = snapshot.warnings.firstOrNull { it.item.contains("타이어") || it.item.contains("바퀴") }
+    val warning = readings.tireWarning
     MetricCard(
         title = stringResource(R.string.vehicle_tire_card_title),
-        value = tireStatus ?: stringResource(R.string.vehicle_unknown_short),
-        supporting = warning?.description ?: stringResource(R.string.vehicle_tire_no_warning),
+        value = readings.tireStatus ?: stringResource(R.string.vehicle_unknown_short),
+        supporting =
+            warning?.description ?: stringResource(
+                if (readings.tireStatus == null) R.string.vehicle_tire_unavailable else R.string.vehicle_tire_checked,
+            ),
         modifier = modifier,
         badge =
-            warning?.let {
-                stringResource(R.string.vehicle_warning_caution)
-            } ?: stringResource(R.string.vehicle_no_warning_badge),
-        badgeTone = if (warning == null) VehicleTone.SUCCESS else VehicleTone.WARNING,
+            when {
+                warning != null -> stringResource(R.string.vehicle_warning_caution)
+                readings.tireStatus != null -> stringResource(R.string.vehicle_checked_badge)
+                else -> null
+            },
+        badgeTone = if (warning == null) VehicleTone.NEUTRAL else VehicleTone.WARNING,
     )
 }
 
 @Composable
 private fun EnvironmentCard(
-    snapshot: VehicleSnapshot,
+    readings: VehicleInfoUiState,
     modifier: Modifier = Modifier,
 ) {
-    val temperature = snapshot.outsideTemperature?.let { stringResource(R.string.vehicle_temperature_value, it) }
+    val temperature = readings.outsideTemperature?.let { stringResource(R.string.vehicle_temperature_value, it) }
     val rainText =
-        when (snapshot.isRaining) {
+        when (readings.isRaining) {
             true -> stringResource(R.string.vehicle_raining)
             false -> stringResource(R.string.vehicle_not_raining)
             null -> stringResource(R.string.vehicle_weather_unknown)
@@ -368,36 +387,42 @@ private fun EnvironmentCard(
 
 @Composable
 private fun DriverAssistCard(
-    snapshot: VehicleSnapshot,
+    readings: VehicleInfoUiState,
     modifier: Modifier = Modifier,
 ) {
     val issue =
-        when {
-            snapshot.isEmergencyBraking == true -> stringResource(R.string.vehicle_emergency_braking)
-            snapshot.isDrowsy == true -> stringResource(R.string.vehicle_drowsy)
-            snapshot.isDistracted == true -> stringResource(R.string.vehicle_distracted)
-            snapshot.distanceToFrontVehicle != null -> {
-                val distance = snapshot.distanceToFrontVehicle ?: 0
-                stringResource(R.string.vehicle_front_distance, distance)
+        when (readings.assistWarning) {
+            DriverAssistWarning.EMERGENCY_BRAKING -> stringResource(R.string.vehicle_emergency_braking)
+            DriverAssistWarning.DROWSY -> stringResource(R.string.vehicle_drowsy)
+            DriverAssistWarning.DISTRACTED -> stringResource(R.string.vehicle_distracted)
+            null -> {
+                when {
+                    readings.frontDistance != null ->
+                        stringResource(
+                            R.string.vehicle_front_distance,
+                            readings.frontDistance,
+                        )
+                    readings.assistChecked -> stringResource(R.string.vehicle_assist_no_issue)
+                    else -> stringResource(R.string.vehicle_assist_unavailable)
+                }
             }
-            else -> stringResource(R.string.vehicle_assist_no_issue)
         }
     MetricCard(
         title = stringResource(R.string.vehicle_assist_card_title),
-        value = snapshot.attentionLevel?.let { "$it" } ?: stringResource(R.string.vehicle_unknown_short),
+        value = readings.attentionLevel?.let { "$it" } ?: stringResource(R.string.vehicle_unknown_short),
         supporting = issue,
         modifier = modifier,
         badge =
-            if (snapshot.isEmergencyBraking == true || snapshot.isDrowsy == true || snapshot.isDistracted == true) {
-                stringResource(R.string.vehicle_attention_needed)
-            } else {
-                stringResource(R.string.vehicle_no_warning_badge)
+            when {
+                readings.assistWarning != null -> stringResource(R.string.vehicle_attention_needed)
+                readings.assistChecked -> stringResource(R.string.vehicle_no_warning_badge)
+                else -> null
             },
         badgeTone =
-            if (snapshot.isEmergencyBraking == true || snapshot.isDrowsy == true || snapshot.isDistracted == true) {
-                VehicleTone.WARNING
-            } else {
-                VehicleTone.SUCCESS
+            when {
+                readings.assistWarning != null -> VehicleTone.WARNING
+                readings.assistChecked -> VehicleTone.SUCCESS
+                else -> VehicleTone.NEUTRAL
             },
     )
 }
@@ -504,7 +529,7 @@ private fun MetricCard(
     StatusSurface(
         background = VehiclePanelBackground,
         border = VehicleBorder,
-        modifier = modifier.height(VehicleCardHeight),
+        modifier = modifier.heightIn(min = VehicleCardHeight),
         contentPadding = PaddingValues(24.dp),
         corner = 24.dp,
     ) {
@@ -515,10 +540,11 @@ private fun MetricCard(
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween,
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 Text(
                     text = title,
+                    modifier = Modifier.weight(1f),
                     color = MobiMonColors.muted,
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
@@ -665,20 +691,14 @@ private fun parkingSupportingText(snapshot: VehicleSnapshot): String =
         else -> stringResource(R.string.vehicle_quality_unavailable)
     }
 
-private fun VehicleSnapshot.validBattery(): Int? =
-    batteryPercent?.takeIf {
-        (batteryQuality ?: quality) == SignalQuality.VALID && it in 0..100
-    }
-
-private fun VehicleSnapshot.mood(): VehicleMood =
-    when {
-        quality == SignalQuality.UNAVAILABLE -> VehicleMood.UNKNOWN
-        quality == SignalQuality.STALE -> VehicleMood.STALE
-        warnings.any {
-            it.quality == SignalQuality.VALID && it.severity != WarningSeverity.NOTICE
-        } -> VehicleMood.WARNING
-        validBattery()?.let { it < 20 } == true -> VehicleMood.ATTENTION
-        else -> VehicleMood.GOOD
+private fun VehicleCondition.mood(): VehicleMood =
+    when (this) {
+        VehicleCondition.CHECKED -> VehicleMood.GOOD
+        VehicleCondition.PARTIAL -> VehicleMood.PARTIAL
+        VehicleCondition.LOW_BATTERY -> VehicleMood.ATTENTION
+        VehicleCondition.WARNING -> VehicleMood.WARNING
+        VehicleCondition.STALE -> VehicleMood.STALE
+        VehicleCondition.UNAVAILABLE -> VehicleMood.UNKNOWN
     }
 
 private enum class VehicleMood(
@@ -698,6 +718,15 @@ private enum class VehicleMood(
         SuccessAccent,
         SuccessBackground,
         SuccessBadgeBackground,
+    ),
+    PARTIAL(
+        R.string.vehicle_mood_partial_badge,
+        R.string.vehicle_mood_partial_companion,
+        R.string.vehicle_banner_partial_title,
+        R.string.vehicle_banner_partial_desc,
+        MobiMonColors.accent,
+        NeutralBackground,
+        NeutralBadgeBackground,
     ),
     ATTENTION(
         R.string.vehicle_mood_hungry_badge,

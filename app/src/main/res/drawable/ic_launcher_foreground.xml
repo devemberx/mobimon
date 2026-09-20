@@ -3,7 +3,7 @@
 <inset xmlns:android="http://schemas.android.com/apk/res/android"
     android:inset="18%">
     <bitmap
-        android:src="@drawable/mobimon_mobi_v4"
+        android:src="@drawable/mobimon_mobi"
         android:gravity="fill"
         android:filter="true" />
 </inset>

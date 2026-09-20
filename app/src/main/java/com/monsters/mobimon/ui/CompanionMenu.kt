@@ -57,6 +57,7 @@ import com.monsters.mobimon.core.navigation.AppRoute
 import com.monsters.mobimon.core.navigation.CompanionRoute
 import com.monsters.mobimon.core.navigation.QuestRoute
 import com.monsters.mobimon.core.navigation.VehicleRoute
+import com.monsters.mobimon.core.ui.LocalMobiMonMotionEnabled
 import com.monsters.mobimon.core.ui.PetAvatar
 import com.monsters.mobimon.core.ui.R as CoreUiR
 
@@ -68,20 +69,20 @@ private data class DrawerDestination(
 
 private val destinations =
     listOf(
-        DrawerDestination(R.string.drawer_menu_home, R.drawable.drawer_home_v4, CompanionRoute.HOME),
-        DrawerDestination(R.string.drawer_menu_chat, R.drawable.drawer_chat_v4, AiRoute.COPILOT),
-        DrawerDestination(R.string.drawer_menu_quests, R.drawable.drawer_quest_v4, QuestRoute.QUESTS),
-        DrawerDestination(R.string.drawer_menu_vehicle, R.drawable.drawer_vehicle_v4, VehicleRoute.VEHICLE_INFO),
-        DrawerDestination(R.string.drawer_menu_appearance, R.drawable.drawer_appearance_v4, CompanionRoute.APPEARANCE),
-        DrawerDestination(R.string.drawer_settings, R.drawable.drawer_settings_v4, CompanionRoute.SETTINGS),
+        DrawerDestination(R.string.drawer_menu_home, R.drawable.drawer_home, CompanionRoute.HOME),
+        DrawerDestination(R.string.drawer_menu_chat, R.drawable.drawer_chat, AiRoute.COPILOT),
+        DrawerDestination(R.string.drawer_menu_quests, R.drawable.drawer_quest, QuestRoute.QUESTS),
+        DrawerDestination(R.string.drawer_menu_vehicle, R.drawable.drawer_vehicle, VehicleRoute.VEHICLE_INFO),
+        DrawerDestination(R.string.drawer_menu_appearance, R.drawable.drawer_appearance, CompanionRoute.APPEARANCE),
+        DrawerDestination(R.string.drawer_settings, R.drawable.drawer_settings, CompanionRoute.SETTINGS),
     )
 
 /** Portrait resources are selected by saved friend ID, never embedded in the drawer. */
 private fun drawerProfile(friendId: String?): Pair<Int, Int> =
     when (friendId) {
-        "friend:mobi" -> R.drawable.drawer_mobi_v4 to R.string.drawer_mobi_name
-        "friend:luna" -> CoreUiR.drawable.mobimon_luna_v4 to R.string.drawer_luna_name
-        else -> R.drawable.drawer_mobi_v4 to R.string.drawer_no_friend
+        "friend:mobi" -> R.drawable.drawer_mobi to R.string.drawer_mobi_name
+        "friend:luna" -> CoreUiR.drawable.mobimon_luna to R.string.drawer_luna_name
+        else -> R.drawable.drawer_mobi to R.string.drawer_no_friend
     }
 
 @Composable
@@ -95,6 +96,7 @@ fun CompanionMenu(
     outfitId: String? = null,
     backgroundId: String? = null,
 ) {
+    val duration = if (LocalMobiMonMotionEnabled.current) NAVIGATION_MOTION_DURATION_MILLIS else 0
     val first = remember { FocusRequester() }
     val closeDescription = stringResource(R.string.close)
     val (_, name) = drawerProfile(activeFriendId)
@@ -104,7 +106,7 @@ fun CompanionMenu(
     }
     val backdropAlpha by animateFloatAsState(
         targetValue = if (visible) 0.58f else 0f,
-        animationSpec = tween(NAVIGATION_MOTION_DURATION_MILLIS, easing = FastOutSlowInEasing),
+        animationSpec = tween(duration, easing = FastOutSlowInEasing),
         label = "menu backdrop",
     )
 
@@ -126,14 +128,14 @@ fun CompanionMenu(
                     visibleState = drawer,
                     enter =
                         slideInHorizontally(
-                            animationSpec = tween(NAVIGATION_MOTION_DURATION_MILLIS, easing = FastOutSlowInEasing),
+                            animationSpec = tween(duration, easing = FastOutSlowInEasing),
                             initialOffsetX = { -it },
-                        ) + fadeIn(tween(NAVIGATION_MOTION_DURATION_MILLIS)),
+                        ) + fadeIn(tween(duration)),
                     exit =
                         slideOutHorizontally(
-                            animationSpec = tween(NAVIGATION_MOTION_DURATION_MILLIS, easing = FastOutSlowInEasing),
+                            animationSpec = tween(duration, easing = FastOutSlowInEasing),
                             targetOffsetX = { -it },
-                        ) + fadeOut(tween(NAVIGATION_MOTION_DURATION_MILLIS)),
+                        ) + fadeOut(tween(duration)),
                 ) {
                     Column(
                         Modifier

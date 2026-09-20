@@ -68,7 +68,6 @@
   <string name="copilot_access_usage">Copilot 사용량 한도에 도달했어요.</string>
   <string name="copilot_access_service">지금은 Copilot 서비스를 확인할 수 없어요.</string>
   <string name="copilot_access_note">GitHub에서 요금제와 이용 권한을 확인해 주세요.\n이용 가능 상태로 바뀌면 여기서 다시 확인할 수 있어요.\n설정 확인만으로 결제가 진행되지는 않아요.</string>
-  <string name="copilot_usage_unknown">남은 사용량은 아직 확인되지 않았어요.</string>
   <string name="copilot_review_access">GitHub에서 확인</string>
   <string name="copilot_recheck">다시 확인</string>
   <string name="copilot_disconnect_heading">이 계정의 연결을 해제할까요?</string>

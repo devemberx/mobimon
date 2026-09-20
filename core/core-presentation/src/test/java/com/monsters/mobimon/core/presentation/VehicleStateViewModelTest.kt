@@ -61,6 +61,83 @@ class VehicleStateViewModelTest {
     }
 
     @Test
+    fun displayFreshnessKeepsEvidenceFromTheSameProviderEmission() =
+        runTest(dispatcher) {
+            try {
+                val original = vehicle.snapshots.value
+                val model =
+                    VehicleStateViewModel(
+                        vehicle,
+                        ProgressionIdentity("profile", SignalSource.REAL),
+                        Clock { now },
+                        VehicleFreshnessPolicy(15_000),
+                    ).also { store.put("vehicle", it) }
+                assertEquals(original, model.state.value.evidence)
+                assertEquals(SignalQuality.VALID, model.state.value.snapshot.batteryQuality)
+                assertEquals(0L, model.state.value.snapshot.parkingAgeMillis)
+
+                runCurrent()
+                now = 20_000
+                advanceTimeBy(1_000)
+                runCurrent()
+                assertEquals(SignalQuality.STALE, model.state.value.snapshot.quality)
+                assertEquals(original, model.state.value.evidence)
+
+                val next = original.copy(id = "next-card", sequence = 2, receivedAtMillis = now)
+                vehicle.snapshots.value = next
+                runCurrent()
+                assertEquals(next, model.state.value.evidence)
+                assertEquals("next-card", model.state.value.snapshot.id)
+                assertEquals(SignalQuality.VALID, model.state.value.snapshot.quality)
+            } finally {
+                store.clear()
+                runCurrent()
+            }
+        }
+
+    @Test
+    fun firstStateAlreadyRejectsExpiredParkingEvidence() =
+        runTest(dispatcher) {
+            try {
+                now = 20_000
+                vehicle.snapshots.value = vehicle.snapshots.value.copy(drivingState = DrivingState.PARKED)
+                val model =
+                    VehicleStateViewModel(
+                        vehicle,
+                        ProgressionIdentity("profile", SignalSource.REAL),
+                        Clock { now },
+                        VehicleFreshnessPolicy(15_000),
+                    ).also { store.put("vehicle", it) }
+
+                assertEquals(SignalQuality.STALE, model.state.value.snapshot.quality)
+                assertEquals(false, model.state.value.snapshot.parkedVerified)
+            } finally {
+                store.clear()
+                runCurrent()
+            }
+        }
+
+    @Test
+    fun firstStateAlreadyRejectsAnUnexpectedSource() =
+        runTest(dispatcher) {
+            try {
+                val model =
+                    VehicleStateViewModel(
+                        vehicle,
+                        ProgressionIdentity("profile", SignalSource.SIMULATED),
+                        Clock { now },
+                        VehicleFreshnessPolicy(15_000),
+                    ).also { store.put("vehicle", it) }
+
+                assertEquals(SignalQuality.UNAVAILABLE, model.state.value.snapshot.quality)
+                assertEquals(SignalQuality.UNAVAILABLE, model.state.value.snapshot.batteryQuality)
+            } finally {
+                store.clear()
+                runCurrent()
+            }
+        }
+
+    @Test
     fun freshReadingBetweenTimerTicksDoesNotBecomeUnavailable() =
         runTest(dispatcher) {
             try {
@@ -76,13 +153,13 @@ class VehicleStateViewModelTest {
                     now += 400
                     vehicle.snapshots.value = vehicle.snapshots.value.copy(receivedAtMillis = now, sequence = it + 2L)
                     runCurrent()
-                    assertEquals(SignalQuality.VALID, model.state.value.quality)
-                    assertEquals(SignalQuality.VALID, model.state.value.batteryQuality)
+                    assertEquals(SignalQuality.VALID, model.state.value.snapshot.quality)
+                    assertEquals(SignalQuality.VALID, model.state.value.snapshot.batteryQuality)
                 }
                 vehicle.snapshots.value = vehicle.snapshots.value.copy(receivedAtMillis = now + 1_000)
                 runCurrent()
-                assertEquals(SignalQuality.UNAVAILABLE, model.state.value.quality)
-                assertEquals(SignalQuality.UNAVAILABLE, model.state.value.batteryQuality)
+                assertEquals(SignalQuality.UNAVAILABLE, model.state.value.snapshot.quality)
+                assertEquals(SignalQuality.UNAVAILABLE, model.state.value.snapshot.batteryQuality)
             } finally {
                 store.clear()
                 runCurrent()
@@ -101,12 +178,12 @@ class VehicleStateViewModelTest {
                         VehicleFreshnessPolicy(15_000),
                     ).also { store.put("vehicle", it) }
                 runCurrent()
-                assertEquals(SignalQuality.VALID, model.state.value.quality)
+                assertEquals(SignalQuality.VALID, model.state.value.snapshot.quality)
                 now = 20_000
                 advanceTimeBy(1_000)
                 runCurrent()
-                assertEquals(SignalQuality.STALE, model.state.value.quality)
-                assertEquals(72, model.state.value.batteryPercent)
+                assertEquals(SignalQuality.STALE, model.state.value.snapshot.quality)
+                assertEquals(72, model.state.value.snapshot.batteryPercent)
             } finally {
                 store.clear()
                 runCurrent()

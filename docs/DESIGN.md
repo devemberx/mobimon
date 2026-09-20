@@ -44,7 +44,7 @@ information; they never diagnose a vehicle or replace its warnings.
 
 ### Launcher icon and native splash
 
-The launcher reuses the shared [Mobi artwork](../core/core-ui/src/main/res/drawable-nodpi/mobimon_mobi_v4.png)
+The launcher reuses the shared [Mobi artwork](../core/core-ui/src/main/res/drawable-nodpi/mobimon_mobi.png)
 on Night, without a wordmark. The [foreground inset](../app/src/main/res/drawable/ic_launcher_foreground.xml)
 preserves its proportions and adaptive-mask clearance; the
 [monochrome vector](../app/src/main/res/drawable/ic_launcher_monochrome.xml) retains
@@ -70,12 +70,15 @@ callbacks; repositories and ViewModels remain outside them.
 | `MobiMonTabs`, `MobiMonTab`, `MobiMonSelectionCard` | Caller-owned selection and focus |
 | `MobiMonStatusBadge`, `MobiMonMessage`, `MobiMonSourceBadge` | Labelled state, feedback and signal provenance |
 | `MobiMonPointSummary` | Loading, failed, zero and committed balances |
-| `PetAvatar`, `CompanionIcon` | Replaceable character assets and shared icons |
+| `PetAvatar`, `CompanionIcon`, `companionBackgroundRes` | Replaceable character assets, shared icons and deterministic backdrop selection |
 
 Feature owners compose final screens and perform
 [visual acceptance](TESTING.md#final-figma-visual-acceptance). A tested shared
 component does not establish full-screen parity. The Debug UI catalog is a
-component preview without a repository or provider.
+component preview without a repository or provider. Gallery code and its Activity
+live in Debug sources. Decorative renderers accept explicit opt-outs and obey the
+shell-owned `LocalMobiMonMotionEnabled` preference; this visual setting grants no
+authorization.
 
 Keep full-screen SVGs only in `docs/ui`. Import individual original icons into
 the owning feature with a feature prefix, retaining vector paths during Android
@@ -83,13 +86,34 @@ conversion. Put shared character art and fonts in `core-ui`, original raster
 bytes in `drawable-nodpi`, and keep the [font license](../core/core-ui/src/main/assets/fonts/OFL-NotoSansKR.txt).
 Do not use whole-screen SVGs as runtime UI or duplicate shared artwork.
 
+### Image asset locations
+
+| Asset | Location |
+| --- | --- |
+| Animated character frames | `core/core-ui/src/main/assets/characters/{mobi,luna}/idle_breath/` |
+| Shared character poses and equipped appearances | `core/core-ui/src/main/res/drawable-nodpi/mobimon_*.png` |
+| Store accessory thumbnails | `mobimon_mobi_items.png` and `mobimon_luna_items.png` in the same shared drawable folder; `CharacterArtwork` selects crops |
+| Home and store-preview backgrounds | `core/core-ui/src/main/res/drawable-nodpi/pet_home_background_{morning,day,night}.*` |
+| Store navigation/category icons | `feature/feature-customization/src/main/res/drawable/store_*.xml` |
+| Menu artwork | `app/src/main/res/drawable-nodpi/drawer_*.png` |
+| Quest artwork and icons | `feature/feature-quest/src/main/res/drawable-nodpi/` and `res/drawable/` |
+| Full-screen design references | [docs/ui](ui/README.md); not packaged in the app |
+| Local generation drafts | `output/imagegen/` (ignored); intermediate files go in ignored `tmp/imagegen/` and are deleted after use |
+
+Android drawable folders are flat; descriptive prefixes group their contents.
+Use stable names describing character, state, equipment or time of day, without
+visual revision suffixes. Promote only approved images into runtime folders.
+Keep generation prompts, stale handoff notes and unused manifests out of runtime
+assets. `PetAvatar` loads 24 PNG frames per character and owns frame timing;
+it does not read generation JSON. Database schemas, migration fixtures and tool
+configuration JSON are required project inputs and must remain tracked.
+
 [PetAvatar](../core/core-ui/src/main/java/com/monsters/mobimon/core/ui/PetAvatar.kt)
 is the artwork replacement boundary. Preserve identity, proportions, lighting,
 material and steering-wheel motif across expressions. Match visible character
 bounds, not only the image canvas; do not stretch, crop or redesign the character
 for Vehicle or quest completion. Rewards, equipment and selection stay outside
-the renderer. Existing `*_v4` resource names identify implementation assets and
-are not instructions to target an older Figma page.
+the renderer.
 
 ## Screens and navigation
 
@@ -205,11 +229,11 @@ changes. Debugger is Debug-only and defaults off; Release omits it. Spoken repli
 and Do Not Disturb remain unavailable in current implementation.
 
 The supplied Settings export shows a vehicle-home placeholder and says the
-character is static. It does not enable a launcher feature. Current code already
-contains Mobi breathing frames, but the reduced-motion preference is not wired
-to `PetAvatar.isAnimated`; this remains an implementation gap, not a completed
-accessibility behavior. The existing unsupported Do Not Disturb row is not
-removed merely because the export omits it.
+character is static. It does not enable a launcher feature. Current code contains
+Mobi/Luna breathing frames. The committed reduced-motion preference pauses
+character and particle loops and removes shell destination motion; unknown or
+failed preference reads keep decoration static. The existing unsupported Do Not
+Disturb row is not removed merely because the export omits it.
 
 ### Copilot connection UI
 
@@ -235,8 +259,8 @@ Vehicle and customization remain usable without AI.
 
 Use brief, quiet transitions that preserve context and focus. Outgoing or
 restricted controls must stop receiving input immediately; animation never
-controls authorization or commit success. Reduced motion must stop decorative
-loops when wired through all renderers.
+controls authorization or commit success. Reduced motion stops decorative loops
+through the shared renderer contract.
 
 Current Android navigation/drawer transitions use 220ms; connection panels fade
 in over 180ms and out over 120ms. Expiry/restriction changes replace content

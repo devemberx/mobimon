@@ -2,7 +2,7 @@ package com.monsters.mobimon.core.ui
 
 import androidx.compose.ui.graphics.Color
 
-/** Semantic colors from the v4 shared UI rules, used by every feature. */
+/** Semantic Twilight colors shared by runtime screens and UI reference implementations. */
 object MobiMonColors {
     val background = Color(0xFF091525)
     val panel = Color(0xFF142A42)

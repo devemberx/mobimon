@@ -4,20 +4,17 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.monsters.mobimon.core.domain.PetRepository
-import com.monsters.mobimon.core.domain.PointEconomy
-import com.monsters.mobimon.core.domain.SettingsRepository
-import com.monsters.mobimon.core.domain.SignalSource
 import com.monsters.mobimon.core.navigation.AiRoute
 import com.monsters.mobimon.core.navigation.AppRoute
 import com.monsters.mobimon.core.navigation.CompanionRoute
 import com.monsters.mobimon.core.navigation.FeatureEntry
 import com.monsters.mobimon.core.navigation.FeatureNavigator
+import com.monsters.mobimon.core.presentation.CompanionAppearancePresentation
 import com.monsters.mobimon.core.presentation.PointBalanceState
 import com.monsters.mobimon.core.presentation.PointPresentation
 import com.monsters.mobimon.core.presentation.VehiclePresentation
@@ -25,13 +22,11 @@ import com.monsters.mobimon.core.presentation.parkedVerified
 
 class PetFeature(
     private val pets: PetRepository,
-    private val settings: SettingsRepository,
-    private val points: PointEconomy,
     private val wallet: PointPresentation,
+    private val appearance: CompanionAppearancePresentation,
     private val vehicle: VehiclePresentation,
-    private val debugSettingsAvailable: Boolean = false,
 ) : FeatureEntry {
-    override val routes = setOf(CompanionRoute.HOME, CompanionRoute.SETTINGS, CompanionRoute.APPEARANCE)
+    override val routes = setOf(CompanionRoute.HOME)
 
     @Composable
     override fun Content(
@@ -39,120 +34,43 @@ class PetFeature(
         navigator: FeatureNavigator,
         modifier: Modifier,
     ) {
-        val factory =
-            remember(this) {
-                viewModelFactory {
-                    initializer { PetViewModel(pets, settings) }
-                    initializer { CosmeticInventoryViewModel(points) }
-                }
-            }
-        val petModel: PetViewModel = viewModel(factory = factory)
-        val inventoryModel: CosmeticInventoryViewModel = viewModel(factory = factory)
+        require(route in routes)
+        val factory = remember(this) { viewModelFactory { initializer { PetViewModel(pets) } } }
+        val model: PetViewModel = viewModel(factory = factory)
+        val pet by model.state.collectAsStateWithLifecycle()
         val pointModel = wallet.model()
-        val petState by petModel.state.collectAsStateWithLifecycle()
-        val inventoryState by inventoryModel.state.collectAsStateWithLifecycle()
         val pointBalance by pointModel.state.collectAsStateWithLifecycle()
-        val vehicleSnapshot = vehicle.snapshot()
-        val profile = petState.profile
-        val onRetry = {
-            petModel.retry()
-            inventoryModel.retry()
+        val appearanceModel = appearance.model()
+        val equipped by appearanceModel.state.collectAsStateWithLifecycle()
+        val snapshot = vehicle.snapshot()
+        val retry = {
+            model.retry()
+            appearanceModel.retry()
             pointModel.retry()
         }
-        if (profile == null || petState.isLoading) {
-            PetHomeLoadingScreen(failed = petState.loadFailed, onRetry = onRetry, modifier = modifier)
+        val profile = pet.profile
+        if (profile == null || pet.isLoading) {
+            PetHomeLoadingScreen(failed = pet.loadFailed, onRetry = retry, modifier = modifier)
             return
         }
-        val interactionAllowed = vehicleSnapshot.parkedVerified
-        val balance = (pointBalance as? PointBalanceState.Ready)?.balance
-        val balanceFailed = pointBalance == PointBalanceState.Failed
-        val motionSaveError =
-            if (petState.reducedMotionSaveFailed) {
-                stringResource(
-                    R.string.pet_route_save_failed,
-                )
-            } else {
-                null
-            }
-        val debugSaveError =
-            if (petState.debugModeSaveFailed) {
-                stringResource(
-                    R.string.pet_route_save_failed,
-                )
-            } else {
-                null
-            }
-        when (route) {
-            CompanionRoute.HOME -> {
-                PetHomeScreen(
-                    profile,
-                    vehicleSnapshot,
-                    modifier = modifier,
-                    onOpenMenu = navigator.openMenu,
-                    onPetClick = { if (interactionAllowed) navigator.navigate(AiRoute.COPILOT) },
-                    pointBalance = balance,
-                    pointLoadFailed = balanceFailed,
-                    friendId = inventoryState.equippedFriendId,
-                    accessoryId = inventoryState.equippedAccessoryId,
-                    outfitId =
-                        inventoryState.inventory?.equippedItemIds?.get(
-                            com.monsters.mobimon.core.domain.CosmeticSlot.OUTFIT,
-                        ),
-                    backgroundId =
-                        inventoryState.inventory?.equippedItemIds?.get(
-                            com.monsters.mobimon.core.domain.CosmeticSlot.BACKGROUND,
-                        ),
-                    interactionAllowed = interactionAllowed,
-                    connectionAvailable = true,
-                    profileObservationFailed = petState.loadFailed,
-                    onRetryProfile = onRetry,
-                    inventoryLoaded = inventoryState.inventory != null,
-                    inventoryLoadFailed = inventoryState.loadFailed,
-                )
-            }
-            CompanionRoute.SETTINGS -> {
-                SettingsScreen(
-                    petState.settings,
-                    petModel::setReducedMotion,
-                    modifier = modifier,
-                    onDebugModeChange = petModel::setDebugMode,
-                    debugModeAvailable = debugSettingsAvailable,
-                    motionSaving = petState.reducedMotionSaving,
-                    motionError = motionSaveError,
-                    debugSaving = petState.debugModeSaving,
-                    debugError = debugSaveError,
-                    settingsAvailable = petState.settingsLoaded,
-                    settingsLoadFailed = petState.settingsLoadFailed,
-                    onRetry = onRetry,
-                    onBack = navigator.back,
-                    onDone = navigator.returnHome,
-                    parkedVerified = interactionAllowed,
-                    simulatedVehicle = vehicleSnapshot.source == SignalSource.SIMULATED,
-                    onOpenCopilot = { if (interactionAllowed) navigator.navigate(AiRoute.COPILOT) },
-                )
-            }
-            CompanionRoute.APPEARANCE ->
-                CustomizationScreen(
-                    modifier = modifier,
-                    onBack = navigator.back,
-                    inventory = inventoryState.inventory,
-                    catalog = inventoryState.catalog,
-                    selectedItemId = inventoryState.selectedItemId,
-                    purchasing = inventoryState.purchasing,
-                    purchaseFailed = inventoryState.purchaseFailed,
-                    onSelectItem = inventoryModel::selectItem,
-                    onPurchaseItem = inventoryModel::purchaseItem,
-                    onEquipItem = inventoryModel::equipItem,
-                    onEquipFriend = inventoryModel::equipFriend,
-                    pointBalance = balance,
-                    pointLoadFailed = balanceFailed,
-                    saving = inventoryState.saving,
-                    loadFailed = inventoryState.loadFailed,
-                    saveFailed = inventoryState.saveFailed,
-                    onRetry = onRetry,
-                    timeOfDay = vehicleSnapshot.timeOfDay,
-                )
-            else -> error("Unsupported companion route: $route")
-        }
+        PetHomeScreen(
+            profile = profile,
+            snapshot = snapshot,
+            onOpenMenu = navigator.openMenu,
+            onPetClick = { if (snapshot.parkedVerified) navigator.navigate(AiRoute.COPILOT) },
+            modifier = modifier,
+            pointBalance = (pointBalance as? PointBalanceState.Ready)?.balance,
+            pointLoadFailed = pointBalance == PointBalanceState.Failed,
+            friendId = equipped.friendId,
+            accessoryId = equipped.accessoryId,
+            outfitId = equipped.outfitId,
+            backgroundId = equipped.backgroundId,
+            interactionAllowed = snapshot.parkedVerified,
+            profileObservationFailed = pet.loadFailed,
+            onRetryProfile = retry,
+            inventoryLoaded = equipped.inventory != null,
+            inventoryLoadFailed = equipped.failed,
+            connectionAvailable = true,
+        )
     }
 }

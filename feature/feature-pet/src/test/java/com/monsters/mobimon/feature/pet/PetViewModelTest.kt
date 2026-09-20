@@ -42,7 +42,7 @@ class PetViewModelTest {
         Dispatchers.resetMain()
     }
 
-    private fun subject() = PetViewModel(repository, repository).also { store.put("pet", it) }
+    private fun subject() = PetViewModel(repository).also { store.put("pet", it) }
 
     @Test
     fun initializationFailureCanRetryWithoutReplacingSavedProgress() =
@@ -60,75 +60,6 @@ class PetViewModelTest {
                 vm.state.value.profile
                     ?.totalXp,
             )
-        }
-
-    @Test
-    fun failedAppearanceSavePreservesCommittedSelectionAndExposesFailure() =
-        runTest(dispatcher) {
-            val vm = subject()
-            runCurrent()
-            vm.setAppearance(PetAppearance.CREAM)
-            runCurrent()
-            assertTrue(vm.state.value.saveFailed)
-            assertFalse(vm.state.value.isSaving)
-            assertEquals(
-                PetAppearance.GOLDEN,
-                vm.state.value.profile
-                    ?.appearance,
-            )
-        }
-
-    @Test
-    fun preferenceChangesArePublishedFromTheSavedObservation() =
-        runTest(dispatcher) {
-            val vm = subject()
-            runCurrent()
-            vm.setReducedMotion(true)
-            runCurrent()
-            assertTrue(vm.state.value.settings.reducedMotion)
-            assertFalse(vm.state.value.saveFailed)
-        }
-
-    @Test
-    fun successfulPreferenceWriteDoesNotClearUnrelatedAppearanceFailure() =
-        runTest(dispatcher) {
-            val vm = subject()
-            runCurrent()
-            vm.setAppearance(PetAppearance.CREAM)
-            runCurrent()
-            assertTrue(vm.state.value.saveFailed)
-
-            vm.setReducedMotion(true)
-            runCurrent()
-
-            assertTrue(vm.state.value.settings.reducedMotion)
-            assertTrue(vm.state.value.saveFailed)
-        }
-
-    @Test
-    fun settingsReadFailureDoesNotHideAnAvailableProfile() =
-        runTest(dispatcher) {
-            repository.failSettingsObservation = true
-            val vm = subject()
-            runCurrent()
-
-            assertEquals(
-                "profile",
-                vm.state.value.profile
-                    ?.id,
-            )
-            assertFalse(vm.state.value.loadFailed)
-        }
-
-    @Test
-    fun setDebugModeWritesToSettings() =
-        runTest(dispatcher) {
-            val vm = subject()
-            runCurrent()
-            vm.setDebugMode(true)
-            runCurrent()
-            assertTrue(vm.state.value.settings.debugModeEnabled)
-            assertFalse(vm.state.value.saveFailed)
         }
 
     private class TestPetRepository :

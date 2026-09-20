@@ -14,6 +14,12 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.launch
 
+/** One provider emission supplies display freshness and the original command evidence together. */
+data class VehicleReading(
+    val snapshot: VehicleSnapshot,
+    val evidence: VehicleSnapshot,
+)
+
 /** Owns vehicle display freshness independently of quest storage observations. */
 class VehicleStateViewModel(
     private val vehicle: VehicleRepository,
@@ -21,7 +27,7 @@ class VehicleStateViewModel(
     private val clock: Clock,
     private val freshness: VehicleFreshnessPolicy,
 ) : ViewModel() {
-    private val mutableState = MutableStateFlow(vehicle.snapshots.value)
+    private val mutableState = MutableStateFlow(reading(vehicle.snapshots.value, clock.nowMillis()))
     val state = mutableState.asStateFlow()
 
     init {
@@ -33,13 +39,17 @@ class VehicleStateViewModel(
                         delay(1_000)
                     }
                 }
-            combine(vehicle.snapshots, ticks) { snapshot, _ -> displaySnapshot(snapshot, clock.nowMillis()) }
+            combine(vehicle.snapshots, ticks) { snapshot, _ -> reading(snapshot, clock.nowMillis()) }
                 .collect { mutableState.value = it }
         }
     }
 
-    private fun displaySnapshot(
+    private fun reading(
         snapshot: VehicleSnapshot,
         nowMillis: Long,
-    ): VehicleSnapshot = freshness.displaySnapshot(snapshot, identity.source, nowMillis)
+    ): VehicleReading =
+        VehicleReading(
+            snapshot = freshness.displaySnapshot(snapshot, identity.source, nowMillis),
+            evidence = snapshot,
+        )
 }

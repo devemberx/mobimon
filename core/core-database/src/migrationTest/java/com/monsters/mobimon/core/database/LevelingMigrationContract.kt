@@ -12,7 +12,8 @@ import org.junit.Test
 
 abstract class LevelingMigrationContract {
     @Test
-    fun originalVersionThreeRetainsRecordsAndDefaultsMissingFields() = verifyUpgrade("legacy-v3.json", expanded = false)
+    fun originalVersionThreeRetainsRecordsAndDefaultsMissingFields() =
+        verifyUpgrade("legacy-schema-3.json", expanded = false)
 
     @Test
     fun expandedVersionThreeRetainsNonzeroFields() =

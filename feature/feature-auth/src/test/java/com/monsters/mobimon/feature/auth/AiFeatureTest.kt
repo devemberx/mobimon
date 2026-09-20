@@ -23,7 +23,6 @@ import androidx.compose.ui.test.pressKey
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import com.monsters.mobimon.core.domain.Clock
-import com.monsters.mobimon.core.domain.CompanionSettings
 import com.monsters.mobimon.core.domain.CosmeticInventory
 import com.monsters.mobimon.core.domain.CosmeticItem
 import com.monsters.mobimon.core.domain.CosmeticSlot
@@ -37,7 +36,6 @@ import com.monsters.mobimon.core.domain.PointEconomy
 import com.monsters.mobimon.core.domain.PointWallet
 import com.monsters.mobimon.core.domain.ProgressionIdentity
 import com.monsters.mobimon.core.domain.PurchaseResult
-import com.monsters.mobimon.core.domain.SettingsRepository
 import com.monsters.mobimon.core.domain.SignalQuality
 import com.monsters.mobimon.core.domain.SignalSource
 import com.monsters.mobimon.core.domain.VehicleFreshnessPolicy
@@ -67,7 +65,6 @@ class AiFeatureTest {
     @get:Rule val compose = createComposeRule()
 
     private val pets = FakePets()
-    private val settings = FakeSettings()
     private val points = FakePoints()
     private var route by mutableStateOf(AiRoute.COPILOT)
 
@@ -103,7 +100,6 @@ class AiFeatureTest {
         compose.runOnIdle {
             assertEquals(0, points.activeObservers)
             points.savedInventory.value = equippedFriend("friend:luna")
-            settings.settings.value = CompanionSettings(reducedMotion = true)
             route = AiRoute.CONVERSATION
         }
         compose.waitForIdle()
@@ -124,7 +120,6 @@ class AiFeatureTest {
             assertEquals(1, points.activeObservers)
             assertEquals(1, points.maxActiveObservers)
             assertEquals(1, pets.profile.subscriptionCount.value)
-            assertEquals(1, settings.settings.subscriptionCount.value)
         }
     }
 
@@ -190,7 +185,6 @@ class AiFeatureTest {
         val feature =
             AiFeature(
                 pets,
-                settings,
                 points,
                 VehiclePresentation(
                     vehicle,
@@ -218,16 +212,6 @@ class AiFeatureTest {
         }
 
         override suspend fun setAppearance(appearance: PetAppearance) = WriteResult.Failure
-    }
-
-    private class FakeSettings : SettingsRepository {
-        override val settings = MutableStateFlow(CompanionSettings())
-
-        override suspend fun setReducedMotion(enabled: Boolean) = WriteResult.Failure
-
-        override suspend fun setLauncherCharacterEnabled(enabled: Boolean) = WriteResult.Failure
-
-        override suspend fun setDebugModeEnabled(enabled: Boolean) = WriteResult.Failure
     }
 
     private class FakePoints : PointEconomy {

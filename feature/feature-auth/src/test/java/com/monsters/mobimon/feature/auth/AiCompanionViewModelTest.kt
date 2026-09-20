@@ -1,7 +1,6 @@
 package com.monsters.mobimon.feature.auth
 
 import androidx.lifecycle.ViewModelStore
-import com.monsters.mobimon.core.domain.CompanionSettings
 import com.monsters.mobimon.core.domain.CosmeticInventory
 import com.monsters.mobimon.core.domain.CosmeticItem
 import com.monsters.mobimon.core.domain.CosmeticSlot
@@ -13,7 +12,6 @@ import com.monsters.mobimon.core.domain.PointAwardResult
 import com.monsters.mobimon.core.domain.PointEconomy
 import com.monsters.mobimon.core.domain.PointWallet
 import com.monsters.mobimon.core.domain.PurchaseResult
-import com.monsters.mobimon.core.domain.SettingsRepository
 import com.monsters.mobimon.core.domain.VehicleSnapshot
 import com.monsters.mobimon.core.domain.WriteResult
 import kotlinx.coroutines.CancellationException
@@ -44,7 +42,6 @@ class AiCompanionViewModelTest {
     private val dispatcher = StandardTestDispatcher()
     private val store = ViewModelStore()
     private val pets = FakePets()
-    private val settings = FakeSettings()
     private val inventory = CosmeticInventory(setOf("friend:mobi"), mapOf(CosmeticSlot.FRIEND to "friend:mobi"))
 
     @Before fun setUp() {
@@ -56,6 +53,18 @@ class AiCompanionViewModelTest {
         Dispatchers.resetMain()
     }
 
+    @Test fun profileAndInventoryAreSufficientForCommittedAiContext() =
+        runTest(dispatcher) {
+            val model =
+                AiCompanionViewModel(pets, FakePoints(flowOf(inventory)))
+                    .also { store.put("ai", it) }
+            runCurrent()
+
+            assertFalse(model.state.value.failed)
+            assertEquals(pets.profile.value, model.state.value.profile)
+            assertEquals(inventory, model.state.value.inventory)
+        }
+
     @Test fun readsCommittedContextAndDoesNotDuplicateActiveObserversOnRetry() =
         runTest(dispatcher) {
             val model = model(flowOf(inventory))
@@ -64,11 +73,9 @@ class AiCompanionViewModelTest {
             assertEquals(inventory, model.state.value.inventory)
 
             model.retry()
-            settings.settings.value = CompanionSettings(reducedMotion = true)
             pets.profile.value = PetProfile("saved", appearance = PetAppearance.CREAM)
             runCurrent()
 
-            assertTrue(model.state.value.settings.reducedMotion)
             assertEquals(
                 PetAppearance.CREAM,
                 model.state.value.profile
@@ -121,7 +128,7 @@ class AiCompanionViewModelTest {
         }
 
     private fun model(inventory: Flow<CosmeticInventory>) =
-        AiCompanionViewModel(pets, settings, FakePoints(inventory)).also { store.put("ai", it) }
+        AiCompanionViewModel(pets, FakePoints(inventory)).also { store.put("ai", it) }
 
     private class FakePets : PetRepository {
         override val profile = MutableStateFlow(PetProfile("saved"))
@@ -134,16 +141,6 @@ class AiCompanionViewModelTest {
         }
 
         override suspend fun setAppearance(appearance: PetAppearance) = WriteResult.Failure
-    }
-
-    private class FakeSettings : SettingsRepository {
-        override val settings = MutableStateFlow(CompanionSettings())
-
-        override suspend fun setReducedMotion(enabled: Boolean) = WriteResult.Failure
-
-        override suspend fun setLauncherCharacterEnabled(enabled: Boolean) = WriteResult.Failure
-
-        override suspend fun setDebugModeEnabled(enabled: Boolean) = WriteResult.Failure
     }
 
     private class FakePoints(

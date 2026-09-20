@@ -3,8 +3,9 @@ package com.monsters.mobimon
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import com.monsters.mobimon.core.domain.PointEconomy
+import com.monsters.mobimon.core.domain.SettingsRepository
 import com.monsters.mobimon.core.navigation.FeatureEntry
+import com.monsters.mobimon.core.presentation.CompanionAppearancePresentation
 import com.monsters.mobimon.runtime.AppUseStateSource
 import com.monsters.mobimon.ui.MobiMonApp
 import dagger.hilt.android.AndroidEntryPoint
@@ -16,12 +17,14 @@ class MainActivity : ComponentActivity() {
 
     @Inject lateinit var appUse: AppUseStateSource
 
-    @Inject lateinit var points: PointEconomy
+    @Inject lateinit var appearance: CompanionAppearancePresentation
+
+    @Inject lateinit var settings: SettingsRepository
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            MobiMonApp(entries, appUse, points)
+            MobiMonApp(entries, appUse, appearance, settings)
         }
     }
 }

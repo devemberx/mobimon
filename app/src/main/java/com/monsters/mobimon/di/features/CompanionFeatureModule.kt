@@ -1,9 +1,7 @@
 package com.monsters.mobimon.di.features
 
-import com.monsters.mobimon.BuildConfig
 import com.monsters.mobimon.core.domain.PetRepository
 import com.monsters.mobimon.core.domain.PointEconomy
-import com.monsters.mobimon.core.domain.SettingsRepository
 import com.monsters.mobimon.core.navigation.FeatureEntry
 import com.monsters.mobimon.core.presentation.CompanionAppearancePresentation
 import com.monsters.mobimon.core.presentation.PointPresentation
@@ -28,9 +26,8 @@ object CompanionFeatureModule {
     @Provides @IntoSet @Singleton
     fun entry(
         pets: PetRepository,
-        settings: SettingsRepository,
-        points: PointEconomy,
         wallet: PointPresentation,
+        appearance: CompanionAppearancePresentation,
         vehicle: VehiclePresentation,
-    ): FeatureEntry = PetFeature(pets, settings, points, wallet, vehicle, BuildConfig.DEBUG)
+    ): FeatureEntry = PetFeature(pets, wallet, appearance, vehicle)
 }

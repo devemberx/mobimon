@@ -7,7 +7,7 @@ dependencies {
     "implementation"(project(":core:core-ui"))
     "implementation"(project(":core:core-navigation"))
     "implementation"(project(":core:core-presentation"))
-    "implementation"(catalog.findLibrary("androidx-lifecycle-viewmodel-ktx").get())
+    "implementation"(catalog.findLibrary("androidx-lifecycle-viewmodel").get())
     "implementation"(catalog.findLibrary("androidx-lifecycle-runtime-compose").get())
     "implementation"(catalog.findLibrary("androidx-lifecycle-viewmodel-compose").get())
 }

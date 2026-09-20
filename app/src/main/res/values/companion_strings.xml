@@ -1,5 +1,4 @@
 <resources>
-    <string name="drawer_menu">메뉴</string>
     <string name="drawer_tagline">Drive Together</string>
     <string name="drawer_mobi_name">Mobi</string>
     <string name="drawer_luna_name">Luna</string>
