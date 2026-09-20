@@ -125,7 +125,7 @@ fun PetAvatar(
     val cream = appearanceKey == "CREAM"
     val description = stringResource(if (cat) R.string.mobimon_luna_description else R.string.mobimon_mobi_description)
     if (emotion == PetEmotion.HAPPY) {
-        val happyAsset = CharacterArtwork.happy(friendId)
+        val happyAsset = CharacterArtwork.happy(friendId, accessoryId ?: outfitId)
         Box(modifier = modifier.size(120.dp).semantics { contentDescription = description }) {
             backgroundId?.let { CharacterArtwork.backgrounds[it] }?.let {
                 CharacterAssetImage(it, Modifier.fillMaxSize())

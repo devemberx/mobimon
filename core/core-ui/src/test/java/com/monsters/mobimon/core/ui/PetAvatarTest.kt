@@ -139,9 +139,19 @@ class PetAvatarTest {
     fun happyCharactersAreDefinedAndRenderWithDistinctSignatures() {
         val mobiHappy = CharacterArtwork.happy("friend:mobi")
         val lunaHappy = CharacterArtwork.happy("friend:luna")
+        val mobiHeadphonesHappy = CharacterArtwork.happy("friend:mobi", "accessory:mobi_headphones")
+        val mobiGogglesHappy = CharacterArtwork.happy("friend:mobi", "accessory:mobi_goggles")
+        val lunaCapHappy = CharacterArtwork.happy("friend:luna", "accessory:luna_cap")
+        val lunaSunglassesHappy = CharacterArtwork.happy("friend:luna", "accessory:luna_sunglasses")
         assertNotNull(mobiHappy)
         assertNotNull(lunaHappy)
+        assertNotNull(mobiHeadphonesHappy)
+        assertNotNull(mobiGogglesHappy)
+        assertNotNull(lunaCapHappy)
+        assertNotNull(lunaSunglassesHappy)
         assertEquals(0.87f, lunaHappy.visualScale)
+        assertEquals(0.87f, lunaCapHappy.visualScale)
+        assertEquals(0.87f, lunaSunglassesHappy.visualScale)
 
         lateinit var view: View
         compose.setContent {
