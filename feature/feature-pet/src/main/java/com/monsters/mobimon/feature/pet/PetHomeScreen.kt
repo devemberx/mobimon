@@ -158,6 +158,7 @@ fun PetHomeScreen(
                     inventoryLoaded = inventoryLoaded,
                     inventoryLoadFailed = inventoryLoadFailed,
                     avatarSize = avatarSize,
+                    backgroundTimeOfDay = backgroundTimeOfDay,
                     modifier =
                         Modifier
                             .fillMaxWidth(if (wide) 0.56f else 1f)
@@ -185,27 +186,18 @@ private fun HomeCompanionScene(
     inventoryLoaded: Boolean,
     inventoryLoadFailed: Boolean,
     avatarSize: androidx.compose.ui.unit.Dp,
+    backgroundTimeOfDay: String?,
     modifier: Modifier = Modifier,
 ) {
     Box(modifier.widthIn(max = 920.dp), contentAlignment = Alignment.Center) {
-        Column(
-            Modifier.align(Alignment.TopCenter).offset(y = (-48).dp).zIndex(1f),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(4.dp),
-        ) {
-            Text(
-                stringResource(R.string.pet_home_greeting),
-                style = MaterialTheme.typography.displaySmall,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.semantics { heading() },
-            )
-            Text(
-                stringResource(R.string.pet_home_subtitle),
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.72f),
-                textAlign = TextAlign.Center,
-            )
-        }
+        AmbientTextHeader(
+            backgroundTimeOfDay = backgroundTimeOfDay,
+            modifier =
+                Modifier
+                    .align(Alignment.TopCenter)
+                    .offset(y = (-48).dp)
+                    .zIndex(1f),
+        )
         when {
             friendId != null -> {
                 PetAvatar(

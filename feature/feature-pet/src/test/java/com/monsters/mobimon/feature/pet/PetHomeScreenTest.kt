@@ -110,8 +110,8 @@ class PetHomeScreenTest {
             pointBalance = 0,
             onMenu = { calls += "menu" },
         )
-        compose.onNodeWithText("함께 쉬어 가요.").assertIsDisplayed()
-        compose.onNodeWithText("좋은 길엔, 늘 네가 있어.").assertIsDisplayed()
+        compose.onNodeWithTag("home-ambient-text-container").assertIsDisplayed()
+        compose.onNodeWithTag("home-ambient-text").assertIsDisplayed()
         compose.onNodeWithText("여행은 언제나\n즐거워요!").assertIsDisplayed()
         compose
             .onNodeWithContentDescription("메뉴 열기")
