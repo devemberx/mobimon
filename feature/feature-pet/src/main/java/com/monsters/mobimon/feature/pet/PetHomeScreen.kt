@@ -101,7 +101,7 @@ fun PetHomeScreen(
                         Shadow(MobiMonColors.background, Offset(0f, 2.dp.toPx()), 4.dp.toPx())
                     }
                 }
-            val bubbleLeft = (maxWidth - (2560 * scale).dp) / 2 + (1518 * scale).dp
+            val bubbleLeft = (maxWidth - (2560 * scale).dp) / 2 + (1576 * scale).dp
             val referenceLayout = maxWidth / fontScale >= 1200.dp && maxHeight / fontScale >= 700.dp
             HomeBackground(backgroundTimeOfDay, backgroundId)
             val companion: @Composable (Modifier) -> Unit = { companionModifier ->
@@ -148,17 +148,13 @@ fun PetHomeScreen(
                             textShadow,
                         )
                         companion(
-                            Modifier.align(Alignment.TopCenter).offset(y = (466 * scale).dp).size((520 * scale).dp),
+                            Modifier.align(Alignment.TopCenter).offset(y = (392 * scale).dp).size((600 * scale).dp),
                         )
                         if (friendId != null) {
                             HomeSpeechBubble(
                                 Modifier.align(Alignment.TopStart).offset(
                                     x = bubbleLeft,
-                                    y =
-                                        (
-                                            543.7f *
-                                                scale
-                                        ).dp,
+                                    y = (520 * scale).dp,
                                 ),
                                 scale,
                                 triggerKey = bubbleTrigger,
@@ -281,7 +277,7 @@ private fun HomeGreeting(
             textAlign = TextAlign.Center,
             modifier = Modifier.semantics { heading() },
         )
-        AmbientTextHeader(backgroundTimeOfDay)
+        AmbientTextHeader(backgroundTimeOfDay, scale = scale)
     }
 }
 

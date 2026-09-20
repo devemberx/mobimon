@@ -5,7 +5,7 @@ import androidx.compose.animation.core.FastOutLinearInEasing
 import androidx.compose.animation.core.LinearOutSlowInEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.offset
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -125,6 +125,7 @@ internal fun getAmbientTiming(period: String): AmbientTiming =
 fun AmbientTextHeader(
     backgroundTimeOfDay: String?,
     modifier: Modifier = Modifier,
+    scale: Float = 1f,
 ) {
     val period = companionTimePeriod(backgroundTimeOfDay)
     var currentPhrase by remember { mutableStateOf<String?>(null) }
@@ -144,7 +145,7 @@ fun AmbientTextHeader(
             val phrase = getNextAmbientPhrase(period, lastPhrase)
             currentPhrase = phrase
             lastPhrase = phrase
-            alphaAnim.snapTo(0.90f)
+            alphaAnim.snapTo(1f)
             offsetYAnim.snapTo(0f)
             return@LaunchedEffect
         }
@@ -161,7 +162,7 @@ fun AmbientTextHeader(
             val fadeInAlphaJob =
                 launch {
                     alphaAnim.animateTo(
-                        targetValue = 0.90f,
+                        targetValue = 1f,
                         animationSpec = tween(durationMillis = timing.fadeInMs, easing = LinearOutSlowInEasing),
                     )
                 }
@@ -205,7 +206,7 @@ fun AmbientTextHeader(
     Box(
         modifier =
             modifier
-                .height(64.dp)
+                .heightIn(min = (48f * scale).coerceAtLeast(48f).dp)
                 .testTag("home-ambient-text-container"),
         contentAlignment = Alignment.Center,
     ) {
@@ -215,8 +216,8 @@ fun AmbientTextHeader(
                 text = phrase,
                 style =
                     MaterialTheme.typography.titleLarge.copy(
-                        fontSize = 25.sp,
-                        lineHeight = 36.sp,
+                        fontSize = (32.4f * scale).coerceAtLeast(24f).sp,
+                        lineHeight = (43.2f * scale).coerceAtLeast(34f).sp,
                         fontWeight = FontWeight.Medium,
                         shadow =
                             Shadow(
@@ -225,7 +226,7 @@ fun AmbientTextHeader(
                                 blurRadius = 4f,
                             ),
                     ),
-                color = MobiMonColors.text,
+                color = MobiMonColors.muted,
                 textAlign = TextAlign.Center,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,

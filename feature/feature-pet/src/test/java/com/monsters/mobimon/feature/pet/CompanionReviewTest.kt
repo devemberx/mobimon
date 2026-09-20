@@ -49,16 +49,20 @@ class CompanionReviewTest {
     @Test fun homeReferenceRender() {
         homeRender("Night")
         val avatar = compose.onNodeWithContentDescription("Mobi 강아지").fetchSemanticsNode().boundsInRoot
-        assertEquals(1020f, avatar.left, 1f)
-        assertEquals(466f, avatar.top, 1f)
-        assertEquals(520f, avatar.width, 1f)
+        assertEquals(980f, avatar.left, 1f)
+        assertEquals(392f, avatar.top, 1f)
+        assertEquals(600f, avatar.width, 1f)
+        assertEquals(avatar.width, avatar.height, 1f)
         val menu = compose.onNodeWithContentDescription("메뉴 열기").fetchSemanticsNode().boundsInRoot
         assertEquals(72f, menu.left, 1f)
         assertEquals(56f, menu.top, 1f)
         assertEquals(104f, menu.width, 1f)
         val bubble = compose.onNodeWithTag("home-companion-message").fetchSemanticsNode().boundsInRoot
-        assertEquals(1518f, bubble.left, 1f)
-        assertEquals(543.7f, bubble.top, 1f)
+        val phrase = compose.onNodeWithTag("home-ambient-text").fetchSemanticsNode().boundsInRoot
+        assertEquals(1280f, (phrase.left + phrase.right) / 2f, 1f)
+        assertEquals(292f, phrase.top, 1f)
+        assertEquals(1576f, bubble.left, 1f)
+        assertEquals(520f, bubble.top, 1f)
         assertEquals(324f, bubble.width, 1f)
         assertEquals(174.6f, bubble.height, 1f)
         val action = compose.onNodeWithTag("home-conversation-action").fetchSemanticsNode().boundsInRoot
