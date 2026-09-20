@@ -111,8 +111,7 @@ class PetHomeScreenTest {
             pointBalance = 0,
             onMenu = { calls += "menu" },
         )
-        compose.onNodeWithTag("home-ambient-text-container").assertIsDisplayed()
-        compose.onNodeWithTag("home-ambient-text").assertIsDisplayed()
+        assertAnimatedLineBelowTitle()
         compose.onNodeWithText("여행은 언제나\n즐거워요!").assertIsDisplayed()
         compose
             .onNodeWithContentDescription("메뉴 열기")
@@ -126,6 +125,26 @@ class PetHomeScreenTest {
             .assertIsNotEnabled()
         compose.onNodeWithText("AI 연결을 지원하지 않아 대화 기능을 사용할 수 없어요.").performScrollTo().assertIsDisplayed()
         assertEquals(listOf("menu"), calls)
+    }
+
+    @Test
+    fun compactGreetingKeepsOneAnimatedLineUnderTheTitle() {
+        render(snapshot = parkedSnapshot())
+        assertAnimatedLineBelowTitle()
+    }
+
+    private fun assertAnimatedLineBelowTitle() {
+        compose.onNodeWithText("좋은 길엔, 늘 네가 있어.").assertDoesNotExist()
+        compose.onNodeWithTag("home-ambient-text-container").assertIsDisplayed()
+        val title = compose.onNodeWithText("함께 쉬어 가요.").fetchSemanticsNode().boundsInRoot
+        val phrase =
+            compose
+                .onNodeWithTag("home-ambient-text")
+                .assertIsDisplayed()
+                .fetchSemanticsNode()
+                .boundsInRoot
+        assertTrue("Animated phrase is below the title", phrase.top >= title.bottom)
+        assertTrue("Animated phrase stays close to the title", phrase.top - title.bottom < title.height)
     }
 
     @Test

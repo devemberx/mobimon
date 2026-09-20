@@ -125,7 +125,7 @@ Daylight labels retain text shadows for readability.
 
 Home's speech bubble pops in from its tail on entry, pet tap, and periodic reappearance.
 Data updates do not replay it; reduced motion displays the settled bubble immediately.
-The time-of-day ambient phrase appears between the greeting and companion.
+The animated time-of-day phrase sits directly beneath the Home title; no static subtitle repeats it.
 Availability and restriction notices appear only when needed
 and do not move the main action. Compact layouts remain scrollable, including
 notices below the action.

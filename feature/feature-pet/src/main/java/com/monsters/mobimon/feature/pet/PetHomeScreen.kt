@@ -142,13 +142,10 @@ fun PetHomeScreen(
                     Box(Modifier.fillMaxWidth().height((1068 * scale).dp)) {
                         header(Modifier.padding(horizontal = (72 * scale).dp).offset(y = (56 * scale).dp), scale)
                         HomeGreeting(
+                            backgroundTimeOfDay,
                             Modifier.align(Alignment.TopCenter).offset(y = (194 * scale).dp),
                             scale,
                             textShadow,
-                        )
-                        AmbientTextHeader(
-                            backgroundTimeOfDay,
-                            Modifier.align(Alignment.TopCenter).offset(y = (385 * scale).dp),
                         )
                         companion(
                             Modifier.align(Alignment.TopCenter).offset(y = (466 * scale).dp).size((520 * scale).dp),
@@ -189,8 +186,7 @@ fun PetHomeScreen(
                 ) {
                     header(Modifier, 0.75f)
                     notices()
-                    HomeGreeting(Modifier, 0.65f, textShadow)
-                    AmbientTextHeader(backgroundTimeOfDay)
+                    HomeGreeting(backgroundTimeOfDay, Modifier, 0.65f, textShadow)
                     companion(Modifier.size(240.dp))
                     if (friendId != null) HomeSpeechBubble(scale = 0.75f, triggerKey = bubbleTrigger)
                     action(Modifier, 0.75f)
@@ -254,6 +250,7 @@ private fun HomeBackground(
 
 @Composable
 private fun HomeGreeting(
+    backgroundTimeOfDay: String?,
     modifier: Modifier = Modifier,
     scale: Float = 1f,
     textShadow: Shadow? = null,
@@ -284,22 +281,7 @@ private fun HomeGreeting(
             textAlign = TextAlign.Center,
             modifier = Modifier.semantics { heading() },
         )
-        Text(
-            stringResource(R.string.pet_home_subtitle),
-            style =
-                MaterialTheme.typography.bodyLarge.copy(
-                    fontSize = (32.4f * scale).coerceAtLeast(24f).sp,
-                    shadow = textShadow,
-                    letterSpacing = (0.5f * scale).sp,
-                    lineHeight =
-                        (
-                            46 *
-                                scale
-                        ).coerceAtLeast(34f).sp,
-                ),
-            color = MobiMonColors.muted,
-            textAlign = TextAlign.Center,
-        )
+        AmbientTextHeader(backgroundTimeOfDay)
     }
 }
 
