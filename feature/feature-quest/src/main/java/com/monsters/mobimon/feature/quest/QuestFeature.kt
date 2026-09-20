@@ -92,7 +92,9 @@ class QuestFeature(
                 snapshot = snapshot,
                 customCompletions = state.completedPointQuestIds,
                 satisfiedQuestIds = state.satisfiedDrivingQuestIds,
+                dismissedHiddenQuestIds = state.dismissedHiddenQuestIds,
                 onClaimReward = model::claimPointQuest,
+                onDismissHiddenQuest = model::dismissHiddenQuest,
             )
         }
     }

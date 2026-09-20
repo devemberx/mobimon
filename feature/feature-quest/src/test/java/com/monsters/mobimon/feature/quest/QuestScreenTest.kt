@@ -7,6 +7,7 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
+import com.monsters.mobimon.core.domain.DrivingQuestIds
 import com.monsters.mobimon.core.domain.DrivingState
 import com.monsters.mobimon.core.domain.QuestProgress
 import com.monsters.mobimon.core.domain.SignalQuality
@@ -165,6 +166,76 @@ class QuestScreenTest {
         compose.onNodeWithTag("quest-hidden-claim-modal").assertIsDisplayed()
         compose.onNodeWithTag("quest-hidden-btn-dismiss").assertIsDisplayed().performClick()
         compose.onNodeWithTag("quest-hidden-claim-modal").assertDoesNotExist()
+    }
+
+    @Test
+    @Config(qualifiers = "ko-rKR-w2560dp-h1268dp")
+    fun hiddenQuestDialogDoesNotPopUpWhenAlreadyDismissed() {
+        compose.setContent {
+            MaterialTheme {
+                QuestScreen(
+                    progress = QuestProgress(),
+                    canManageQuest = true,
+                    onAcknowledgeVehicle = {},
+                    vehicleSnapshot = snapshot(),
+                    canAcknowledgeVehicle = true,
+                    friendId = "friend:luna",
+                    dismissedHiddenQuestIds = setOf(DrivingQuestIds.HIDDEN_NEW_FRIEND),
+                )
+            }
+        }
+
+        compose.onNodeWithTag("quest-hidden-claim-modal").assertDoesNotExist()
+    }
+
+    @Test
+    @Config(qualifiers = "ko-rKR-w2560dp-h1268dp")
+    fun hiddenQuestDialogCallsOnDismissHiddenQuestWhenDismissed() {
+        var dismissedId: String? = null
+        compose.setContent {
+            MaterialTheme {
+                QuestScreen(
+                    progress = QuestProgress(),
+                    canManageQuest = true,
+                    onAcknowledgeVehicle = {},
+                    vehicleSnapshot = snapshot(),
+                    canAcknowledgeVehicle = true,
+                    friendId = "friend:luna",
+                    onDismissHiddenQuest = { dismissedId = it },
+                )
+            }
+        }
+
+        compose.onNodeWithTag("quest-hidden-claim-modal").assertIsDisplayed()
+        compose.onNodeWithTag("quest-hidden-btn-dismiss").assertIsDisplayed().performClick()
+        assertEquals(DrivingQuestIds.HIDDEN_NEW_FRIEND, dismissedId)
+        compose.onNodeWithTag("quest-hidden-claim-modal").assertDoesNotExist()
+    }
+
+    @Test
+    @Config(qualifiers = "ko-rKR-w2560dp-h1268dp")
+    fun hiddenQuestDialogCallsOnDismissHiddenQuestWhenClaimed() {
+        var dismissedId: String? = null
+        var claimedId: String? = null
+        compose.setContent {
+            MaterialTheme {
+                QuestScreen(
+                    progress = QuestProgress(),
+                    canManageQuest = true,
+                    onAcknowledgeVehicle = {},
+                    vehicleSnapshot = snapshot(),
+                    canAcknowledgeVehicle = true,
+                    friendId = "friend:luna",
+                    onClaimReward = { claimedId = it },
+                    onDismissHiddenQuest = { dismissedId = it },
+                )
+            }
+        }
+
+        compose.onNodeWithTag("quest-hidden-claim-modal").assertIsDisplayed()
+        compose.onNodeWithTag("quest-hidden-btn-claim").assertIsDisplayed().performClick()
+        assertEquals(DrivingQuestIds.HIDDEN_NEW_FRIEND, claimedId)
+        assertEquals(DrivingQuestIds.HIDDEN_NEW_FRIEND, dismissedId)
     }
 
     private fun render(

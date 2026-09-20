@@ -1,6 +1,6 @@
 {
   "name": "mobi_idle_breath_v1",
-  "generation": "built-in image_gen; individual AI keyframes; no geometric pixel warping",
+  "generation": "built-in image_gen; individual AI keyframes; 24-frame smooth breathing loop",
   "frame_size": [
     1254,
     1254
@@ -9,166 +9,322 @@
   "frames": [
     {
       "file": "mobi_idle_breath_01.png",
-      "duration_ms": 220,
+      "duration_ms": 90,
       "keyframe": 1,
-      "sha256": "3539ad63f2777c284937fa3a45ce10343358ce8e63735426ec4fe6242361623a",
+      "sha256": "7ce5700a7220cd07d31bfa1c38d40ca5a73e6951ca183c81508fc67fda78e735",
       "opaque_bounds": [
-        177,
-        57,
-        1066,
-        1156
+        175,
+        55,
+        1067,
+        1157
       ],
       "transparent_pixel_fraction": 0.5918
     },
     {
       "file": "mobi_idle_breath_02.png",
-      "duration_ms": 160,
+      "duration_ms": 90,
       "keyframe": 2,
-      "sha256": "3403e90b1b20df66ef5cbfe352bfb342f81a83209c8ee8919dbd217e9caf1b04",
+      "sha256": "29e75580d8886fabee5593c8d2b6cada9f7113091b0749221b8682dd58d49a27",
       "opaque_bounds": [
-        176,
-        60,
+        174,
+        56,
         1068,
-        1156
+        1157
+      ],
+      "transparent_pixel_fraction": 0.5932
+    },
+    {
+      "file": "mobi_idle_breath_03.png",
+      "duration_ms": 90,
+      "keyframe": 3,
+      "sha256": "5ad5f856d3449aab581e26800bf0acb445c75594db636ad22274dc4b9579095e",
+      "opaque_bounds": [
+        174,
+        59,
+        1068,
+        1157
       ],
       "transparent_pixel_fraction": 0.5926
     },
     {
-      "file": "mobi_idle_breath_03.png",
-      "duration_ms": 150,
-      "keyframe": 3,
-      "sha256": "49add93a0a9e09fe3ea4235a733195080501fc56374061588f193ea10e68c3bc",
+      "file": "mobi_idle_breath_04.png",
+      "duration_ms": 90,
+      "keyframe": 4,
+      "sha256": "6a903a217ddfbcee5adf62c8fb8f8e4178dc75f630c46421061ce3caaca24257",
       "opaque_bounds": [
-        176,
-        54,
-        1067,
-        1157
+        174,
+        56,
+        1069,
+        1158
+      ],
+      "transparent_pixel_fraction": 0.5931
+    },
+    {
+      "file": "mobi_idle_breath_05.png",
+      "duration_ms": 90,
+      "keyframe": 5,
+      "sha256": "0467bb36a34eca201d66a7135ac75818550005b9c4f315db798aa46becac4c94",
+      "opaque_bounds": [
+        175,
+        53,
+        1068,
+        1158
       ],
       "transparent_pixel_fraction": 0.593
     },
     {
-      "file": "mobi_idle_breath_04.png",
-      "duration_ms": 140,
-      "keyframe": 4,
-      "sha256": "8a9be97d4fdfeae129044a5c455145a63ac1f6b499f150831e134c9cd8e25bf4",
+      "file": "mobi_idle_breath_06.png",
+      "duration_ms": 90,
+      "keyframe": 6,
+      "sha256": "baebecce90d93d92a43a3250a3dfc7ba26dd646222b3ce466c8980a67a9ba0e6",
       "opaque_bounds": [
-        175,
-        55,
-        1072,
-        1157
+        174,
+        53,
+        1071,
+        1158
+      ],
+      "transparent_pixel_fraction": 0.5919
+    },
+    {
+      "file": "mobi_idle_breath_07.png",
+      "duration_ms": 90,
+      "keyframe": 7,
+      "sha256": "c77616cf9384c0981b967e014771f2a8b330e37d83f928806aee4648c4be45e2",
+      "opaque_bounds": [
+        173,
+        53,
+        1073,
+        1158
       ],
       "transparent_pixel_fraction": 0.5896
     },
     {
-      "file": "mobi_idle_breath_05.png",
-      "duration_ms": 140,
-      "keyframe": 5,
-      "sha256": "cebd5751c09bba22db7863d6c89809d7f6bb98347f267399fe93fc11a47ee884",
+      "file": "mobi_idle_breath_08.png",
+      "duration_ms": 90,
+      "keyframe": 8,
+      "sha256": "c77616cf9384c0981b967e014771f2a8b330e37d83f928806aee4648c4be45e2",
       "opaque_bounds": [
-        172,
-        50,
-        1072,
-        1156
+        173,
+        53,
+        1073,
+        1158
+      ],
+      "transparent_pixel_fraction": 0.5896
+    },
+    {
+      "file": "mobi_idle_breath_09.png",
+      "duration_ms": 90,
+      "keyframe": 9,
+      "sha256": "0406c616d306e622fb28827025fa94d2671fb01d26394cefe041a2a6a6e41c87",
+      "opaque_bounds": [
+        170,
+        48,
+        1074,
+        1157
       ],
       "transparent_pixel_fraction": 0.5852
     },
     {
-      "file": "mobi_idle_breath_06.png",
-      "duration_ms": 180,
-      "keyframe": 6,
-      "sha256": "ea78b8d6e57a50cd25acda0751f558a22403658532393eb43a8bb10353214f5f",
+      "file": "mobi_idle_breath_10.png",
+      "duration_ms": 90,
+      "keyframe": 10,
+      "sha256": "d430592533bd773aa3c414d44105b538ad655681bcba0a6cb417ea1ca4c3b845",
       "opaque_bounds": [
-        175,
-        55,
-        1069,
-        1157
+        172,
+        50,
+        1072,
+        1158
       ],
-      "transparent_pixel_fraction": 0.5908
+      "transparent_pixel_fraction": 0.589
     },
     {
-      "file": "mobi_idle_breath_07.png",
-      "duration_ms": 180,
-      "keyframe": 6,
-      "sha256": "ea78b8d6e57a50cd25acda0751f558a22403658532393eb43a8bb10353214f5f",
+      "file": "mobi_idle_breath_11.png",
+      "duration_ms": 90,
+      "keyframe": 11,
+      "sha256": "2216c4feea43c0526f000fe569ae3226f45d0f6c3d62046732c39bf5462960e1",
       "opaque_bounds": [
-        175,
-        55,
-        1069,
-        1157
-      ],
-      "transparent_pixel_fraction": 0.5908
-    },
-    {
-      "file": "mobi_idle_breath_08.png",
-      "duration_ms": 160,
-      "keyframe": 8,
-      "sha256": "2eeb310c28f6dedd9375d3292d4b99d754ae2b53653a32dbdb5a46cd3982343e",
-      "opaque_bounds": [
-        177,
-        56,
+        174,
+        53,
         1070,
+        1158
+      ],
+      "transparent_pixel_fraction": 0.5908
+    },
+    {
+      "file": "mobi_idle_breath_12.png",
+      "duration_ms": 90,
+      "keyframe": 12,
+      "sha256": "c8bee77be81f37ffcb351b19a7d42c825057f72bec979a0663ca4f41ccbe60d5",
+      "opaque_bounds": [
+        174,
+        53,
+        1070,
+        1158
+      ],
+      "transparent_pixel_fraction": 0.5908
+    },
+    {
+      "file": "mobi_idle_breath_13.png",
+      "duration_ms": 90,
+      "keyframe": 13,
+      "sha256": "2216c4feea43c0526f000fe569ae3226f45d0f6c3d62046732c39bf5462960e1",
+      "opaque_bounds": [
+        174,
+        53,
+        1070,
+        1158
+      ],
+      "transparent_pixel_fraction": 0.5908
+    },
+    {
+      "file": "mobi_idle_breath_14.png",
+      "duration_ms": 90,
+      "keyframe": 14,
+      "sha256": "3fd73500a21e1011a4b2aff5da9471ab48817dd9501e064554c897b853cd9c38",
+      "opaque_bounds": [
+        174,
+        53,
+        1071,
+        1159
+      ],
+      "transparent_pixel_fraction": 0.5917
+    },
+    {
+      "file": "mobi_idle_breath_15.png",
+      "duration_ms": 90,
+      "keyframe": 15,
+      "sha256": "f91fc12afd9f8cd9a6a3bf499d34d06c81b5e992e8e0ad90cc43a800d965fbbd",
+      "opaque_bounds": [
+        175,
+        55,
+        1071,
         1159
       ],
       "transparent_pixel_fraction": 0.5914
     },
     {
-      "file": "mobi_idle_breath_09.png",
-      "duration_ms": 170,
-      "keyframe": 9,
-      "sha256": "216f43341098f3acd5aecc6ee170213c6c8396ae3060b7f0fb1da449e18431e3",
+      "file": "mobi_idle_breath_16.png",
+      "duration_ms": 90,
+      "keyframe": 16,
+      "sha256": "df642be14802d4ae509d665116211c188bf118f12804000bfc24a22c7f29f5c4",
       "opaque_bounds": [
-        176,
-        60,
-        1069,
-        1157
+        174,
+        56,
+        1071,
+        1159
+      ],
+      "transparent_pixel_fraction": 0.5919
+    },
+    {
+      "file": "mobi_idle_breath_17.png",
+      "duration_ms": 90,
+      "keyframe": 17,
+      "sha256": "f039916ab88bad493455da0b3ea8b22eb29b6b7f8acf915e9f4c555665642189",
+      "opaque_bounds": [
+        174,
+        57,
+        1070,
+        1158
       ],
       "transparent_pixel_fraction": 0.5904
     },
     {
-      "file": "mobi_idle_breath_10.png",
-      "duration_ms": 180,
-      "keyframe": 3,
-      "sha256": "49add93a0a9e09fe3ea4235a733195080501fc56374061588f193ea10e68c3bc",
+      "file": "mobi_idle_breath_18.png",
+      "duration_ms": 90,
+      "keyframe": 18,
+      "sha256": "8b9688e67080087b95cac3911e56c9bab98c2bd7d1d84dac87f53ee47e432f4a",
       "opaque_bounds": [
-        176,
-        54,
-        1067,
-        1157
+        174,
+        55,
+        1070,
+        1158
+      ],
+      "transparent_pixel_fraction": 0.5927
+    },
+    {
+      "file": "mobi_idle_breath_19.png",
+      "duration_ms": 90,
+      "keyframe": 19,
+      "sha256": "0467bb36a34eca201d66a7135ac75818550005b9c4f315db798aa46becac4c94",
+      "opaque_bounds": [
+        175,
+        53,
+        1068,
+        1158
       ],
       "transparent_pixel_fraction": 0.593
     },
     {
-      "file": "mobi_idle_breath_11.png",
-      "duration_ms": 180,
-      "keyframe": 2,
-      "sha256": "3403e90b1b20df66ef5cbfe352bfb342f81a83209c8ee8919dbd217e9caf1b04",
+      "file": "mobi_idle_breath_20.png",
+      "duration_ms": 90,
+      "keyframe": 20,
+      "sha256": "6a903a217ddfbcee5adf62c8fb8f8e4178dc75f630c46421061ce3caaca24257",
       "opaque_bounds": [
-        176,
-        60,
+        174,
+        56,
+        1069,
+        1158
+      ],
+      "transparent_pixel_fraction": 0.5931
+    },
+    {
+      "file": "mobi_idle_breath_21.png",
+      "duration_ms": 90,
+      "keyframe": 21,
+      "sha256": "5ad5f856d3449aab581e26800bf0acb445c75594db636ad22274dc4b9579095e",
+      "opaque_bounds": [
+        174,
+        59,
         1068,
-        1156
+        1157
       ],
       "transparent_pixel_fraction": 0.5926
     },
     {
-      "file": "mobi_idle_breath_12.png",
-      "duration_ms": 340,
-      "keyframe": 1,
-      "sha256": "3539ad63f2777c284937fa3a45ce10343358ce8e63735426ec4fe6242361623a",
+      "file": "mobi_idle_breath_22.png",
+      "duration_ms": 90,
+      "keyframe": 22,
+      "sha256": "29e75580d8886fabee5593c8d2b6cada9f7113091b0749221b8682dd58d49a27",
       "opaque_bounds": [
-        177,
-        57,
-        1066,
-        1156
+        174,
+        56,
+        1068,
+        1157
+      ],
+      "transparent_pixel_fraction": 0.5932
+    },
+    {
+      "file": "mobi_idle_breath_23.png",
+      "duration_ms": 90,
+      "keyframe": 23,
+      "sha256": "7ce5700a7220cd07d31bfa1c38d40ca5a73e6951ca183c81508fc67fda78e735",
+      "opaque_bounds": [
+        175,
+        55,
+        1067,
+        1157
+      ],
+      "transparent_pixel_fraction": 0.5918
+    },
+    {
+      "file": "mobi_idle_breath_24.png",
+      "duration_ms": 130,
+      "keyframe": 24,
+      "sha256": "d75c96a863e586c1e3589721800f4c655ad793f481b8d9788595aadd2c640d3c",
+      "opaque_bounds": [
+        175,
+        55,
+        1067,
+        1157
       ],
       "transparent_pixel_fraction": 0.5918
     }
   ],
-  "frame_count": 12,
-  "unique_keyframes": 8,
+  "frame_count": 24,
+  "unique_keyframes": 24,
   "loop": true,
   "cycle_duration_ms": 2200,
-  "sequence": "inhale 01-06; apex hold 06-07; exhale 08-11; rest/seam 12-01",
-  "integration": "asset-only; no existing render loop found; no UI or Kotlin edits",
-  "quality_note": "AI generated: small edge/registration differences remain; not pixel-identical to original. First and last frames are byte-identical."
+  "sequence": "inhale 01-12; apex hold 12-13; exhale 14-22; rest/seam 23-24",
+  "integration": "asset-only; ready for PetAvatar / CharacterArtwork integration",
+  "quality_note": "AI generated: 24 keyframes with consistent framing and registration. Clean transparent cutout."
 }

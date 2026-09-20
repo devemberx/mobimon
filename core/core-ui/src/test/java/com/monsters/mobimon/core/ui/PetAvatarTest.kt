@@ -95,12 +95,21 @@ class PetAvatarTest {
     }
 
     @Test
-    fun mobiAnimationCacheLoadsTwelveFramesFromAssets() {
+    fun mobiAnimationCacheLoadsTwentyFourFramesFromAssets() {
         val context =
             androidx.test.core.app.ApplicationProvider
                 .getApplicationContext<android.content.Context>()
         val frames = MobiAnimationCache.getOrLoadFrames(context)
-        org.junit.Assert.assertEquals(12, frames.size)
+        org.junit.Assert.assertEquals(24, frames.size)
+    }
+
+    @Test
+    fun lunaAnimationCacheLoadsTwentyFourFramesFromAssets() {
+        val context =
+            androidx.test.core.app.ApplicationProvider
+                .getApplicationContext<android.content.Context>()
+        val frames = LunaAnimationCache.getOrLoadFrames(context)
+        org.junit.Assert.assertEquals(24, frames.size)
     }
 
     @Test
@@ -124,5 +133,68 @@ class PetAvatarTest {
         assertNotNull(sunglassesCrop)
         assertEquals(510, sunglassesCrop!!.x)
         assertEquals(460, sunglassesCrop.width)
+    }
+
+    @Test
+    fun happyCharactersAreDefinedAndRenderWithDistinctSignatures() {
+        val mobiHappy = CharacterArtwork.happy("friend:mobi")
+        val lunaHappy = CharacterArtwork.happy("friend:luna")
+        val mobiHeadphonesHappy = CharacterArtwork.happy("friend:mobi", "accessory:mobi_headphones")
+        val mobiGogglesHappy = CharacterArtwork.happy("friend:mobi", "accessory:mobi_goggles")
+        val lunaCapHappy = CharacterArtwork.happy("friend:luna", "accessory:luna_cap")
+        val lunaSunglassesHappy = CharacterArtwork.happy("friend:luna", "accessory:luna_sunglasses")
+        assertNotNull(mobiHappy)
+        assertNotNull(lunaHappy)
+        assertNotNull(mobiHeadphonesHappy)
+        assertNotNull(mobiGogglesHappy)
+        assertNotNull(lunaCapHappy)
+        assertNotNull(lunaSunglassesHappy)
+        assertEquals(0.87f, lunaHappy.visualScale)
+        assertEquals(0.87f, lunaCapHappy.visualScale)
+        assertEquals(0.87f, lunaSunglassesHappy.visualScale)
+
+        lateinit var view: View
+        compose.setContent {
+            val currentView = LocalView.current
+            SideEffect { view = currentView }
+            MobiMonTheme {
+                Row {
+                    PetAvatar(
+                        modifier = Modifier.testTag("mobi-happy"),
+                        friendId = "friend:mobi",
+                        emotion = PetEmotion.HAPPY,
+                    )
+                    PetAvatar(
+                        modifier = Modifier.testTag("luna-happy"),
+                        friendId = "friend:luna",
+                        emotion = PetEmotion.HAPPY,
+                    )
+                }
+            }
+        }
+
+        val tags = listOf("mobi-happy", "luna-happy")
+        val bounds = tags.associateWith { compose.onNodeWithTag(it).fetchSemanticsNode().boundsInRoot }
+        lateinit var signatures: Map<String, List<Int>>
+        compose.runOnIdle {
+            val bitmap = Bitmap.createBitmap(view.width, view.height, Bitmap.Config.ARGB_8888)
+            view.draw(Canvas(bitmap))
+            signatures =
+                bounds.mapValues { (_, area) ->
+                    val left = area.left.toInt()
+                    val top = area.top.toInt()
+                    val width = area.width.toInt()
+                    val height = area.height.toInt()
+                    IntArray(width * height)
+                        .also { pixels ->
+                            bitmap.getPixels(pixels, 0, width, left, top, width, height)
+                        }.toList()
+                }
+            bitmap.recycle()
+        }
+
+        assertNotEquals(signatures.getValue("mobi-happy"), signatures.getValue("luna-happy"))
+        assertTrue(signatures.getValue("mobi-happy").toSet().size > 100)
+        assertTrue(signatures.getValue("luna-happy").toSet().size > 100)
     }
 }

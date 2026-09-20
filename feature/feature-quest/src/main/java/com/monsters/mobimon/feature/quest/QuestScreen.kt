@@ -30,6 +30,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.listSaver
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -60,6 +62,7 @@ import com.monsters.mobimon.core.navigation.AppRoute
 import com.monsters.mobimon.core.navigation.VehicleRoute
 import com.monsters.mobimon.core.ui.MobiMonFontFamily
 import com.monsters.mobimon.core.ui.PetAvatar
+import com.monsters.mobimon.core.ui.PetEmotion
 import com.monsters.mobimon.core.ui.MobiMonColors as Colors
 
 @Composable
@@ -82,6 +85,7 @@ fun QuestScreen(
     rewardSuccessModal: RewardSuccessModalState? = null,
     customCompletions: Set<String> = setOf("q03"),
     satisfiedQuestIds: Set<String> = emptySet(),
+    dismissedHiddenQuestIds: Set<String> = emptySet(),
     friendId: String = "friend:mobi",
     appearanceKey: String = "GOLDEN",
     accessoryId: String? = null,
@@ -90,6 +94,7 @@ fun QuestScreen(
     onSelectTab: (QuestFilterTab) -> Unit = {},
     onSelectQuest: (String?) -> Unit = {},
     onClaimReward: (String) -> Unit = {},
+    onDismissHiddenQuest: (String) -> Unit = {},
     onDismissRewardModal: () -> Unit = {},
     onNavigateRoute: (AppRoute) -> Unit = {},
     onBack: () -> Unit = {},
@@ -377,7 +382,17 @@ fun QuestScreen(
             ),
         )
 
-    var dismissedHiddenQuestIds by remember { mutableStateOf(emptySet<String>()) }
+    val setSaver =
+        remember {
+            listSaver<Set<String>, String>(
+                save = { it.toList() },
+                restore = { it.toSet() },
+            )
+        }
+    var localDismissedHiddenQuestIds by rememberSaveable(stateSaver = setSaver) {
+        mutableStateOf(emptySet<String>())
+    }
+    val allDismissedQuestIds = dismissedHiddenQuestIds + localDismissedHiddenQuestIds
 
     val isCostumeEquipped = !accessoryId.isNullOrBlank() || !outfitId.isNullOrBlank()
     val isBackgroundEquipped =
@@ -411,10 +426,12 @@ fun QuestScreen(
 
     val activeHiddenQuest =
         hiddenQuests.firstOrNull {
-            it.isSatisfied && !internalCompletions.contains(it.id) && !dismissedHiddenQuestIds.contains(it.id)
+            it.isSatisfied && !internalCompletions.contains(it.id) && !allDismissedQuestIds.contains(it.id)
         }
 
     val handleClaimReward: (String) -> Unit = { questId ->
+        localDismissedHiddenQuestIds = localDismissedHiddenQuestIds + questId
+        onDismissHiddenQuest(questId)
         internalCompletions = internalCompletions + questId
         val quest = quests.firstOrNull { it.id == questId }
         val hiddenQuest = hiddenQuests.firstOrNull { it.id == questId }
@@ -606,7 +623,10 @@ fun QuestScreen(
                     backgroundId = backgroundId,
                     scale = scale,
                     onClaim = { handleClaimReward(activeHiddenQuest.id) },
-                    onDismiss = { dismissedHiddenQuestIds = dismissedHiddenQuestIds + activeHiddenQuest.id },
+                    onDismiss = {
+                        localDismissedHiddenQuestIds = localDismissedHiddenQuestIds + activeHiddenQuest.id
+                        onDismissHiddenQuest(activeHiddenQuest.id)
+                    },
                 )
             }
 
@@ -1734,6 +1754,7 @@ private fun QuestRewardSuccessModal(
                     accessoryId = accessoryId,
                     outfitId = outfitId,
                     backgroundId = backgroundId,
+                    emotion = PetEmotion.HAPPY,
                 )
 
                 Spacer(Modifier.height(24.dp * scale))
