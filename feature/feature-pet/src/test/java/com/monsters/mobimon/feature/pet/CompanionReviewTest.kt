@@ -13,11 +13,15 @@ import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.performSemanticsAction
+import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.unit.Density
 import com.monsters.mobimon.core.domain.CompanionSettings
 import com.monsters.mobimon.core.domain.DrivingState
@@ -65,6 +69,7 @@ class CompanionReviewTest {
         assertEquals(520f, bubble.top, 1f)
         assertEquals(324f, bubble.width, 1f)
         assertEquals(174.6f, bubble.height, 1f)
+        assertSpeechBubbleTextAndProportions()
         val action = compose.onNodeWithTag("home-conversation-action").fetchSemanticsNode().boundsInRoot
         assertEquals(1013.6f, action.left, 1f)
         assertEquals(1068f, action.top, 1f)
@@ -79,6 +84,14 @@ class CompanionReviewTest {
     @Test fun afternoonHomeReferenceRender() = homeRender("Afternoon")
 
     @Test fun sunsetHomeReferenceRender() = homeRender("Sunset")
+
+    @Test
+    @Config(qualifiers = "ko-rKR-w1414dp-h828dp-mdpi")
+    fun smallerLandscapeKeepsSpeechBubbleTextAndProportions() {
+        render("home-smaller-landscape") { ReviewHome("Night") }
+        compose.onNodeWithTag("home-companion-message").assertIsDisplayed()
+        assertSpeechBubbleTextAndProportions()
+    }
 
     @Test
     @Config(qualifiers = "ko-rKR-w800dp-h600dp-mdpi")
@@ -112,6 +125,7 @@ class CompanionReviewTest {
         }
         assertEquals("Each period must render its own background", 5, skyColors.size)
         compose.onNodeWithTag("home-companion-message").performScrollTo().assertIsDisplayed()
+        assertSpeechBubbleTextAndProportions()
         capture(view, "home-compact-bubble")
         compose.onNodeWithTag("home-conversation-action").performScrollTo().assertIsDisplayed()
         capture(view, "home-compact-action")
@@ -120,6 +134,24 @@ class CompanionReviewTest {
     private fun homeRender(period: String) {
         val view = render(if (period == "Night") "home" else "home-${period.lowercase()}") { ReviewHome(period) }
         assertLightlyTintedCrop(view, period)
+    }
+
+    private fun assertSpeechBubbleTextAndProportions() {
+        compose
+            .onNodeWithText("여행은 언제나\n즐거워요!", useUnmergedTree = true)
+            .performSemanticsAction(SemanticsActions.GetTextLayoutResult) {
+                val results = mutableListOf<TextLayoutResult>()
+                it(results)
+                val layout = results.single()
+                assertEquals("Keep the intended two-line message without splitting words", 2, layout.lineCount)
+                repeat(layout.lineCount) { line ->
+                    assertTrue("No message line is truncated", !layout.isLineEllipsized(line))
+                    assertTrue("Each line fits horizontally", layout.getLineRight(line) <= layout.size.width + 1f)
+                    assertTrue("Each line fits vertically", layout.getLineBottom(line) <= layout.size.height + 1f)
+                }
+            }
+        val bubble = compose.onNodeWithTag("home-companion-message").fetchSemanticsNode().boundsInRoot
+        assertEquals("Preserve the reference bubble proportions", 324f / 174.6f, bubble.width / bubble.height, 0.01f)
     }
 
     @Composable

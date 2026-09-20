@@ -42,7 +42,10 @@ internal fun HomeSpeechBubble(
 ) {
     val motionEnabled = LocalMobiMonMotionEnabled.current
     val textScale = LocalDensity.current.fontScale.coerceAtLeast(1f)
-    val bubbleScale = scale * textScale
+    val fontSize = (32.4f * scale).coerceAtLeast(24f)
+    val lineHeight = (43.2f * scale).coerceAtLeast(34f)
+    // The artwork must stop shrinking when either minimum text dimension is reached.
+    val bubbleScale = maxOf(fontSize / 32.4f, lineHeight / 43.2f) * textScale
     var visible by remember { mutableStateOf(!motionEnabled) }
     val progress by animateFloatAsState(
         targetValue = if (visible) 1f else 0f,
@@ -95,8 +98,8 @@ internal fun HomeSpeechBubble(
                 ),
             style =
                 MaterialTheme.typography.bodyLarge.copy(
-                    fontSize = (32.4f * scale).coerceAtLeast(24f).sp,
-                    lineHeight = (43.2f * scale).coerceAtLeast(34f).sp,
+                    fontSize = fontSize.sp,
+                    lineHeight = lineHeight.sp,
                     letterSpacing = (0.2f * scale).sp,
                     fontWeight = FontWeight.Normal,
                 ),
