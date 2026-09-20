@@ -290,6 +290,14 @@ class PetHomeScreenTest {
     }
 
     @Test
+    fun tappingPetTriggersSpeechBubbleInteraction() {
+        render(snapshot = parkedSnapshot())
+        compose.onNodeWithContentDescription("Mobi 강아지").performClick()
+        compose.onNodeWithTag("home-companion-message").assertIsDisplayed()
+        compose.onNodeWithText("여행은 언제나\n즐거워요!").assertIsDisplayed()
+    }
+
+    @Test
     fun initialProfileFailureOffersAnAccessibleRetry() {
         var retries = 0
         compose.setContent { MobiMonTheme { PetHomeLoadingScreen(true, { retries++ }) } }
