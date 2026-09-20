@@ -37,9 +37,7 @@
   <string name="pet_settings_ai_unavailable">연결 환경이 확인되지 않아 대화를 사용할 수 없어요.</string>
   <string name="pet_settings_voice_title">음성 답변</string>
   <string name="pet_settings_voice_unavailable">음성 대화는 현재 지원하지 않아요.</string>
-  <string name="pet_settings_dnd_title">방해 금지</string>
-  <string name="pet_settings_dnd_unavailable">자동 소리 제어는 현재 지원하지 않아요.</string>
-  <string name="pet_settings_debug_title">디버깅용 모드</string>
+  <string name="pet_settings_debug_title">Debugger</string>
   <string name="pet_settings_debug_description">시뮬레이션 신호와 포인트 도구를 표시해요.</string>
   <string name="pet_settings_unavailable_label">사용 불가</string>
   <string name="pet_settings_on">켜짐</string>
@@ -47,4 +45,7 @@
   <string name="pet_settings_done">완료</string>
   <string name="pet_settings_back">뒤로</string>
     <string name="pet_route_save_failed">저장하지 못했어요. 현재 기록을 확인하고 다시 시도해 주세요.</string>
+  <string name="pet_settings_launcher_title">차량 홈 캐릭터</string>
+  <string name="pet_settings_launcher_unavailable">앱 안의 미리보기에만 적용돼요. 실제 차량 런처는 지원하지 않아요. 현재 준비중이에요.</string>
+  <string name="pet_settings_preparing">준비 중</string>
 </resources>

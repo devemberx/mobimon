@@ -181,20 +181,43 @@ class CompanionReviewTest {
 
     @Test fun settingsReferenceRender() {
         render("settings") {
-            SettingsScreen(CompanionSettings(reducedMotion = true), {}, parkedVerified = true, onOpenCopilot = {})
+            SettingsScreen(
+                CompanionSettings(),
+                {},
+                debugModeAvailable = true,
+                parkedVerified = true,
+                onOpenCopilot = {},
+            )
         }
+        val back = compose.onNodeWithTag("settings-back").fetchSemanticsNode().boundsInRoot
+        assertEquals(72f, back.left, 1f)
+        assertEquals(56f, back.top, 1f)
+        assertEquals(104f, back.width, 1f)
+        val title = compose.onNodeWithText("설정").fetchSemanticsNode().boundsInRoot
+        assertEquals(208f, title.left, 1f)
+        val done = compose.onNodeWithTag("settings-done").fetchSemanticsNode().boundsInRoot
+        assertEquals(800f, done.left, 1f)
+        assertEquals(1077f, done.top, 1f)
+        assertEquals(960f, done.width, 1f)
+        assertEquals(100f, done.height, 1f)
         compose.onNodeWithTag("settings-done").assertIsDisplayed()
     }
 
     @Test
     @Config(qualifiers = "ko-rKR-w800dp-h600dp-mdpi")
     fun compactSettingsKeepsDoneReachableAtEnlargedText() {
-        render("settings-compact") {
-            CompositionLocalProvider(LocalDensity provides Density(1f, 1.5f)) {
-                SettingsScreen(CompanionSettings(reducedMotion = true), {}, parkedVerified = true, onOpenCopilot = {})
+        val view =
+            render("settings-compact") {
+                CompositionLocalProvider(LocalDensity provides Density(1f, 1.5f)) {
+                    SettingsScreen(CompanionSettings(reducedMotion = true), {
+                    }, debugModeAvailable = true, parkedVerified = true, onOpenCopilot = {})
+                }
             }
-        }
+        compose.onNodeWithText("움직임 줄이기").performScrollTo().assertIsDisplayed()
+        capture(view, "settings-compact-motion")
+        compose.onNodeWithText("Debugger").performScrollTo().assertIsDisplayed()
         compose.onNodeWithTag("settings-done").assertIsDisplayed()
+        capture(view, "settings-compact-debugger")
     }
 
     private fun render(

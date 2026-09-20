@@ -14,6 +14,8 @@ import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 
@@ -27,6 +29,8 @@ import androidx.compose.ui.unit.dp
 fun MobiMonListItem(
     modifier: Modifier = Modifier,
     contentPadding: PaddingValues = PaddingValues(MobiMonDimensions.contentPadding),
+    shape: Shape = RoundedCornerShape(MobiMonDimensions.messageCorner),
+    containerColor: Color = MaterialTheme.colorScheme.surfaceVariant,
     leading: (@Composable () -> Unit)? = null,
     supporting: (@Composable () -> Unit)? = null,
     trailing: (@Composable () -> Unit)? = null,
@@ -34,8 +38,8 @@ fun MobiMonListItem(
 ) {
     Surface(
         modifier,
-        shape = RoundedCornerShape(MobiMonDimensions.messageCorner),
-        color = MaterialTheme.colorScheme.surfaceVariant,
+        shape = shape,
+        color = containerColor,
         contentColor = MaterialTheme.colorScheme.onSurface,
     ) {
         BoxWithConstraints(Modifier.fillMaxWidth().padding(contentPadding), contentAlignment = Alignment.Center) {
