@@ -70,12 +70,13 @@ fun PetHomeScreen(
     inventoryLoaded: Boolean = true,
     inventoryLoadFailed: Boolean = false,
     connectionAvailable: Boolean = false,
+    backgroundTimeOfDay: String? = snapshot.timeOfDay,
 ) {
     val connectionText = if (connectionAvailable) R.string.pet_connection_description else R.string.pet_ai_unavailable
     val talkText = if (connectionAvailable) R.string.pet_talk_action else R.string.pet_talk_unavailable
     Surface(modifier = modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
         BoxWithConstraints(Modifier.fillMaxSize()) {
-            val backgroundRes = companionBackgroundRes(snapshot.timeOfDay)
+            val backgroundRes = companionBackgroundRes(backgroundTimeOfDay)
             Crossfade(
                 targetState = backgroundRes,
                 animationSpec = tween(durationMillis = if (LocalMobiMonMotionEnabled.current) 1000 else 0),

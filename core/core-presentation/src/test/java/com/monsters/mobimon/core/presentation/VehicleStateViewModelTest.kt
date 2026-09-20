@@ -6,6 +6,7 @@ import com.monsters.mobimon.core.domain.DrivingState
 import com.monsters.mobimon.core.domain.ProgressionIdentity
 import com.monsters.mobimon.core.domain.SignalQuality
 import com.monsters.mobimon.core.domain.SignalSource
+import com.monsters.mobimon.core.domain.UtcClock
 import com.monsters.mobimon.core.domain.VehicleFreshnessPolicy
 import com.monsters.mobimon.core.domain.VehicleRepository
 import com.monsters.mobimon.core.domain.VehicleSnapshot
@@ -22,6 +23,8 @@ import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Test
+import java.time.Instant
+import java.time.ZoneId
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class VehicleStateViewModelTest {
@@ -61,6 +64,77 @@ class VehicleStateViewModelTest {
     }
 
     @Test
+    fun backgroundUsesWallClockAndTracksHourZoneAndClockChangesWithoutVehicleEmissions() =
+        runTest(dispatcher) {
+            var wallTime = Instant.parse("2026-09-20T08:59:59Z").toEpochMilli()
+            var zone = ZoneId.of("Asia/Seoul")
+            val original = vehicle.snapshots.value.copy(quality = SignalQuality.UNAVAILABLE)
+            vehicle.snapshots.value = original
+            val model =
+                VehicleStateViewModel(
+                    vehicle,
+                    ProgressionIdentity("profile", SignalSource.REAL),
+                    Clock { now },
+                    VehicleFreshnessPolicy(15_000),
+                    UtcClock { wallTime },
+                    { zone },
+                ).also { store.put("vehicle", it) }
+            try {
+                assertEquals("17", model.state.value.backgroundTimeOfDay)
+                runCurrent()
+                wallTime += 1_000
+                advanceTimeBy(1_000)
+                runCurrent()
+                assertEquals("18", model.state.value.backgroundTimeOfDay)
+                zone = ZoneId.of("UTC")
+                advanceTimeBy(1_000)
+                runCurrent()
+                assertEquals("9", model.state.value.backgroundTimeOfDay)
+                wallTime = Instant.parse("2026-09-20T05:00:00Z").toEpochMilli()
+                advanceTimeBy(1_000)
+                runCurrent()
+                assertEquals("5", model.state.value.backgroundTimeOfDay)
+                assertEquals(original, model.state.value.evidence)
+                assertEquals(null, model.state.value.snapshot.timeOfDay)
+                assertEquals(false, model.state.value.snapshot.parkedVerified)
+            } finally {
+                store.clear()
+                runCurrent()
+            }
+        }
+
+    @Test
+    fun suppliedTimeOverridesWallClockAndClearingItResumesAutomaticTime() =
+        runTest(dispatcher) {
+            vehicle.snapshots.value = vehicle.snapshots.value.copy(timeOfDay = "Sunset")
+            val model =
+                VehicleStateViewModel(
+                    vehicle,
+                    ProgressionIdentity("profile", SignalSource.REAL),
+                    Clock { now },
+                    VehicleFreshnessPolicy(15_000),
+                    UtcClock { Instant.parse("2026-09-20T03:00:00Z").toEpochMilli() },
+                    { ZoneId.of("Asia/Seoul") },
+                ).also { store.put("vehicle", it) }
+            try {
+                assertEquals("Sunset", model.state.value.backgroundTimeOfDay)
+                runCurrent()
+                advanceTimeBy(1_000)
+                runCurrent()
+                assertEquals("Sunset", model.state.value.backgroundTimeOfDay)
+                vehicle.snapshots.value = vehicle.snapshots.value.copy(timeOfDay = null)
+                runCurrent()
+                assertEquals("12", model.state.value.backgroundTimeOfDay)
+                vehicle.snapshots.value = vehicle.snapshots.value.copy(timeOfDay = " ")
+                runCurrent()
+                assertEquals("12", model.state.value.backgroundTimeOfDay)
+            } finally {
+                store.clear()
+                runCurrent()
+            }
+        }
+
+    @Test
     fun displayFreshnessKeepsEvidenceFromTheSameProviderEmission() =
         runTest(dispatcher) {
             try {
@@ -71,6 +145,7 @@ class VehicleStateViewModelTest {
                         ProgressionIdentity("profile", SignalSource.REAL),
                         Clock { now },
                         VehicleFreshnessPolicy(15_000),
+                        UtcClock { 0L },
                     ).also { store.put("vehicle", it) }
                 assertEquals(original, model.state.value.evidence)
                 assertEquals(SignalQuality.VALID, model.state.value.snapshot.batteryQuality)
@@ -107,6 +182,7 @@ class VehicleStateViewModelTest {
                         ProgressionIdentity("profile", SignalSource.REAL),
                         Clock { now },
                         VehicleFreshnessPolicy(15_000),
+                        UtcClock { 0L },
                     ).also { store.put("vehicle", it) }
 
                 assertEquals(SignalQuality.STALE, model.state.value.snapshot.quality)
@@ -127,6 +203,7 @@ class VehicleStateViewModelTest {
                         ProgressionIdentity("profile", SignalSource.SIMULATED),
                         Clock { now },
                         VehicleFreshnessPolicy(15_000),
+                        UtcClock { 0L },
                     ).also { store.put("vehicle", it) }
 
                 assertEquals(SignalQuality.UNAVAILABLE, model.state.value.snapshot.quality)
@@ -147,6 +224,7 @@ class VehicleStateViewModelTest {
                         ProgressionIdentity("profile", SignalSource.REAL),
                         Clock { now },
                         VehicleFreshnessPolicy(15_000),
+                        UtcClock { 0L },
                     ).also { store.put("vehicle", it) }
                 runCurrent()
                 repeat(5) {
@@ -176,6 +254,7 @@ class VehicleStateViewModelTest {
                         ProgressionIdentity("profile", SignalSource.REAL),
                         Clock { now },
                         VehicleFreshnessPolicy(15_000),
+                        UtcClock { 0L },
                     ).also { store.put("vehicle", it) }
                 runCurrent()
                 assertEquals(SignalQuality.VALID, model.state.value.snapshot.quality)

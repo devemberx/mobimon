@@ -42,7 +42,8 @@ class PetFeature(
         val pointBalance by pointModel.state.collectAsStateWithLifecycle()
         val appearanceModel = appearance.model()
         val equipped by appearanceModel.state.collectAsStateWithLifecycle()
-        val snapshot = vehicle.snapshot()
+        val reading = vehicle.reading()
+        val snapshot = reading.snapshot
         val retry = {
             model.retry()
             appearanceModel.retry()
@@ -71,6 +72,7 @@ class PetFeature(
             inventoryLoaded = equipped.inventory != null,
             inventoryLoadFailed = equipped.failed,
             connectionAvailable = true,
+            backgroundTimeOfDay = reading.backgroundTimeOfDay,
         )
     }
 }

@@ -6,6 +6,7 @@ import android.view.View
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.test.assertIsDisplayed
@@ -20,6 +21,7 @@ import com.monsters.mobimon.core.domain.SignalSource
 import com.monsters.mobimon.core.domain.VehicleSnapshot
 import com.monsters.mobimon.core.ui.LocalMobiMonMotionEnabled
 import com.monsters.mobimon.core.ui.MobiMonTheme
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -36,28 +38,76 @@ class CompanionReviewTest {
     @get:Rule val compose = createComposeRule()
 
     @Test fun homeReferenceRender() {
-        render("home") {
-            PetHomeScreen(
-                profile = PetProfile("review"),
-                snapshot =
-                    VehicleSnapshot(
-                        "review",
-                        "epoch",
-                        1,
-                        1000,
-                        SignalSource.SIMULATED,
-                        DrivingState.PARKED,
-                        SignalQuality.VALID,
-                        72,
-                        timeOfDay = "Night",
-                    ),
-                onOpenMenu = {},
-                onPetClick = {},
-                pointBalance = 1200,
-                interactionAllowed = true,
-                connectionAvailable = true,
-            )
+        homeRender("Night")
+    }
+
+    @Test fun morningHomeReferenceRender() = homeRender("Morning")
+
+    @Test fun dayHomeReferenceRender() = homeRender("Day")
+
+    @Test fun afternoonHomeReferenceRender() = homeRender("Afternoon")
+
+    @Test fun sunsetHomeReferenceRender() = homeRender("Sunset")
+
+    @Test
+    @Config(qualifiers = "ko-rKR-w800dp-h600dp-mdpi")
+    fun compactHomeUpdatesAllBackgroundsWithoutRecreatingContent() {
+        val time = mutableStateOf("Morning")
+        lateinit var view: View
+        compose.setContent {
+            val current = LocalView.current
+            SideEffect { view = current }
+            CompositionLocalProvider(
+                LocalMobiMonMotionEnabled provides false,
+                LocalDensity provides Density(1f, 1.5f),
+            ) {
+                MobiMonTheme { ReviewHome(time.value) }
+            }
         }
+        val skyColors = mutableSetOf<Int>()
+        listOf("Morning", "Day", "Afternoon", "Sunset", "Night").forEach { period ->
+            compose.runOnIdle { time.value = period }
+            compose.runOnIdle {
+                val bitmap = Bitmap.createBitmap(view.width, view.height, Bitmap.Config.ARGB_8888)
+                view.draw(Canvas(bitmap))
+                skyColors += bitmap.getPixel(view.width / 2, view.height / 3)
+                val directory = File("build/reports/companion-ui").apply { mkdirs() }
+                File(directory, "home-compact-${period.lowercase()}.png").outputStream().use {
+                    assertTrue(bitmap.compress(Bitmap.CompressFormat.PNG, 100, it))
+                }
+                bitmap.recycle()
+            }
+        }
+        assertEquals("Each period must render its own background", 5, skyColors.size)
+    }
+
+    private fun homeRender(period: String) {
+        render(if (period == "Night") "home" else "home-${period.lowercase()}") { ReviewHome(period) }
+    }
+
+    @Composable
+    private fun ReviewHome(period: String) {
+        PetHomeScreen(
+            profile = PetProfile("review"),
+            snapshot =
+                VehicleSnapshot(
+                    "review",
+                    "epoch",
+                    1,
+                    1000,
+                    SignalSource.SIMULATED,
+                    DrivingState.PARKED,
+                    SignalQuality.VALID,
+                    72,
+                    timeOfDay = "Night",
+                ),
+            onOpenMenu = {},
+            onPetClick = {},
+            pointBalance = 1200,
+            interactionAllowed = true,
+            connectionAvailable = true,
+            backgroundTimeOfDay = period,
+        )
     }
 
     @Test fun settingsReferenceRender() {

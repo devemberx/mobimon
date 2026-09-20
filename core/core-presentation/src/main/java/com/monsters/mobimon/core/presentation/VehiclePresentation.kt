@@ -11,6 +11,7 @@ import com.monsters.mobimon.core.domain.Clock
 import com.monsters.mobimon.core.domain.DrivingState
 import com.monsters.mobimon.core.domain.ProgressionIdentity
 import com.monsters.mobimon.core.domain.SignalQuality
+import com.monsters.mobimon.core.domain.UtcClock
 import com.monsters.mobimon.core.domain.VehicleFreshnessPolicy
 import com.monsters.mobimon.core.domain.VehicleRepository
 import com.monsters.mobimon.core.domain.VehicleSnapshot
@@ -21,6 +22,7 @@ class VehiclePresentation(
     private val identity: ProgressionIdentity,
     private val clock: Clock,
     private val freshness: VehicleFreshnessPolicy,
+    private val utcClock: UtcClock,
 ) {
     @Composable
     fun snapshot(): VehicleSnapshot = reading().snapshot
@@ -29,7 +31,17 @@ class VehiclePresentation(
     fun reading(): VehicleReading {
         val factory =
             remember(this) {
-                viewModelFactory { initializer { VehicleStateViewModel(vehicle, identity, clock, freshness) } }
+                viewModelFactory {
+                    initializer {
+                        VehicleStateViewModel(
+                            vehicle,
+                            identity,
+                            clock,
+                            freshness,
+                            utcClock,
+                        )
+                    }
+                }
             }
         val model: VehicleStateViewModel = viewModel(factory = factory)
         val reading by model.state.collectAsStateWithLifecycle()

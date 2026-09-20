@@ -40,7 +40,8 @@ class CustomizationFeature(
         val inventoryState by inventoryModel.state.collectAsStateWithLifecycle()
         val pointModel = wallet.model()
         val pointBalance by pointModel.state.collectAsStateWithLifecycle()
-        val vehicleSnapshot = vehicle.snapshot()
+        val vehicleReading = vehicle.reading()
+        val vehicleSnapshot = vehicleReading.snapshot
         val interactionAllowed = vehicleSnapshot.parkedVerified
 
         CustomizationScreen(
@@ -67,7 +68,7 @@ class CustomizationFeature(
                 pointModel.retry()
             },
             onBack = navigator.back,
-            timeOfDay = vehicleSnapshot.timeOfDay,
+            timeOfDay = vehicleReading.backgroundTimeOfDay,
             interactionAllowed = interactionAllowed,
         )
     }

@@ -124,6 +124,11 @@ render-only ages/quality must not change the transaction's identity comparison.
 The initial display is normalized before asynchronous collection can expose it.
 The shared display ticker runs once per second for the Activity ViewModel lifetime;
 screen collection does not own or restart the foreground-scoped provider connection.
+The same ticker derives `VehicleReading.backgroundTimeOfDay` from a supplied
+time value or the injected `UtcClock` and current local time zone. Home and
+customization consume this decorative value separately; it never fills missing
+vehicle observations or changes command evidence. The hour ranges live in
+[DESIGN.md](DESIGN.md#image-asset-locations).
 
 [PetAvatar](../core/core-ui/src/main/java/com/monsters/mobimon/core/ui/PetAvatar.kt)
 and [CharacterArtwork](../core/core-ui/src/main/java/com/monsters/mobimon/core/ui/CharacterArtwork.kt)

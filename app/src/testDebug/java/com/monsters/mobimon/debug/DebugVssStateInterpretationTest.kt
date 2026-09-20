@@ -84,11 +84,11 @@ class DebugVssStateInterpretationTest {
             )
         assertEquals("Day", dayState.timeOfDay)
 
-        val nightState =
+        val sunsetState =
             DebugVssState(
                 raw = DebugRawVssState(currentLocationTimestamp = "2026-10-08T19:00:00Z"),
             )
-        assertEquals("Night", nightState.timeOfDay)
+        assertEquals("Sunset", sunsetState.timeOfDay)
 
         val overriddenState =
             DebugVssState(
@@ -96,6 +96,52 @@ class DebugVssStateInterpretationTest {
                 overrides = DebugInterpretationOverrides(timeOfDay = "Morning"),
             )
         assertEquals("Morning", overriddenState.timeOfDay)
+    }
+
+    @Test
+    fun debugHoursAndLabelsSelectTheSameFiveBackgroundsAsTheScreens() {
+        val expected =
+            listOf(
+                "Night",
+                "Night",
+                "Night",
+                "Night",
+                "Night",
+                "Night",
+                "Morning",
+                "Morning",
+                "Morning",
+                "Morning",
+                "Morning",
+                "Morning",
+                "Day",
+                "Day",
+                "Day",
+                "Day",
+                "Afternoon",
+                "Afternoon",
+                "Sunset",
+                "Sunset",
+                "Night",
+                "Night",
+                "Night",
+                "Night",
+            )
+        expected.forEachIndexed { hour, period ->
+            assertEquals("Hour $hour", period, hour.toString().toTimeOfDay())
+            assertEquals(
+                com.monsters.mobimon.core.ui
+                    .companionBackgroundRes(period),
+                com.monsters.mobimon.core.ui
+                    .companionBackgroundRes(hour.toString()),
+            )
+        }
+        listOf("afternoon", "오후", "늦은 오후", "16:30", "17시").forEach {
+            assertEquals("Afternoon", it.toTimeOfDay())
+        }
+        listOf("sunset", "노을", "저녁", "18:30", "19시").forEach {
+            assertEquals("Sunset", it.toTimeOfDay())
+        }
     }
 
     @Test
@@ -115,15 +161,15 @@ class DebugVssStateInterpretationTest {
 
         assertEquals("Day", stateFor("12"))
         assertEquals("Day", stateFor("14"))
-        assertEquals("Day", stateFor("18"))
+        assertEquals("Sunset", stateFor("18"))
         assertEquals("Day", stateFor("14:30"))
         assertEquals("Day", stateFor("day"))
         assertEquals("Day", stateFor("낮"))
         assertEquals("Day", stateFor("14시"))
 
         assertEquals("Night", stateFor("0"))
-        assertEquals("Night", stateFor("7"))
-        assertEquals("Night", stateFor("19"))
+        assertEquals("Morning", stateFor("7"))
+        assertEquals("Sunset", stateFor("19"))
         assertEquals("Night", stateFor("23"))
         assertEquals("Night", stateFor("20:00"))
         assertEquals("Night", stateFor("night"))
