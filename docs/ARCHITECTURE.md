@@ -99,8 +99,10 @@ pure functions rather than layout code. Preview state never enters shared appear
 
 Quest presentation uses points only. Pending commands disable duplicate input; only
 `PointAwardResult.Awarded` creates a success state with its returned amount.
-`AlreadyAwarded` reconciles completion without another celebration. Observation and
-command errors have explicit recovery. Q01 presentation and its unused acknowledgment
+`AlreadyAwarded` reconciles completion without another celebration. Claim confirmations
+bridge delayed observation only until the repository acknowledges them; later completion
+removals, including Debug resets, update the display. Observation and command errors
+have explicit recovery. Q01 presentation and its unused acknowledgment
 card are removed; historical repository/evidence coverage uses test-only controllers.
 Completion display still uses quest IDs rather than occurrence-aware eligibility.
 

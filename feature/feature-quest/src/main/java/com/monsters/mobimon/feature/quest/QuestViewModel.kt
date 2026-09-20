@@ -46,7 +46,9 @@ class QuestViewModel(
     private val mutableState = MutableStateFlow(QuestUiState())
     val state = mutableState.asStateFlow()
     private var observation: Job? = null
-    private val confirmedQuestIds = mutableSetOf<String>()
+    private var observedQuestIds = emptySet<String>()
+    private val unobservedConfirmedQuestIds = mutableSetOf<String>()
+    private var pendingClaimObserved = false
 
     init {
         retry()
@@ -67,9 +69,13 @@ class QuestViewModel(
                                 .map { it.questId }
                                 .toSet()
                     }.collect { (completedIds, satisfiedIds) ->
+                        observedQuestIds = completedIds
+                        unobservedConfirmedQuestIds.removeAll(completedIds)
+                        val pendingQuestId = state.value.pendingQuestId
+                        if (pendingQuestId != null && pendingQuestId in completedIds) pendingClaimObserved = true
                         mutableState.update {
                             it.copy(
-                                completedPointQuestIds = completedIds + confirmedQuestIds,
+                                completedPointQuestIds = completedIds + unobservedConfirmedQuestIds,
                                 satisfiedDrivingQuestIds = satisfiedIds,
                                 isLoading = false,
                                 observationFailed = false,
@@ -98,6 +104,7 @@ class QuestViewModel(
         displayedSnapshot: VehicleSnapshot,
     ) {
         if (state.value.isBusy || state.value.isLoading || state.value.observationFailed) return
+        pendingClaimObserved = questId in observedQuestIds
         mutableState.update { it.copy(pendingQuestId = questId, message = null, rewardSuccess = null) }
         viewModelScope.launch {
             try {
@@ -123,11 +130,12 @@ class QuestViewModel(
         questId: String,
         rewardSuccess: QuestRewardSuccess?,
     ) {
-        // A repository result establishes the commit even before its observation reaches this collector.
-        confirmedQuestIds += questId
+        // Bridge delayed observation without pinning completions after the repository acknowledges them.
+        // Keep that acknowledgment even if a reset arrives before this result returns.
+        if (!pendingClaimObserved) unobservedConfirmedQuestIds += questId
         mutableState.update {
             it.copy(
-                completedPointQuestIds = it.completedPointQuestIds + questId,
+                completedPointQuestIds = observedQuestIds + unobservedConfirmedQuestIds,
                 rewardSuccess = rewardSuccess,
                 message = null,
             )

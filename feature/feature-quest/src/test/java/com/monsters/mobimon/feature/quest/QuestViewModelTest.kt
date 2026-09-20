@@ -119,6 +119,85 @@ class QuestViewModelTest {
         }
 
     @Test
+    fun completionResetClearsClaimAfterRepositoryAcknowledgment() =
+        runModelTest {
+            val vm = subject()
+            runCurrent()
+            vm.claimPointQuest(DrivingQuestIds.SEATBELT, displayedSnapshot)
+            runCurrent()
+            economy.completions.value = setOf(DrivingQuestIds.SEATBELT)
+            runCurrent()
+            assertTrue(DrivingQuestIds.SEATBELT in vm.state.value.completedPointQuestIds)
+
+            economy.completions.value = emptySet()
+            runCurrent()
+
+            assertFalse(DrivingQuestIds.SEATBELT in vm.state.value.completedPointQuestIds)
+        }
+
+    @Test
+    fun completionResetClearsClaimObservedBeforeItsResultReturns() =
+        runModelTest {
+            val result = CompletableDeferred<PointAwardResult>()
+            economy.gate = result
+            val vm = subject()
+            runCurrent()
+            vm.claimPointQuest(DrivingQuestIds.SEATBELT, displayedSnapshot)
+            runCurrent()
+            economy.completions.value = setOf(DrivingQuestIds.SEATBELT)
+            runCurrent()
+            result.complete(PointAwardResult.Awarded(5, 105, "once"))
+            runCurrent()
+            assertTrue(DrivingQuestIds.SEATBELT in vm.state.value.completedPointQuestIds)
+
+            economy.completions.value = emptySet()
+            runCurrent()
+
+            assertFalse(DrivingQuestIds.SEATBELT in vm.state.value.completedPointQuestIds)
+        }
+
+    @Test
+    fun completionResetDuringPendingClaimSurvivesItsLateResult() =
+        runModelTest {
+            val result = CompletableDeferred<PointAwardResult>()
+            economy.gate = result
+            val vm = subject()
+            runCurrent()
+            vm.claimPointQuest(DrivingQuestIds.SEATBELT, displayedSnapshot)
+            runCurrent()
+            economy.completions.value = setOf(DrivingQuestIds.SEATBELT)
+            runCurrent()
+            economy.completions.value = emptySet()
+            runCurrent()
+            assertFalse(DrivingQuestIds.SEATBELT in vm.state.value.completedPointQuestIds)
+
+            result.complete(PointAwardResult.Awarded(5, 105, "once"))
+            runCurrent()
+            economy.evaluation.value = DriveEvaluationData(distanceKm = 7f)
+            runCurrent()
+
+            assertFalse(DrivingQuestIds.SEATBELT in vm.state.value.completedPointQuestIds)
+        }
+
+    @Test
+    fun completionResetClearsAlreadyAwardedReconciliation() =
+        runModelTest {
+            economy.result = PointAwardResult.AlreadyAwarded
+            economy.completions.value = setOf(DrivingQuestIds.SEATBELT)
+            val vm = subject()
+            runCurrent()
+            vm.claimPointQuest(DrivingQuestIds.SEATBELT, displayedSnapshot)
+            runCurrent()
+            assertTrue(DrivingQuestIds.SEATBELT in vm.state.value.completedPointQuestIds)
+
+            economy.completions.value = emptySet()
+            runCurrent()
+
+            assertFalse(DrivingQuestIds.SEATBELT in vm.state.value.completedPointQuestIds)
+            assertNull(vm.state.value.rewardSuccess)
+        }
+
+    @Test
     fun alreadyAwardedReconcilesWithoutCelebratingAnotherCredit() =
         runModelTest {
             economy.result = PointAwardResult.AlreadyAwarded
