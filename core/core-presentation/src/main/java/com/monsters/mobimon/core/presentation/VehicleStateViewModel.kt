@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.monsters.mobimon.core.domain.Clock
 import com.monsters.mobimon.core.domain.ProgressionIdentity
+import com.monsters.mobimon.core.domain.UtcClock
 import com.monsters.mobimon.core.domain.VehicleFreshnessPolicy
 import com.monsters.mobimon.core.domain.VehicleRepository
 import com.monsters.mobimon.core.domain.VehicleSnapshot
@@ -13,11 +14,15 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.launch
+import java.time.Instant
+import java.time.ZoneId
 
 /** One provider emission supplies display freshness and the original command evidence together. */
 data class VehicleReading(
     val snapshot: VehicleSnapshot,
     val evidence: VehicleSnapshot,
+    /** Decorative local time is separate from vehicle observations and command evidence. */
+    val backgroundTimeOfDay: String,
 )
 
 /** Owns vehicle display freshness independently of quest storage observations. */
@@ -26,6 +31,8 @@ class VehicleStateViewModel(
     private val identity: ProgressionIdentity,
     private val clock: Clock,
     private val freshness: VehicleFreshnessPolicy,
+    private val utcClock: UtcClock,
+    private val zoneId: () -> ZoneId = ZoneId::systemDefault,
 ) : ViewModel() {
     private val mutableState = MutableStateFlow(reading(vehicle.snapshots.value, clock.nowMillis()))
     val state = mutableState.asStateFlow()
@@ -51,5 +58,12 @@ class VehicleStateViewModel(
         VehicleReading(
             snapshot = freshness.displaySnapshot(snapshot, identity.source, nowMillis),
             evidence = snapshot,
+            backgroundTimeOfDay =
+                snapshot.timeOfDay?.takeIf { it.isNotBlank() }
+                    ?: Instant
+                        .ofEpochMilli(utcClock.nowEpochMillis())
+                        .atZone(zoneId())
+                        .hour
+                        .toString(),
         )
 }

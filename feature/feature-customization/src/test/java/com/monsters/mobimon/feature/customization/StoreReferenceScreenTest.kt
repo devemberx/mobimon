@@ -23,7 +23,6 @@ import com.monsters.mobimon.core.domain.CosmeticInventory
 import com.monsters.mobimon.core.domain.CosmeticItem
 import com.monsters.mobimon.core.domain.CosmeticSlot
 import com.monsters.mobimon.core.ui.MobiMonTheme
-import com.monsters.mobimon.core.ui.companionBackgroundRes
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -266,31 +265,42 @@ class StoreReferenceScreenTest {
         assertNull(applied)
     }
 
-    @Test fun previewBackgroundFollowsTimeOfDay() {
-        assertEquals(
-            com.monsters.mobimon.core.ui.R.drawable.pet_home_background_morning,
-            companionBackgroundRes("Morning"),
-        )
-        assertEquals(com.monsters.mobimon.core.ui.R.drawable.pet_home_background_day, companionBackgroundRes("Day"))
-        assertEquals(com.monsters.mobimon.core.ui.R.drawable.pet_home_background_night, companionBackgroundRes("Night"))
-        assertEquals(
-            com.monsters.mobimon.core.ui.R.drawable.pet_home_background_morning,
-            companionBackgroundRes("morning"),
-        )
-        assertEquals(com.monsters.mobimon.core.ui.R.drawable.pet_home_background_day, companionBackgroundRes("day"))
-        assertEquals(com.monsters.mobimon.core.ui.R.drawable.pet_home_background_night, companionBackgroundRes("night"))
-        assertEquals(
-            com.monsters.mobimon.core.ui.R.drawable.pet_home_background_morning,
-            companionBackgroundRes("09"),
-        )
-        assertEquals(com.monsters.mobimon.core.ui.R.drawable.pet_home_background_day, companionBackgroundRes("14"))
-        assertEquals(com.monsters.mobimon.core.ui.R.drawable.pet_home_background_night, companionBackgroundRes("20"))
-        assertEquals(
-            com.monsters.mobimon.core.ui.R.drawable.pet_home_background_morning,
-            companionBackgroundRes("아침"),
-        )
-        assertEquals(com.monsters.mobimon.core.ui.R.drawable.pet_home_background_day, companionBackgroundRes("낮"))
-        assertEquals(com.monsters.mobimon.core.ui.R.drawable.pet_home_background_night, companionBackgroundRes("밤"))
+    @Test fun previewBackgroundUpdatesThroughEveryPeriodWithoutRecreatingContent() {
+        val period = mutableStateOf("Morning")
+        lateinit var view: View
+        val catalog = listOf(CosmeticItem("friend:mobi", CosmeticSlot.FRIEND, 0))
+        compose.setContent {
+            val current = LocalView.current
+            SideEffect { view = current }
+            MobiMonTheme {
+                CustomizationScreen(
+                    inventory = CosmeticInventory(setOf("friend:mobi"), mapOf(CosmeticSlot.FRIEND to "friend:mobi")),
+                    catalog = catalog,
+                    selectedItemId = "friend:mobi",
+                    purchasing = false,
+                    purchaseFailed = false,
+                    onSelectItem = {},
+                    onPurchaseItem = { _, _ -> },
+                    onEquipItem = {},
+                    onEquipFriend = {},
+                    pointBalance = 1200,
+                    pointLoadFailed = false,
+                    timeOfDay = period.value,
+                )
+            }
+        }
+        val colors = mutableSetOf<Int>()
+        listOf("Morning", "Day", "Afternoon", "Sunset", "Night").forEach { value ->
+            compose.runOnIdle { period.value = value }
+            capture(view, "background-${value.lowercase()}")
+            compose.runOnIdle {
+                val bitmap = Bitmap.createBitmap(view.width, view.height, Bitmap.Config.ARGB_8888)
+                view.draw(Canvas(bitmap))
+                colors += bitmap.getPixel(view.width / 4, view.height / 3)
+                bitmap.recycle()
+            }
+        }
+        assertEquals("Each period must render in the preview", 5, colors.size)
     }
 
     private fun assertFriendCardFitsCatalogViewport() {

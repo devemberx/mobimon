@@ -77,6 +77,8 @@ owned by [ARCHITECTURE.md](ARCHITECTURE.md#planned-features).
 
 | Requirement | Suite | Scope |
 | --- | --- | --- |
+| Five background periods, hour boundaries, aliases and matching image dimensions | [CompanionBackgroundTest](../core/core-ui/src/test/java/com/monsters/mobimon/core/ui/CompanionBackgroundTest.kt), [DebugVssStateInterpretationTest](../app/src/testDebug/java/com/monsters/mobimon/debug/DebugVssStateInterpretationTest.kt) | Shared mapping/resource decoding and Debug agreement |
+| Background follows local wall clock and time-zone changes without modifying vehicle evidence; supplied time overrides the clock | [VehicleStateViewModelTest](../core/core-presentation/src/test/java/com/monsters/mobimon/core/presentation/VehicleStateViewModelTest.kt) | Injected clocks, time zone and virtual ticker |
 | Declared module dependencies and selected domain imports | `verifyModuleBoundaries` in [root build](../build.gradle.kts) | Project declarations, production external dependencies/JVM graphs and selected production imports; [audit limits](ARCHITECTURE.md#state-and-lifecycle) apply |
 | Complete, unique destination registration | [FeatureRegistryTest](../core/core-navigation/src/test/java/com/monsters/mobimon/core/navigation/FeatureRegistryTest.kt) | JVM |
 | Committed AI context, observation retry and cancellation | [AiCompanionViewModelTest](../feature/feature-auth/src/test/java/com/monsters/mobimon/feature/auth/AiCompanionViewModelTest.kt) | ViewModel |

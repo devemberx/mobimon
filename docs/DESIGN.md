@@ -93,7 +93,7 @@ Do not use whole-screen SVGs as runtime UI or duplicate shared artwork.
 | Animated character frames | `core/core-ui/src/main/assets/characters/{mobi,luna}/idle_breath/` |
 | Shared character poses and equipped appearances | `core/core-ui/src/main/res/drawable-nodpi/mobimon_*.png` |
 | Store accessory thumbnails | `mobimon_mobi_items.png` and `mobimon_luna_items.png` in the same shared drawable folder; `CharacterArtwork` selects crops |
-| Home and store-preview backgrounds | `core/core-ui/src/main/res/drawable-nodpi/pet_home_background_{morning,day,night}.*` |
+| Home and store-preview backgrounds | `core/core-ui/src/main/res/drawable-nodpi/pet_home_background_{morning,day,afternoon,sunset,night}.webp` |
 | Store navigation/category icons | `feature/feature-customization/src/main/res/drawable/store_*.xml` |
 | Menu artwork | `app/src/main/res/drawable-nodpi/drawer_*.png` |
 | Quest artwork and icons | `feature/feature-quest/src/main/res/drawable-nodpi/` and `res/drawable/` |
@@ -107,6 +107,15 @@ Keep generation prompts, stale handoff notes and unused manifests out of runtime
 assets. `PetAvatar` loads 24 PNG frames per character and owns frame timing;
 it does not read generation JSON. Database schemas, migration fixtures and tool
 configuration JSON are required project inputs and must remain tracked.
+
+Home and customization share five 2560 × 1440 lossless WebP backgrounds with
+matching framing. PNG generation drafts stay outside runtime resources.
+Local hours 06–11 use Morning, 12–15 Day, 16–17 Afternoon, 18–19 Sunset and 20–05
+Night. This is a fixed visual schedule, not an astronomical sunrise/sunset model.
+Provided time values (including Debug overrides) take priority; otherwise the
+background follows the device's local clock and time zone while the app is open.
+Clouds and lighting vary; permanent scenery and character placement stay fixed.
+Home uses its existing one-second crossfade, disabled by reduced motion.
 
 [PetAvatar](../core/core-ui/src/main/java/com/monsters/mobimon/core/ui/PetAvatar.kt)
 is the artwork replacement boundary. Preserve identity, proportions, lighting,
