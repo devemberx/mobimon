@@ -101,6 +101,11 @@ internal object LunaAnimationCache {
     }
 }
 
+enum class PetEmotion {
+    IDLE,
+    HAPPY,
+}
+
 /**
  * Renders the selected character from external artwork and retains the historical Cream fallback.
  * [appearanceKey] accepts GOLDEN or CREAM without importing a domain model.
@@ -114,10 +119,21 @@ fun PetAvatar(
     outfitId: String? = null,
     backgroundId: String? = null,
     isAnimated: Boolean = true,
+    emotion: PetEmotion = PetEmotion.IDLE,
 ) {
     val cat = friendId == "friend:luna"
     val cream = appearanceKey == "CREAM"
     val description = stringResource(if (cat) R.string.mobimon_luna_description else R.string.mobimon_mobi_description)
+    if (emotion == PetEmotion.HAPPY) {
+        val happyAsset = CharacterArtwork.happy(friendId)
+        Box(modifier = modifier.size(120.dp).semantics { contentDescription = description }) {
+            backgroundId?.let { CharacterArtwork.backgrounds[it] }?.let {
+                CharacterAssetImage(it, Modifier.fillMaxSize())
+            }
+            CharacterAssetImage(happyAsset, Modifier.fillMaxSize())
+        }
+        return
+    }
     if (!cream || cat) {
         Box(modifier = modifier.size(120.dp).semantics { contentDescription = description }) {
             backgroundId?.let { CharacterArtwork.backgrounds[it] }?.let {

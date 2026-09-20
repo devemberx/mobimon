@@ -56,6 +56,7 @@ data class QuestUiState(
     val message: QuestMessage? = null,
     val completedPointQuestIds: Set<String> = emptySet(),
     val satisfiedDrivingQuestIds: Set<String> = emptySet(),
+    val dismissedHiddenQuestIds: Set<String> = emptySet(),
 )
 
 private data class ObservationData(
@@ -157,8 +158,17 @@ class QuestViewModel(
             }
     }
 
+    fun dismissHiddenQuest(questId: String) {
+        mutableState.update {
+            it.copy(dismissedHiddenQuestIds = it.dismissedHiddenQuestIds + questId)
+        }
+    }
+
     fun claimPointQuest(questId: String) =
         command {
+            mutableState.update {
+                it.copy(dismissedHiddenQuestIds = it.dismissedHiddenQuestIds + questId)
+            }
             val pointEconomy = economy ?: return@command
             val snapshot = vehicle.snapshots.value
             if (!validate(snapshot)) return@command

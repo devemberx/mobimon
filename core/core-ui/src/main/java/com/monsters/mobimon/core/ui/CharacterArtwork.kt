@@ -74,10 +74,18 @@ object CharacterArtwork {
     // Add drawable resource mappings here when selectable background art is delivered.
     val backgrounds: Map<String, CharacterAsset> = emptyMap()
 
+    val happyCharacters =
+        mapOf(
+            "friend:mobi" to CharacterAsset(R.drawable.mobimon_mobi_happy),
+            "friend:luna" to CharacterAsset(R.drawable.mobimon_luna_happy, visualScale = 0.87f),
+        )
+
     fun preview(
         friendId: String,
         accessoryId: String?,
     ): CharacterAsset = equippedLooks[accessoryId] ?: characters[friendId] ?: characters.getValue("friend:mobi")
+
+    fun happy(friendId: String): CharacterAsset = happyCharacters[friendId] ?: happyCharacters.getValue("friend:mobi")
 }
 
 @Composable

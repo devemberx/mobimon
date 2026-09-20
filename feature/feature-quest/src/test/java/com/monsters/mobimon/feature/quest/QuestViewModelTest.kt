@@ -412,4 +412,51 @@ class QuestViewModelTest {
             runCurrent()
             assertEquals(1, testEconomy.awardCalls)
         }
+
+    @Test
+    fun dismissHiddenQuestAddsQuestIdToDismissedHiddenQuestIds() =
+        runModelTest {
+            val vm = subject()
+            runCurrent()
+            assertTrue(
+                vm.state.value.dismissedHiddenQuestIds
+                    .isEmpty(),
+            )
+
+            vm.dismissHiddenQuest(DrivingQuestIds.HIDDEN_NEW_FRIEND)
+            runCurrent()
+            assertTrue(
+                vm.state.value.dismissedHiddenQuestIds
+                    .contains(DrivingQuestIds.HIDDEN_NEW_FRIEND),
+            )
+        }
+
+    @Test
+    fun claimPointQuestAddsQuestIdToDismissedHiddenQuestIds() =
+        runModelTest {
+            val testEconomy = TestEconomy()
+            val vm =
+                QuestViewModel(
+                    local,
+                    local,
+                    vehicle,
+                    ProgressionIdentity("profile", SignalSource.REAL),
+                    Clock { now },
+                    QuestEvaluator(15_000),
+                    testEconomy,
+                ).also { store.put("quest-claim-hidden", it) }
+            runCurrent()
+            assertTrue(
+                vm.state.value.dismissedHiddenQuestIds
+                    .isEmpty(),
+            )
+
+            vm.claimPointQuest(DrivingQuestIds.HIDDEN_NEW_FRIEND)
+            runCurrent()
+            assertTrue(
+                vm.state.value.dismissedHiddenQuestIds
+                    .contains(DrivingQuestIds.HIDDEN_NEW_FRIEND),
+            )
+            assertEquals(1, testEconomy.awardCalls)
+        }
 }
