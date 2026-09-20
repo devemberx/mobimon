@@ -13,6 +13,7 @@ import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performSemanticsAction
@@ -92,7 +93,7 @@ class PetHomeScreenTest {
     fun moderatelyEnlargedParkingTextFitsInsideTheBadge() {
         render(snapshot = parkedSnapshot(), pointBalance = 0, fontScale = 1.2f)
         compose
-            .onNodeWithText("P · 주차 중", useUnmergedTree = true)
+            .onNodeWithText("주차 확인됨", useUnmergedTree = true)
             .performSemanticsAction(SemanticsActions.GetTextLayoutResult) {
                 val results = mutableListOf<TextLayoutResult>()
                 it(results)
@@ -146,7 +147,7 @@ class PetHomeScreenTest {
         compose.onNodeWithText("배터리 72%").assertDoesNotExist()
         compose.onNodeWithText("대화하기 · 연결 불가").performScrollTo().assertIsNotEnabled()
         compose.runOnIdle { snapshot.value = parkedSnapshot() }
-        compose.onNodeWithText("P · 주차 중").assertExists()
+        compose.onNodeWithText("주차 확인됨").assertExists()
         compose.onNodeWithText("배터리 72%").assertDoesNotExist()
     }
 
@@ -167,6 +168,7 @@ class PetHomeScreenTest {
     }
 
     @Test
+    @Config(qualifiers = "ko-rKR-w1792dp-h888dp")
     fun interactionRestrictedNoticeDisplaysDuringDrivingWithoutShiftingUi() {
         val allowed = mutableStateOf(true)
         compose.setContent {
@@ -283,6 +285,18 @@ class PetHomeScreenTest {
     }
 
     @Test
+    @Config(qualifiers = "ko-rKR-w1414dp-h764dp-mdpi")
+    fun shortLandscapeCanScrollTheEntireRestrictionNoticeIntoView() {
+        render(snapshot = parkedSnapshot())
+        val notice = compose.onNodeWithText("주행 중에는 상호작용이 제한돼요.")
+        notice.performScrollTo()
+        val viewport = compose.onRoot().fetchSemanticsNode().boundsInRoot
+        val bounds = notice.fetchSemanticsNode().boundsInRoot
+        assertTrue("Notice top stays within the window", bounds.top >= viewport.top)
+        assertTrue("Entire notice remains reachable", bounds.bottom <= viewport.bottom)
+    }
+
+    @Test
     fun menuAcceptsKeyboardFocus() {
         render()
         compose.onNodeWithContentDescription("메뉴 열기").performSemanticsAction(SemanticsActions.RequestFocus) { it() }
@@ -293,7 +307,7 @@ class PetHomeScreenTest {
     fun tappingPetTriggersSpeechBubbleInteraction() {
         render(snapshot = parkedSnapshot())
         compose.onNodeWithContentDescription("Mobi 강아지").performClick()
-        compose.onNodeWithTag("home-companion-message").assertIsDisplayed()
+        compose.onNodeWithTag("home-companion-message").performScrollTo().assertIsDisplayed()
         compose.onNodeWithText("여행은 언제나\n즐거워요!").assertIsDisplayed()
     }
 

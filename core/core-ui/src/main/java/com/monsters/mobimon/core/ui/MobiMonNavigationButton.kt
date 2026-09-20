@@ -30,6 +30,7 @@ fun MobiMonNavigationButton(
     modifier: Modifier = Modifier,
     visualSize: Dp = 76.dp,
     iconSize: Dp = 28.dp,
+    borderWidth: Dp = 1.dp,
 ) {
     var focused by remember { mutableStateOf(false) }
     val targetSize = visualSize.coerceAtLeast(76.dp)
@@ -47,7 +48,7 @@ fun MobiMonNavigationButton(
             color = MobiMonColors.panel,
             border =
                 BorderStroke(
-                    if (focused) 3.dp else 1.dp,
+                    if (focused) 3.dp else borderWidth,
                     if (focused) MobiMonColors.accent else MobiMonColors.border,
                 ),
         ) {

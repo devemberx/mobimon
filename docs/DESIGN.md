@@ -94,6 +94,7 @@ Do not use whole-screen SVGs as runtime UI or duplicate shared artwork.
 | Shared character poses and equipped appearances | `core/core-ui/src/main/res/drawable-nodpi/mobimon_*.png` |
 | Store accessory thumbnails | `mobimon_mobi_items.png` and `mobimon_luna_items.png` in the same shared drawable folder; `CharacterArtwork` selects crops |
 | Home and store-preview backgrounds | `core/core-ui/src/main/res/drawable-nodpi/pet_home_background_{morning,day,afternoon,sunset,night}.webp` |
+| Home menu, conversation, parking and speech-bubble vectors | `feature/feature-pet/src/main/res/drawable/pet_*.xml` |
 | Store navigation/category icons | `feature/feature-customization/src/main/res/drawable/store_*.xml` |
 | Menu artwork | `app/src/main/res/drawable-nodpi/drawer_*.png` |
 | Quest artwork and icons | `feature/feature-quest/src/main/res/drawable-nodpi/` and `res/drawable/` |
@@ -116,6 +117,18 @@ Provided time values (including Debug overrides) take priority; otherwise the
 background follows the device's local clock and time zone while the app is open.
 Clouds and lighting vary; permanent scenery and character placement stay fixed.
 Home uses its existing one-second crossfade, disabled by reduced motion.
+Home center-crops every background and adds a light, cool window tint. Top opacity
+is 8% in Morning, 12% in Day, 10% in Afternoon, 6% in Sunset and 4% at Night;
+it falls to one quarter at the center and three fifths at the bottom. The tint
+crossfades with the artwork and leaves the character and controls untouched.
+Daylight labels retain text shadows for readability.
+
+Home's speech bubble pops in from its tail on entry, pet tap, and periodic reappearance.
+Data updates do not replay it; reduced motion displays the settled bubble immediately.
+The time-of-day ambient phrase appears between the greeting and companion.
+Availability and restriction notices appear only when needed
+and do not move the main action. Compact layouts remain scrollable, including
+notices below the action.
 
 [PetAvatar](../core/core-ui/src/main/java/com/monsters/mobimon/core/ui/PetAvatar.kt)
 is the artwork replacement boundary. Preserve identity, proportions, lighting,
