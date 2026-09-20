@@ -14,7 +14,8 @@
 - Keep simulations in Debug/test sources with separate IDs, profiles and databases. Release vehicle data stays unavailable until a real adapter is verified; unknown driving state cannot authorize commands.
 - Example accounts/codes and rendered connection success are not provider verification. Follow the [connection boundary](docs/ARCHITECTURE.md#copilot-connection-ui).
 - Reward writes must use atomic repository transactions with evidence, ownership/revision and occurrence-uniqueness checks. UI/AI must not grant rewards directly.
-- Use the current [visual specification](docs/DESIGN.md), shared `core-ui` primitives and replaceable [PetAvatar](core/core-ui/src/main/java/com/monsters/mobimon/core/ui/PetAvatar.kt). Preserve character identity; keep rewards, equipment and authorization outside the renderer. Do not restore obsolete XP/progression UI.
+- Use the current [visual specification](docs/DESIGN.md), shared `core-ui` primitives and replaceable [PetAvatar](core/core-ui/src/main/java/com/monsters/mobimon/core/ui/PetAvatar.kt). Keep rewards, equipment and authorization outside the renderer. Do not restore obsolete XP/progression UI.
+- Generate background/character variants from the approved master; preserve identity, proportions, style and fixed scene geometry. Keep canvas pixel dimensions, aspect ratio, framing, subject scale/anchor and transparency consistent within each variant set unless explicitly requested otherwise. Change only requested properties, such as clouds/lighting or expression/pose. Check dimensions and compare visually with the master before use; reject unintended drift.
 
 ## Documentation
 
