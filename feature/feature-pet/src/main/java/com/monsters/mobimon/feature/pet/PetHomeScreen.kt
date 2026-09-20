@@ -141,7 +141,6 @@ fun PetHomeScreen(
                     pointBalance = pointBalance,
                     pointLoadFailed = pointLoadFailed,
                     onOpenMenu = onOpenMenu,
-                    modifier = Modifier.offset(y = (-48).dp),
                 )
                 if (profileObservationFailed) {
                     HomeFailure(stringResource(R.string.pet_profile_observation_failed), onRetryProfile)
@@ -195,7 +194,7 @@ private fun HomeCompanionScene(
             modifier =
                 Modifier
                     .align(Alignment.TopCenter)
-                    .offset(y = (-48).dp)
+                    .offset(y = (-16).dp)
                     .zIndex(1f),
         )
         when {
