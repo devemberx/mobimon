@@ -56,8 +56,10 @@ import com.monsters.mobimon.core.ui.MobiMonButton
 import com.monsters.mobimon.core.ui.MobiMonButtonStyle
 import com.monsters.mobimon.core.ui.MobiMonColors
 import com.monsters.mobimon.core.ui.MobiMonDimensions
+import com.monsters.mobimon.core.ui.MobiMonParkingBadge
 import com.monsters.mobimon.core.ui.MobiMonSourceBadge
 import com.monsters.mobimon.core.ui.PetAvatar
+import com.monsters.mobimon.core.ui.R as CoreUiR
 
 /** Displays vehicle readings without owning quest or interaction commands. */
 @Composable
@@ -124,6 +126,7 @@ fun VehicleInfoScreen(
                             VehicleCardGrid(
                                 snapshot = snapshot,
                                 readings = readings,
+                                parkingScale = scale,
                                 modifier = Modifier.weight(1f),
                             )
                         }
@@ -174,6 +177,7 @@ fun VehicleInfoScreen(
                             VehicleCardGrid(
                                 snapshot = snapshot,
                                 readings = readings,
+                                parkingScale = scale,
                                 modifier = Modifier.weight(1f),
                             )
                         }
@@ -186,7 +190,12 @@ fun VehicleInfoScreen(
                             backgroundId = backgroundId,
                             modifier = Modifier.fillMaxWidth(),
                         )
-                        VehicleCardGrid(snapshot = snapshot, readings = readings, modifier = Modifier.fillMaxWidth())
+                        VehicleCardGrid(
+                            snapshot = snapshot,
+                            readings = readings,
+                            parkingScale = scale,
+                            modifier = Modifier.fillMaxWidth(),
+                        )
                     }
                     if (snapshot.warnings.isNotEmpty()) WarningList(snapshot.warnings)
                 }
@@ -219,8 +228,8 @@ internal fun VehicleHeader(
                     .testTag("vehicle-header-back-button"),
         ) {
             Icon(
-                painter = painterResource(com.monsters.mobimon.core.ui.R.drawable.mobimon_icon_back),
-                contentDescription = stringResource(com.monsters.mobimon.core.ui.R.string.mobimon_back),
+                painter = painterResource(CoreUiR.drawable.mobimon_icon_back),
+                contentDescription = stringResource(CoreUiR.string.mobimon_back),
                 tint = MobiMonColors.text,
                 modifier = Modifier.size(iconSize),
             )
@@ -255,7 +264,7 @@ internal fun VehicleHeader(
                 modifier = Modifier.height(homeHeight).testTag("vehicle-header-home-button"),
             ) {
                 Text(
-                    text = stringResource(com.monsters.mobimon.core.ui.R.string.mobimon_home),
+                    text = stringResource(CoreUiR.string.mobimon_home),
                     fontSize = if (scale >= 0.7f) (28f * scale).sp else 14.sp,
                     color = MobiMonColors.text,
                 )
@@ -393,12 +402,13 @@ private fun VehicleCardGrid(
     snapshot: VehicleSnapshot,
     readings: VehicleInfoUiState,
     modifier: Modifier = Modifier,
+    parkingScale: Float = 1f,
 ) {
     val minimumCardWidth = 360.dp * LocalDensity.current.fontScale.coerceAtLeast(1f)
     val cards =
         listOf<@Composable (Modifier) -> Unit>(
             { BatteryCard(snapshot, readings.batteryPercent, it) },
-            { DrivingCard(snapshot, it) },
+            { DrivingCard(snapshot, it, parkingScale) },
             { TireCard(readings, it) },
             { EnvironmentCard(readings, it) },
             { DriverAssistCard(readings, it) },
@@ -460,19 +470,28 @@ private fun BatteryCard(
 private fun DrivingCard(
     snapshot: VehicleSnapshot,
     modifier: Modifier = Modifier,
+    parkingScale: Float = 1f,
 ) {
     val drivingText =
         stringResource(
             when {
                 snapshot.quality != SignalQuality.VALID || snapshot.drivingState == DrivingState.UNKNOWN ->
-                    R.string.vehicle_driving_unknown
+                    CoreUiR.string.mobimon_parking_unconfirmed
                 snapshot.drivingState == DrivingState.MOVING -> R.string.vehicle_driving_moving
-                else -> R.string.vehicle_driving_parked
+                else -> CoreUiR.string.mobimon_parking_confirmed
             },
         )
     MetricCard(
         title = stringResource(R.string.vehicle_driving_card_title),
         value = drivingText,
+        valueContent = {
+            MobiMonParkingBadge(
+                status = drivingText,
+                scale = parkingScale,
+                showParkingIcon =
+                    snapshot.quality != SignalQuality.VALID || snapshot.drivingState != DrivingState.MOVING,
+            )
+        },
         supporting = parkingSupportingText(snapshot),
         modifier = modifier,
         badge =
@@ -680,6 +699,7 @@ private fun MetricCard(
     modifier: Modifier = Modifier,
     badge: String? = null,
     badgeTone: VehicleTone = VehicleTone.NEUTRAL,
+    valueContent: (@Composable () -> Unit)? = null,
     content: @Composable () -> Unit = {},
 ) {
     StatusSurface(
@@ -714,12 +734,16 @@ private fun MetricCard(
                     )
                 }
             }
-            Text(
-                text = value,
-                color = MobiMonColors.text,
-                style = MaterialTheme.typography.displaySmall,
-                fontWeight = FontWeight.Bold,
-            )
+            if (valueContent != null) {
+                valueContent()
+            } else {
+                Text(
+                    text = value,
+                    color = MobiMonColors.text,
+                    style = MaterialTheme.typography.displaySmall,
+                    fontWeight = FontWeight.Bold,
+                )
+            }
             Text(
                 text = supporting,
                 color = MobiMonColors.muted,

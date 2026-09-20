@@ -6,9 +6,7 @@
   <string name="vehicle_last_checked_hours">마지막 확인: %1$d시간 전</string>
   <string name="vehicle_last_checked_days">마지막 확인: %1$d일 전</string>
   <string name="vehicle_quality_unavailable">차량 상태를 확인할 수 없어요</string>
-  <string name="vehicle_driving_unknown">주차 여부 확인 불가</string>
   <string name="vehicle_driving_moving">주행 중</string>
-  <string name="vehicle_driving_parked">주차 확인됨</string>
   <string name="vehicle_battery_unavailable">배터리 정보 없음</string>
   <string name="vehicle_battery_stale">배터리 정보가 오래되었어요</string>
   <string name="vehicle_battery_unsupported">이 차량은 배터리 정보를 제공하지 않아요</string>

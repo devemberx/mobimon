@@ -1,58 +1,39 @@
 package com.monsters.mobimon.feature.pet
 
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.semantics
 import com.monsters.mobimon.core.domain.DrivingState
 import com.monsters.mobimon.core.domain.SignalQuality
 import com.monsters.mobimon.core.domain.VehicleSnapshot
-import com.monsters.mobimon.core.ui.MobiMonStatusBadge
-import com.monsters.mobimon.core.ui.MobiMonStatusTone
+import com.monsters.mobimon.core.ui.MobiMonParkingBadge
+import com.monsters.mobimon.core.ui.R as CoreUiR
 
 @Composable
 internal fun HomeParkingStatus(
     snapshot: VehicleSnapshot,
     modifier: Modifier = Modifier,
+    scale: Float = 1f,
 ) {
     val isCharging = snapshot.quality == SignalQuality.VALID && snapshot.isCharging == true
-    val parked = !isCharging && snapshot.quality == SignalQuality.VALID && snapshot.drivingState == DrivingState.PARKED
-    val gear = snapshot.gear?.uppercase()
-
     val badgeTextRes =
         when {
             snapshot.quality != SignalQuality.VALID || snapshot.drivingState == DrivingState.UNKNOWN ->
-                R.string.pet_driving_unknown
+                CoreUiR.string.mobimon_parking_unconfirmed
             isCharging -> R.string.pet_charging_compact
             snapshot.drivingState == DrivingState.MOVING -> R.string.pet_driving_moving
-            gear == "R" -> R.string.pet_gear_r_compact
-            gear == "N" -> R.string.pet_gear_n_compact
-            gear == "D" -> R.string.pet_gear_d_compact
-            else -> R.string.pet_driving_parked
+            snapshot.gear?.uppercase() == "R" -> R.string.pet_gear_r_compact
+            snapshot.gear?.uppercase() == "N" -> R.string.pet_gear_n_compact
+            snapshot.gear?.uppercase() == "D" -> R.string.pet_gear_d_compact
+            else -> CoreUiR.string.mobimon_parking_confirmed
         }
     val status = stringResource(badgeTextRes)
-
-    MobiMonStatusBadge(
-        modifier.semantics(mergeDescendants = true) { contentDescription = status },
-        tone = if (isCharging || parked) MobiMonStatusTone.SUCCESS else MobiMonStatusTone.INFORMATION,
-    ) {
-        Text(
-            when {
-                isCharging -> stringResource(R.string.pet_charging_compact)
-                parked ->
-                    when (gear) {
-                        "P", null -> stringResource(R.string.pet_parking_compact)
-                        "R" -> stringResource(R.string.pet_gear_r_compact)
-                        "N" -> stringResource(R.string.pet_gear_n_compact)
-                        "D" -> stringResource(R.string.pet_gear_d_compact)
-                        else -> stringResource(R.string.pet_parking_compact)
-                    }
-                else -> status
-            },
-            style = MaterialTheme.typography.labelLarge,
-        )
-    }
+    MobiMonParkingBadge(
+        status = status,
+        modifier = modifier,
+        scale = scale,
+        showParkingIcon =
+            badgeTextRes == CoreUiR.string.mobimon_parking_confirmed ||
+                badgeTextRes == CoreUiR.string.mobimon_parking_unconfirmed,
+    )
 }

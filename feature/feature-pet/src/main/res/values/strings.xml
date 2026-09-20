@@ -3,7 +3,6 @@
   <string name="pet_brand">MobiMon</string>
   <string name="pet_brand_tagline">Drive Together</string>
   <string name="pet_home_greeting">함께 쉬어 가요.</string>
-  <string name="pet_home_subtitle">좋은 길엔, 늘 네가 있어.</string>
   <string name="pet_home_message">여행은 언제나\n즐거워요!</string>
     <string name="pet_parking_compact">P · 주차 중</string>
     <string name="pet_charging_compact">충전 중</string>
@@ -21,9 +20,7 @@
   <string name="pet_inventory_loading">소유한 아이템을 확인하고 있어요.</string>
   <string name="pet_inventory_failed">소유한 아이템을 확인할 수 없어요.</string>
   <string name="pet_profile_observation_failed">친구 정보를 다시 확인하지 못했어요. 마지막으로 저장된 모습을 표시하고 있어요.</string>
-  <string name="pet_driving_unknown">주차 여부 확인 불가</string>
   <string name="pet_driving_moving">주행 중</string>
-  <string name="pet_driving_parked">주차 확인됨</string>
   <string name="pet_saving">변경 사항을 저장하고 있어요.</string>
   <string name="pet_settings_loading">설정을 불러오고 있어요.</string>
   <string name="pet_settings_unavailable">저장된 설정을 불러오지 못했어요.</string>
@@ -32,9 +29,6 @@
   <string name="pet_setting_motion_description">캐릭터와 배경의 반복 움직임과 화면 전환 효과를 줄여요.</string>
   <string name="pet_settings_title">설정</string>
   <string name="pet_settings_subtitle">친구와 함께하는 방식을 정해보세요.</string>
-  <string name="pet_settings_parked">P · 주차 중</string>
-  <string name="pet_settings_parking_unknown">주차 확인 불가</string>
-  <string name="pet_settings_simulated_parking">%1$s · 시뮬레이션</string>
   <string name="pet_settings_parked_notice">설정 변경은 주차 중에 할 수 있어요.</string>
   <string name="pet_settings_ai_title">GitHub Copilot</string>
   <string name="pet_settings_ai_connect">연결 안내</string>

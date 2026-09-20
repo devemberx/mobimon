@@ -2,6 +2,7 @@ package com.monsters.mobimon.feature.pet
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -16,6 +17,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
@@ -33,8 +35,9 @@ import com.monsters.mobimon.core.ui.MobiMonContentColumn
 import com.monsters.mobimon.core.ui.MobiMonDimensions
 import com.monsters.mobimon.core.ui.MobiMonListItem
 import com.monsters.mobimon.core.ui.MobiMonMessage
-import com.monsters.mobimon.core.ui.MobiMonStatusBadge
-import com.monsters.mobimon.core.ui.MobiMonStatusTone
+import com.monsters.mobimon.core.ui.MobiMonParkingBadge
+import com.monsters.mobimon.core.ui.MobiMonSourceBadge
+import com.monsters.mobimon.core.ui.R as CoreUiR
 
 /** Independent preference controls; final composition remains feature-owned. */
 @Composable
@@ -58,120 +61,127 @@ fun SettingsScreen(
     onOpenCopilot: (() -> Unit)? = null,
 ) {
     val backDescription = stringResource(R.string.pet_settings_back)
-    Surface(modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
-        Column(Modifier.fillMaxSize()) {
-            Row(
-                Modifier.fillMaxWidth().padding(MobiMonDimensions.contentPadding),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(MobiMonDimensions.contentGap),
-            ) {
-                MobiMonBackButton(
-                    onClick = onBack,
-                    modifier = Modifier.testTag("settings-back"),
-                    contentDescription = backDescription,
-                )
-                Text(
-                    stringResource(R.string.pet_settings_title),
-                    Modifier.weight(1f).semantics { heading() },
-                    style = MaterialTheme.typography.headlineMedium,
-                )
-            }
-            MobiMonContentColumn(Modifier.weight(1f).fillMaxWidth()) {
-                val parking =
-                    stringResource(
-                        if (parkedVerified) R.string.pet_settings_parked else R.string.pet_settings_parking_unknown,
-                    )
-                MobiMonStatusBadge(
-                    tone = if (parkedVerified) MobiMonStatusTone.SUCCESS else MobiMonStatusTone.INFORMATION,
+    BoxWithConstraints(modifier.fillMaxSize()) {
+        val reference = maxWidth >= 1400.dp && maxHeight >= 800.dp && LocalDensity.current.fontScale <= 1f
+        val parkingScale = if (reference) minOf(maxWidth.value / 2560f, maxHeight.value / 1268f) else 0.75f
+        Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
+            Column(Modifier.fillMaxSize()) {
+                Row(
+                    Modifier.fillMaxWidth().padding(MobiMonDimensions.contentPadding),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(MobiMonDimensions.contentGap),
                 ) {
+                    MobiMonBackButton(
+                        onClick = onBack,
+                        modifier = Modifier.testTag("settings-back"),
+                        contentDescription = backDescription,
+                    )
                     Text(
-                        if (simulatedVehicle) {
+                        stringResource(R.string.pet_settings_title),
+                        Modifier.weight(1f).semantics { heading() },
+                        style = MaterialTheme.typography.headlineMedium,
+                    )
+                }
+                MobiMonContentColumn(Modifier.weight(1f).fillMaxWidth()) {
+                    MobiMonParkingBadge(
+                        scale = parkingScale,
+                        status =
                             stringResource(
-                                R.string.pet_settings_simulated_parking,
-                                parking,
-                            )
-                        } else {
-                            parking
-                        },
+                                if (parkedVerified) {
+                                    CoreUiR.string.mobimon_parking_confirmed
+                                } else {
+                                    CoreUiR.string.mobimon_parking_unconfirmed
+                                },
+                            ),
                     )
-                }
-                Text(stringResource(R.string.pet_settings_subtitle), color = MaterialTheme.colorScheme.onSurfaceVariant)
-                if (settingsAvailable) {
-                    SettingsItem(
-                        R.string.pet_settings_ai_title,
-                        if (onOpenCopilot ==
-                            null
-                        ) {
-                            R.string.pet_settings_ai_unavailable
-                        } else {
-                            R.string.pet_settings_ai_connect_description
-                        },
-                        if (onOpenCopilot ==
-                            null
-                        ) {
-                            R.string.pet_settings_unavailable_label
-                        } else {
-                            R.string.pet_settings_ai_connect
-                        },
-                        enabled = parkedVerified,
-                        onClick = onOpenCopilot,
-                    )
-                    SettingsItem(
-                        R.string.pet_settings_voice_title,
-                        R.string.pet_settings_voice_unavailable,
-                        R.string.pet_settings_unavailable_label,
-                    )
-                    SettingsItem(
-                        R.string.pet_setting_motion,
-                        R.string.pet_setting_motion_description,
-                        if (settings.reducedMotion) R.string.pet_settings_on else R.string.pet_settings_off,
-                        checked = settings.reducedMotion,
-                        enabled = parkedVerified && !motionSaving,
-                        onCheckedChange = onReducedMotionChange,
-                        feedback = motionError ?: if (motionSaving) stringResource(R.string.pet_saving) else null,
-                        isError = motionError != null,
-                    )
-                    SettingsItem(
-                        R.string.pet_settings_dnd_title,
-                        R.string.pet_settings_dnd_unavailable,
-                        R.string.pet_settings_unavailable_label,
-                    )
-                    if (debugModeAvailable) {
-                        SettingsItem(
-                            R.string.pet_settings_debug_title,
-                            R.string.pet_settings_debug_description,
-                            if (settings.debugModeEnabled) R.string.pet_settings_on else R.string.pet_settings_off,
-                            checked = settings.debugModeEnabled,
-                            enabled = parkedVerified && !debugSaving,
-                            onCheckedChange = onDebugModeChange,
-                            feedback = debugError ?: if (debugSaving) stringResource(R.string.pet_saving) else null,
-                            isError = debugError != null,
-                        )
+                    if (simulatedVehicle) {
+                        MobiMonSourceBadge(simulated = true)
                     }
-                }
-                if (!settingsAvailable || settingsLoadFailed) {
-                    MobiMonMessage(
-                        stringResource(
-                            if (settingsLoadFailed) {
-                                R.string.pet_settings_unavailable
-                            } else {
-                                R.string.pet_settings_loading
-                            },
-                        ),
-                        isError = settingsLoadFailed,
+                    Text(
+                        stringResource(R.string.pet_settings_subtitle),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
-                    if (settingsLoadFailed) MobiMonButton(onRetry) { Text(stringResource(R.string.pet_settings_retry)) }
+                    if (settingsAvailable) {
+                        SettingsItem(
+                            R.string.pet_settings_ai_title,
+                            if (onOpenCopilot ==
+                                null
+                            ) {
+                                R.string.pet_settings_ai_unavailable
+                            } else {
+                                R.string.pet_settings_ai_connect_description
+                            },
+                            if (onOpenCopilot ==
+                                null
+                            ) {
+                                R.string.pet_settings_unavailable_label
+                            } else {
+                                R.string.pet_settings_ai_connect
+                            },
+                            enabled = parkedVerified,
+                            onClick = onOpenCopilot,
+                        )
+                        SettingsItem(
+                            R.string.pet_settings_voice_title,
+                            R.string.pet_settings_voice_unavailable,
+                            R.string.pet_settings_unavailable_label,
+                        )
+                        SettingsItem(
+                            R.string.pet_setting_motion,
+                            R.string.pet_setting_motion_description,
+                            if (settings.reducedMotion) R.string.pet_settings_on else R.string.pet_settings_off,
+                            checked = settings.reducedMotion,
+                            enabled = parkedVerified && !motionSaving,
+                            onCheckedChange = onReducedMotionChange,
+                            feedback = motionError ?: if (motionSaving) stringResource(R.string.pet_saving) else null,
+                            isError = motionError != null,
+                        )
+                        SettingsItem(
+                            R.string.pet_settings_dnd_title,
+                            R.string.pet_settings_dnd_unavailable,
+                            R.string.pet_settings_unavailable_label,
+                        )
+                        if (debugModeAvailable) {
+                            SettingsItem(
+                                R.string.pet_settings_debug_title,
+                                R.string.pet_settings_debug_description,
+                                if (settings.debugModeEnabled) R.string.pet_settings_on else R.string.pet_settings_off,
+                                checked = settings.debugModeEnabled,
+                                enabled = parkedVerified && !debugSaving,
+                                onCheckedChange = onDebugModeChange,
+                                feedback = debugError ?: if (debugSaving) stringResource(R.string.pet_saving) else null,
+                                isError = debugError != null,
+                            )
+                        }
+                    }
+                    if (!settingsAvailable || settingsLoadFailed) {
+                        MobiMonMessage(
+                            stringResource(
+                                if (settingsLoadFailed) {
+                                    R.string.pet_settings_unavailable
+                                } else {
+                                    R.string.pet_settings_loading
+                                },
+                            ),
+                            isError = settingsLoadFailed,
+                        )
+                        if (settingsLoadFailed) {
+                            MobiMonButton(
+                                onRetry,
+                            ) { Text(stringResource(R.string.pet_settings_retry)) }
+                        }
+                    }
+                    Text(
+                        stringResource(R.string.pet_settings_parked_notice),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
                 }
-                Text(
-                    stringResource(R.string.pet_settings_parked_notice),
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-            MobiMonButton(
-                onDone,
-                Modifier.fillMaxWidth().padding(MobiMonDimensions.contentPadding).testTag("settings-done"),
-            ) {
-                Text(stringResource(R.string.pet_settings_done))
+                MobiMonButton(
+                    onDone,
+                    Modifier.fillMaxWidth().padding(MobiMonDimensions.contentPadding).testTag("settings-done"),
+                ) {
+                    Text(stringResource(R.string.pet_settings_done))
+                }
             }
         }
     }

@@ -2,6 +2,7 @@ package com.monsters.mobimon.core.ui
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.padding
@@ -11,6 +12,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
 enum class MobiMonStatusTone { INFORMATION, SUCCESS, WARNING, ERROR }
@@ -23,6 +25,9 @@ enum class MobiMonStatusTone { INFORMATION, SUCCESS, WARNING, ERROR }
 fun MobiMonStatusBadge(
     modifier: Modifier = Modifier,
     tone: MobiMonStatusTone = MobiMonStatusTone.INFORMATION,
+    contentPadding: PaddingValues = PaddingValues(horizontal = 24.dp, vertical = 12.dp),
+    horizontalArrangement: Arrangement.Horizontal = Arrangement.spacedBy(12.dp),
+    borderWidth: Dp = 1.dp,
     content: @Composable RowScope.() -> Unit,
 ) {
     val colors = MaterialTheme.colorScheme
@@ -38,12 +43,12 @@ fun MobiMonStatusBadge(
         color = colors.surface,
         contentColor = foreground,
         shape = RoundedCornerShape(50),
-        border = BorderStroke(1.dp, colors.outline),
+        border = BorderStroke(borderWidth, colors.outline),
     ) {
         Row(
-            Modifier.padding(horizontal = 24.dp, vertical = 12.dp),
+            Modifier.padding(contentPadding),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            horizontalArrangement = horizontalArrangement,
             content = content,
         )
     }

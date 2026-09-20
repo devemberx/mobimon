@@ -181,7 +181,8 @@ class PetPreferencesScreenTest {
         compose.setContent {
             MobiMonTheme { SettingsScreen(CompanionSettings(), {}, parkedVerified = true, simulatedVehicle = true) }
         }
-        compose.onNodeWithText("P · 주차 중 · 시뮬레이션").assertExists()
+        compose.onNodeWithText("주차 확인됨").assertExists()
+        compose.onNodeWithText("시뮬레이션").assertExists()
     }
 
     @Test

@@ -59,8 +59,10 @@ import androidx.compose.ui.unit.sp
 import com.monsters.mobimon.core.ui.CompanionIcon
 import com.monsters.mobimon.core.ui.MobiMonFontFamily
 import com.monsters.mobimon.core.ui.MobiMonNavigationButton
+import com.monsters.mobimon.core.ui.MobiMonParkingBadge
 import com.monsters.mobimon.core.ui.PetAvatar
 import com.monsters.mobimon.core.ui.MobiMonColors as Colors
+import com.monsters.mobimon.core.ui.R as CoreUiR
 
 /** Figma P51–P56. The host owns navigation, countdowns and all connection work. */
 @Composable
@@ -254,31 +256,18 @@ private fun CopilotReferenceHeader(
             bold = true,
         )
         CopilotPositionedText(stringResource(R.string.copilot_subtitle), 136f, 88.2f, 28f, scale, color = Colors.muted)
-        Surface(
-            Modifier
-                .offset(2072.dp * scale, 0.dp)
-                .size(344.dp * scale, 76.dp * scale)
-                .copilotPillOutline(2.dp * scale, Colors.border),
-            shape = RoundedCornerShape(50),
-            color = Colors.panel,
-        ) {
-            Box(Modifier.fillMaxSize()) {
-                Icon(
-                    painterResource(R.drawable.copilot_parking),
-                    null,
-                    Modifier.offset(62.dp * scale, 18.dp * scale).size(40.dp * scale),
-                    tint = Colors.accent,
-                )
-                CopilotPositionedText(
-                    stringResource(if (interactionAllowed) R.string.copilot_parked else R.string.copilot_not_parked),
-                    127.65f,
-                    49f,
-                    30f,
-                    scale,
-                    color = Colors.accent,
-                )
-            }
-        }
+        MobiMonParkingBadge(
+            status =
+                stringResource(
+                    if (interactionAllowed) {
+                        CoreUiR.string.mobimon_parking_confirmed
+                    } else {
+                        CoreUiR.string.mobimon_parking_unconfirmed
+                    },
+                ),
+            modifier = Modifier.offset(2072.dp * scale, 0.dp),
+            scale = scale,
+        )
         if (simulatedVehicle) {
             CopilotPositionedText(
                 stringResource(R.string.copilot_simulated),
@@ -299,14 +288,17 @@ private fun ParkingStatus(
     scale: Float,
 ) {
     Column(horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Surface(shape = RoundedCornerShape(50), color = Colors.panel, border = BorderStroke(1.dp, Colors.border)) {
-            Text(
-                stringResource(if (interactionAllowed) R.string.copilot_parked else R.string.copilot_not_parked),
-                Modifier.padding(horizontal = 24.dp * scale, vertical = 12.dp * scale),
-                style = copilotStyle(28f, scale),
-                color = Colors.accent,
-            )
-        }
+        MobiMonParkingBadge(
+            status =
+                stringResource(
+                    if (interactionAllowed) {
+                        CoreUiR.string.mobimon_parking_confirmed
+                    } else {
+                        CoreUiR.string.mobimon_parking_unconfirmed
+                    },
+                ),
+            scale = scale,
+        )
         if (simulatedVehicle) {
             Text(
                 stringResource(R.string.copilot_simulated),

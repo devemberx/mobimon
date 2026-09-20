@@ -13,6 +13,7 @@ import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performSemanticsAction
@@ -92,7 +93,7 @@ class PetHomeScreenTest {
     fun moderatelyEnlargedParkingTextFitsInsideTheBadge() {
         render(snapshot = parkedSnapshot(), pointBalance = 0, fontScale = 1.2f)
         compose
-            .onNodeWithText("P · 주차 중", useUnmergedTree = true)
+            .onNodeWithText("주차 확인됨", useUnmergedTree = true)
             .performSemanticsAction(SemanticsActions.GetTextLayoutResult) {
                 val results = mutableListOf<TextLayoutResult>()
                 it(results)
@@ -110,8 +111,7 @@ class PetHomeScreenTest {
             pointBalance = 0,
             onMenu = { calls += "menu" },
         )
-        compose.onNodeWithTag("home-ambient-text-container").assertIsDisplayed()
-        compose.onNodeWithTag("home-ambient-text").assertIsDisplayed()
+        assertAnimatedLineBelowTitle()
         compose.onNodeWithText("여행은 언제나\n즐거워요!").assertIsDisplayed()
         compose
             .onNodeWithContentDescription("메뉴 열기")
@@ -125,6 +125,26 @@ class PetHomeScreenTest {
             .assertIsNotEnabled()
         compose.onNodeWithText("AI 연결을 지원하지 않아 대화 기능을 사용할 수 없어요.").performScrollTo().assertIsDisplayed()
         assertEquals(listOf("menu"), calls)
+    }
+
+    @Test
+    fun compactGreetingKeepsOneAnimatedLineUnderTheTitle() {
+        render(snapshot = parkedSnapshot())
+        assertAnimatedLineBelowTitle()
+    }
+
+    private fun assertAnimatedLineBelowTitle() {
+        compose.onNodeWithText("좋은 길엔, 늘 네가 있어.").assertDoesNotExist()
+        compose.onNodeWithTag("home-ambient-text-container").assertIsDisplayed()
+        val title = compose.onNodeWithText("함께 쉬어 가요.").fetchSemanticsNode().boundsInRoot
+        val phrase =
+            compose
+                .onNodeWithTag("home-ambient-text")
+                .assertIsDisplayed()
+                .fetchSemanticsNode()
+                .boundsInRoot
+        assertTrue("Animated phrase is below the title", phrase.top >= title.bottom)
+        assertTrue("Animated phrase stays close to the title", phrase.top - title.bottom < title.height)
     }
 
     @Test
@@ -142,11 +162,11 @@ class PetHomeScreenTest {
                 )
         }
         assertEquals(friend, compose.onNodeWithContentDescription("Mobi 강아지").fetchSemanticsNode().boundsInRoot)
-        compose.onNodeWithText("주차 여부 확인 불가").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText("주차 확인 불가").performScrollTo().assertIsDisplayed()
         compose.onNodeWithText("배터리 72%").assertDoesNotExist()
         compose.onNodeWithText("대화하기 · 연결 불가").performScrollTo().assertIsNotEnabled()
         compose.runOnIdle { snapshot.value = parkedSnapshot() }
-        compose.onNodeWithText("P · 주차 중").assertExists()
+        compose.onNodeWithText("주차 확인됨").assertExists()
         compose.onNodeWithText("배터리 72%").assertDoesNotExist()
     }
 
@@ -154,7 +174,7 @@ class PetHomeScreenTest {
     fun realUnavailableHomeDoesNotClaimParkedState() {
         render()
 
-        compose.onNodeWithText("주차 여부 확인 불가").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText("주차 확인 불가").performScrollTo().assertIsDisplayed()
         compose.onNodeWithContentDescription("주차 확인됨").assertDoesNotExist()
     }
 
@@ -167,6 +187,7 @@ class PetHomeScreenTest {
     }
 
     @Test
+    @Config(qualifiers = "ko-rKR-w1792dp-h888dp")
     fun interactionRestrictedNoticeDisplaysDuringDrivingWithoutShiftingUi() {
         val allowed = mutableStateOf(true)
         compose.setContent {
@@ -211,7 +232,7 @@ class PetHomeScreenTest {
     fun staleParkingDoesNotClaimParked() {
         render(snapshot = parkedSnapshot().copy(quality = SignalQuality.STALE, batteryQuality = SignalQuality.VALID))
 
-        compose.onNodeWithText("주차 여부 확인 불가").assertExists()
+        compose.onNodeWithText("주차 확인 불가").assertExists()
         compose.onNodeWithText("배터리 72%").assertDoesNotExist()
         compose.onNodeWithContentDescription("주차 확인됨").assertDoesNotExist()
     }
@@ -283,6 +304,18 @@ class PetHomeScreenTest {
     }
 
     @Test
+    @Config(qualifiers = "ko-rKR-w1414dp-h764dp-mdpi")
+    fun shortLandscapeCanScrollTheEntireRestrictionNoticeIntoView() {
+        render(snapshot = parkedSnapshot())
+        val notice = compose.onNodeWithText("주행 중에는 상호작용이 제한돼요.")
+        notice.performScrollTo()
+        val viewport = compose.onRoot().fetchSemanticsNode().boundsInRoot
+        val bounds = notice.fetchSemanticsNode().boundsInRoot
+        assertTrue("Notice top stays within the window", bounds.top >= viewport.top)
+        assertTrue("Entire notice remains reachable", bounds.bottom <= viewport.bottom)
+    }
+
+    @Test
     fun menuAcceptsKeyboardFocus() {
         render()
         compose.onNodeWithContentDescription("메뉴 열기").performSemanticsAction(SemanticsActions.RequestFocus) { it() }
@@ -293,7 +326,7 @@ class PetHomeScreenTest {
     fun tappingPetTriggersSpeechBubbleInteraction() {
         render(snapshot = parkedSnapshot())
         compose.onNodeWithContentDescription("Mobi 강아지").performClick()
-        compose.onNodeWithTag("home-companion-message").assertIsDisplayed()
+        compose.onNodeWithTag("home-companion-message").performScrollTo().assertIsDisplayed()
         compose.onNodeWithText("여행은 언제나\n즐거워요!").assertIsDisplayed()
     }
 
