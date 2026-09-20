@@ -29,6 +29,7 @@ import com.monsters.mobimon.core.presentation.CompanionAppearanceState
 import com.monsters.mobimon.core.presentation.PointBalanceState
 import com.monsters.mobimon.core.ui.MobiMonTheme
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -218,6 +219,78 @@ class QuestScreenTest {
             state = presentation(QuestUiState(isLoading = false, message = QuestMessage.STORAGE_FAILURE))
         }
         capture(viewProvider = { view }, name = "quest-claim-failure")
+    }
+
+    @Test
+    fun headerBackButtonCallsOnBackWhenAtRootList() {
+        var backCalled = false
+        val state = presentation()
+        compose.setContent {
+            MobiMonTheme {
+                QuestScreen(
+                    state = state,
+                    onClaimReward = {},
+                    onDismissHiddenQuest = {},
+                    onDismissRewardSuccess = {},
+                    onRetryQuests = {},
+                    onRetryWallet = {},
+                    onRetryAppearance = {},
+                    onNavigateRoute = {},
+                    onBack = { backCalled = true },
+                )
+            }
+        }
+        compose.onNodeWithTag("quest-header-back-button").performClick()
+        assertTrue(backCalled)
+    }
+
+    @Test
+    fun headerHomeButtonCallsOnHome() {
+        var homeCalled = false
+        val state = presentation()
+        compose.setContent {
+            MobiMonTheme {
+                QuestScreen(
+                    state = state,
+                    onClaimReward = {},
+                    onDismissHiddenQuest = {},
+                    onDismissRewardSuccess = {},
+                    onRetryQuests = {},
+                    onRetryWallet = {},
+                    onRetryAppearance = {},
+                    onNavigateRoute = {},
+                    onHome = { homeCalled = true },
+                )
+            }
+        }
+        compose.onNodeWithTag("quest-header-home-button").performClick()
+        assertTrue(homeCalled)
+    }
+
+    @Test
+    fun headerBackButtonPopsDetailToListWhenInDetail() {
+        var backCalled = false
+        val state = presentation()
+        compose.setContent {
+            MobiMonTheme {
+                QuestScreen(
+                    state = state,
+                    onClaimReward = {},
+                    onDismissHiddenQuest = {},
+                    onDismissRewardSuccess = {},
+                    onRetryQuests = {},
+                    onRetryWallet = {},
+                    onRetryAppearance = {},
+                    onNavigateRoute = {},
+                    onBack = { backCalled = true },
+                )
+            }
+        }
+        compose.onNodeWithTag("quest-card-${DrivingQuestIds.SEATBELT}").performScrollTo().performClick()
+        compose.onNodeWithTag("quest-detail-back-button").assertIsDisplayed()
+        compose.onNodeWithTag("quest-header-back-button").performClick()
+        compose.onNodeWithTag("quest-card-${DrivingQuestIds.SEATBELT}").assertIsDisplayed()
+        assertFalse(backCalled)
     }
 
     private fun render(

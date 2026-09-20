@@ -3,7 +3,9 @@ package com.monsters.mobimon.feature.vehicle
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import com.monsters.mobimon.core.domain.DrivingState
 import com.monsters.mobimon.core.domain.SignalQuality
@@ -11,6 +13,7 @@ import com.monsters.mobimon.core.domain.SignalSource
 import com.monsters.mobimon.core.domain.VehicleSnapshot
 import com.monsters.mobimon.core.domain.VehicleWarning
 import com.monsters.mobimon.core.domain.WarningSeverity
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -135,6 +138,27 @@ class VehicleInfoScreenTest {
         compose.onNodeWithText("이전 경고 · 주의 · 앞바퀴").performScrollTo().assertIsDisplayed()
         compose.onNodeWithText("지금 점검").assertDoesNotExist()
         compose.onNodeWithText("주의").assertDoesNotExist()
+    }
+
+    @Test
+    fun headerNavigationInvokesCallbacks() {
+        var backClicked = false
+        var homeClicked = false
+        compose.setContent {
+            MaterialTheme {
+                VehicleInfoScreen(
+                    snapshot = snapshot(),
+                    onBack = { backClicked = true },
+                    onHome = { homeClicked = true },
+                )
+            }
+        }
+
+        compose.onNodeWithTag("vehicle-header-back-button").performClick()
+        assertTrue("Back callback invoked", backClicked)
+
+        compose.onNodeWithTag("vehicle-header-home-button").performClick()
+        assertTrue("Home callback invoked", homeClicked)
     }
 
     private fun render(snapshot: VehicleSnapshot) {

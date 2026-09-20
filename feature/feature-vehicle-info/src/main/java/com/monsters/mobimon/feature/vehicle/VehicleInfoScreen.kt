@@ -2,6 +2,7 @@ package com.monsters.mobimon.feature.vehicle
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -9,14 +10,22 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -26,10 +35,16 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.paneTitle
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.monsters.mobimon.core.domain.DrivingState
 import com.monsters.mobimon.core.domain.SignalQuality
 import com.monsters.mobimon.core.domain.SignalSource
@@ -37,8 +52,10 @@ import com.monsters.mobimon.core.domain.SignalUnavailableReason
 import com.monsters.mobimon.core.domain.VehicleSnapshot
 import com.monsters.mobimon.core.domain.VehicleWarning
 import com.monsters.mobimon.core.domain.WarningSeverity
+import com.monsters.mobimon.core.ui.MobiMonButton
+import com.monsters.mobimon.core.ui.MobiMonButtonStyle
 import com.monsters.mobimon.core.ui.MobiMonColors
-import com.monsters.mobimon.core.ui.MobiMonContentColumn
+import com.monsters.mobimon.core.ui.MobiMonDimensions
 import com.monsters.mobimon.core.ui.MobiMonSourceBadge
 import com.monsters.mobimon.core.ui.PetAvatar
 
@@ -47,6 +64,8 @@ import com.monsters.mobimon.core.ui.PetAvatar
 fun VehicleInfoScreen(
     snapshot: VehicleSnapshot,
     modifier: Modifier = Modifier,
+    onBack: () -> Unit = {},
+    onHome: (() -> Unit)? = null,
     friendId: String = "friend:mobi",
     accessoryId: String? = null,
     outfitId: String? = null,
@@ -54,57 +73,194 @@ fun VehicleInfoScreen(
 ) {
     val readings = snapshot.toVehicleInfoUiState()
     val mood = readings.condition.mood()
-    MobiMonContentColumn(
+    val title = stringResource(R.string.vehicle_destination_title)
+
+    BoxWithConstraints(
         modifier =
             modifier
                 .fillMaxSize()
-                .background(VehicleScreenBackground),
+                .background(VehicleScreenBackground)
+                .semantics { paneTitle = title },
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.End,
-        ) {
-            MobiMonSourceBadge(simulated = snapshot.source == SignalSource.SIMULATED)
-        }
-        VehicleStatusBanner(snapshot, mood, friendId)
-        BoxWithConstraints {
-            if (maxWidth >= 980.dp) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(28.dp),
-                    verticalAlignment = Alignment.Top,
-                ) {
-                    CompanionStatusPanel(
-                        mood = mood,
-                        friendId = friendId,
-                        accessoryId = accessoryId,
-                        outfitId = outfitId,
-                        backgroundId = backgroundId,
-                        modifier = Modifier.weight(0.34f),
-                    )
-                    VehicleCardGrid(
+        val fontScale = LocalDensity.current.fontScale
+        val reference = maxWidth >= 1400.dp && maxHeight >= 760.dp && fontScale <= 1.2f
+        val scale = if (reference) minOf(maxWidth.value / 2560f, maxHeight.value / 1268f) else 0.75f
+
+        if (reference) {
+            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                Box(Modifier.size(2560.dp * scale, 1268.dp * scale).testTag("vehicle-reference")) {
+                    VehicleHeader(
                         snapshot = snapshot,
-                        readings = readings,
-                        modifier = Modifier.weight(1f),
+                        onBack = onBack,
+                        onHome = onHome,
+                        scale = scale,
+                        modifier =
+                            Modifier
+                                .offset(72.dp * scale, 56.dp * scale)
+                                .size(2416.dp * scale, 104.dp * scale),
                     )
+                    Column(
+                        modifier =
+                            Modifier
+                                .offset(72.dp * scale, 216.dp * scale)
+                                .size(2416.dp * scale, 994.dp * scale)
+                                .verticalScroll(rememberScrollState()),
+                        verticalArrangement = Arrangement.spacedBy(28.dp * scale),
+                    ) {
+                        VehicleStatusBanner(snapshot, mood, friendId)
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(28.dp * scale),
+                            verticalAlignment = Alignment.Top,
+                        ) {
+                            CompanionStatusPanel(
+                                mood = mood,
+                                friendId = friendId,
+                                accessoryId = accessoryId,
+                                outfitId = outfitId,
+                                backgroundId = backgroundId,
+                                modifier = Modifier.weight(0.34f),
+                            )
+                            VehicleCardGrid(
+                                snapshot = snapshot,
+                                readings = readings,
+                                modifier = Modifier.weight(1f),
+                            )
+                        }
+                        if (snapshot.warnings.isNotEmpty()) WarningList(snapshot.warnings)
+                    }
                 }
-            } else {
+            }
+        } else {
+            val compactScale = (maxWidth.value / 1400f).coerceIn(0.55f, 0.9f)
+            val isWide = maxWidth >= 980.dp
+            Column(
+                modifier =
+                    Modifier
+                        .fillMaxSize()
+                        .padding(horizontal = 24.dp, vertical = 16.dp),
+                verticalArrangement = Arrangement.spacedBy(24.dp),
+            ) {
+                VehicleHeader(
+                    snapshot = snapshot,
+                    onBack = onBack,
+                    onHome = onHome,
+                    scale = compactScale,
+                    modifier = Modifier.fillMaxWidth(),
+                )
                 Column(
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .weight(1f)
+                            .verticalScroll(rememberScrollState()),
                     verticalArrangement = Arrangement.spacedBy(24.dp),
                 ) {
-                    CompanionStatusPanel(
-                        mood = mood,
-                        friendId = friendId,
-                        accessoryId = accessoryId,
-                        outfitId = outfitId,
-                        backgroundId = backgroundId,
-                        modifier = Modifier.fillMaxWidth(),
-                    )
-                    VehicleCardGrid(snapshot = snapshot, readings = readings, modifier = Modifier.fillMaxWidth())
+                    VehicleStatusBanner(snapshot, mood, friendId)
+                    if (isWide) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(28.dp),
+                            verticalAlignment = Alignment.Top,
+                        ) {
+                            CompanionStatusPanel(
+                                mood = mood,
+                                friendId = friendId,
+                                accessoryId = accessoryId,
+                                outfitId = outfitId,
+                                backgroundId = backgroundId,
+                                modifier = Modifier.weight(0.34f),
+                            )
+                            VehicleCardGrid(
+                                snapshot = snapshot,
+                                readings = readings,
+                                modifier = Modifier.weight(1f),
+                            )
+                        }
+                    } else {
+                        CompanionStatusPanel(
+                            mood = mood,
+                            friendId = friendId,
+                            accessoryId = accessoryId,
+                            outfitId = outfitId,
+                            backgroundId = backgroundId,
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                        VehicleCardGrid(snapshot = snapshot, readings = readings, modifier = Modifier.fillMaxWidth())
+                    }
+                    if (snapshot.warnings.isNotEmpty()) WarningList(snapshot.warnings)
                 }
             }
         }
-        if (snapshot.warnings.isNotEmpty()) WarningList(snapshot.warnings)
+    }
+}
+
+@Composable
+internal fun VehicleHeader(
+    snapshot: VehicleSnapshot,
+    onBack: () -> Unit,
+    onHome: (() -> Unit)?,
+    scale: Float,
+    modifier: Modifier = Modifier,
+) {
+    Row(
+        modifier = modifier,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        val buttonSize = if (scale >= 0.7f) 104.dp * scale else MobiMonDimensions.touchTarget
+        val iconSize = if (scale >= 0.7f) 40.dp * scale else 24.dp
+        IconButton(
+            onClick = onBack,
+            modifier =
+                Modifier
+                    .size(buttonSize)
+                    .background(VehiclePanelBackground, CircleShape)
+                    .border(1.dp, MobiMonColors.border, CircleShape)
+                    .testTag("vehicle-header-back-button"),
+        ) {
+            Icon(
+                painter = painterResource(com.monsters.mobimon.core.ui.R.drawable.mobimon_icon_back),
+                contentDescription = stringResource(com.monsters.mobimon.core.ui.R.string.mobimon_back),
+                tint = MobiMonColors.text,
+                modifier = Modifier.size(iconSize),
+            )
+        }
+        Spacer(Modifier.width(if (scale >= 0.7f) 32.dp * scale else 16.dp))
+
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = stringResource(R.string.vehicle_destination_title),
+                color = MobiMonColors.text,
+                fontSize = if (scale >= 0.7f) (46f * scale).sp else 24.sp,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.semantics { heading() },
+            )
+            Text(
+                text = stringResource(R.string.vehicle_header_subtitle),
+                color = MobiMonColors.muted,
+                fontSize = if (scale >= 0.7f) (28f * scale).sp else 14.sp,
+            )
+        }
+
+        if (snapshot.source == SignalSource.SIMULATED) {
+            MobiMonSourceBadge(simulated = true)
+            Spacer(Modifier.width(if (scale >= 0.7f) 16.dp * scale else 12.dp))
+        }
+
+        if (onHome != null) {
+            val homeHeight = if (scale >= 0.7f) 76.dp * scale else MobiMonDimensions.touchTarget
+            MobiMonButton(
+                style = MobiMonButtonStyle.SECONDARY,
+                onClick = onHome,
+                modifier = Modifier.height(homeHeight).testTag("vehicle-header-home-button"),
+            ) {
+                Text(
+                    text = stringResource(com.monsters.mobimon.core.ui.R.string.mobimon_home),
+                    fontSize = if (scale >= 0.7f) (28f * scale).sp else 14.sp,
+                    color = MobiMonColors.text,
+                )
+            }
+        }
     }
 }
 
@@ -118,7 +274,7 @@ private fun VehicleStatusBanner(
     StatusSurface(
         background = mood.bannerBackground,
         border = mood.accent,
-        modifier = modifier.fillMaxWidth(),
+        modifier = modifier.fillMaxWidth().testTag("vehicle-status-banner"),
         contentPadding = PaddingValues(horizontal = 28.dp, vertical = 18.dp),
         corner = 20.dp,
     ) {
@@ -784,7 +940,7 @@ private val WarningBackground = Color(0xFF251E14)
 private val WarningBadgeBackground = Color(0xFF2E2213)
 private val NeutralBackground = Color(0xFF10243A)
 private val NeutralBadgeBackground = Color(0xFF142A42)
-private val VehicleScreenBackground = Color(0xFF091525)
+internal val VehicleScreenBackground = MobiMonColors.background
 private val VehiclePanelBackground = Color(0xFF142A42)
 private val VehicleBorder = Color(0xFF2A4968)
 private val VehicleBorderWidth = 2.dp

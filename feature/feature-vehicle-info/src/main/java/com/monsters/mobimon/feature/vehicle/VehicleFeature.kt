@@ -1,5 +1,6 @@
 package com.monsters.mobimon.feature.vehicle
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -20,7 +21,6 @@ import com.monsters.mobimon.core.navigation.VehicleRoute
 import com.monsters.mobimon.core.presentation.CompanionAppearancePresentation
 import com.monsters.mobimon.core.presentation.VehiclePresentation
 import com.monsters.mobimon.core.ui.MobiMonButton
-import com.monsters.mobimon.core.ui.MobiMonDestination
 import com.monsters.mobimon.core.ui.MobiMonDimensions
 import com.monsters.mobimon.core.ui.MobiMonMessage
 
@@ -39,42 +39,42 @@ class VehicleFeature(
         val snapshot = vehicle.snapshot()
         val appearanceModel = appearance.model()
         val equipped by appearanceModel.state.collectAsStateWithLifecycle()
-        MobiMonDestination(
-            stringResource(R.string.vehicle_destination_title),
-            navigator.back,
-            navigator.returnHome,
-            modifier,
+        Column(
+            modifier =
+                modifier
+                    .fillMaxSize()
+                    .background(VehicleScreenBackground),
         ) {
-            Column(Modifier.fillMaxSize()) {
-                if (equipped.failed) {
-                    Row(
-                        Modifier.fillMaxWidth().padding(MobiMonDimensions.contentPadding),
-                        horizontalArrangement = Arrangement.spacedBy(MobiMonDimensions.contentGap),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        MobiMonMessage(
-                            stringResource(
-                                if (equipped.inventory == null) {
-                                    R.string.vehicle_appearance_load_failed
-                                } else {
-                                    R.string.vehicle_appearance_update_failed
-                                },
-                            ),
-                            Modifier.weight(1f),
-                            isError = true,
-                        )
-                        MobiMonButton(onClick = appearanceModel::retry) { Text(stringResource(R.string.vehicle_retry)) }
-                    }
+            if (equipped.failed) {
+                Row(
+                    Modifier.fillMaxWidth().padding(MobiMonDimensions.contentPadding),
+                    horizontalArrangement = Arrangement.spacedBy(MobiMonDimensions.contentGap),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    MobiMonMessage(
+                        stringResource(
+                            if (equipped.inventory == null) {
+                                R.string.vehicle_appearance_load_failed
+                            } else {
+                                R.string.vehicle_appearance_update_failed
+                            },
+                        ),
+                        Modifier.weight(1f),
+                        isError = true,
+                    )
+                    MobiMonButton(onClick = appearanceModel::retry) { Text(stringResource(R.string.vehicle_retry)) }
                 }
-                VehicleInfoScreen(
-                    snapshot = snapshot,
-                    modifier = Modifier.weight(1f),
-                    friendId = equipped.friendId,
-                    accessoryId = equipped.accessoryId,
-                    backgroundId = equipped.backgroundId,
-                    outfitId = equipped.outfitId,
-                )
             }
+            VehicleInfoScreen(
+                snapshot = snapshot,
+                modifier = Modifier.weight(1f),
+                onBack = navigator.back,
+                onHome = navigator.returnHome,
+                friendId = equipped.friendId,
+                accessoryId = equipped.accessoryId,
+                backgroundId = equipped.backgroundId,
+                outfitId = equipped.outfitId,
+            )
         }
     }
 }

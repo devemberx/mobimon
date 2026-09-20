@@ -8,11 +8,9 @@ import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
@@ -42,11 +40,19 @@ fun QuestScreen(
     onRetryAppearance: () -> Unit,
     onNavigateRoute: (AppRoute) -> Unit,
     modifier: Modifier = Modifier,
+    onBack: () -> Unit = {},
+    onHome: (() -> Unit)? = null,
 ) {
     var selectedQuestId by rememberSaveable { mutableStateOf<String?>(null) }
     var selectedTab by rememberSaveable { mutableStateOf(QuestFilterTab.ALL) }
     val selectedQuest = state.quests.firstOrNull { it.id == selectedQuestId }
-    BackHandler(enabled = selectedQuest != null) { selectedQuestId = null }
+    BackHandler {
+        if (selectedQuest != null) {
+            selectedQuestId = null
+        } else {
+            onBack()
+        }
+    }
     val title = stringResource(R.string.quest_header_title)
     Column(
         modifier = modifier.fillMaxSize().background(Colors.background).semantics { paneTitle = title },
@@ -63,11 +69,19 @@ fun QuestScreen(
                             isParked = state.parkedVerified,
                             friendId = state.appearance.friendId,
                             scale = scale,
-                            onBackToList = if (selectedQuest != null) ({ selectedQuestId = null }) else null,
+                            onBack = {
+                                if (selectedQuest != null) {
+                                    selectedQuestId = null
+                                } else {
+                                    onBack()
+                                }
+                            },
+                            onHome = onHome,
+                            isDetail = selectedQuest != null,
                             modifier =
-                                Modifier.offset(72.dp * scale, 54.dp * scale).width(2416.dp * scale).height(
-                                    106.dp * scale,
-                                ),
+                                Modifier
+                                    .offset(72.dp * scale, 56.dp * scale)
+                                    .size(2416.dp * scale, 104.dp * scale),
                         )
                         QuestContent(
                             state = state,
@@ -97,7 +111,15 @@ fun QuestScreen(
                         isParked = state.parkedVerified,
                         friendId = state.appearance.friendId,
                         scale = compactScale,
-                        onBackToList = if (selectedQuest != null) ({ selectedQuestId = null }) else null,
+                        onBack = {
+                            if (selectedQuest != null) {
+                                selectedQuestId = null
+                            } else {
+                                onBack()
+                            }
+                        },
+                        onHome = onHome,
+                        isDetail = selectedQuest != null,
                         modifier = Modifier.fillMaxWidth(),
                     )
                     QuestContent(
