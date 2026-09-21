@@ -8,8 +8,15 @@ import com.monsters.mobimon.core.domain.SignalQuality
 import com.monsters.mobimon.core.domain.SignalSource
 import com.monsters.mobimon.core.domain.VehicleRepository
 import com.monsters.mobimon.core.domain.VehicleSnapshot
+import com.monsters.mobimon.core.vss.DefaultParkedVssRawVehicleSource
+import com.monsters.mobimon.core.vss.VssInterpretationOverrides
+import com.monsters.mobimon.core.vss.VssRawVehicleSource
+import com.monsters.mobimon.core.vss.VssRawVehicleState
+import com.monsters.mobimon.core.vss.VssVehicleInterpreter
+import com.monsters.mobimon.core.vss.generated.VssSignals
+import com.monsters.mobimon.debug.DebugInterpretationOverrides
+import com.monsters.mobimon.debug.DebugRawVssState
 import com.monsters.mobimon.debug.DebugVssProvider
-import com.monsters.mobimon.debug.DebugVssState
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -28,18 +35,18 @@ class DemoVehicleRepository(
     private val ids: IdGenerator,
     private val settingsRepository: SettingsRepository,
     private val debugStore: DebugVssProvider,
+    private val vssRawSource: VssRawVehicleSource,
     private val scope: CoroutineScope,
 ) : VehicleRepository {
     private val mutableSnapshots =
         MutableStateFlow(
-            VehicleSnapshot(
-                "unavailable",
-                "none",
-                0,
-                0,
-                SignalSource.SIMULATED,
-                DrivingState.UNKNOWN,
-                SignalQuality.UNAVAILABLE,
+            VssVehicleInterpreter.snapshot(
+                raw = vssRawSource.state.value,
+                id = INITIAL_SNAPSHOT_ID,
+                epoch = INITIAL_SNAPSHOT_EPOCH,
+                sequence = 0,
+                observedAtMillis = clock.nowMillis(),
+                source = rawSourceSignalSource(),
             ),
         )
     override val snapshots = mutableSnapshots.asStateFlow()
@@ -51,6 +58,7 @@ class DemoVehicleRepository(
         if (observation?.isActive == true) return
         val currentGeneration = ++generation
         val epoch = ids.nextId()
+        vssRawSource.start()
         observation =
             scope.launch {
                 var sequence = 0L
@@ -60,49 +68,25 @@ class DemoVehicleRepository(
                     val isDebugOn = settingsRepository.settings.first().debugModeEnabled
                     val debugState = debugStore.state.value
 
-                    val snapshot =
+                    val snapshot: VehicleSnapshot =
                         if (isDebugOn) {
-                            VehicleSnapshot(
+                            VssVehicleInterpreter.snapshot(
+                                raw = debugState.raw.toVssRawVehicleState(),
                                 id = "$epoch-$nextSequence",
                                 epoch = epoch,
                                 sequence = nextSequence,
-                                receivedAtMillis = observedAt,
+                                observedAtMillis = observedAt,
                                 source = SignalSource.SIMULATED,
-                                drivingState = debugState.drivingState(),
-                                quality = SignalQuality.VALID,
-                                batteryPercent = debugState.batteryPercent,
-                                batteryReceivedAtMillis = observedAt,
-                                batteryQuality = SignalQuality.VALID,
-                                isDistracted = debugState.isDistracted,
-                                isDrowsy = debugState.isDrowsy,
-                                attentionLevel = debugState.attentionLevel,
-                                isEmergencyBraking = debugState.isEmergencyBraking,
-                                distanceToFrontVehicle = debugState.distanceToFrontVehicle,
-                                isCharging = debugState.isCharging,
-                                outsideTemperature = debugState.outsideTemperature,
-                                isRaining = debugState.isRaining,
-                                washerFluidLevel = debugState.washerFluidLevel,
-                                isEngineWarning = debugState.isEngineWarning,
-                                tirePressureStatus = debugState.tirePressureStatus,
-                                speed = debugState.speed,
-                                gear = debugState.gear,
-                                isNavigating = debugState.isNavigating,
-                                distanceToDestination = debugState.distanceToDestination,
-                                isEngineOn = debugState.isEngineOn,
-                                timeOfDay = debugState.timeOfDay,
+                                overrides = debugState.overrides.toVssInterpretationOverrides(),
                             )
                         } else {
-                            VehicleSnapshot(
+                            VssVehicleInterpreter.snapshot(
+                                raw = vssRawSource.state.value,
                                 id = "$epoch-$nextSequence",
                                 epoch = epoch,
                                 sequence = nextSequence,
-                                receivedAtMillis = observedAt,
-                                source = SignalSource.SIMULATED,
-                                drivingState = DrivingState.PARKED,
-                                quality = SignalQuality.VALID,
-                                batteryPercent = 72,
-                                batteryReceivedAtMillis = observedAt,
-                                batteryQuality = SignalQuality.VALID,
+                                observedAtMillis = observedAt,
+                                source = rawSourceSignalSource(),
                             )
                         }
 
@@ -124,6 +108,7 @@ class DemoVehicleRepository(
                     emit(Unit)
                 }
             },
+            vssRawSource.state.drop(1).map { Unit },
             debugStore.state.drop(1).map { Unit },
             settingsRepository.settings
                 .map { it.debugModeEnabled }
@@ -137,6 +122,20 @@ class DemoVehicleRepository(
         generation++
         observation?.cancel()
         observation = null
+        vssRawSource.stop()
+        if (vssRawSource is DefaultParkedVssRawVehicleSource) {
+            val current = mutableSnapshots.value
+            mutableSnapshots.value =
+                VssVehicleInterpreter.snapshot(
+                    raw = vssRawSource.state.value,
+                    id = current.id,
+                    epoch = current.epoch,
+                    sequence = current.sequence,
+                    observedAtMillis = clock.nowMillis(),
+                    source = rawSourceSignalSource(),
+                )
+            return
+        }
         mutableSnapshots.value =
             mutableSnapshots.value.copy(
                 quality = SignalQuality.UNAVAILABLE,
@@ -144,12 +143,175 @@ class DemoVehicleRepository(
                 batteryQuality = SignalQuality.UNAVAILABLE,
             )
     }
+
+    private fun rawSourceSignalSource(): SignalSource =
+        if (vssRawSource is DefaultParkedVssRawVehicleSource) {
+            SignalSource.SIMULATED
+        } else {
+            SignalSource.REAL
+        }
 }
 
-private fun DebugVssState.drivingState(): DrivingState =
-    when {
-        isMoving || speed > 0 -> DrivingState.MOVING
-        speed < 0 -> DrivingState.UNKNOWN
-        gear == "P" -> DrivingState.PARKED
-        else -> DrivingState.UNKNOWN
-    }
+private const val INITIAL_SNAPSHOT_ID = "initial"
+private const val INITIAL_SNAPSHOT_EPOCH = "initial"
+
+private fun DebugRawVssState.toVssRawVehicleState(): VssRawVehicleState =
+    VssSignals(
+        adas =
+            VssSignals.ADAS(
+                dms = VssSignals.ADAS.DMS(isWarning = dmsIsWarning),
+                obstacleDetection =
+                    VssSignals.ADAS.ObstacleDetection(
+                        front =
+                            VssSignals.ADAS.ObstacleDetection.Front(
+                                center =
+                                    VssSignals.ADAS.ObstacleDetection.Front.Center(
+                                        distance = obstacleFrontCenterDistance,
+                                    ),
+                            ),
+                    ),
+            ),
+        body =
+            VssSignals.Body(
+                raindetection = VssSignals.Body.Raindetection(intensity = rainIntensity),
+                windshield =
+                    VssSignals.Body.Windshield(
+                        front =
+                            VssSignals.Body.Windshield.Front(
+                                washerFluid =
+                                    VssSignals.Body.Windshield.Front.WasherFluid(
+                                        level = washerFluidLevel,
+                                    ),
+                            ),
+                    ),
+            ),
+        cabin =
+            VssSignals.Cabin(
+                infotainment =
+                    VssSignals.Cabin.Infotainment(
+                        navigation =
+                            VssSignals.Cabin.Infotainment.Navigation(
+                                destinationSet =
+                                    VssSignals.Cabin.Infotainment.Navigation.DestinationSet(
+                                        latitude = destinationLatitude.toFloat(),
+                                        longitude = destinationLongitude.toFloat(),
+                                    ),
+                            ),
+                    ),
+            ),
+        chassis =
+            VssSignals.Chassis(
+                axle =
+                    VssSignals.Chassis.Axle(
+                        row1 =
+                            VssSignals.Chassis.Axle.Row1(
+                                wheel =
+                                    VssSignals.Chassis.Axle.Row1.Wheel(
+                                        left =
+                                            VssSignals.Chassis.Axle.Row1.Wheel.Left(
+                                                tire =
+                                                    VssSignals.Chassis.Axle.Row1.Wheel.Left.Tire(
+                                                        isPressureLow = row1LeftTirePressureLow,
+                                                    ),
+                                            ),
+                                        right =
+                                            VssSignals.Chassis.Axle.Row1.Wheel.Right(
+                                                tire =
+                                                    VssSignals.Chassis.Axle.Row1.Wheel.Right.Tire(
+                                                        isPressureLow = row1RightTirePressureLow,
+                                                    ),
+                                            ),
+                                    ),
+                            ),
+                        row2 =
+                            VssSignals.Chassis.Axle.Row2(
+                                wheel =
+                                    VssSignals.Chassis.Axle.Row2.Wheel(
+                                        left =
+                                            VssSignals.Chassis.Axle.Row2.Wheel.Left(
+                                                tire =
+                                                    VssSignals.Chassis.Axle.Row2.Wheel.Left.Tire(
+                                                        isPressureLow = row2LeftTirePressureLow,
+                                                    ),
+                                            ),
+                                        right =
+                                            VssSignals.Chassis.Axle.Row2.Wheel.Right(
+                                                tire =
+                                                    VssSignals.Chassis.Axle.Row2.Wheel.Right.Tire(
+                                                        isPressureLow = row2RightTirePressureLow,
+                                                    ),
+                                            ),
+                                    ),
+                            ),
+                    ),
+                brake =
+                    VssSignals.Chassis.Brake(
+                        isDriverEmergencyBrakingDetected = driverEmergencyBrakingDetected,
+                    ),
+            ),
+        currentLocation =
+            VssSignals.CurrentLocation(
+                latitude = currentLatitude.toFloat(),
+                longitude = currentLongitude.toFloat(),
+                timestamp = currentLocationTimestamp,
+            ),
+        diagnostics =
+            VssSignals.Diagnostics(
+                dTCCount = if (obdMilOn && diagnosticsDtcCount == 0) 1 else diagnosticsDtcCount,
+            ),
+        driver =
+            VssSignals.Driver(
+                fatigueLevel = driverFatigueLevel,
+                distractionLevel = driverDistractionLevel,
+            ),
+        exterior = VssSignals.Exterior(airTemperature = exteriorAirTemperature),
+        isMoving = vehicleIsMoving,
+        powertrain =
+            VssSignals.Powertrain(
+                combustionEngine = VssSignals.Powertrain.CombustionEngine(isRunning = combustionEngineRunning),
+                tractionBattery =
+                    VssSignals.Powertrain.TractionBattery(
+                        charging =
+                            VssSignals.Powertrain.TractionBattery.Charging(
+                                averagePower = chargingAveragePowerKw,
+                                chargingPort =
+                                    VssSignals.Powertrain.TractionBattery.Charging.ChargingPort(
+                                        anyPosition =
+                                            VssSignals.Powertrain.TractionBattery.Charging.ChargingPort.AnyPosition(
+                                                isChargingCableConnected = chargingCableConnected,
+                                            ),
+                                    ),
+                                isCharging = tractionBatteryChargingIsCharging,
+                            ),
+                        stateOfCharge =
+                            VssSignals.Powertrain.TractionBattery.StateOfCharge(
+                                displayed = tractionBatterySocDisplayed,
+                            ),
+                    ),
+                transmission = VssSignals.Powertrain.Transmission(selectedGear = selectedGear),
+            ),
+        speed = vehicleSpeedKmh,
+    )
+
+private fun DebugInterpretationOverrides.toVssInterpretationOverrides(): VssInterpretationOverrides =
+    VssInterpretationOverrides(
+        isDistracted = isDistracted,
+        isDrowsy = isDrowsy,
+        attentionLevel = attentionLevel,
+        isEmergencyBraking = isEmergencyBraking,
+        distanceToFrontVehicle = distanceToFrontVehicle,
+        isCharging = isCharging,
+        batteryPercent = batteryPercent,
+        outsideTemperature = outsideTemperature,
+        isRaining = isRaining,
+        washerFluidLevel = washerFluidLevel,
+        isEngineWarning = isEngineWarning,
+        tirePressureStatus = tirePressureStatus,
+        isMoving = isMoving,
+        speed = speed,
+        gear = gear,
+        isNavigating = isNavigating,
+        distanceToDestination = distanceToDestination,
+        isEngineOn = isEngineOn,
+        timeOfDay = timeOfDay,
+    )

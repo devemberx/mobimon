@@ -21,18 +21,13 @@ tasks.register("verifyModuleBoundaries") {
         val featureDependencies =
             setOf(":core:core-domain", ":core:core-ui", ":core:core-navigation", ":core:core-presentation")
         val domainOnly = setOf(":core:core-domain")
+        val coreDataImplementations = setOf(":core:core-database", ":core:core-auth", ":core:core-vss")
         subprojects.forEach { module ->
             val allowed =
                 when {
                     module.path == ":app" -> subprojects.map { it.path }.toSet()
                     module.path.startsWith(":feature:") -> featureDependencies
-                    module.path in
-                        setOf(
-                            ":core:core-database",
-                            ":core:core-auth",
-                            ":core:core-vss",
-                            ":core:core-presentation",
-                        )
+                    module.path in coreDataImplementations + ":core:core-presentation"
                     -> domainOnly
                     else -> emptySet()
                 }
@@ -50,13 +45,20 @@ tasks.register("verifyModuleBoundaries") {
                         !configuration.name.contains("test", ignoreCase = true)
                 if (productionDependency) {
                     configuration.dependencies.withType<ExternalModuleDependency>().forEach { dependency ->
-                        if (module.path in setOf(":core:core-domain", ":core:core-vss")) {
+                        if (module.path == ":core:core-domain") {
                             check(dependency.group in setOf("org.jetbrains.kotlin", "org.jetbrains.kotlinx")) {
                                 "${module.path}:${configuration.name} must remain platform independent: $dependency"
                             }
                         }
-                        if (module.path.startsWith(":feature:") ||
-                            module.path in setOf(":core:core-ui", ":core:core-navigation", ":core:core-presentation")
+                        if (
+                            module.path.startsWith(":feature:") ||
+                            module.path in
+                            setOf(
+                                ":core:core-ui",
+                                ":core:core-navigation",
+                                ":core:core-presentation",
+                                ":core:core-vss",
+                            )
                         ) {
                             check(
                                 dependency.group !in setOf("androidx.room", "androidx.datastore", "com.google.dagger"),
@@ -67,7 +69,7 @@ tasks.register("verifyModuleBoundaries") {
                     }
                 }
             }
-            val pure = module.path in setOf(":core:core-domain", ":core:core-vss")
+            val pure = module.path == ":core:core-domain"
             if (pure) {
                 check(
                     !module.plugins.hasPlugin("com.android.library") &&
@@ -91,6 +93,15 @@ tasks.register("verifyModuleBoundaries") {
                 when {
                     pure ->
                         listOf("android.", "androidx.", "dagger.", "com.monsters.mobimon.feature.") +
+                            listOf(
+                                "database",
+                                "auth",
+                                "ui",
+                                "presentation",
+                                "navigation",
+                            ).map { "com.monsters.mobimon.core.$it." }
+                    module.path == ":core:core-vss" ->
+                        listOf("androidx.room.", "androidx.datastore.", "dagger.", "com.monsters.mobimon.feature.") +
                             listOf(
                                 "database",
                                 "auth",

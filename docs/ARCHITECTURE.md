@@ -12,8 +12,10 @@ session restoration; keyboard conversation presentation; Mobi/Luna artwork and
 breathing animation.
 
 Vehicle input and driving evaluation are Debug simulations. Release vehicle data
-is unavailable. Copilot reply transport, voice, condition expressions, background
-tracking and launcher/overlay rendering remain unimplemented. Catalog entries and
+is unavailable. Debug raw VSS sources are interpreted before they become vehicle
+snapshots; production VSS input still needs a verified adapter. Copilot reply
+transport, voice, condition expressions, background tracking and launcher/overlay
+rendering remain unimplemented. Catalog entries and
 [UI exports](ui/README.md) do not establish real integration support.
 
 ## Scope and decisions
@@ -32,7 +34,7 @@ Records are local, with no MobiMon backend, synchronization or reinstall recover
 | `core-domain` | Models, contracts and rules | None |
 | `core-auth` | GitHub OAuth, session restoration and credential storage | Domain |
 | `core-database` | Room, DataStore and transactions | Domain |
-| `core-vss` | Unavailable real vehicle adapter | Domain |
+| `core-vss` | VSS raw models, generated signal containers and adapter seam | Domain |
 | `core-ui` | Stateless components, theme and artwork | None |
 | `core-navigation` | Routes, entries and callbacks | None |
 | `core-presentation` | Shared wallet, vehicle and appearance state | Domain |
@@ -48,10 +50,11 @@ at implementation boundaries; bind implementations in `app`. Test helpers stay
 outside production sources.
 
 `verifyModuleBoundaries` checks project dependencies, production external dependencies,
-resolved JVM graphs and selected source imports. Domain/VSS allow Kotlin and
-coroutines; features, presentation, UI and navigation cannot own Room, DataStore
-or Hilt. Generated code, qualified references and DTO leaks still need review;
-the guard is not a complete dependency audit.
+resolved JVM graphs and selected source imports. Domain remains plain Kotlin.
+`core-vss` is an Android library so it can host the closed-network adapter seam,
+but it still cannot own Room, DataStore, Hilt, UI, presentation or feature code.
+Generated code, qualified references and DTO leaks still need review; the guard is
+not a complete dependency audit.
 
 ## State and lifecycle
 
@@ -122,8 +125,9 @@ AAOS restrictions remove the screen.
 ### Vehicle interaction authorization
 
 Debug uses `.demo`, `mobimon-demo.db` and `demo-profile`; Release uses `mobimon.db`,
-`local-profile` and the REAL unavailable adapter. Debug freshness is 15 seconds.
-Only nonmoving Park is parked; motion is moving and stationary D/R/N is unknown.
+`local-profile` and the REAL unavailable adapter unless a closed-network
+`VssRawVehicleSource` adapter is present. Debug freshness is 15 seconds. Only
+nonmoving Park is parked; motion is moving and stationary D/R/N is unknown.
 
 Commands require fresh parked evidence and the current display's AAOS allowance.
 `CarAppUseMonitor` fails closed on unknown state, service loss and reconnection.
