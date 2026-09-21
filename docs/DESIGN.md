@@ -51,7 +51,9 @@ Do not package full-screen references or generation drafts as runtime UI.
 Use approved master assets for variants. Preserve identity, proportions, style,
 scene geometry, canvas size, framing, subject scale/anchor and transparency; change
 only requested properties. Check dimensions and compare visually before use.
-`PetAvatar` is the replaceable renderer, with no rewards or authorization logic.
+Use the replaceable [PetAvatar](ARCHITECTURE.md#state-and-lifecycle) renderer.
+
+### Home scene
 
 Home and store preview share five 2560 × 1440 WebP backgrounds. Local hours select
 Morning 06–11, Day 12–15, Afternoon 16–17, Sunset 18–19 and Night 20–05. Supplied
@@ -60,20 +62,24 @@ artwork and tint crossfade for one second unless reduced motion is enabled.
 Controls remain untinted.
 
 Home follows [home.svg](ui/shell/home.svg). Its menu overlays the same scene.
-The speech bubble enters from its tail on entry, pet tap and periodic reappearance;
-data updates do not replay it. The animated time phrase replaces the SVG subtitle.
-Availability notices must not move the main action; compact layouts remain scrollable.
+The animated time phrase replaces the SVG subtitle. Availability notices must not
+move the main action; compact layouts remain scrollable.
 
 ## Screens and navigation
 
 The [export index](ui/README.md#screen-index) owns the screen inventory. Back closes
 the keyboard, then dialog/menu, then destination. Menu destinations return Home;
-connection preserves its Home/Settings origin. Purchase cancellation returns to
-its preview. Explicit Home always opens Home.
+connection returns to its entry route. Purchase cancellation returns to its preview.
+Explicit Home always opens Home.
 
-Menu content respects system insets and shows the equipped friend. Unknown services
-explain availability and recovery. Pending actions block duplicates; uncertain writes
-offer reconciliation before retry.
+The menu closes through its close control, backdrop, Back or destination selection.
+It shows the equipped friend and app version, with its footer above the system bar.
+Preserve the SVG layout at AAOS compatibility density, centering minimum touch
+bounds around each row. Reflow only when those bounds overlap or enlarged text
+needs more room.
+
+Unavailable services explain the limitation and recovery. Pending actions block
+duplicates; uncertain writes offer reconciliation before retry.
 
 ## Quests and points
 
@@ -81,6 +87,8 @@ Show catalog values and actual repeat eligibility, never SVG sample rewards or a
 universal daily reset. Success requires a committed award and its returned amount;
 reopening or replaying the result cannot award again. An unknown wallet is not zero.
 Use the same committed balance throughout the app, labelled Points or `1,200 P`.
+Repeated claims reconcile without another celebration. Later repository updates,
+including resets, replace temporary claim confirmations.
 
 ## Customization
 
@@ -96,8 +104,7 @@ compatibility, price and wallet balance before purchase; cancellation spends not
 | Applied | Mark active; no redundant action |
 | Pending/unconfirmed | Block duplicates and reconcile or retry while preserving selection |
 
-No cash purchases, top-ups or conversion. The export index records the missing
-standalone unowned-item preview reference.
+No cash purchases, top-ups or conversion.
 
 ## Conversation
 
@@ -132,37 +139,45 @@ Settings save independently and expose save failures. Unknown parking disables
 changes. Debug controls are Debug-only and off by default. Spoken replies and
 vehicle-home display remain unavailable; Do Not Disturb is omitted.
 
-Reduced motion pauses character/particle loops and shell motion. Unknown or failed
-preference reads keep decoration static.
-
 ### Copilot connection UI
 
 Configured builds show GitHub's approval URL as a QR with a separate user code and
-address help. Hide expired codes; poll automatically and keep manual rechecks within
-the provider interval. Leaving/backgrounding or losing parking cancels pending approval.
+address help. Update approval status automatically and hide expired codes. Apply the
+[authentication lifecycle rules](ARCHITECTURE.md#copilot-connection-ui).
 
 Authentication success shows the verified account and local session persistence,
 while explicitly stating that Copilot conversation remains unavailable. It must not
-render fully `Connected`. Loading/failures offer appropriate retry or local clearing;
+render fully `Connected`. A successful restoration replaces the previous sign-in
+error with the verified account panel. Loading/failures offer retry or local clearing;
 companion read failures retain appearance with Retry.
 
-Disconnect confirms local removal, preserves points/cosmetics and does not revoke
-the GitHub grant or subscription. Revoked/expired credentials may need approval again.
-Unconfigured builds disable sign-in. Debug example states never verify a provider.
+Confirm disconnect and explain that it removes only the local connection; preserve
+points/cosmetics. Offer approval again for revoked/expired credentials. Unconfigured
+builds disable sign-in. Debug example states never verify a provider.
 
 Authentication-only states have no v5 export; reuse panel typography, colors and
-controls, and review both reference-size and enlarged-text layouts. Technical
-contracts belong in [ARCHITECTURE.md](ARCHITECTURE.md#copilot-connection-ui).
+controls. [Visual acceptance](TESTING.md#final-figma-visual-acceptance) covers review sizes
+and missing references.
 
 ## Motion
 
 Motion preserves context and focus; outgoing/restricted controls lose input
 immediately. Animation never authorizes or commits a command. Reduced motion shows
-settled states. Current shell/drawer transitions use 220ms; connection panels fade
-in over 180ms and out over 120ms. Expiry/restrictions replace content immediately,
-and countdown ticks keep panel identity. Prototype delays are not success signals.
+settled states and pauses character/particle loops. Unknown or failed motion
+preference reads keep decoration static.
+
+Home's conversation action reveals the destination from the activated button's
+rounded bounds over 300ms, with Home stationary underneath. Back closes it toward
+the same bounds over 220ms. Sample the button after scrolling and respect runtime
+insets. Destination touch targets follow the visible reveal bounds.
+
+The Home speech bubble enters from its tail on entry, pet tap and periodic
+reappearance; data updates do not replay it. Other shell/drawer transitions use
+220ms. Connection panels fade in over 180ms and out over 120ms; expiry/restrictions
+replace content immediately, and countdown ticks keep panel identity. Prototype
+delays are not success signals.
 
 ## Vehicle launcher
 
-Only the in-app Home exists. The dormant launcher preference cannot authorize a
-surface; future support needs the platform contract in architecture and explicit opt-in.
+Future launcher placement requires explicit opt-in and the
+[platform contract](ARCHITECTURE.md#shared-vehicle-condition-and-overlay).

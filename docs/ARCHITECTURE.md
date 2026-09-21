@@ -44,14 +44,25 @@ Records are local, with no MobiMon backend, synchronization or reinstall recover
 Features never depend on each other or concrete data implementations. Domain has
 no Android, Compose, Room, Hilt or SDK DTO dependency. Map transport/storage models
 at implementation boundaries; bind implementations in `app`. Test helpers stay
-outside production sources. No `core-ai` or `core-testing` module exists.
+outside production sources.
+
+`verifyModuleBoundaries` checks project dependencies, production external dependencies,
+resolved JVM graphs and selected source imports. Domain/VSS allow Kotlin and
+coroutines; features, presentation, UI and navigation cannot own Room, DataStore
+or Hilt. Generated code, qualified references and DTO leaks still need review;
+the guard is not a complete dependency audit.
 
 ## State and lifecycle
 
 Routes collect ViewModel `StateFlow` with `collectAsStateWithLifecycle()` and pass
 state/callbacks to screens. `MobiMonApp` owns navigation; `FeatureRegistry` rejects
-missing/duplicate destinations. Route ViewModels use the Activity store. The shell
-saves route and connection origin, while the menu remains transient.
+missing/duplicate destinations and duplicate saved names. Route ViewModels use
+the Activity store; local UI uses a saveable-state holder. The shell saves route
+and connection origin; menu state and animation geometry remain transient.
+
+Home passes the activated conversation button's root bounds through
+`FeatureNavigator.navigateFrom`. The shell converts them to content-relative
+fractions for the reveal and return. [DESIGN.md](DESIGN.md#motion) owns motion behavior.
 
 | State | Owner/lifetime |
 | --- | --- |
@@ -66,18 +77,11 @@ explicit retry and no duplicate collectors. Settings saves independently of
 profile/wallet loading. Customization retries failed streams independently and
 keeps friend-specific equipment; preview reaches shared appearance only on commit.
 
-`VehicleReading` pairs a freshness-normalized display with its original evidence.
-Commands use the original evidence; display ages cannot alter transaction identity.
-Initial reads and the shared one-second ticker normalize freshness. Background
-time uses supplied time or `UtcClock` plus local time zone and is decorative only.
+Background time uses supplied time or `UtcClock` plus local time zone and never
+changes vehicle evidence.
 [PetAvatar](../core/core-ui/src/main/java/com/monsters/mobimon/core/ui/PetAvatar.kt)
 never owns rewards, equipment or authorization. Failed/unknown motion preferences
 pause decoration; retries follow shell subscription.
-
-`verifyModuleBoundaries` checks dependencies, resolved JVM graphs and selected
-source imports. Domain/VSS allow Kotlin and coroutines; features and presentation
-cannot own Room, DataStore or Hilt. Generated code, qualified references and DTO
-leaks still need review; the guard is not a complete dependency audit.
 
 ### Copilot connection UI
 
@@ -86,8 +90,8 @@ leaks still need review; the guard is not a complete dependency audit.
 uses an app-owned public client ID, no client secret and `read:user` scope.
 [Build configuration](../app/build.gradle.kts) supplies the ID; unconfigured builds
 disable sign-in. Polling respects provider intervals, slowdown and expiry.
-Leaving/backgrounding or losing parked authorization cancels pending approval;
-the adapter rechecks parking and AAOS allowance before requests and acceptance.
+Leaving/backgrounding or losing parked authorization cancels pending approval.
+Device approval requests and acceptance recheck parking and AAOS allowance.
 
 Authentication requires provider approval, `/user` identity validation and durable
 credential storage. It does not verify Copilot readiness or enable conversation.
@@ -112,6 +116,10 @@ Commands require fresh parked evidence and the current display's AAOS allowance.
 `CarAppUseMonitor` fails closed on unknown state, service loss and reconnection.
 Transactions recheck evidence and allowance. Restrictions preserve committed data
 but remove Debug controls and block their writes.
+
+`VehicleReading` pairs a freshness-normalized display with its original evidence.
+Commands use the original evidence; display ages cannot alter transaction identity.
+Initial reads and the shared one-second ticker normalize freshness.
 
 Signals carry source, quality, receive time, epoch and increasing sequence.
 Parking, battery and warnings age independently; missing/stale values are unavailable,
@@ -140,9 +148,8 @@ All reward writes validate evidence, ownership/revision and uniqueness atomicall
 - Debug adjustments commit ledger/balance together; reset records a negative delta.
 
 Keep network calls outside transactions. Never split atomic writes across Room and
-DataStore or replace rewards on conflict. Show claim success only for `Awarded`
-with its returned amount; `AlreadyAwarded` reconciles without another celebration.
-Later repository changes, including resets, replace temporary claim confirmations.
+DataStore or replace rewards on conflict. Return `Awarded` only after commit,
+with the committed amount; `AlreadyAwarded` never writes another credit.
 
 Migrations preserve evidence, rewards and equipment without destructive reset or
 XP-to-point conversion. V1→V2 adds zero-balance wallets/free friends; V3 adds leveling

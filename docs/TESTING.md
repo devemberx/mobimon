@@ -1,13 +1,11 @@
 # Testing strategy
 
 [CONTRIBUTING.md](../.github/CONTRIBUTING.md#verification) owns required commands.
-This document maps coverage and its limits; execution results belong in the issue/PR.
 
 ## Current setup and test locations
 
 Use JUnit 4, coroutines-test, Robolectric/Compose Testing and Hilt/Room device tests.
-Kover is informational, with no percentage gate. Review images exist; golden
-comparisons and system-UI automation are not configured.
+Review images exist; golden comparisons and system-UI automation are not configured.
 
 Tests live in the subject module's `src/test`; device tests use `src/androidTest`.
 Debug-only behavior uses `src/testDebug`. Two shared source sets need explicit wiring:
@@ -51,6 +49,8 @@ These are existing suites, not execution results. Update critical mappings when
 behavior changes. [Architecture](ARCHITECTURE.md#planned-features) owns remaining gaps.
 Related suites share the linked module/package.
 
+### Boundaries, vehicle evidence and persistence
+
 | Contract | Coverage |
 | --- | --- |
 | Module isolation and unique route registration | `verifyModuleBoundaries` in [root build](../build.gradle.kts); [FeatureRegistryTest](../core/core-navigation/src/test/java/com/monsters/mobimon/core/navigation/FeatureRegistryTest.kt) |
@@ -60,17 +60,28 @@ Related suites share the linked module/package.
 | Point uniqueness, concurrent purchase/equip, rollback and authorization recheck | [PointEconomyRepositoryTest](../core/core-database/src/test/java/com/monsters/mobimon/core/database/PointEconomyRepositoryTest.kt), [Q01JourneyTest](../app/src/test/java/com/monsters/mobimon/Q01JourneyTest.kt), [DebugPointRepositoryTest](../core/core-database/src/testDebug/java/com/monsters/mobimon/core/database/DebugPointRepositoryTest.kt) |
 | V1→V4 and both V3 shapes preserve records/identity | [PointEconomyMigrationTest](../core/core-database/src/test/java/com/monsters/mobimon/core/database/PointEconomyMigrationTest.kt), [LevelingMigrationContract](../core/core-database/src/migrationTest/java/com/monsters/mobimon/core/database/LevelingMigrationContract.kt) with local/device wrappers |
 | Supplied driving conditions, weather and catalog rules | [DrivingQuestEvaluatorTest](../core/core-domain/src/test/kotlin/com/monsters/mobimon/core/domain/DrivingQuestEvaluatorTest.kt); no trusted driving-evidence claim |
+
+### Authentication
+
+| Contract | Coverage |
+| --- | --- |
 | OAuth request/response validation, HTTP errors and redirects | [OkHttpGitHubApiTest](../core/core-auth/src/test/java/com/monsters/mobimon/core/auth/OkHttpGitHubApiTest.kt); MockWebServer |
 | Poll intervals, slowdown, expiry, cancellation, persistence, refresh and revocation | [PersistentGitHubAuthenticationTest](../core/core-auth/src/test/java/com/monsters/mobimon/core/auth/PersistentGitHubAuthenticationTest.kt); fake provider/store |
 | Keystore encryption, reopening, tamper rejection and deletion | [EncryptedCredentialStoreTest](../core/core-auth/src/androidTest/java/com/monsters/mobimon/core/auth/EncryptedCredentialStoreTest.kt); device |
 | Authentication input/lifecycle guards, foreground recovery from sign-in failure, readiness separation, QR decoding and UI states | [Authentication feature suites](../feature/feature-auth/src/test/java/com/monsters/mobimon/feature/auth); ViewModel and Robolectric |
+
+### Presentation and navigation
+
+| Contract | Coverage |
+| --- | --- |
 | Loading/failure differs from committed values; retries retain data | [Shared presentation suites](../core/core-presentation/src/test/java/com/monsters/mobimon/core/presentation) and owning feature tests |
 | Claim pending/duplicate/cancellation, committed amounts and reset reconciliation | [QuestViewModelTest](../feature/feature-quest/src/test/java/com/monsters/mobimon/feature/quest/QuestViewModelTest.kt), [QuestScreenTest](../feature/feature-quest/src/test/java/com/monsters/mobimon/feature/quest/QuestScreenTest.kt) |
 | Independent catalog/inventory retry, preview isolation and friend-specific equipment | [Customization suites](../feature/feature-customization/src/test/java/com/monsters/mobimon/feature/customization), point repository suite |
 | Independent settings writes, failure/retry and DataStore keys | [SettingsViewModelTest](../feature/feature-pet/src/test/java/com/monsters/mobimon/feature/pet/SettingsViewModelTest.kt), [DataStoreSettingsRepositoryTest](../core/core-database/src/test/java/com/monsters/mobimon/core/database/DataStoreSettingsRepositoryTest.kt) |
-| Artwork, background periods/dimensions, reduced motion and shared control bounds | [Core UI suites](../core/core-ui/src/test/java/com/monsters/mobimon/core/ui); native Robolectric images, no golden |
-| Home/Settings, vehicle, store and quest layouts, focus and recovery | Owning feature `src/test` suites, including `CompanionReviewTest`, `VehicleReviewTest` and `StoreReferenceScreenTest`; no golden |
-| Menu insets/focus, route origin, recreation and restricted/outgoing input | [Shell suites](../app/src/test/java/com/monsters/mobimon/ui), [CopilotConnectionJourneyTest](../app/src/journeyTest/java/com/monsters/mobimon/CopilotConnectionJourneyTest.kt) |
+| Artwork, background periods/dimensions, reduced motion and shared control bounds | [Core UI suites](../core/core-ui/src/test/java/com/monsters/mobimon/core/ui); native Robolectric images |
+| Home/Settings, vehicle, store and quest layouts, focus and recovery | Owning feature `src/test` suites, including `CompanionReviewTest`, `VehicleReviewTest` and `StoreReferenceScreenTest` |
+| Menu reference/AAOS-density/compact bounds, focus, route origin, recreation and restricted/outgoing input | [Shell suites](../app/src/test/java/com/monsters/mobimon/ui), [CopilotConnectionJourneyTest](../app/src/journeyTest/java/com/monsters/mobimon/CopilotConnectionJourneyTest.kt) |
+| Conversation reveal/return, stationary Home, visible touch bounds, interruption, reduced motion and scrolled action bounds | [ConversationRevealTest](../app/src/test/java/com/monsters/mobimon/ui/ConversationRevealTest.kt), [PetHomeScreenTest](../feature/feature-pet/src/test/java/com/monsters/mobimon/feature/pet/PetHomeScreenTest.kt); native Robolectric frames and pointer input |
 | Isolated Debug rehearsal and branding | [CopilotPreviewJourneyTest](../app/src/journeyTest/java/com/monsters/mobimon/preview/CopilotPreviewJourneyTest.kt), [BrandingTest](../app/src/testDebug/java/com/monsters/mobimon/BrandingTest.kt) |
 
 ## Integration boundaries
@@ -97,7 +108,7 @@ source in the issue/PR. Keep credentials and private logs out of reports.
 
 Use `--tests <qualified-name>` with the owning module's `testDebugUnitTest`, or
 `test` for plain Kotlin. Filtered tasks do not execute dependency suites or devices.
-Coverage: `./gradlew :app:koverHtmlReportDebug :app:koverXmlReportDebug` (local JVM only).
+Kover: `./gradlew :app:koverHtmlReportDebug :app:koverXmlReportDebug` (local JVM only; no percentage gate).
 [CI](../.github/workflows/android-ci.yml) owns artifact paths and retention.
 
 ### CI AAOS environment

@@ -2,6 +2,7 @@ package com.monsters.mobimon.feature.pet
 
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.assertHeightIsAtLeast
@@ -40,6 +41,27 @@ import org.robolectric.annotation.GraphicsMode
 class PetHomeScreenTest {
     @get:Rule
     val compose = createComposeRule()
+
+    @Test
+    fun conversationActionReportsItsBoundsAfterCompactScrolling() {
+        var origin: Rect? = null
+        compose.setContent {
+            MobiMonTheme {
+                PetHomeScreen(
+                    profile = PetProfile("profile"),
+                    snapshot = parkedSnapshot(),
+                    onOpenMenu = {},
+                    onPetClick = { origin = it },
+                    interactionAllowed = true,
+                    connectionAvailable = true,
+                )
+            }
+        }
+        val action = compose.onNodeWithTag("home-conversation-action").performScrollTo()
+        val bounds = action.fetchSemanticsNode().boundsInRoot
+        action.performClick()
+        assertEquals(bounds, origin)
+    }
 
     @Test
     fun friendNameIsAccessibleWithoutAnExtraVisibleCaption() {
