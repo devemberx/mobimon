@@ -8,6 +8,25 @@ import org.junit.Test
 
 class ShellStateTest {
     @Test
+    fun chatRequiresAccountAndConnectionBackKeepsEntryOrigin() {
+        listOf(CompanionRoute.HOME, CompanionRoute.SETTINGS).forEach { origin ->
+            val disconnected = ShellState(route = origin).navigate(AiRoute.CONVERSATION)
+            assertEquals(AiRoute.COPILOT, disconnected.route)
+            assertEquals(origin, disconnected.back().route)
+            assertEquals(AiRoute.CONVERSATION, ShellState(route = origin).navigate(AiRoute.CONVERSATION, true).route)
+        }
+    }
+
+    @Test
+    fun disconnectedRestoredChatAndConnectionOriginCannotLoopBackToChat() {
+        val restored = ShellSaver.restore(listOf("CONVERSATION", "HOME"))!!
+        assertEquals(AiRoute.COPILOT, restored.requireConversationAccount(false).route)
+        assertEquals(CompanionRoute.HOME, restored.requireConversationAccount(false).back().route)
+        val connection = ShellState(route = AiRoute.CONVERSATION).openCopilot().requireConversationAccount(false)
+        assertEquals(CompanionRoute.HOME, connection.back().route)
+    }
+
+    @Test
     fun copilotBackReturnsToItsOriginIncludingAfterRestoration() {
         listOf(CompanionRoute.HOME, CompanionRoute.SETTINGS, AiRoute.CONVERSATION).forEach { origin ->
             val state = ShellState(route = origin).openCopilot()

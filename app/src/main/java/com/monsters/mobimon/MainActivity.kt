@@ -3,6 +3,7 @@ package com.monsters.mobimon
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import com.monsters.mobimon.core.domain.GitHubAuthentication
 import com.monsters.mobimon.core.domain.SettingsRepository
 import com.monsters.mobimon.core.navigation.FeatureEntry
 import com.monsters.mobimon.core.presentation.CompanionAppearancePresentation
@@ -21,10 +22,12 @@ class MainActivity : ComponentActivity() {
 
     @Inject lateinit var settings: SettingsRepository
 
+    @Inject lateinit var authentication: GitHubAuthentication
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            MobiMonApp(entries, appUse, appearance, settings)
+            MobiMonApp(entries, appUse, appearance, settings, authentication)
         }
     }
 }

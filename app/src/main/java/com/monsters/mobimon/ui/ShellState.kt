@@ -27,7 +27,26 @@ data class ShellState(
                 if (route == CompanionRoute.SETTINGS || route == AiRoute.CONVERSATION) route else CompanionRoute.HOME,
         )
 
-    fun navigate(destination: AppRoute): ShellState = copy(route = destination, menuOpen = false)
+    fun navigate(
+        destination: AppRoute,
+        conversationAuthenticated: Boolean = false,
+    ): ShellState =
+        if (destination == AiRoute.COPILOT || destination == AiRoute.CONVERSATION && !conversationAuthenticated) {
+            openCopilot()
+        } else {
+            copy(route = destination, menuOpen = false)
+        }
+
+    fun requireConversationAccount(authenticated: Boolean): ShellState =
+        if (authenticated) {
+            this
+        } else {
+            copy(
+                route = if (route == AiRoute.CONVERSATION) AiRoute.COPILOT else route,
+                connectionOrigin =
+                    if (connectionOrigin == AiRoute.CONVERSATION) CompanionRoute.HOME else connectionOrigin,
+            )
+        }
 
     fun returnHome(): ShellState =
         copy(route = CompanionRoute.HOME, menuOpen = false, connectionOrigin = CompanionRoute.HOME)

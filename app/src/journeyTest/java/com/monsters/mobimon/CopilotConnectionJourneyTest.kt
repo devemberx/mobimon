@@ -3,8 +3,11 @@ package com.monsters.mobimon
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.SemanticsNodeInteraction
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
+import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.hasContentDescription
+import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.isDisplayed
 import androidx.compose.ui.test.isEnabled
@@ -19,6 +22,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.monsters.mobimon.core.domain.DrivingState
 import com.monsters.mobimon.core.domain.SignalQuality
+import com.monsters.mobimon.testing.JourneyAuthentication
 import com.monsters.mobimon.testing.JourneyStorage
 import com.monsters.mobimon.testing.JourneyVehicle
 import dagger.hilt.android.testing.HiltAndroidRule
@@ -44,6 +48,8 @@ class CopilotConnectionJourneyTest {
     @Inject lateinit var vehicle: JourneyVehicle
 
     @Inject lateinit var storage: JourneyStorage
+
+    @Inject lateinit var authentication: JourneyAuthentication
 
     @Before
     fun setUp() = hilt.inject()
@@ -73,16 +79,73 @@ class CopilotConnectionJourneyTest {
     }
 
     @Test
-    fun lossOfParkingDisablesConnectionAndLaterStillReturnsHome() {
+    fun lossOfParkingDisablesChatAndBackReturnsHome() {
+        authentication.approve()
         ActivityScenario.launch(MainActivity::class.java).use {
             waitFor(hasText(text(PetR.string.pet_talk_action)) and isEnabled())
             compose.onNodeWithText(text(PetR.string.pet_talk_action)).ensureDisplayed().performClick()
-            waitFor(hasText(text(AuthR.string.copilot_connect)) and !isEnabled())
+            waitFor(hasText(text(AuthR.string.chat_provider_note)))
+            compose.onNodeWithTag("chat-input").assertIsEnabled()
             vehicle.publish(DrivingState.UNKNOWN, SignalQuality.UNAVAILABLE)
-            waitFor(hasText(text(AuthR.string.copilot_connect)) and !isEnabled())
-            compose.onNodeWithText(text(AuthR.string.copilot_connect)).ensureDisplayed().assertIsNotEnabled()
-            compose.onNodeWithText(text(AuthR.string.copilot_later)).ensureDisplayed().performClick()
+            waitFor(hasTestTag("chat-input") and !isEnabled())
+            compose.onNodeWithTag("chat-input").assertIsNotEnabled()
+            compose.onNodeWithContentDescription(text(AuthR.string.copilot_back)).ensureDisplayed().performClick()
             waitFor(hasContentDescription(text(PetR.string.pet_open_menu)))
+        }
+    }
+
+    @Test
+    fun signedOutHomeAndMenuChatOpenConnectionDirectly() {
+        ActivityScenario.launch(MainActivity::class.java).use {
+            waitFor(hasText(text(PetR.string.pet_talk_action)) and isEnabled())
+            compose.onNodeWithText(text(PetR.string.pet_talk_action)).ensureDisplayed().performClick()
+            waitFor(hasText(text(AuthR.string.copilot_connect)))
+            compose.onNodeWithTag("chat-input").assertDoesNotExist()
+            compose.onNodeWithContentDescription(text(AuthR.string.copilot_back)).ensureDisplayed().performClick()
+            waitFor(hasContentDescription(text(PetR.string.pet_open_menu)))
+            compose.onNodeWithContentDescription(text(PetR.string.pet_open_menu)).performClick()
+            compose
+                .onNode(hasText(text(R.string.drawer_menu_chat)) and hasAnyAncestor(hasTestTag("companion-menu")))
+                .ensureDisplayed()
+                .performClick()
+            waitFor(hasText(text(AuthR.string.copilot_connect)))
+            compose.onNodeWithTag("chat-input").assertDoesNotExist()
+        }
+    }
+
+    @Test
+    fun authenticationSuccessOffersConversationBeforeSettings() {
+        ActivityScenario.launch(MainActivity::class.java).use {
+            waitFor(hasText(text(PetR.string.pet_talk_action)) and isEnabled())
+            compose.onNodeWithText(text(PetR.string.pet_talk_action)).ensureDisplayed().performClick()
+            waitFor(hasText(text(AuthR.string.copilot_connect)))
+            authentication.approve()
+            val chat =
+                InstrumentationRegistry.getInstrumentation().targetContext.getString(
+                    AuthR.string.copilot_chat,
+                    "모비",
+                )
+            waitFor(hasText(chat) and isEnabled())
+            compose.onNodeWithText(text(AuthR.string.copilot_settings)).ensureDisplayed()
+            compose.onNodeWithText(chat).ensureDisplayed().performClick()
+            waitFor(hasTestTag("chat-input"))
+            compose.onNodeWithTag("chat-send").assertIsNotEnabled()
+        }
+    }
+
+    @Test
+    fun authenticatedMenuChatOpensComposer() {
+        authentication.approve()
+        ActivityScenario.launch(MainActivity::class.java).use {
+            waitFor(hasContentDescription(text(PetR.string.pet_open_menu)))
+            compose.onNodeWithContentDescription(text(PetR.string.pet_open_menu)).performClick()
+            compose
+                .onNode(hasText(text(R.string.drawer_menu_chat)) and hasAnyAncestor(hasTestTag("companion-menu")))
+                .ensureDisplayed()
+                .performClick()
+            waitFor(hasText(text(AuthR.string.chat_provider_note)))
+            compose.onNodeWithTag("chat-input").assertIsEnabled()
+            compose.onNodeWithTag("chat-send").assertIsNotEnabled()
         }
     }
 

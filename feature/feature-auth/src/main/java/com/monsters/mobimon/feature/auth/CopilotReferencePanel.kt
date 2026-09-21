@@ -43,7 +43,7 @@ internal fun CopilotUiState.hasReferenceLayout(
 ): Boolean =
     (this is CopilotUiState.Introduction || interactionAllowed) &&
         when (this) {
-            is CopilotUiState.AuthenticationStatus -> false
+            is CopilotUiState.AuthenticationStatus -> account != null && !pending && problem == null
             is CopilotUiState.Introduction -> true
             is CopilotUiState.Waiting -> error == null && !retrying && (showAddress || hasQr)
             is CopilotUiState.Disconnect -> error == null
@@ -64,7 +64,6 @@ internal fun CopilotReferencePanel(
         val panel = ReferencePanel(scale, onAction)
         with(panel) {
             when (state) {
-                is CopilotUiState.AuthenticationStatus -> Unit
                 is CopilotUiState.Introduction -> {
                     steps(0)
                     tile(R.drawable.copilot_chat, 440f)
@@ -142,11 +141,22 @@ internal fun CopilotReferencePanel(
                         iconX = 1584.32f,
                     )
                 }
-                is CopilotUiState.Connected -> {
-                    steps(2)
+                is CopilotUiState.Connected, is CopilotUiState.AuthenticationStatus -> {
+                    val connected = state as? CopilotUiState.Connected
+                    val authenticated = state as? CopilotUiState.AuthenticationStatus
+                    val account = connected?.account ?: requireNotNull(authenticated?.account)
+                    steps(if (connected != null) 2 else 1)
                     tile(R.drawable.copilot_connected, 446f)
                     text(
-                        stringResource(R.string.copilot_connected_heading),
+                        stringResource(
+                            if (connected !=
+                                null
+                            ) {
+                                R.string.copilot_connected_heading
+                            } else {
+                                R.string.github_authenticated
+                            },
+                        ),
                         1220f,
                         492f,
                         52f,
@@ -170,12 +180,23 @@ internal fun CopilotReferencePanel(
                                 tint = Colors.accent,
                             )
                         },
-                        trailing =
-                            state.accountLabel?.let { label ->
-                                { Text(label, style = copilotStyle(26f, scale), color = Colors.accent) }
-                            },
-                    ) { Text(state.account, style = copilotStyle(38f, scale, true)) }
-                    lines(R.string.copilot_connected_note, 1088f, 843f, 34f, 66f)
+                        trailing = {
+                            if (authenticated != null) {
+                                AccountDisconnectAction({ onAction(CopilotAction.CONFIRM_DISCONNECT) }, true, scale)
+                            } else {
+                                connected?.accountLabel?.let { label ->
+                                    Text(label, style = copilotStyle(26f, scale), color = Colors.accent)
+                                }
+                            }
+                        },
+                    ) { Text(account, style = copilotStyle(38f, scale, true)) }
+                    lines(
+                        if (connected != null) R.string.copilot_connected_note else R.string.github_authenticated_note,
+                        1088f,
+                        843f,
+                        34f,
+                        66f,
+                    )
                     action(
                         R.string.copilot_chat,
                         CopilotAction.START_CONVERSATION,

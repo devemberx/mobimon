@@ -8,10 +8,11 @@ This document owns technical contracts. [DESIGN.md](DESIGN.md) owns UX,
 
 Implemented: Home, menu, Settings, customization, Vehicle and Quest routes;
 Room schema 4, DataStore preferences; GitHub device authentication and encrypted
-session restoration; Mobi/Luna artwork and breathing animation.
+session restoration; keyboard conversation presentation; Mobi/Luna artwork and
+breathing animation.
 
 Vehicle input and driving evaluation are Debug simulations. Release vehicle data
-is unavailable. Copilot conversation, voice, condition expressions, background
+is unavailable. Copilot reply transport, voice, condition expressions, background
 tracking and launcher/overlay rendering remain unimplemented. Catalog entries and
 [UI exports](ui/README.md) do not establish real integration support.
 
@@ -39,7 +40,7 @@ Records are local, with no MobiMon backend, synchronization or reinstall recover
 | `feature-customization` | Catalog, preview, purchase and equipment | Same four core modules |
 | `feature-quest` | Quest progress and commands | Same four core modules |
 | `feature-vehicle-info` | Vehicle readings and availability | Same four core modules |
-| `feature-auth` | Authentication UI and AI context | Same four core modules |
+| `feature-auth` | Authentication, keyboard conversation UI and AI context | Same four core modules |
 
 Features never depend on each other or concrete data implementations. Domain has
 no Android, Compose, Room, Hilt or SDK DTO dependency. Map transport/storage models
@@ -94,7 +95,7 @@ Leaving/backgrounding or losing parked authorization cancels pending approval.
 Device approval requests and acceptance recheck parking and AAOS allowance.
 
 Authentication requires provider approval, `/user` identity validation and durable
-credential storage. It does not verify Copilot readiness or enable conversation.
+credential storage. It does not verify Copilot readiness or enable sending messages.
 The UI receives no token and performs no polling; rendering `Connected` is not
 provider verification. Debug preview accounts/codes remain isolated from Release.
 
@@ -105,6 +106,18 @@ startup restores/validates credentials and refreshes expiring tokens, persisting
 rotated tokens before identity validation. Network errors preserve credentials;
 revocation/expired refresh tokens require approval again. Unreadable storage fails
 closed. Disconnect removes the local credential/key, not the GitHub grant or subscription.
+
+### Keyboard conversation UI
+
+`feature-auth` owns the conversation screen. The shell gates new and restored chat
+routes on GitHub authentication and preserves the connection entry route. Ready,
+message and pending fixtures remain in Debug/test sources; production has no reply provider.
+
+`ConversationDraftViewModel` keeps text, selection and IME composition in Activity
+memory across navigation/configuration changes. Profile/account changes, disconnect
+and process restart clear the draft; temporary failures retain it. Drafts never enter
+saved state or persistent storage. Parking loss disables editing and hides the IME;
+AAOS restrictions remove the screen.
 
 ### Vehicle interaction authorization
 
@@ -184,7 +197,7 @@ alone cannot authorize placement. Verify restart, failures and parked restrictio
 ### AI conversation and session
 
 Verify a supported Copilot SDK/CLI runtime or separately approved relay on the target
-device before enabling conversation. Keep bounded, profile-scoped sessions in memory;
+device before enabling message sending. Keep bounded, profile-scoped sessions in memory;
 no dialogue or pending requests in Room, DataStore or saved state, including SDK artifacts.
 Reject late replies when request/session/profile IDs or context revision change.
 

@@ -1,6 +1,6 @@
 # V5 UI reference exports
 
-The 46 SVGs in this folder are the user-supplied exports of the revised
+The 46 SVGs in this folder are exports of the revised
 [v5 Figma page](https://www.figma.com/design/7tyb4oJsJAUc15KnU7H0F6?node-id=524-2).
 They are full-screen visual references, not Android runtime resources or proof
 that a feature is implemented. [DESIGN.md](../DESIGN.md) defines behavior and
@@ -11,14 +11,24 @@ Keep recovery and pending screens beside the feature they belong to. Do not use
 export sequence numbers as filenames. Preserve the original SVG bytes when moving
 or renaming; replace a reference only with an intentional new export.
 
-Every export has a 2560 × 1440 viewBox, including 76-unit top and 96-unit bottom
-system bars. Compare the 2560 × 1268 app content separately from real system UI.
+Every export has a 2560 × 1440 viewBox. Full-height screens include 76-unit top
+and 96-unit bottom system bars; compare their 2560 × 1268 app content separately
+from real system UI. The keyboard state uses the system IME in place of the bottom bar.
 Embedded character bitmaps and outlined text are part of the source export;
 extract approved assets for implementation instead of displaying an entire SVG.
 
 The supplied set has no standalone **unowned item selected before purchase**
 export. Use the purchase-confirmation reference for its transaction information;
 do not claim full visual acceptance for the missing preview state.
+
+The [keyboard frame](https://www.figma.com/design/7tyb4oJsJAUc15KnU7H0F6?node-id=524-2205)
+uses a native AAOS API 34-ext9 keyboard capture: 2560 × 404 at y=1036, leaving
+2560 × 960 app content. Runtime keyboards vary by device and language.
+
+The [connected frame](https://www.figma.com/design/7tyb4oJsJAUc15KnU7H0F6?node-id=524-3261)
+and app share the exported settings gear from
+[Lucide 0.468.0](https://github.com/lucide-icons/lucide/blob/0.468.0/icons/settings.svg),
+with its [license](licenses/lucide.txt).
 
 ## Screen index
 

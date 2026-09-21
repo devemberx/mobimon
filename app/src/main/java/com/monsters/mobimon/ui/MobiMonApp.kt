@@ -46,6 +46,8 @@ import androidx.lifecycle.viewmodel.viewModelFactory
 import com.monsters.mobimon.R
 import com.monsters.mobimon.core.domain.AppUseState
 import com.monsters.mobimon.core.domain.CosmeticSlot
+import com.monsters.mobimon.core.domain.GitHubAuthentication
+import com.monsters.mobimon.core.domain.GitHubSession
 import com.monsters.mobimon.core.domain.SettingsRepository
 import com.monsters.mobimon.core.navigation.AiRoute
 import com.monsters.mobimon.core.navigation.AppRoute
@@ -74,11 +76,13 @@ fun MobiMonApp(
     appUse: AppUseStateSource,
     companion: CompanionAppearancePresentation,
     settings: SettingsRepository,
+    authentication: GitHubAuthentication,
 ) {
     val factory = remember(settings) { viewModelFactory { initializer { MotionPreferencesViewModel(settings) } } }
     val motion: MotionPreferencesViewModel = viewModel(factory = factory)
     val reducedMotion by motion.reducedMotion.collectAsStateWithLifecycle()
     val state by appUse.states.collectAsStateWithLifecycle()
+    val session by authentication.session.collectAsStateWithLifecycle()
     val appearance = companion.state()
     val activeFriendId = appearance.inventory?.equippedItemIds?.get(CosmeticSlot.FRIEND)
     MobiMonContent(
@@ -89,6 +93,7 @@ fun MobiMonApp(
         activeOutfitId = appearance.outfitId,
         activeBackgroundId = appearance.backgroundId,
         reducedMotion = reducedMotion,
+        conversationAuthenticated = session is GitHubSession.Authenticated,
     )
 }
 
@@ -122,10 +127,12 @@ fun MobiMonContent(
     activeOutfitId: String? = null,
     activeBackgroundId: String? = null,
     reducedMotion: Boolean = false,
+    conversationAuthenticated: Boolean = false,
     debugOverlay: @Composable () -> Unit = { DebugOverlay() },
 ) {
     val registry = remember(entries) { FeatureRegistry(entries) }
-    var shell by rememberSaveable(stateSaver = ShellSaver) { mutableStateOf(ShellState()) }
+    var savedShell by rememberSaveable(stateSaver = ShellSaver) { mutableStateOf(ShellState()) }
+    val shell = savedShell.requireConversationAccount(conversationAuthenticated)
     var returning by remember { mutableStateOf(false) }
     var reveal by remember { mutableStateOf<DestinationReveal?>(null) }
     var contentCoordinates by remember { mutableStateOf<LayoutCoordinates?>(null) }
@@ -135,20 +142,21 @@ fun MobiMonContent(
             navigate = { route ->
                 reveal = null
                 returning = false
-                shell =
-                    if (route == AiRoute.COPILOT) shell.openCopilot() else shell.navigate(route)
+                savedShell = shell.navigate(route, conversationAuthenticated)
             },
             back = {
                 val previous = shell
-                shell = previous.back()
-                if (shell.route != previous.route) returning = true
+                savedShell = previous.back()
+                if (savedShell.route != previous.route) returning = true
             },
             returnHome = {
                 returning = true
-                shell = shell.returnHome()
+                savedShell = shell.returnHome()
             },
-            openMenu = { shell = shell.openMenu() },
-            navigateFrom = { route, bounds ->
+            openMenu = { savedShell = shell.openMenu() },
+            navigateFrom = { requested, bounds ->
+                val next = shell.navigate(requested, conversationAuthenticated)
+                val route = next.route
                 val coordinates = contentCoordinates?.takeIf { it.isAttached }
                 reveal =
                     if (
@@ -171,7 +179,7 @@ fun MobiMonContent(
                         null
                     }
                 returning = false
-                shell = if (route == AiRoute.COPILOT) shell.openCopilot() else shell.navigate(route)
+                savedShell = next
             },
         )
     CompositionLocalProvider(LocalMobiMonMotionEnabled provides !reducedMotion) {
