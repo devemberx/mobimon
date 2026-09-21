@@ -32,15 +32,20 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.LayoutCoordinates
+import androidx.compose.ui.layout.boundsInRoot
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
@@ -71,7 +76,7 @@ fun PetHomeScreen(
     profile: PetProfile,
     snapshot: VehicleSnapshot,
     onOpenMenu: () -> Unit,
-    onPetClick: () -> Unit,
+    onPetClick: (Rect) -> Unit,
     modifier: Modifier = Modifier,
     pointBalance: Long? = null,
     pointLoadFailed: Boolean = false,
@@ -326,23 +331,27 @@ private fun HomeCompanion(
 private fun HomeConversationAction(
     connectionAvailable: Boolean,
     interactionAllowed: Boolean,
-    onPetClick: () -> Unit,
+    onPetClick: (Rect) -> Unit,
     modifier: Modifier = Modifier,
     scale: Float = 1f,
 ) {
+    var actionCoordinates by remember { mutableStateOf<LayoutCoordinates?>(null) }
     Column(
         modifier.widthIn(max = 1320.dp).fillMaxWidth(),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         MobiMonButton(
-            onClick = onPetClick,
+            onClick = {
+                onPetClick(actionCoordinates?.takeIf { it.isAttached }?.boundsInRoot() ?: Rect.Zero)
+            },
             enabled = connectionAvailable && interactionAllowed,
             modifier =
                 Modifier
                     .widthIn(
                         min = (532.8f * scale).dp,
                     ).heightIn(min = (100.8f * scale).dp)
+                    .onGloballyPositioned { actionCoordinates = it }
                     .testTag("home-conversation-action"),
         ) {
             Icon(painterResource(R.drawable.pet_chat_icon), null, Modifier.size((33.3f * scale).dp))

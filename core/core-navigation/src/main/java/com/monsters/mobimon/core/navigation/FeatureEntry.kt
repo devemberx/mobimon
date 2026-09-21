@@ -3,6 +3,7 @@ package com.monsters.mobimon.core.navigation
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.UiComposable
+import androidx.compose.ui.geometry.Rect
 
 /**
  * A feature owns the presentation and state for its registered destinations.
@@ -26,6 +27,8 @@ data class FeatureNavigator(
     val back: () -> Unit,
     val returnHome: () -> Unit,
     val openMenu: () -> Unit,
+    /** Trigger bounds in the Compose root, sampled on activation rather than during layout. */
+    val navigateFrom: (AppRoute, Rect) -> Unit = { route, _ -> navigate(route) },
 )
 
 /** Rejects missing or ambiguous registrations before rendering a destination. */

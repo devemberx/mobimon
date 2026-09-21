@@ -125,7 +125,9 @@ The menu opens from Home and closes through its close control, backdrop or Back.
 Its footer stays above the bottom system bar. Selecting a destination closes the
 menu; its portrait/name follow the equipped friend. Mobi uses the supplied head
 portrait (`drawer_mobi.png`); other friends use `PetAvatar`. The footer uses the app
-version. Back closes the keyboard,
+version. Preserve the SVG layout at AAOS compatibility density, centering minimum
+touch bounds around the original rows. Reflow only when those bounds would overlap
+or enlarged text needs more room. Back closes the keyboard,
 then a dialog/menu, then the current destination. Menu destinations return Home;
 connection screens preserve their Home/Settings origin. Purchase cancellation
 returns to the same preview. An explicit Home action always opens Home.
@@ -245,7 +247,12 @@ restricted controls must stop receiving input immediately; animation never
 controls authorization or commit success. Reduced motion stops decorative loops
 through the shared renderer contract.
 
-Current Android navigation/drawer transitions use 220ms; connection panels fade
+Home's conversation action reveals the destination from the activated button's
+rounded bounds over 300ms, with Home stationary underneath. Back closes it toward
+the same bounds over 220ms. Sample the button after scrolling and respect runtime
+insets. Reduced motion shows the destination immediately.
+
+Other Android navigation/drawer transitions use 220ms; connection panels fade
 in over 180ms and out over 120ms. Expiry/restriction changes replace content
 immediately, and countdown updates keep panel identity. The v5 Figma prototype's
 180ms dissolves and delayed success demonstrations are review transitions; the

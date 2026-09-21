@@ -75,6 +75,10 @@ Activity store and local UI state uses a saveable-state holder. The current
 single-level shell preserves parent/origin behavior; it is not Navigation 3 or a
 multiple-back-stack implementation.
 
+Home passes the activated conversation button's root bounds through
+`FeatureNavigator.navigateFrom`. The shell converts them to content-relative
+fractions for the reveal and return; this transient geometry is never saved.
+
 `verifyModuleBoundaries` checks project dependencies in all configurations, production
 external dependencies, resolved JVM graphs, and selected imports in handwritten
 production source sets. Domain and VSS permit Kotlin/coroutines plus their JVM
