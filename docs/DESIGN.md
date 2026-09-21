@@ -7,10 +7,10 @@ personalization. [V5 exports](ui/README.md) define visual geometry;
 ## Concept
 
 The product loop is **quests → points → accessories → personalization**. Do not
-restore legacy XP, levels, evolution or driving-score UI. Interaction requires
-verified parking and AAOS allowance. Moving/unknown state pauses interaction while
-preserving drafts and committed data. Expressions supplement vehicle facts; they
-never diagnose a vehicle or replace warnings.
+restore legacy XP, levels, evolution or driving-score UI. Follow the
+[parking/AAOS authorization contract](ARCHITECTURE.md#vehicle-interaction-authorization).
+Moving/unknown state pauses interaction while preserving drafts and committed data.
+Expressions supplement vehicle facts; they never diagnose a vehicle or replace warnings.
 
 ## Visual language
 
@@ -35,8 +35,7 @@ The splash ends on the first app frame. These are app adaptations, not SVG refer
 
 ## Reusable Compose library and asset handoff
 
-Use `core-ui` primitives before feature-local equivalents. Screens receive state
-and callbacks; shared components stay stateless. Feature owners perform
+Use `core-ui` primitives before feature-local equivalents. Feature owners perform
 [final visual acceptance](TESTING.md#final-figma-visual-acceptance).
 
 Full-screen SVGs stay in `docs/ui`. Import original icons into the owning feature
@@ -56,14 +55,13 @@ Do not package full-screen references or generation drafts as runtime UI.
 Use approved master assets for variants. Preserve identity, proportions, style,
 scene geometry, canvas size, framing, subject scale/anchor and transparency; change
 only requested properties. Check dimensions and compare visually before use.
-Use the replaceable [PetAvatar](ARCHITECTURE.md#state-and-lifecycle) renderer.
 
 ### Home scene
 
 Home and store preview share five 2560 × 1440 WebP backgrounds. Local hours select
 Morning 06–11, Day 12–15, Afternoon 16–17, Sunset 18–19 and Night 20–05. Supplied
 time overrides the clock. Home center-crops them with cool tint/daylight shadows;
-artwork and tint crossfade for one second unless reduced motion is enabled.
+artwork and tint crossfade for one second under the [motion rules](#motion).
 Controls remain untinted.
 
 Home follows [home.svg](ui/shell/home.svg). Its menu overlays the same scene.
@@ -89,8 +87,8 @@ duplicates; uncertain writes offer reconciliation before retry.
 ## Quests and points
 
 Show catalog values and actual repeat eligibility, never SVG sample rewards or a
-universal daily reset. Success requires a committed award and its returned amount;
-reopening or replaying the result cannot award again. An unknown wallet is not zero.
+universal daily reset. Celebrate only a committed award and its returned amount.
+An unknown wallet is not zero.
 Use the same committed balance throughout the app, labelled Points or `1,200 P`.
 Repeated claims reconcile without another celebration. Later repository updates,
 including resets, replace temporary claim confirmations.
@@ -113,11 +111,12 @@ No cash purchases, top-ups or conversion.
 
 ## Conversation
 
-Keyboard chat uses the V5 split panels. Home/menu Chat opens connection settings
-when signed out and chat when authenticated. The Settings account card always opens
-connection management. Until a reply provider exists, explain the limitation and
-disable Send. Suggestions fill the draft without sending; preserve selection and
-unfinished IME input. Blank input cannot be sent.
+Use the V5 split panels, empty state, suggestions and composer. Home/menu Chat opens
+connection settings when signed out and chat when authenticated; the Settings account
+card always opens connection management. Follow the [session and provider contract](ARCHITECTURE.md#keyboard-conversation-ui).
+Enable Send for a valid draft when authenticated and parked; show readiness only after
+a successful reply. Do not add a consent panel, connection-check button or entry preflight.
+Suggestions fill the draft without sending; preserve selection and unfinished IME input.
 
 Use the system keyboard; [keyboard-input.svg](ui/conversation/keyboard-input.svg)
 defines the resized app layout. Keep header scale and the composer above the IME,
@@ -125,15 +124,19 @@ shorten the panels and shrink the companion. Enlarged-text layouts prioritize
 chat and hide secondary content. Preserve visible control geometry while meeting
 minimum touch bounds at AAOS density.
 
-With a verified provider, identify speakers, block duplicate sends and preserve
-drafts/replies on recoverable errors. Leaving cancels pending work; completed exchanges
-last for the session. Voice controls remain hidden until supported. Future voice input
-requires permission, transcript review and explicit Send; stopping never submits.
+Identify speakers and preserve drafts/replies on recoverable errors. Parking loss
+disables editing and hides the IME; AAOS restrictions remove the screen. Show specific
+recovery for network, service/Auto availability, timeout, account, access, usage and
+length errors. Retries are explicit. Put New conversation beside the follow-up
+suggestion, retaining the reference header and message geometry.
+
+Hide unsupported voice controls. Future voice input requires permission, transcript
+review and explicit Send; stopping never submits.
 Playback yields to calls/navigation; restrictions stop playback and recording.
 
-Explain transmitted data and provider retention before enabling conversation.
-Disconnect/session clearing does not promise provider deletion. Long-term memory
-is outside scope.
+Use the existing footer to name GitHub Copilot, disclose dialogue/companion-name
+transmission and warn about AI accuracy. Provider retention/training policies and
+account limits apply; local clearing does not promise provider deletion.
 
 ## Vehicle information
 
@@ -144,14 +147,13 @@ is outside scope.
 | Current checked items without warnings | Default expression; describe only checked items as normal |
 | Missing/stale data | Unavailable, with last update; never imply normality |
 
-Specific warnings take priority. Partial data stays partial. Condition expressions
-are a target, not completed renderer behavior; see architecture for support.
+Specific warnings take priority; partial data stays partial. See
+[current support](ARCHITECTURE.md#current-foundation) before using condition expressions.
 
 ## AI connection and settings
 
-Settings save independently and expose save failures. Unknown parking disables
-changes. Debug controls are Debug-only and off by default. Spoken replies and
-vehicle-home display remain unavailable; Do Not Disturb is omitted.
+Settings expose save failures. Debug controls are Debug-only and off by default.
+Spoken replies and vehicle-home display remain unavailable; Do Not Disturb is omitted.
 
 ### Copilot connection UI
 
@@ -160,15 +162,15 @@ address help. Update approval status automatically and hide expired codes. Apply
 [authentication lifecycle rules](ARCHITECTURE.md#copilot-connection-ui).
 
 Authentication success uses [connected.svg](ui/connection/connected.svg) geometry,
-with “모비와 대화하기” (the equipped friend's name) opening keyboard chat and Settings
-secondary. Show the verified account and local persistence while stating that Copilot
-replies remain unavailable; do not claim full `Connected` readiness. Successful
-restoration replaces prior sign-in errors. Loading/failures offer retry or local
-clearing; companion read failures retain appearance with Retry.
+with “모비와 대화하기” (using the equipped friend's name) opening chat and Settings
+secondary. Show the verified account, local persistence and a note that Copilot access
+is checked on Send. Successful restoration replaces prior sign-in errors.
+Loading/failures offer retry or local clearing; companion failures retain appearance
+with Retry.
 
 Account-row Disconnect opens confirmation and explains that only the local connection
 is removed; preserve points/cosmetics. Offer approval again for revoked/expired
-credentials. Unconfigured builds disable sign-in. Debug examples never verify a provider.
+credentials. Unconfigured builds disable sign-in.
 
 Loading and failure states have no v5 export; reuse panel typography and controls.
 

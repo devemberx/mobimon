@@ -7,17 +7,12 @@
 Use JUnit 4, coroutines-test, Robolectric/Compose Testing and Hilt/Room device tests.
 Review images exist; golden comparisons and system-UI automation are not configured.
 
-Screen tests and previews follow the fixed-display scope in
-[DESIGN.md](DESIGN.md#visual-language), not a multiple-resolution device matrix.
-Retain reference content, AAOS compatibility density, enlarged text and IME resizing.
-The 2560 × 1268 reference content and approximately 1792 × 888 compatibility-dp
-content represent the same 2560 × 1440px target after bars and scaling.
-Robolectric qualifiers describe the test host, not necessarily the content bounds:
-the 2560 × 1332dp review host leaves 1268dp after its 64dp decor inset;
-1792 × 952dp similarly leaves 888dp. Decor-free shell tests use content sizes directly.
-Isolated component and synthetic motion tests may use smaller fixtures; these do
-not imply support for additional display sizes. CI's physical display is defined
-in [cstd.ini](../.github/avd/cstd.ini).
+Use the [fixed-display scope](DESIGN.md#visual-language), including AAOS density,
+enlarged text and IME resizing. Reference content is 2560 × 1268; compatibility
+content is approximately 1792 × 888dp on the same target display. Robolectric review
+hosts add a 64dp decor inset (2560 × 1332dp or 1792 × 952dp); decor-free shell tests
+use content sizes directly. Smaller component/motion fixtures do not establish
+additional display support. [cstd.ini](../.github/avd/cstd.ini) defines CI's display.
 
 Tests live in the subject module's `src/test`; device tests use `src/androidTest`.
 Debug-only behavior uses `src/testDebug`. Two shared source sets need explicit wiring:
@@ -58,8 +53,8 @@ establish visual parity. SVG-only renames require XML/render and byte-preservati
 ## Current requirement map
 
 These are existing suites, not execution results. Update critical mappings when
-behavior changes. [Architecture](ARCHITECTURE.md#planned-features) owns remaining gaps.
-Related suites share the linked module/package.
+behavior changes; keep implementation gaps in [Architecture](ARCHITECTURE.md#planned-features).
+Related suites share the linked module/package; test names define individual cases.
 
 ### Boundaries, vehicle evidence and persistence
 
@@ -71,16 +66,18 @@ Related suites share the linked module/package.
 | Legacy ownership/revision, later evidence, atomic completion and reopening | [QuestEvaluatorTest](../core/core-domain/src/test/kotlin/com/monsters/mobimon/core/domain/QuestEvaluatorTest.kt), [RoomCompanionRepositoryTest](../core/core-database/src/test/java/com/monsters/mobimon/core/database/RoomCompanionRepositoryTest.kt) and its device counterpart |
 | Point uniqueness, concurrent purchase/equip, rollback and authorization recheck | [PointEconomyRepositoryTest](../core/core-database/src/test/java/com/monsters/mobimon/core/database/PointEconomyRepositoryTest.kt), [Q01JourneyTest](../app/src/test/java/com/monsters/mobimon/Q01JourneyTest.kt), [DebugPointRepositoryTest](../core/core-database/src/testDebug/java/com/monsters/mobimon/core/database/DebugPointRepositoryTest.kt) |
 | V1→V4 and both V3 shapes preserve records/identity | [PointEconomyMigrationTest](../core/core-database/src/test/java/com/monsters/mobimon/core/database/PointEconomyMigrationTest.kt), [LevelingMigrationContract](../core/core-database/src/migrationTest/java/com/monsters/mobimon/core/database/LevelingMigrationContract.kt) with local/device wrappers |
-| Supplied driving conditions, weather and catalog rules | [DrivingQuestEvaluatorTest](../core/core-domain/src/test/kotlin/com/monsters/mobimon/core/domain/DrivingQuestEvaluatorTest.kt); no trusted driving-evidence claim |
+| Supplied driving conditions, weather and catalog rules | [DrivingQuestEvaluatorTest](../core/core-domain/src/test/kotlin/com/monsters/mobimon/core/domain/DrivingQuestEvaluatorTest.kt) |
 
 ### Authentication
 
 | Contract | Coverage |
 | --- | --- |
 | OAuth request/response validation, HTTP errors and redirects | [OkHttpGitHubApiTest](../core/core-auth/src/test/java/com/monsters/mobimon/core/auth/OkHttpGitHubApiTest.kt); MockWebServer |
+| Copilot host/Auto validation, text protocols, bounded JSON/text rejection categories, unavailable Auto and no fallback/replay | [OkHttpCopilotApiTest](../core/core-auth/src/test/java/com/monsters/mobimon/core/auth/OkHttpCopilotApiTest.kt); MockWebServer |
+| Copilot credential/session isolation, expiry, parking checks and request bounds | [CopilotConversationProviderTest](../core/core-auth/src/test/java/com/monsters/mobimon/core/auth/CopilotConversationProviderTest.kt); fake provider |
 | Poll intervals, slowdown, expiry, cancellation, persistence, refresh and revocation | [PersistentGitHubAuthenticationTest](../core/core-auth/src/test/java/com/monsters/mobimon/core/auth/PersistentGitHubAuthenticationTest.kt); fake provider/store |
 | Keystore encryption, reopening, tamper rejection and deletion | [EncryptedCredentialStoreTest](../core/core-auth/src/androidTest/java/com/monsters/mobimon/core/auth/EncryptedCredentialStoreTest.kt); device |
-| Authentication guards/recovery, reference-layout parking guard, readiness separation, QR decoding and success/disconnect actions | [Authentication feature suites](../feature/feature-auth/src/test/java/com/monsters/mobimon/feature/auth); ViewModel and Robolectric |
+| Authentication guards, recovery, readiness separation, QR and disconnect actions | [Authentication feature suites](../feature/feature-auth/src/test/java/com/monsters/mobimon/feature/auth); ViewModel and Robolectric |
 
 ### Presentation and navigation
 
@@ -92,9 +89,10 @@ Related suites share the linked module/package.
 | Independent settings writes, failure/retry and DataStore keys | [SettingsViewModelTest](../feature/feature-pet/src/test/java/com/monsters/mobimon/feature/pet/SettingsViewModelTest.kt), [DataStoreSettingsRepositoryTest](../core/core-database/src/test/java/com/monsters/mobimon/core/database/DataStoreSettingsRepositoryTest.kt) |
 | Artwork, background periods/dimensions, reduced motion and shared control bounds | [Core UI suites](../core/core-ui/src/test/java/com/monsters/mobimon/core/ui); native Robolectric images |
 | Home/Settings, vehicle, store and quest layouts, focus and recovery | Owning feature `src/test` suites, including `CompanionReviewTest`, `VehicleReviewTest` and `StoreReferenceScreenTest` |
-| Menu reference/AAOS-density/enlarged-text bounds, focus, authenticated chat routing, connection origin after authentication loss, recreation and restricted/outgoing input | [Shell suites](../app/src/test/java/com/monsters/mobimon/ui), [CopilotConnectionJourneyTest](../app/src/journeyTest/java/com/monsters/mobimon/CopilotConnectionJourneyTest.kt) |
-| Conversation reveal/return, stationary Home, visible touch bounds, interruption, reduced motion and scrolled action bounds | [ConversationRevealTest](../app/src/test/java/com/monsters/mobimon/ui/ConversationRevealTest.kt), [PetHomeScreenTest](../feature/feature-pet/src/test/java/com/monsters/mobimon/feature/pet/PetHomeScreenTest.kt); native Robolectric frames and pointer input |
-| Chat draft/composition lifetime, ownership clearing, input guards/actions and target-display/IME layouts | [Conversation and feature suites](../feature/feature-auth/src/test/java/com/monsters/mobimon/feature/auth); native review images |
+| Menu layout/focus, authenticated routing, entry-route restoration and restricted input | [Shell suites](../app/src/test/java/com/monsters/mobimon/ui), [CopilotConnectionJourneyTest](../app/src/journeyTest/java/com/monsters/mobimon/CopilotConnectionJourneyTest.kt) |
+| Reveal/return geometry, touch bounds, interruption and reduced motion | [ConversationRevealTest](../app/src/test/java/com/monsters/mobimon/ui/ConversationRevealTest.kt), [PetHomeScreenTest](../feature/feature-pet/src/test/java/com/monsters/mobimon/feature/pet/PetHomeScreenTest.kt); native frames and pointer input |
+| Chat controls, parking guards and target-display/IME layouts | [ConversationScreenTest](../feature/feature-auth/src/test/java/com/monsters/mobimon/feature/auth/ConversationScreenTest.kt); native review images |
+| Explicit-send readiness, duplicate/retry guards, draft/history lifetime, cancellation and limits | [ConversationViewModelTest](../feature/feature-auth/src/test/java/com/monsters/mobimon/feature/auth/ConversationViewModelTest.kt); fake transport |
 | Native keyboard resizing and Back/draft retention | [ConversationKeyboardDeviceTest](../app/src/androidTest/java/com/monsters/mobimon/preview/ConversationKeyboardDeviceTest.kt); AAOS device |
 | Isolated Debug rehearsal and branding | [CopilotPreviewJourneyTest](../app/src/journeyTest/java/com/monsters/mobimon/preview/CopilotPreviewJourneyTest.kt), [BrandingTest](../app/src/testDebug/java/com/monsters/mobimon/BrandingTest.kt) |
 
@@ -103,20 +101,22 @@ Related suites share the linked module/package.
 - Room migration fixtures cover populated V1 and original/expanded V3 upgrades and
   reopening, not a separately populated V2 fixture or `MigrationTestHelper`.
 - [JourneyTestModule](../app/src/journeyTest/java/com/monsters/mobimon/testing/JourneyTestModule.kt)
-  keeps MainActivity, feature ViewModels and Room repositories real, with in-memory
-  Room, isolated DataStore and fake platform/vehicle/AAOS/authentication providers.
-  It never contacts GitHub or accesses user credentials. Debug preview journeys
-  use sample data and establish no authentication or vehicle verification.
+  uses real MainActivity, ViewModels and repositories, in-memory Room, isolated
+  DataStore and fake external providers. It never contacts GitHub or accesses user credentials;
+  Debug previews also establish no provider or vehicle verification.
 - Recreation, file reopening and process restart are distinct. Local tests, APK
   assembly and `NO-SOURCE` tasks do not prove device execution, live providers,
   Release behavior or launcher support. Real OAuth approval/restart/revocation and
   AAOS restriction/reconnection behavior need separate target-device verification.
+  Copilot wire fixtures do not establish live account entitlement, OAuth-app access,
+  model availability or compatibility with the experimental private endpoints.
 - Driving tests cover supplied formulas and transaction invariants, not trusted
   driving evidence, real occurrence identity or evaluator-to-award agreement.
   Hungry/sick rendering and on-device decorative lifecycle still lack acceptance.
 
-Record revision, executed checks, skipped layers/reasons and device image/signal
-source in the issue/PR. Keep credentials and private logs out of reports.
+Record revision and device image/signal source with the
+[required check report](../.github/CONTRIBUTING.md#verification).
+Keep credentials and private logs out of reports.
 
 ## Focused commands and reports
 

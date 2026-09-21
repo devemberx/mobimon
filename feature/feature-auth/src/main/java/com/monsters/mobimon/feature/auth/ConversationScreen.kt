@@ -71,6 +71,7 @@ fun ConversationScreen(
     outfitId: String? = null,
     onRetry: () -> Unit = onOpenConnection,
     onDismissFailure: () -> Unit = {},
+    onNewConversation: (() -> Unit)? = null,
 ) {
     val friend = stringResource(if (friendId == "friend:luna") R.string.copilot_luna else R.string.copilot_mobi)
     val title = stringResource(R.string.chat_title)
@@ -116,7 +117,14 @@ fun ConversationScreen(
             ConversationHeader(friend, back, interactionAllowed, simulatedVehicle, scale, wide, shortened, state.failed)
             Spacer(Modifier.height(if (wide) 56.dp * scale else 16.dp))
             if (state.failed) {
-                ConversationFailure(onRetry, onDismissFailure, interactionAllowed, scale, Modifier.weight(1f))
+                ConversationFailure(
+                    onRetry,
+                    onDismissFailure,
+                    interactionAllowed,
+                    scale,
+                    Modifier.weight(1f),
+                    state.problem,
+                )
             } else if (wide) {
                 Row(Modifier.weight(1f), horizontalArrangement = Arrangement.spacedBy(44.dp * scale)) {
                     CompanionConversationPanel(
@@ -142,6 +150,7 @@ fun ConversationScreen(
                         scale,
                         true,
                         Modifier.weight(1f).fillMaxHeight(),
+                        onNewConversation,
                     )
                 }
             } else {
@@ -158,6 +167,7 @@ fun ConversationScreen(
                     scale,
                     false,
                     Modifier.weight(1f),
+                    onNewConversation,
                 )
             }
         }

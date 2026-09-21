@@ -3,6 +3,7 @@ package com.monsters.mobimon.core.auth
 import android.content.Context
 import android.os.SystemClock
 import com.monsters.mobimon.core.domain.AuthenticationProblem
+import com.monsters.mobimon.core.domain.ConversationProvider
 import com.monsters.mobimon.core.domain.GitHubAuthentication
 import com.monsters.mobimon.core.domain.GitHubSession
 import com.monsters.mobimon.core.domain.GitHubSignIn
@@ -18,6 +19,7 @@ import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withTimeoutOrNull
 import okhttp3.OkHttpClient
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicLong
 
 class PersistentGitHubAuthentication internal constructor(
     private val clientId: String,
@@ -28,6 +30,7 @@ class PersistentGitHubAuthentication internal constructor(
     private val interactionAllowed: () -> Boolean,
 ) : GitHubAuthentication {
     private val mutex = Mutex()
+    private val credentialRevision = AtomicLong()
     private val mutableSession = MutableStateFlow<GitHubSession>(GitHubSession.Restoring)
     override val session = mutableSession.asStateFlow()
     override val configured = clientId.isNotBlank()
@@ -150,6 +153,7 @@ class PersistentGitHubAuthentication internal constructor(
 
     override suspend fun disconnect() =
         mutex.withLock {
+            credentialRevision.incrementAndGet()
             try {
                 storage { store.clear() }
                 mutableSession.value = GitHubSession.SignedOut
@@ -157,6 +161,41 @@ class PersistentGitHubAuthentication internal constructor(
                 mutableSession.value = GitHubSession.Failure(error.problem)
             }
         }
+
+    fun conversationProvider(): ConversationProvider = CopilotConversationProvider.create(this, interactionAllowed)
+
+    internal suspend fun conversationCredential(accountId: Long): ConversationCredential =
+        mutex.withLock {
+            requireInteraction()
+            if ((session.value as? GitHubSession.Authenticated)?.account?.id != accountId) {
+                throw AuthenticationException(AuthenticationProblem.REAUTHENTICATION)
+            }
+            val stored = storage { store.read() }
+            if (stored == null || stored.clientId != clientId) {
+                throw AuthenticationException(AuthenticationProblem.REAUTHENTICATION)
+            }
+            var tokens = stored.tokens
+            if (tokens.expiresAtMillis?.let { it <= nowMillis() + 60_000 } == true) {
+                try {
+                    tokens = refresh(tokens)
+                    val account = api.account(tokens.accessToken)
+                    if (account.id != accountId) throw AuthenticationException(AuthenticationProblem.REAUTHENTICATION)
+                } catch (error: AuthenticationException) {
+                    if (error.problem == AuthenticationProblem.REAUTHENTICATION) {
+                        credentialRevision.incrementAndGet()
+                        storage { store.clear() }
+                        mutableSession.value = GitHubSession.Failure(error.problem)
+                    }
+                    throw error
+                }
+            }
+            requireInteraction()
+            ConversationCredential(accountId, credentialRevision.get(), tokens.accessToken)
+        }
+
+    internal fun isCurrent(credential: ConversationCredential): Boolean =
+        credential.revision == credentialRevision.get() &&
+            (session.value as? GitHubSession.Authenticated)?.account?.id == credential.accountId
 
     private suspend fun refresh(tokens: GitHubTokens): GitHubTokens {
         val refresh = tokens.refreshToken ?: throw AuthenticationException(AuthenticationProblem.REAUTHENTICATION)
@@ -187,7 +226,7 @@ class PersistentGitHubAuthentication internal constructor(
             context: Context,
             clientId: String,
             interactionAllowed: () -> Boolean,
-        ): GitHubAuthentication {
+        ): PersistentGitHubAuthentication {
             val client =
                 OkHttpClient
                     .Builder()

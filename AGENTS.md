@@ -19,11 +19,11 @@
 
 ## Documentation
 
-- Write briefly and plainly. Include only information needed to understand, implement or verify the project; remove unnecessary, stale and verbose content.
+- Write briefly and plainly; omit unnecessary implementation detail, repetition and stale content. Keep AGENTS.md limited to essential repository-wide rules and link to detailed guidance.
 - Keep one authoritative home per topic: CONTRIBUTING for workflow, ARCHITECTURE for technical contracts, DESIGN for UX, TESTING for coverage, `docs/ui/README.md` for exports, and AGENTS for essential agent rules. Link instead of repeating content; keep safety reminders brief.
 - When code changes make documentation or AGENTS.md inaccurate or incomplete, update the affected files in the same change. Keep current implementation separate from planned work, and update the test requirement map for changed critical behavior.
 - Revise existing sections instead of adding overlapping ones. Keep assignments, plans and run logs in issues/PRs; local `docs/superpowers/` plans remain ignored.
-- Review AGENTS.md itself for unnecessary detail and duplication. Before committing docs, check relative links/anchors and preserve safety contracts and verification limits when shortening.
+- Before committing docs, check relative links/anchors and preserve safety contracts and verification limits when shortening.
 - Update CONTRIBUTING and CI together when required checks change. For shared skill changes, edit `.agents/skills/` and copy the entire affected folder, including references/licenses, to `.claude/skills/` in the same commit.
 
 ## Verification

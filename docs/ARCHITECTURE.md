@@ -7,14 +7,14 @@ This document owns technical contracts. [DESIGN.md](DESIGN.md) owns UX,
 ## Current foundation
 
 Implemented: Home, menu, Settings, customization, Vehicle and Quest routes;
-Room schema 4, DataStore preferences; GitHub device authentication and encrypted
-session restoration; keyboard conversation presentation; Mobi/Luna artwork and
+Room storage, DataStore preferences; GitHub device authentication and encrypted
+session restoration; experimental Copilot text conversation; Mobi/Luna artwork and
 breathing animation.
 
-Vehicle input and driving evaluation are Debug simulations. Release vehicle data
-is unavailable. Copilot reply transport, voice, condition expressions, background
-tracking and launcher/overlay rendering remain unimplemented. Catalog entries and
-[UI exports](ui/README.md) do not establish real integration support.
+Vehicle input and driving evaluation are Debug simulations; Release data is unavailable.
+Voice, condition expressions, background tracking and launcher/overlay rendering
+remain unimplemented. Catalog entries and [UI exports](ui/README.md) do not establish
+real integration support.
 
 ## Scope and decisions
 
@@ -30,7 +30,7 @@ Records are local, with no MobiMon backend, synchronization or reinstall recover
 | --- | --- | --- |
 | `app` | Shell, runtime and Hilt bindings | Features and core implementations |
 | `core-domain` | Models, contracts and rules | None |
-| `core-auth` | GitHub OAuth, session restoration and credential storage | Domain |
+| `core-auth` | GitHub OAuth, credential storage and experimental Copilot transport | Domain |
 | `core-database` | Room, DataStore and transactions | Domain |
 | `core-vss` | Unavailable real vehicle adapter | Domain |
 | `core-ui` | Stateless components, theme and artwork | None |
@@ -61,9 +61,8 @@ missing/duplicate destinations and duplicate saved names. Route ViewModels use
 the Activity store; local UI uses a saveable-state holder. The shell saves route
 and connection origin; menu state and animation geometry remain transient.
 
-Home passes the activated conversation button's root bounds through
-`FeatureNavigator.navigateFrom`. The shell converts them to content-relative
-fractions for the reveal and return. [DESIGN.md](DESIGN.md#motion) owns motion behavior.
+Conversation navigation carries the activated button's bounds to the shell;
+[DESIGN.md](DESIGN.md#motion) owns reveal and return behavior.
 
 | State | Owner/lifetime |
 | --- | --- |
@@ -73,16 +72,15 @@ fractions for the reveal and return. [DESIGN.md](DESIGN.md#motion) owns motion b
 | Driving evaluation | Repository memory; Debug-fed, not durable evidence |
 | Preview and animation | Feature/renderer; never committed equipment |
 
-Shared presentation exposes committed values; failed reads retain them with
-explicit retry and no duplicate collectors. Settings saves independently of
-profile/wallet loading. Customization retries failed streams independently and
-keeps friend-specific equipment; preview reaches shared appearance only on commit.
+Shared presentation retains committed values on read failure, with explicit retry
+and no duplicate collectors. Settings writes and customization stream retries are
+independent of other loads; preview reaches shared appearance only on commit.
 
 Background time uses supplied time or `UtcClock` plus local time zone and never
 changes vehicle evidence.
 [PetAvatar](../core/core-ui/src/main/java/com/monsters/mobimon/core/ui/PetAvatar.kt)
-never owns rewards, equipment or authorization. Failed/unknown motion preferences
-pause decoration; retries follow shell subscription.
+never owns rewards, equipment or authorization. Motion preference retries follow
+shell subscription; [DESIGN.md](DESIGN.md#motion) defines fallback rendering.
 
 ### Copilot connection UI
 
@@ -95,9 +93,9 @@ Leaving/backgrounding or losing parked authorization cancels pending approval.
 Device approval requests and acceptance recheck parking and AAOS allowance.
 
 Authentication requires provider approval, `/user` identity validation and durable
-credential storage. It does not verify Copilot readiness or enable sending messages.
-The UI receives no token and performs no polling; rendering `Connected` is not
-provider verification. Debug preview accounts/codes remain isolated from Release.
+credential storage; it does not establish Copilot readiness. The UI receives no
+token and performs no polling. Rendered success and Debug preview accounts/codes
+are not provider verification; previews remain isolated from Release.
 
 Credentials use atomic AES-256-GCM storage in `noBackupFilesDir` with an Android
 Keystore key; package identity separates Debug and Release. Tokens never enter
@@ -109,15 +107,54 @@ closed. Disconnect removes the local credential/key, not the GitHub grant or sub
 
 ### Keyboard conversation UI
 
-`feature-auth` owns the conversation screen. The shell gates new and restored chat
-routes on GitHub authentication and preserves the connection entry route. Ready,
-message and pending fixtures remain in Debug/test sources; production has no reply provider.
+`feature-auth` owns chat; the shell gates new/restored routes on GitHub authentication
+and preserves the connection entry route. Fixtures stay in Debug/test sources.
+`app` binds domain `ConversationProvider` to the experimental `core-auth` HTTP adapter.
 
-`ConversationDraftViewModel` keeps text, selection and IME composition in Activity
-memory across navigation/configuration changes. Profile/account changes, disconnect
-and process restart clear the draft; temporary failures retain it. Drafts never enter
-saved state or persistent storage. Parking loss disables editing and hides the IME;
-AAOS restrictions remove the screen.
+`ConversationViewModel` keeps the draft, selection, IME composition and completed
+exchanges in Activity memory across navigation/configuration changes. Profile/account
+changes, disconnect and process restart clear them; temporary failures retain them.
+New conversation clears the draft and exchanges. Leaving, backgrounding, parking loss
+or companion changes cancel pending work; request generations reject late replies.
+
+Explicit Send checks Copilot access and endpoint validity; opening chat performs no
+preflight. Only a successful reply establishes readiness. All accounts, including
+Free, use server-selected Auto routing without a fallback model. The stored OAuth
+credential authenticates requests; Auto supplies the completion model and session
+token. [OkHttpCopilotApi](../core/core-auth/src/main/java/com/monsters/mobimon/core/auth/OkHttpCopilotApi.kt)
+owns endpoints, API versions, headers and model-metadata selection.
+
+The memory-only Auto session is scoped to a random conversation ID, companion and
+credential owner. New conversation and profile/account/companion changes replace
+the ID; navigation preserves it. Expiry, credential refresh and errors invalidate
+the route. Access/catalog checks are cached for at most five minutes; Auto tokens
+refresh before expiry.
+
+[CopilotMessageCodec](../core/core-auth/src/main/java/com/monsters/mobimon/core/auth/CopilotMessageCodec.kt)
+supports Chat Completions and Responses text; other formats fail visibly. Requests
+send only the companion name, fixed system instruction and dialogue, with no tools,
+vehicle readings or reward/ownership commands. Responses disable storage/truncation;
+these flags do not guarantee provider non-retention. Replies return complete text;
+reasoning is excluded from display and history.
+
+Tokens stay inside `core-auth`; the credential owner handles OAuth refresh. Recheck
+credential ownership and parked/AAOS authorization before each network stage and
+reply acceptance. Copilot credentials go only to allowlisted HTTPS hosts; redirects
+and automatic HTTP retries are disabled. Errors expose recovery categories, never
+provider bodies. An Auto rejection with no eligible model is distinguished from a
+generic service outage; bounded JSON/plain-text errors become fixed categories only.
+Debug diagnostics contain only stage, HTTP status, catalog counts
+and fixed rejection categories; Release logging is disabled. Cancellation cannot
+undo provider processing; retries may consume additional usage.
+
+Enforce [ConversationLimits](../core/core-domain/src/main/kotlin/com/monsters/mobimon/core/domain/ConversationProvider.kt),
+reserving room for the next reply. Require editing or a new conversation rather than
+silently dropping context. No dialogue enters Room, DataStore, saved state or a backend.
+
+The transport follows [Copilot CLI OAuth authentication](https://docs.github.com/en/copilot/how-tos/copilot-cli/set-up-copilot-cli/authenticate-copilot-cli)
+but has no supported Android SDK or stable HTTP contract. It makes real requests
+without a MobiMon backend; approval/fixtures do not prove endpoint access for this
+app/account. Rejections stay visible; never impersonate another OAuth client or editor.
 
 ### Vehicle interaction authorization
 
@@ -143,7 +180,7 @@ without mixing clock domains or reusing monotonic timestamps after restart.
 
 [AppDatabase](../core/core-database/src/main/java/com/monsters/mobimon/core/database/AppDatabase.kt)
 is schema 4, with one instance per process. Do not persist transient vehicle
-histories or chat. Observations use `Flow`; writes suspend and distinguish rejection,
+histories. Observations use `Flow`; writes suspend and distinguish rejection,
 duplicates and storage failure. Propagate cancellation and inject clocks/IDs.
 
 All reward writes validate evidence, ownership/revision and uniqueness atomically:
@@ -196,10 +233,8 @@ alone cannot authorize placement. Verify restart, failures and parked restrictio
 
 ### AI conversation and session
 
-Verify a supported Copilot SDK/CLI runtime or separately approved relay on the target
-device before enabling message sending. Keep bounded, profile-scoped sessions in memory;
-no dialogue or pending requests in Room, DataStore or saved state, including SDK artifacts.
-Reject late replies when request/session/profile IDs or context revision change.
+Future SDK/relay adapters need target verification and must preserve the
+[conversation contract](#keyboard-conversation-ui), including any SDK artifacts.
 
 AI may return replies or allowlisted proposals, never write vehicle state, rewards
 or ownership. Commands still require evidence/confirmation. Voice owns permission

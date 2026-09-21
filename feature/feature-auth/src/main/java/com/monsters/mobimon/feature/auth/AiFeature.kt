@@ -21,6 +21,8 @@ import androidx.lifecycle.repeatOnLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
+import com.monsters.mobimon.core.domain.ConversationProblem
+import com.monsters.mobimon.core.domain.ConversationProvider
 import com.monsters.mobimon.core.domain.CosmeticSlot
 import com.monsters.mobimon.core.domain.GitHubAuthentication
 import com.monsters.mobimon.core.domain.GitHubSession
@@ -47,6 +49,7 @@ class AiFeature(
     private val points: PointEconomy,
     private val vehicle: VehiclePresentation,
     private val authentication: GitHubAuthentication,
+    private val conversation: ConversationProvider,
 ) : FeatureEntry {
     override val routes = setOf(AiRoute.COPILOT, AiRoute.CONVERSATION)
 
@@ -100,8 +103,25 @@ class AiFeature(
             return
         }
         val session by authentication.session.collectAsStateWithLifecycle()
-        val draftModel: ConversationDraftViewModel = viewModel()
-        LaunchedEffect(draftModel, profile.id, session) { draftModel.bind(profile.id, session) }
+        val conversationFactory =
+            remember(this) {
+                viewModelFactory { initializer { ConversationViewModel(authentication, conversation) } }
+            }
+        val conversationModel: ConversationViewModel = viewModel(factory = conversationFactory)
+        val conversationState by conversationModel.state.collectAsStateWithLifecycle()
+        val friendId = companion.inventory?.equippedItemIds?.get(CosmeticSlot.FRIEND) ?: "friend:mobi"
+        LaunchedEffect(conversationModel, profile.id, friendId) { conversationModel.bind(profile.id, friendId) }
+        LaunchedEffect(conversationModel, lifecycle, route, snapshot.parkedVerified) {
+            if (route != AiRoute.CONVERSATION) return@LaunchedEffect
+            lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                conversationModel.activate(snapshot.parkedVerified)
+                try {
+                    awaitCancellation()
+                } finally {
+                    conversationModel.deactivate()
+                }
+            }
+        }
         Column(modifier.fillMaxSize()) {
             if (companion.failed) {
                 Row(
@@ -118,23 +138,20 @@ class AiFeature(
                 }
             }
             if (route == AiRoute.CONVERSATION) {
-                val account = (session as? GitHubSession.Authenticated)?.account
                 ConversationScreen(
                     state =
-                        ConversationUiState(
+                        conversationState.copy(
                             connection =
-                                if (account !=
-                                    null
-                                ) {
-                                    ConversationConnection.UNAVAILABLE
+                                if (session is GitHubSession.Authenticated) {
+                                    conversationState.connection
                                 } else {
                                     ConversationConnection.SIGNED_OUT
                                 },
                         ),
-                    draft = draftModel.draft,
-                    onDraftChange = draftModel::edit,
-                    onSend = {}, // No verified conversation transport exists in this build.
-                    onCancelReply = {},
+                    draft = conversationModel.draft,
+                    onDraftChange = conversationModel::edit,
+                    onSend = conversationModel::send,
+                    onCancelReply = conversationModel::cancel,
                     onBack = navigator.back,
                     onOpenConnection = { if (snapshot.parkedVerified) navigator.navigate(AiRoute.COPILOT) },
                     modifier = Modifier.weight(1f),
@@ -144,6 +161,15 @@ class AiFeature(
                     appearanceKey = profile.appearance.name,
                     accessoryId = companion.inventory?.equippedItemIds?.get(CosmeticSlot.ACCESSORY),
                     outfitId = companion.inventory?.equippedItemIds?.get(CosmeticSlot.OUTFIT),
+                    onRetry = {
+                        when (conversationState.problem) {
+                            ConversationProblem.ACCOUNT -> navigator.navigate(AiRoute.COPILOT)
+                            ConversationProblem.LIMIT -> conversationModel.newConversation()
+                            else -> conversationModel.retry()
+                        }
+                    },
+                    onDismissFailure = conversationModel::dismissFailure,
+                    onNewConversation = conversationModel::newConversation,
                 )
                 return@Column
             }

@@ -213,6 +213,57 @@ class PersistentGitHubAuthenticationTest {
             assertEquals(0, api.codeRequests)
         }
 
+    @Test fun conversationReusesStoredCredentialAndRefreshesBeforeExpiry() =
+        runTest {
+            val repository = repository()
+            repository.signIn().toList()
+            assertEquals("approved", repository.conversationCredential(1).token)
+            store.credential = StoredCredential("client", GitHubTokens("old", 120_000, "refresh", 999_999))
+            val credential = repository.conversationCredential(1)
+            assertEquals("rotated", credential.token)
+            assertEquals("rotated", store.credential?.tokens?.accessToken)
+            assertTrue(repository.isCurrent(credential))
+            assertFalse(credential.toString().contains("rotated"))
+            repository.disconnect()
+            repository.signIn().toList()
+            assertFalse(repository.isCurrent(credential))
+        }
+
+    @Test fun conversationCredentialRejectsWrongAccountAndParkingLoss() =
+        runTest {
+            val repository = repository()
+            repository.signIn().toList()
+            try {
+                repository.conversationCredential(2)
+                throw AssertionError("Wrong account must fail")
+            } catch (error: AuthenticationException) {
+                assertEquals(AuthenticationProblem.REAUTHENTICATION, error.problem)
+            }
+            allowed = false
+            try {
+                repository.conversationCredential(1)
+                throw AssertionError("Unparked request must fail")
+            } catch (error: AuthenticationException) {
+                assertEquals(AuthenticationProblem.RESTRICTED, error.problem)
+            }
+        }
+
+    @Test fun changedIdentityDuringConversationRefreshClearsCredentials() =
+        runTest {
+            val repository = repository()
+            repository.signIn().toList()
+            store.credential = StoredCredential("client", GitHubTokens("old", 120_000, "refresh", 999_999))
+            api.accountResult = { GitHubAccount(2, "different") }
+            try {
+                repository.conversationCredential(1)
+                throw AssertionError("Changed identity must fail")
+            } catch (error: AuthenticationException) {
+                assertEquals(AuthenticationProblem.REAUTHENTICATION, error.problem)
+            }
+            assertNull(store.credential)
+            assertEquals(GitHubSession.Failure(AuthenticationProblem.REAUTHENTICATION), repository.session.value)
+        }
+
     private fun TestScope.repository() =
         PersistentGitHubAuthentication(
             "client",
