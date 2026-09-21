@@ -250,7 +250,8 @@ through the shared renderer contract.
 Home's conversation action reveals the destination from the activated button's
 rounded bounds over 300ms, with Home stationary underneath. Back closes it toward
 the same bounds over 220ms. Sample the button after scrolling and respect runtime
-insets. Reduced motion shows the destination immediately.
+insets. Destination touch targets follow the visible reveal bounds. Reduced
+motion shows the destination immediately.
 
 Other Android navigation/drawer transitions use 220ms; connection panels fade
 in over 180ms and out over 120ms. Expiry/restriction changes replace content

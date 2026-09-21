@@ -4,6 +4,8 @@ import android.app.Application
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.view.View
+import androidx.activity.OnBackPressedDispatcher
+import androidx.activity.compose.LocalOnBackPressedDispatcherOwner
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -17,9 +19,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.test.click
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performTouchInput
 import com.monsters.mobimon.core.domain.AppUseState
 import com.monsters.mobimon.core.navigation.AiRoute
 import com.monsters.mobimon.core.navigation.AppRoute
@@ -42,6 +47,7 @@ import java.io.File
 class ConversationRevealTest {
     @get:Rule val compose = createComposeRule()
     private lateinit var view: View
+    private lateinit var backDispatcher: OnBackPressedDispatcher
     private val mounted = mutableSetOf<AppRoute>()
     private val appUse = mutableStateOf(AppUseState.ALLOWED)
 
@@ -75,7 +81,7 @@ class ConversationRevealTest {
         show()
         compose.onNodeWithText("Talk").performClick()
         compose.mainClock.advanceTimeBy(64)
-        compose.onNodeWithText("Back").performClick()
+        compose.runOnIdle { backDispatcher.onBackPressed() }
         compose.mainClock.advanceTimeBy(32)
         compose.onNodeWithText("Back").assertDoesNotExist()
         compose.mainClock.advanceTimeBy(350)
@@ -96,6 +102,32 @@ class ConversationRevealTest {
         compose.onNodeWithText("Back").performClick()
         compose.mainClock.advanceTimeBy(32)
         compose.onNodeWithText("Back").assertDoesNotExist()
+        compose.onNodeWithText("Talk").assertExists()
+    }
+
+    @Test fun hiddenBackIgnoresTouchesUntilRevealed() {
+        show()
+        compose.onNodeWithText("Talk").performClick()
+        compose.mainClock.advanceTimeBy(400)
+        val backCenter =
+            compose
+                .onNodeWithText("Back")
+                .fetchSemanticsNode()
+                .boundsInRoot.center
+        compose.onRoot().performTouchInput { click(backCenter) }
+        compose.mainClock.advanceTimeBy(300)
+
+        compose.onNodeWithText("Talk").performClick()
+        compose.mainClock.advanceTimeBy(32)
+        capture("hidden-back") { bitmap ->
+            assertEquals(HOME_COLOR, bitmap.getPixel(backCenter.x.toInt(), backCenter.y.toInt()))
+        }
+        compose.onRoot().performTouchInput { click(backCenter) }
+        compose.mainClock.advanceTimeBy(400)
+        compose.onNodeWithText("Back").assertExists()
+
+        compose.onRoot().performTouchInput { click(backCenter) }
+        compose.mainClock.advanceTimeBy(300)
         compose.onNodeWithText("Talk").assertExists()
     }
 
@@ -132,7 +164,11 @@ class ConversationRevealTest {
             )
         compose.setContent {
             val currentView = LocalView.current
-            SideEffect { view = currentView }
+            val currentBackDispatcher = checkNotNull(LocalOnBackPressedDispatcherOwner.current).onBackPressedDispatcher
+            SideEffect {
+                view = currentView
+                backDispatcher = currentBackDispatcher
+            }
             MobiMonContent(entries, appUseState = appUse.value, reducedMotion = reducedMotion, debugOverlay = {})
         }
         compose.waitForIdle()
