@@ -9,6 +9,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 
 internal class GitHubAuthenticationViewModel(
@@ -27,7 +28,11 @@ internal class GitHubAuthenticationViewModel(
     init {
         viewModelScope.launch {
             combine(
-                authentication.session,
+                authentication.session.onEach { session ->
+                    if (session is GitHubSession.Authenticated && progress.value is GitHubSignIn.Failed) {
+                        progress.value = null
+                    }
+                },
                 progress,
                 address,
                 confirming,

@@ -1,5 +1,6 @@
 package com.monsters.mobimon.feature.auth
 
+import androidx.lifecycle.ViewModelStore
 import com.monsters.mobimon.core.domain.AuthenticationProblem
 import com.monsters.mobimon.core.domain.GitHubAccount
 import com.monsters.mobimon.core.domain.GitHubAuthentication
@@ -108,6 +109,59 @@ class GitHubAuthenticationViewModelTest {
             assertEquals(0, authentication.requests)
         }
 
+    @Test fun foregroundRestoreClearsSignInFailureWithoutResurrectingIt() =
+        runTest(dispatcher) {
+            authentication.signInFailure = AuthenticationProblem.NETWORK
+            val model = GitHubAuthenticationViewModel(authentication)
+            val models = ViewModelStore().apply { put("authentication", model) }
+            try {
+                model.activate(true)
+                model.action(CopilotAction.REQUEST_CODE)
+                runCurrent()
+                val failure = CopilotUiState.AuthenticationStatus(problem = AuthenticationProblem.NETWORK)
+                assertEquals(failure, model.state.value)
+
+                model.deactivate()
+                model.activate(true)
+                runCurrent()
+                assertEquals(failure, model.state.value)
+
+                // Application foreground restoration runs independently of the screen's commands.
+                authentication.restoredSession = GitHubSession.Authenticated(GitHubAccount(1, "driver"))
+                authentication.restore()
+                runCurrent()
+                assertEquals(CopilotUiState.AuthenticationStatus(account = "@driver"), model.state.value)
+                assertEquals(1, authentication.requests)
+
+                authentication.session.value = GitHubSession.Failure(AuthenticationProblem.REAUTHENTICATION)
+                runCurrent()
+                assertEquals(
+                    CopilotUiState.AuthenticationStatus(problem = AuthenticationProblem.REAUTHENTICATION),
+                    model.state.value,
+                )
+            } finally {
+                models.clear()
+            }
+        }
+
+    @Test fun restoredSessionPreservesAnActiveApproval() =
+        runTest(dispatcher) {
+            val model = GitHubAuthenticationViewModel(authentication)
+            val models = ViewModelStore().apply { put("authentication", model) }
+            try {
+                model.activate(true)
+                model.action(CopilotAction.REQUEST_CODE)
+                runCurrent()
+                authentication.restoredSession = GitHubSession.Authenticated(GitHubAccount(1, "driver"))
+                authentication.restore()
+                runCurrent()
+                assertTrue(model.state.value is CopilotUiState.Waiting)
+                assertEquals(0, authentication.cancellations)
+            } finally {
+                models.clear()
+            }
+        }
+
     private class FakeAuthentication : GitHubAuthentication {
         override val session = MutableStateFlow<GitHubSession>(GitHubSession.SignedOut)
         override val configured = true
@@ -115,9 +169,12 @@ class GitHubAuthenticationViewModelTest {
         var cancellations = 0
         var restores = 0
         var disconnects = 0
+        var signInFailure: AuthenticationProblem? = null
+        var restoredSession: GitHubSession? = null
 
         override suspend fun restore() {
             restores++
+            restoredSession?.let { session.value = it }
         }
 
         override suspend fun disconnect() {
@@ -128,6 +185,10 @@ class GitHubAuthenticationViewModelTest {
         override fun signIn() =
             flow {
                 requests++
+                signInFailure?.let {
+                    emit(GitHubSignIn.Failed(it))
+                    return@flow
+                }
                 try {
                     emit(GitHubSignIn.Waiting("ABCD-EFGH", "https://github.com/login/device", 900))
                     awaitCancellation()
