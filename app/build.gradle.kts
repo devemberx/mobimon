@@ -1,5 +1,6 @@
 import org.gradle.api.artifacts.dsl.LockMode
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import java.util.Properties
 
 plugins {
     alias(libs.plugins.android.application)
@@ -11,6 +12,21 @@ plugins {
     alias(libs.plugins.kover)
 }
 
+val localProperties =
+    Properties().apply {
+        rootProject
+            .file("local.properties")
+            .takeIf { it.isFile }
+            ?.inputStream()
+            ?.use { load(it) }
+    }
+val githubClientId =
+    providers
+        .gradleProperty("mobimon.githubClientId")
+        .orElse(providers.environmentVariable("MOBIMON_GITHUB_CLIENT_ID"))
+        .getOrElse(localProperties.getProperty("mobimon.githubClientId", ""))
+require(githubClientId.matches(Regex("[A-Za-z0-9_]*"))) { "Invalid GitHub OAuth client ID" }
+
 android {
     namespace = "com.monsters.mobimon"
     compileSdk = 34
@@ -20,6 +36,7 @@ android {
         applicationId = "com.monsters.mobimon"
         minSdk = 34
         targetSdk = 34
+        buildConfigField("String", "GITHUB_CLIENT_ID", "\"$githubClientId\"")
         versionCode = 1
         versionName = "0.1.0"
         testInstrumentationRunner = "com.monsters.mobimon.testing.MobiMonTestRunner"
@@ -83,6 +100,8 @@ dependencies {
     kover(project(":core:core-navigation"))
     kover(project(":core:core-presentation"))
     implementation(project(":core:core-domain"))
+    implementation(project(":core:core-auth"))
+    kover(project(":core:core-auth"))
     implementation(project(":core:core-database"))
     implementation(project(":core:core-vss"))
     implementation(project(":core:core-ui"))

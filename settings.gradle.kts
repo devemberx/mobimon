@@ -24,3 +24,5 @@ include(":feature:feature-auth")
 include(":feature:feature-customization")
 
 include(":core:core-navigation", ":core:core-presentation")
+
+include(":core:core-auth")

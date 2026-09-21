@@ -9,6 +9,9 @@ import com.monsters.mobimon.core.database.AppDatabase
 import com.monsters.mobimon.core.domain.AppUseState
 import com.monsters.mobimon.core.domain.Clock
 import com.monsters.mobimon.core.domain.DrivingState
+import com.monsters.mobimon.core.domain.GitHubAuthentication
+import com.monsters.mobimon.core.domain.GitHubSession
+import com.monsters.mobimon.core.domain.GitHubSignIn
 import com.monsters.mobimon.core.domain.ProgressionIdentity
 import com.monsters.mobimon.core.domain.SignalQuality
 import com.monsters.mobimon.core.domain.SignalSource
@@ -17,6 +20,7 @@ import com.monsters.mobimon.core.domain.VehicleRepository
 import com.monsters.mobimon.core.domain.VehicleSnapshot
 import com.monsters.mobimon.di.AppEnvironment
 import com.monsters.mobimon.di.AppUseModule
+import com.monsters.mobimon.di.AuthenticationModule
 import com.monsters.mobimon.di.PlatformModule
 import com.monsters.mobimon.di.VehicleProviderModule
 import com.monsters.mobimon.runtime.AppUseStateSource
@@ -32,6 +36,7 @@ import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.runBlocking
 import java.io.File
 import java.nio.file.Files
@@ -41,9 +46,23 @@ import javax.inject.Singleton
 @Module
 @TestInstallIn(
     components = [SingletonComponent::class],
-    replaces = [PlatformModule::class, VehicleProviderModule::class, AppUseModule::class],
+    replaces = [PlatformModule::class, VehicleProviderModule::class, AppUseModule::class, AuthenticationModule::class],
 )
 object JourneyTestModule {
+    @Provides
+    @Singleton
+    fun authentication(): GitHubAuthentication =
+        object : GitHubAuthentication {
+            override val session = MutableStateFlow<GitHubSession>(GitHubSession.SignedOut)
+            override val configured = false
+
+            override suspend fun restore() = Unit
+
+            override suspend fun disconnect() = Unit
+
+            override fun signIn() = emptyFlow<GitHubSignIn>()
+        }
+
     @Provides
     fun clock(): Clock = Clock { 10_000L }
 

@@ -43,8 +43,9 @@ internal fun CopilotUiState.hasReferenceLayout(
 ): Boolean =
     (this is CopilotUiState.Introduction || interactionAllowed) &&
         when (this) {
+            is CopilotUiState.AuthenticationStatus -> false
             is CopilotUiState.Introduction -> true
-            is CopilotUiState.Waiting -> error == null && (showAddress || hasQr)
+            is CopilotUiState.Waiting -> error == null && !retrying && (showAddress || hasQr)
             is CopilotUiState.Disconnect -> error == null
             is CopilotUiState.AccessCheck -> detail == null && !checking && reason != CopilotAccessIssue.CHECKING
             else -> true
@@ -63,6 +64,7 @@ internal fun CopilotReferencePanel(
         val panel = ReferencePanel(scale, onAction)
         with(panel) {
             when (state) {
+                is CopilotUiState.AuthenticationStatus -> Unit
                 is CopilotUiState.Introduction -> {
                     steps(0)
                     tile(R.drawable.copilot_chat, 440f)

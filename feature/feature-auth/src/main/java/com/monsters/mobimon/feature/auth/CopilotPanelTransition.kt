@@ -51,6 +51,7 @@ internal fun CopilotPanelTransition(
 
 private fun CopilotUiState.panelKey(): String =
     when (this) {
+        is CopilotUiState.AuthenticationStatus -> "authentication"
         is CopilotUiState.Introduction -> "introduction"
         is CopilotUiState.Waiting -> if (showAddress) "address" else "qr"
         CopilotUiState.Expired -> "expired"

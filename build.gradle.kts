@@ -29,6 +29,7 @@ tasks.register("verifyModuleBoundaries") {
                     module.path in
                         setOf(
                             ":core:core-database",
+                            ":core:core-auth",
                             ":core:core-vss",
                             ":core:core-presentation",
                         )
@@ -92,6 +93,7 @@ tasks.register("verifyModuleBoundaries") {
                         listOf("android.", "androidx.", "dagger.", "com.monsters.mobimon.feature.") +
                             listOf(
                                 "database",
+                                "auth",
                                 "ui",
                                 "presentation",
                                 "navigation",
@@ -101,6 +103,7 @@ tasks.register("verifyModuleBoundaries") {
                             listOf(
                                 "domain",
                                 "database",
+                                "auth",
                                 "presentation",
                                 "vss",
                             ).map { "com.monsters.mobimon.core.$it." } +
@@ -111,6 +114,7 @@ tasks.register("verifyModuleBoundaries") {
                             "androidx.datastore.",
                             "dagger.",
                             "com.monsters.mobimon.core.database.",
+                            "com.monsters.mobimon.core.auth.",
                             "com.monsters.mobimon.core.vss.",
                         )
                     else -> emptyList()

@@ -124,6 +124,7 @@ private fun CopilotPreview(onExit: () -> Unit) {
                             CopilotAction.RECHECK, CopilotAction.DISCONNECT -> if (!pending) pending = true
                             CopilotAction.START_CONVERSATION -> navigate(PreviewStep.CHAT)
                             CopilotAction.OPEN_SETTINGS, CopilotAction.KEEP_CONNECTION -> navigate(PreviewStep.SETTINGS)
+                            CopilotAction.CONFIRM_DISCONNECT -> navigate(PreviewStep.DISCONNECT)
                             CopilotAction.REVIEW_ACCESS -> showAccessNotice = true
                         }
                     },

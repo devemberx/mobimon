@@ -18,6 +18,9 @@ robolectric = "4.13"
 androidx-test = "1.6.1"
 androidx-test-junit = "1.2.1"
 
+okhttp = "4.12.0"
+zxing = "3.5.3"
+
 [libraries]
 build-android = { module = "com.android.tools.build:gradle", version.ref = "agp" }
 build-kotlin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin" }
@@ -55,6 +58,10 @@ robolectric = { module = "org.robolectric:robolectric", version.ref = "robolectr
 androidx-test-core = { module = "androidx.test:core-ktx", version.ref = "androidx-test" }
 androidx-test-runner = { module = "androidx.test:runner", version.ref = "androidx-test" }
 androidx-test-junit = { module = "androidx.test.ext:junit-ktx", version.ref = "androidx-test-junit" }
+
+okhttp = { module = "com.squareup.okhttp3:okhttp", version.ref = "okhttp" }
+okhttp-mockwebserver = { module = "com.squareup.okhttp3:mockwebserver", version.ref = "okhttp" }
+zxing = { module = "com.google.zxing:core", version.ref = "zxing" }
 
 [plugins]
 android-library = { id = "com.android.library", version.ref = "agp" }

@@ -28,6 +28,9 @@ import com.monsters.mobimon.core.domain.CosmeticItem
 import com.monsters.mobimon.core.domain.CosmeticSlot
 import com.monsters.mobimon.core.domain.DrivingState
 import com.monsters.mobimon.core.domain.EquipResult
+import com.monsters.mobimon.core.domain.GitHubAuthentication
+import com.monsters.mobimon.core.domain.GitHubSession
+import com.monsters.mobimon.core.domain.GitHubSignIn
 import com.monsters.mobimon.core.domain.PetAppearance
 import com.monsters.mobimon.core.domain.PetProfile
 import com.monsters.mobimon.core.domain.PetRepository
@@ -196,6 +199,16 @@ class AiFeatureTest {
                     VehicleFreshnessPolicy(15_000),
                     UtcClock { 0L },
                 ),
+                object : GitHubAuthentication {
+                    override val session = MutableStateFlow<GitHubSession>(GitHubSession.SignedOut)
+                    override val configured = false
+
+                    override suspend fun restore() = Unit
+
+                    override suspend fun disconnect() = Unit
+
+                    override fun signIn() = flowOf<GitHubSignIn>()
+                },
             )
         val navigator = FeatureNavigator({ route = it as AiRoute }, {}, {}, {})
         compose.setContent {

@@ -52,7 +52,7 @@ For code or build changes, format first and review the resulting diff:
 
 ```bash
 ./gradlew ktlintFormat
-./gradlew verifyModuleBoundaries ktlintCheck lintDebug testDebugUnitTest :core:core-domain:test :core:core-vss:test :app:assembleDebug :app:assembleDebugAndroidTest :core:core-database:assembleDebugAndroidTest
+./gradlew verifyModuleBoundaries ktlintCheck lintDebug testDebugUnitTest :core:core-domain:test :core:core-vss:test :app:assembleDebug :app:assembleDebugAndroidTest :core:core-database:assembleDebugAndroidTest :core:core-auth:assembleDebugAndroidTest
 git diff --check
 ```
 
@@ -60,10 +60,10 @@ Add or update tests for changed behavior. Follow [TESTING.md](../docs/TESTING.md
 for test placement and Fakes. Check affected flows on a device or emulator when
 changing UI, permissions, or platform integrations.
 
-With a compatible device or emulator, run the Room and shared app journeys:
+With a compatible device or emulator, run the Room, Keystore and shared app journeys:
 
 ```bash
-./gradlew :core:core-database:connectedDebugAndroidTest :app:connectedDebugAndroidTest
+./gradlew :core:core-database:connectedDebugAndroidTest :core:core-auth:connectedDebugAndroidTest :app:connectedDebugAndroidTest
 ```
 
 CI runs local checks and AAOS API 34-ext9 device tests in parallel. Both jobs
