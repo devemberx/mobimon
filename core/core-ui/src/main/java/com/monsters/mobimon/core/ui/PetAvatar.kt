@@ -81,7 +81,7 @@ internal object LunaAnimationCache {
                         val path =
                             String.format(
                                 Locale.US,
-                                "characters/luna/idle_breath/luna_idle_%02d.png",
+                                "characters/luna/idle_breath/luna_idle_breath_%02d.png",
                                 i,
                             )
                         assetManager.open(path).use { stream ->
