@@ -44,7 +44,11 @@ data class ShellState(
             copy(
                 route = if (route == AiRoute.CONVERSATION) AiRoute.COPILOT else route,
                 connectionOrigin =
-                    if (connectionOrigin == AiRoute.CONVERSATION) CompanionRoute.HOME else connectionOrigin,
+                    if (route == AiRoute.CONVERSATION || connectionOrigin == AiRoute.CONVERSATION) {
+                        CompanionRoute.HOME
+                    } else {
+                        connectionOrigin
+                    },
             )
         }
 
