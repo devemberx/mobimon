@@ -119,7 +119,7 @@ class CopilotConnectionScreenTest {
     fun introductionExplainsSharingAndRequestsConnectionWithoutInventingAnAccount() {
         val actions = mutableListOf<CopilotAction>()
         show(CopilotUiState.Introduction(), actions::add)
-        compose.onNodeWithText("입력한 대화가 GitHub Copilot으로 전송돼요.", substring = true).assertExists()
+        compose.onNodeWithText("인증 토큰은 이 기기에 암호화해 저장해요.", substring = true).assertExists()
         click("QR로 연결하기")
         assertEquals(listOf(CopilotAction.REQUEST_CODE), actions)
         compose.onNodeWithText("연결이 완료됐어요.").assertDoesNotExist()
@@ -353,6 +353,66 @@ class CopilotConnectionScreenTest {
                     .assertHeightIsAtLeast(76.dp)
                     .performClick()
                 assertEquals(action, actions.last())
+            }
+        }
+    }
+
+    @Test
+    @Config(qualifiers = "ko-rKR-w2560dp-h1268dp")
+    @GraphicsMode(GraphicsMode.Mode.NATIVE)
+    fun authenticationStatesRenderWithoutClaimingConversationReadiness() {
+        renderAuthenticationStates(1f, "reference")
+    }
+
+    @Test
+    @Config(qualifiers = "ko-rKR-w1000dp-h800dp")
+    @GraphicsMode(GraphicsMode.Mode.NATIVE)
+    fun authenticationStatesReflowWithEnlargedText() {
+        renderAuthenticationStates(1.6f, "compact")
+    }
+
+    private fun renderAuthenticationStates(
+        fontScale: Float,
+        label: String,
+    ) {
+        var state: CopilotUiState by mutableStateOf(CopilotUiState.AuthenticationStatus(pending = true))
+        lateinit var view: View
+        compose.setContent {
+            val currentView = LocalView.current
+            SideEffect { view = currentView }
+            CompositionLocalProvider(LocalDensity provides Density(LocalDensity.current.density, fontScale)) {
+                MobiMonTheme {
+                    CopilotConnectionScreen(state, {}, interactionAllowed = true)
+                }
+            }
+        }
+        val states =
+            listOf(
+                "loading" to CopilotUiState.AuthenticationStatus(pending = true),
+                "authenticated" to CopilotUiState.AuthenticationStatus(account = "@mobimon-driver"),
+                "network" to
+                    CopilotUiState.AuthenticationStatus(
+                        problem = com.monsters.mobimon.core.domain.AuthenticationProblem.NETWORK,
+                    ),
+            )
+        val directory = File("build/reports/copilot-ui").apply { mkdirs() }
+        states.forEach { (name, sample) ->
+            compose.runOnIdle { state = sample }
+            compose.waitForIdle()
+            compose.onNodeWithText("모비와 대화하기").assertDoesNotExist()
+            if (sample.account != null) {
+                compose.onNodeWithText("GitHub 계정 인증이 완료됐어요.").assertExists()
+                val disconnect = compose.onNodeWithText("연결 해제")
+                if (label == "compact") disconnect.performScrollTo()
+                disconnect.assertHeightIsAtLeast(76.dp).assertIsDisplayed()
+            }
+            compose.runOnIdle {
+                val bitmap = Bitmap.createBitmap(view.width, view.height, Bitmap.Config.ARGB_8888)
+                view.draw(Canvas(bitmap))
+                File(directory, "authentication-$label-$name.png").outputStream().use {
+                    assertTrue(bitmap.compress(Bitmap.CompressFormat.PNG, 100, it))
+                }
+                bitmap.recycle()
             }
         }
     }

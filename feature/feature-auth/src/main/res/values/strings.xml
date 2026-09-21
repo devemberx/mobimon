@@ -9,7 +9,7 @@
   <string name="copilot_mobi">모비</string>
   <string name="copilot_luna">루나</string>
   <string name="copilot_friend_intro">휴대폰으로 QR을 스캔해 연결해요.</string>
-  <string name="copilot_friend_waiting">연결되면 바로 이야기를 시작해요.</string>
+  <string name="copilot_friend_waiting">GitHub에서 계정 승인을 기다리고 있어요.</string>
   <string name="copilot_friend_connected">이제 편하게 이야기를 나눠요.</string>
   <string name="copilot_friend_disconnect">내 계정 연결을 관리할 수 있어요.</string>
   <string name="copilot_friend_tagline">작은 친구, 긴 여정</string>
@@ -21,8 +21,8 @@
   <string name="copilot_step_pending">다음 단계</string>
   <string name="copilot_intro_heading">이야기를 시작할 준비</string>
   <string name="copilot_intro_subtitle">GitHub Copilot을 연결해 주세요.</string>
-  <string name="copilot_intro_disclosure">입력한 대화가 GitHub Copilot으로 전송돼요.\n차량 정보는 상태 설명을 요청할 때 사용해요.\n대화는 앱의 현재 세션 동안 이어져요.</string>
-  <string name="copilot_intro_note">연결 후 계정의 Copilot 이용 가능 여부를 확인해요.\n연결하지 않아도 차량 상태와 꾸미기를 이용할 수 있어요.</string>
+  <string name="copilot_intro_disclosure">GitHub에서 계정을 승인해요.\n인증 토큰은 이 기기에 암호화해 저장해요.\n차량 정보와 대화는 전송하지 않아요.</string>
+  <string name="copilot_intro_note">인증 후에도 Copilot 대화는 아직 이용할 수 없어요.\n연결하지 않아도 차량 상태와 꾸미기를 이용할 수 있어요.</string>
   <string name="copilot_policy_note">대화 처리와 보관 기준은 GitHub 정책을 따릅니다.</string>
   <string name="copilot_connect">QR로 연결하기</string>
   <string name="copilot_later">나중에</string>
@@ -80,4 +80,16 @@
     <string name="ai_context_failed">친구 정보를 불러오지 못했어요.</string>
     <string name="ai_context_update_failed">친구 정보를 갱신하지 못했어요. 마지막으로 불러온 정보를 표시해요.</string>
     <string name="ai_retry">다시 시도</string>
+    <string name="github_authentication">GitHub 계정 인증</string>
+    <string name="github_authenticated">GitHub 계정 인증이 완료됐어요.</string>
+    <string name="github_authenticated_note">이 기기에 안전하게 저장했어요.\n다시 실행해도 계정 연결을 유지해요.\nCopilot 대화는 아직 지원하지 않아요.</string>
+    <string name="github_checking">계정 연결을 확인하고 있어요.</string>
+    <string name="github_configuration">계정 연결이 설정되지 않았어요. 앱 관리자에게 문의해 주세요.</string>
+    <string name="github_network">네트워크 연결을 확인해 주세요. 저장된 연결 정보는 유지돼요.</string>
+    <string name="github_denied">계정 승인이 취소됐어요. 다시 연결해 주세요.</string>
+    <string name="github_reauthenticate">계정 연결이 만료되거나 취소됐어요. 다시 승인해 주세요.</string>
+    <string name="github_storage">연결 정보를 안전하게 읽거나 저장하지 못했어요. 다시 시도하거나 연결을 지워 주세요.</string>
+    <string name="github_provider">GitHub 응답을 확인하지 못했어요. 다시 시도해 주세요.</string>
+    <string name="github_clear_connection">연결 정보 지우기</string>
+    <string name="github_friend_authenticated">계정 연결을 안전하게 유지하고 있어요.</string>
 </resources>

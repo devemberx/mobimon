@@ -335,6 +335,14 @@ private fun CompanionPanel(
         CopilotPositionedText(
             stringResource(
                 when (state) {
+                    is CopilotUiState.AuthenticationStatus ->
+                        if (state.account !=
+                            null
+                        ) {
+                            R.string.github_friend_authenticated
+                        } else {
+                            R.string.copilot_friend_intro
+                        }
                     is CopilotUiState.Connected -> R.string.copilot_friend_connected
                     is CopilotUiState.Waiting, CopilotUiState.Expired -> R.string.copilot_friend_waiting
                     is CopilotUiState.Disconnect -> R.string.copilot_friend_disconnect

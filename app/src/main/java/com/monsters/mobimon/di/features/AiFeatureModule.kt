@@ -1,5 +1,6 @@
 package com.monsters.mobimon.di.features
 
+import com.monsters.mobimon.core.domain.GitHubAuthentication
 import com.monsters.mobimon.core.domain.PetRepository
 import com.monsters.mobimon.core.domain.PointEconomy
 import com.monsters.mobimon.core.navigation.FeatureEntry
@@ -20,5 +21,6 @@ object AiFeatureModule {
         pets: PetRepository,
         points: PointEconomy,
         vehicle: VehiclePresentation,
-    ): FeatureEntry = AiFeature(pets, points, vehicle)
+        authentication: GitHubAuthentication,
+    ): FeatureEntry = AiFeature(pets, points, vehicle, authentication)
 }

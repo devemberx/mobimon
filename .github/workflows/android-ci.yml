@@ -44,7 +44,8 @@ jobs:
             :core:core-vss:test \
             :app:assembleDebug \
             :app:assembleDebugAndroidTest \
-            :core:core-database:assembleDebugAndroidTest
+            :core:core-database:assembleDebugAndroidTest \
+            :core:core-auth:assembleDebugAndroidTest
       - name: Save APK
         if: github.event_name != 'pull_request'
         uses: actions/upload-artifact@v7
@@ -111,7 +112,7 @@ jobs:
           disable-animations: true
           script: |
             bash scripts/check-aaos-environment.sh
-            ./gradlew --no-daemon --stacktrace :core:core-database:connectedDebugAndroidTest :app:connectedDebugAndroidTest
+            ./gradlew --no-daemon --stacktrace :core:core-database:connectedDebugAndroidTest :core:core-auth:connectedDebugAndroidTest :app:connectedDebugAndroidTest
       - name: Save device reports
         if: always()
         uses: actions/upload-artifact@v7

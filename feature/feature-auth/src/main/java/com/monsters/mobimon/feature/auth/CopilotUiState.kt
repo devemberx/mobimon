@@ -1,5 +1,7 @@
 package com.monsters.mobimon.feature.auth
 
+import com.monsters.mobimon.core.domain.AuthenticationProblem
+
 /** Display data only. Credentials and provider work belong outside the UI. */
 sealed interface CopilotUiState {
     data class Introduction(
@@ -12,6 +14,15 @@ sealed interface CopilotUiState {
         val showAddress: Boolean = false,
         val checking: Boolean = false,
         val error: String? = null,
+        val verificationUri: String = "https://github.com/login/device",
+        val retrying: Boolean = false,
+    ) : CopilotUiState
+
+    /** GitHub authentication alone does not verify Copilot readiness. */
+    data class AuthenticationStatus(
+        val account: String? = null,
+        val pending: Boolean = false,
+        val problem: AuthenticationProblem? = null,
     ) : CopilotUiState
 
     data object Expired : CopilotUiState
@@ -54,5 +65,6 @@ enum class CopilotAction {
     OPEN_SETTINGS,
     REVIEW_ACCESS,
     KEEP_CONNECTION,
+    CONFIRM_DISCONNECT,
     DISCONNECT,
 }

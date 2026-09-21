@@ -36,6 +36,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.monsters.mobimon.core.domain.AuthenticationProblem
 import com.monsters.mobimon.core.ui.CompanionIcon
 import com.monsters.mobimon.core.ui.MobiMonListItem
 import com.monsters.mobimon.core.ui.MobiMonColors as Colors
@@ -62,6 +63,29 @@ internal fun CopilotPanel(
                 verticalArrangement = Arrangement.spacedBy(24.dp * scale),
             ) {
                 when (state) {
+                    is CopilotUiState.AuthenticationStatus -> {
+                        ConnectionSteps(if (state.account != null) 1 else 0, scale)
+                        PanelHeading(
+                            if (state.account !=
+                                null
+                            ) {
+                                R.string.github_authenticated
+                            } else {
+                                R.string.github_authentication
+                            },
+                            null,
+                            scale,
+                        )
+                        if (state.account != null) AccountCard(state.account, null, scale)
+                        if (state.pending) {
+                            LinearProgressIndicator(Modifier.fillMaxWidth())
+                            PanelText(R.string.github_checking, scale)
+                        } else if (state.problem != null) {
+                            Feedback(stringResource(state.problem.message()), scale)
+                        } else {
+                            PanelText(R.string.github_authenticated_note, scale)
+                        }
+                    }
                     is CopilotUiState.Introduction -> {
                         ConnectionSteps(0, scale)
                         PanelHeading(R.string.copilot_intro_heading, R.string.copilot_intro_subtitle, scale)
@@ -106,6 +130,7 @@ internal fun CopilotPanel(
                         }
                         WaitingDetails(state, qrCode, scale)
                         if (state.error != null) Feedback(state.error, scale)
+                        if (state.retrying) Feedback(stringResource(R.string.github_network), scale)
                     }
                     CopilotUiState.Expired -> {
                         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -218,7 +243,7 @@ private fun WaitingDetails(
                 PanelText(R.string.copilot_address_label, scale, muted = true, size = 28f)
                 SelectionContainer {
                     Text(
-                        stringResource(R.string.copilot_verification_address),
+                        state.verificationUri.removePrefix("https://"),
                         style = copilotStyle(44f, scale),
                         color = Colors.accent,
                     )
@@ -326,6 +351,46 @@ private fun PanelActions(
 ) {
     val buttons =
         when (state) {
+            is CopilotUiState.AuthenticationStatus ->
+                when {
+                    state.pending -> listOf(ActionButton(stringResource(R.string.copilot_later), CopilotAction.CANCEL))
+                    state.account != null ->
+                        listOf(
+                            ActionButton(stringResource(R.string.copilot_settings), CopilotAction.OPEN_SETTINGS),
+                            ActionButton(
+                                stringResource(R.string.copilot_disconnect),
+                                CopilotAction.CONFIRM_DISCONNECT,
+                                allowed,
+                            ),
+                        )
+                    else ->
+                        listOf(
+                            ActionButton(
+                                stringResource(
+                                    if (state.problem == AuthenticationProblem.REAUTHENTICATION ||
+                                        state.problem == AuthenticationProblem.DENIED
+                                    ) {
+                                        R.string.copilot_reconnect
+                                    } else {
+                                        R.string.copilot_recheck
+                                    },
+                                ),
+                                if (state.problem == AuthenticationProblem.REAUTHENTICATION ||
+                                    state.problem == AuthenticationProblem.DENIED
+                                ) {
+                                    CopilotAction.REQUEST_CODE
+                                } else {
+                                    CopilotAction.RECHECK
+                                },
+                                allowed,
+                            ),
+                            ActionButton(
+                                stringResource(R.string.github_clear_connection),
+                                CopilotAction.DISCONNECT,
+                                allowed,
+                            ),
+                        )
+                }
             is CopilotUiState.Introduction ->
                 listOf(
                     ActionButton(
@@ -605,4 +670,15 @@ internal fun CopilotAccessIssue.message() =
         CopilotAccessIssue.PERMISSION -> R.string.copilot_access_permission
         CopilotAccessIssue.USAGE_LIMIT -> R.string.copilot_access_usage
         CopilotAccessIssue.SERVICE_UNAVAILABLE -> R.string.copilot_access_service
+    }
+
+internal fun AuthenticationProblem.message(): Int =
+    when (this) {
+        AuthenticationProblem.CONFIGURATION -> R.string.github_configuration
+        AuthenticationProblem.NETWORK -> R.string.github_network
+        AuthenticationProblem.DENIED -> R.string.github_denied
+        AuthenticationProblem.REAUTHENTICATION -> R.string.github_reauthenticate
+        AuthenticationProblem.STORAGE -> R.string.github_storage
+        AuthenticationProblem.PROVIDER -> R.string.github_provider
+        AuthenticationProblem.RESTRICTED -> R.string.copilot_parked_notice
     }
