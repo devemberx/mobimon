@@ -90,8 +90,8 @@ private data class DrawerDestination(
     val route: AppRoute,
 )
 
-// Below this scale, the 76dp minimum targets outgrow the reference row spacing.
-private const val MIN_REFERENCE_MENU_SCALE = 0.75f
+// Keep the SVG at AAOS compatibility density while preventing overlapping 76dp targets.
+private const val MIN_REFERENCE_MENU_SCALE = 76f / 112f
 
 private val destinations =
     listOf(
@@ -404,45 +404,56 @@ private fun MenuDestination(
 ) {
     var focused by remember { mutableStateOf(false) }
     val shape = RoundedCornerShape((24 * scale).dp)
-    Row(
+    val visualHeight = (94 * scale).dp
+    val targetHeight = visualHeight.coerceAtLeast(76.dp)
+    Box(
         modifier
-            .heightIn(min = (94 * scale).dp.coerceAtLeast(76.dp))
+            .offset(y = if (reference) (visualHeight - targetHeight) / 2 else 0.dp)
+            .heightIn(min = targetHeight)
             .clip(shape)
-            .then(
-                if (selected) {
-                    Modifier.background(
-                        Brush.horizontalGradient(listOf(Color(0x2E7ED6FF), Color(0x1CB6D7FF))),
-                    )
-                } else {
-                    Modifier
-                },
-            ).onFocusChanged { focused = it.isFocused }
-            .then(if (focused && !selected) Modifier.border(3.dp, MobiMonColors.accent, shape) else Modifier)
+            .onFocusChanged { focused = it.isFocused }
             .semantics { this.selected = selected }
-            .clickable(enabled, role = Role.Button) { onNavigate(item.route) }
-            .padding(horizontal = (34 * scale).dp),
-        verticalAlignment = Alignment.CenterVertically,
+            .clickable(enabled, role = Role.Button) { onNavigate(item.route) },
+        contentAlignment = Alignment.Center,
     ) {
-        val iconSize =
-            when (item.route) {
-                CompanionRoute.HOME -> 72
-                CompanionRoute.SETTINGS -> 68
-                else -> 65
+        Row(
+            Modifier
+                .fillMaxWidth()
+                .heightIn(min = visualHeight)
+                .clip(shape)
+                .then(
+                    if (selected) {
+                        Modifier.background(
+                            Brush.horizontalGradient(listOf(Color(0x2E7ED6FF), Color(0x1CB6D7FF))),
+                        )
+                    } else {
+                        Modifier
+                    },
+                ).then(if (focused && !selected) Modifier.border(3.dp, MobiMonColors.accent, shape) else Modifier)
+                .padding(horizontal = (34 * scale).dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            val iconSize =
+                when (item.route) {
+                    CompanionRoute.HOME -> 72
+                    CompanionRoute.SETTINGS -> 68
+                    else -> 65
+                }
+            Box(Modifier.size((72 * scale).dp), contentAlignment = Alignment.Center) {
+                Image(
+                    painterResource(item.icon),
+                    null,
+                    Modifier.offset(y = (1.5f * scale).dp).size((iconSize * scale).dp),
+                )
             }
-        Box(Modifier.size((72 * scale).dp), contentAlignment = Alignment.Center) {
-            Image(
-                painterResource(item.icon),
-                null,
-                Modifier.offset(y = (1.5f * scale).dp).size((iconSize * scale).dp),
+            Spacer(Modifier.width((20 * scale).dp))
+            Text(
+                stringResource(item.label),
+                style = mobiMonReferenceTextStyle(32f, scale, bold = true),
+                color = if (selected) Color(0xFF82D4FF) else Color(0xFFF1F5FC),
+                modifier = if (reference) Modifier.offset(y = (-1 * scale).dp) else Modifier,
             )
         }
-        Spacer(Modifier.width((20 * scale).dp))
-        Text(
-            stringResource(item.label),
-            style = mobiMonReferenceTextStyle(32f, scale, bold = true),
-            color = if (selected) Color(0xFF82D4FF) else Color(0xFFF1F5FC),
-            modifier = if (reference) Modifier.offset(y = (-1 * scale).dp) else Modifier,
-        )
     }
 }
 

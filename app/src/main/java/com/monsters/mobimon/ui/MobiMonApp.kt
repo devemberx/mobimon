@@ -2,7 +2,12 @@ package com.monsters.mobimon.ui
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.EnterExitState
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.ExitTransition
+import androidx.compose.animation.ExperimentalAnimationApi
 import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -27,6 +32,10 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.layout.LayoutCoordinates
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.unit.IntOffset
@@ -52,6 +61,12 @@ import com.monsters.mobimon.core.ui.MobiMonTheme
 import com.monsters.mobimon.runtime.AppUseStateSource
 
 internal const val NAVIGATION_MOTION_DURATION_MILLIS = 220
+internal const val CONVERSATION_REVEAL_DURATION_MILLIS = 300
+
+private data class DestinationReveal(
+    val route: AppRoute,
+    val origin: Rect,
+)
 
 @Composable
 fun MobiMonApp(
@@ -97,6 +112,7 @@ internal val ShellSaver =
 
 /** App shell owns only navigation, restoration, menu and the global AAOS restriction gate. */
 @Composable
+@OptIn(ExperimentalAnimationApi::class)
 fun MobiMonContent(
     entries: Set<FeatureEntry>,
     modifier: Modifier = Modifier,
@@ -111,10 +127,13 @@ fun MobiMonContent(
     val registry = remember(entries) { FeatureRegistry(entries) }
     var shell by rememberSaveable(stateSaver = ShellSaver) { mutableStateOf(ShellState()) }
     var returning by remember { mutableStateOf(false) }
+    var reveal by remember { mutableStateOf<DestinationReveal?>(null) }
+    var contentCoordinates by remember { mutableStateOf<LayoutCoordinates?>(null) }
     val stateHolder = rememberSaveableStateHolder()
     val navigator =
         FeatureNavigator(
             navigate = { route ->
+                reveal = null
                 returning = false
                 shell =
                     if (route == AiRoute.COPILOT) shell.openCopilot() else shell.navigate(route)
@@ -129,12 +148,37 @@ fun MobiMonContent(
                 shell = shell.returnHome()
             },
             openMenu = { shell = shell.openMenu() },
+            navigateFrom = { route, bounds ->
+                val coordinates = contentCoordinates?.takeIf { it.isAttached }
+                reveal =
+                    if (
+                        shell.route == CompanionRoute.HOME &&
+                        route in setOf(AiRoute.COPILOT, AiRoute.CONVERSATION) &&
+                        coordinates != null &&
+                        !bounds.isEmpty
+                    ) {
+                        val local = bounds.translate(-coordinates.positionInRoot())
+                        DestinationReveal(
+                            route,
+                            Rect(
+                                local.left / coordinates.size.width,
+                                local.top / coordinates.size.height,
+                                local.right / coordinates.size.width,
+                                local.bottom / coordinates.size.height,
+                            ),
+                        )
+                    } else {
+                        null
+                    }
+                returning = false
+                shell = if (route == AiRoute.COPILOT) shell.openCopilot() else shell.navigate(route)
+            },
         )
     CompositionLocalProvider(LocalMobiMonMotionEnabled provides !reducedMotion) {
         MobiMonTheme {
             Surface(modifier = modifier.fillMaxSize()) {
                 Box(Modifier.fillMaxSize()) {
-                    Box(Modifier.fillMaxSize().safeDrawingPadding()) {
+                    Box(Modifier.fillMaxSize().safeDrawingPadding().onGloballyPositioned { contentCoordinates = it }) {
                         if (appUseState != AppUseState.ALLOWED) {
                             MobiMonContentColumn {
                                 Text(
@@ -152,23 +196,36 @@ fun MobiMonContent(
                                 modifier = Modifier.fillMaxSize(),
                                 contentKey = { it.name },
                                 transitionSpec = {
-                                    val direction = if (returning) -1 else 1
-                                    val motion =
-                                        tween<IntOffset>(
-                                            if (reducedMotion) 0 else NAVIGATION_MOTION_DURATION_MILLIS,
-                                            easing = FastOutSlowInEasing,
-                                        )
-                                    val fade =
-                                        tween<Float>(
-                                            if (reducedMotion) 0 else NAVIGATION_MOTION_DURATION_MILLIS,
-                                            easing = FastOutSlowInEasing,
-                                        )
-                                    (
+                                    val anchored = reveal
+                                    if (
+                                        anchored != null &&
+                                        setOf(initialState, targetState) == setOf(CompanionRoute.HOME, anchored.route)
+                                    ) {
+                                        (EnterTransition.None togetherWith ExitTransition.KeepUntilTransitionsFinished)
+                                            .using(null)
+                                            .apply {
+                                                targetContentZIndex =
+                                                    if (targetState == CompanionRoute.HOME) 0f else 1f
+                                            }
+                                    } else {
+                                        val direction = if (returning) -1 else 1
+                                        val motion =
+                                            tween<IntOffset>(
+                                                if (reducedMotion) 0 else NAVIGATION_MOTION_DURATION_MILLIS,
+                                                easing = FastOutSlowInEasing,
+                                            )
+                                        val fade =
+                                            tween<Float>(
+                                                if (reducedMotion) 0 else NAVIGATION_MOTION_DURATION_MILLIS,
+                                                easing = FastOutSlowInEasing,
+                                            )
                                         (
-                                            slideInHorizontally(motion) { direction * it / 18 } + fadeIn(fade)
-                                        ) togetherWith
-                                            (slideOutHorizontally(motion) { -direction * it / 36 } + fadeOut(fade))
-                                    ).using(null).apply { targetContentZIndex = 1f }
+                                            (
+                                                slideInHorizontally(motion) { direction * it / 18 } + fadeIn(fade)
+                                            ) togetherWith
+                                                (slideOutHorizontally(motion) { -direction * it / 36 } + fadeOut(fade))
+                                        ).using(null).apply { targetContentZIndex = 1f }
+                                    }
                                 },
                                 label = "destination change",
                             ) { route ->
@@ -179,9 +236,37 @@ fun MobiMonContent(
                                         back = { if (active) navigator.back() },
                                         returnHome = { if (active) navigator.returnHome() },
                                         openMenu = { if (active) navigator.openMenu() },
+                                        navigateFrom = { destination, bounds ->
+                                            if (active) navigator.navigateFrom(destination, bounds)
+                                        },
                                     )
+                                val anchored = reveal?.takeIf { it.route == route }
+                                val revealModifier =
+                                    if (anchored != null) {
+                                        val progress =
+                                            transition.animateFloat(
+                                                transitionSpec = {
+                                                    tween(
+                                                        if (reducedMotion) {
+                                                            0
+                                                        } else if (targetState ==
+                                                            EnterExitState.Visible
+                                                        ) {
+                                                            CONVERSATION_REVEAL_DURATION_MILLIS
+                                                        } else {
+                                                            NAVIGATION_MOTION_DURATION_MILLIS
+                                                        },
+                                                        easing = FastOutSlowInEasing,
+                                                    )
+                                                },
+                                                label = "conversation reveal",
+                                            ) { state -> if (state == EnterExitState.Visible) 1f else 0f }
+                                        Modifier.revealFrom(anchored.origin) { progress.value }
+                                    } else {
+                                        Modifier
+                                    }
                                 Box(
-                                    Modifier.fillMaxSize().then(
+                                    Modifier.fillMaxSize().then(revealModifier).then(
                                         if (active) Modifier else Modifier.clearAndSetSemantics {},
                                     ),
                                 ) {

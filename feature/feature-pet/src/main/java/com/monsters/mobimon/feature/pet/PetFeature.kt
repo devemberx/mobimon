@@ -58,7 +58,9 @@ class PetFeature(
             profile = profile,
             snapshot = snapshot,
             onOpenMenu = navigator.openMenu,
-            onPetClick = { if (snapshot.parkedVerified) navigator.navigate(AiRoute.COPILOT) },
+            onPetClick = { bounds ->
+                if (snapshot.parkedVerified) navigator.navigateFrom(AiRoute.COPILOT, bounds)
+            },
             modifier = modifier,
             pointBalance = (pointBalance as? PointBalanceState.Ready)?.balance,
             pointLoadFailed = pointBalance == PointBalanceState.Failed,

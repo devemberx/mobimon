@@ -13,6 +13,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.test.assertHeightIsAtLeast
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.click
 import androidx.compose.ui.test.junit4.createComposeRule
@@ -23,6 +24,7 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.unit.Density
+import androidx.compose.ui.unit.dp
 import com.monsters.mobimon.core.navigation.AppRoute
 import com.monsters.mobimon.core.navigation.CompanionRoute
 import com.monsters.mobimon.core.ui.LocalMobiMonMotionEnabled
@@ -58,6 +60,41 @@ class CompanionMenuReviewTest {
         assertEquals(244f, name.left, 1f)
         compose.onNodeWithText("v0.1.0").assertIsDisplayed()
         capture("menu")
+    }
+
+    @Test
+    @Config(qualifiers = "ko-rKR-w1792dp-h888dp-mdpi")
+    fun aaosCompatibilityDensityPreservesReferenceGeometryAndSeparateTargets() {
+        show()
+        val scale = 0.7f
+        val panel = compose.onNodeWithTag("companion-menu").fetchSemanticsNode().boundsInRoot
+        assertEquals(690f * scale, panel.width, 1f)
+        val name =
+            compose
+                .onNodeWithText("Mobi")
+                .assertIsDisplayed()
+                .fetchSemanticsNode()
+                .boundsInRoot
+        assertEquals(244f * scale, name.left, 1f)
+        compose.onNodeWithContentDescription("닫기").assertIsDisplayed()
+        compose.onNodeWithText("v0.1.0").assertIsDisplayed()
+        val labels = listOf("홈", "대화하기", "퀘스트", "차량 상태", "꾸미기", "설정")
+        val bounds =
+            labels.mapIndexed { index, label ->
+                val row =
+                    compose
+                        .onNodeWithText(
+                            label,
+                        ).assertIsDisplayed()
+                        .assertHeightIsAtLeast(76.dp)
+                        .fetchSemanticsNode()
+                        .boundsInRoot
+                val top = if (index == 0) 400f else 404f + 112f * index
+                assertEquals((top + 47) * scale, row.center.y, 1f)
+                row
+            }
+        bounds.zipWithNext().forEach { (upper, lower) -> assertTrue(upper.bottom <= lower.top) }
+        capture("menu-aaos-density")
     }
 
     @Test
