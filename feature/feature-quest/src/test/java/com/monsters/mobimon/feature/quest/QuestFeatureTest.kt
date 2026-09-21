@@ -51,7 +51,7 @@ import org.robolectric.annotation.GraphicsMode
 import java.io.File
 
 @RunWith(RobolectricTestRunner::class)
-@Config(sdk = [34], qualifiers = "ko-rKR-w2560dp-h1268dp")
+@Config(sdk = [34], qualifiers = "ko-rKR-w2560dp-h1332dp-mdpi")
 class QuestFeatureTest {
     @get:Rule val compose = createComposeRule()
     private val vehicle = TestVehicle()
@@ -59,7 +59,6 @@ class QuestFeatureTest {
     private lateinit var contentView: View
 
     @Test
-    @Config(qualifiers = "ko-rKR-w2560dp-h1332dp-mdpi")
     @GraphicsMode(GraphicsMode.Mode.NATIVE)
     fun productionRouteProducesReviewImage() {
         show()

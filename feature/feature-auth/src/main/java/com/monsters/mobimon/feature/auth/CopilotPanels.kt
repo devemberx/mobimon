@@ -56,7 +56,7 @@ internal fun CopilotPanel(
     reference: Boolean = false,
 ) {
     if (reference && state.hasReferenceLayout(interactionAllowed, qrCode != null)) {
-        CopilotReferencePanel(state, onAction, friend, qrCode, scale, modifier)
+        CopilotReferencePanel(state, onAction, friend, qrCode, scale, interactionAllowed, modifier)
         return
     }
     Surface(modifier.testTag("copilot-panel"), shape = RoundedCornerShape(48.dp * scale), color = Colors.panel) {

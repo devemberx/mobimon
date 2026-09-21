@@ -67,7 +67,7 @@ import org.robolectric.annotation.Config
 import java.io.IOException
 
 @RunWith(RobolectricTestRunner::class)
-@Config(sdk = [34], qualifiers = "ko-rKR-w1000dp-h800dp")
+@Config(sdk = [34], qualifiers = "ko-rKR-w2560dp-h1332dp-mdpi")
 class AiFeatureTest {
     @get:Rule val compose = createComposeRule()
 
@@ -100,7 +100,7 @@ class AiFeatureTest {
         compose.onNodeWithText("Copilot 연결됨").assertDoesNotExist()
         compose.runOnIdle { route = AiRoute.COPILOT }
         compose.onNodeWithText("GitHub 계정 인증이 완료됐어요.").assertIsDisplayed()
-        compose.onNodeWithText("모비와 대화하기").performScrollTo().performClick()
+        compose.onNodeWithText("모비와 대화하기").assertIsDisplayed().performClick()
         compose.onNodeWithText("오늘의 이야기").assertIsDisplayed()
         compose.onNodeWithTag("chat-send").assertIsNotEnabled()
     }
@@ -115,7 +115,7 @@ class AiFeatureTest {
         compose.runOnIdle { session.value = GitHubSession.SignedOut }
         compose.onNodeWithText("QR로 연결하기").assertExists()
         compose.runOnIdle { session.value = GitHubSession.Authenticated(GitHubAccount(1, "sample")) }
-        compose.onNodeWithText("모비와 대화하기").performScrollTo().performClick()
+        compose.onNodeWithText("모비와 대화하기").assertIsDisplayed().performClick()
         compose.onNodeWithTag("chat-input").assertExists()
         compose.onNodeWithText("이전 계정 세션의 초안").assertDoesNotExist()
     }
@@ -124,7 +124,7 @@ class AiFeatureTest {
     fun productionIntroductionShowsUnavailableStateBeforeQrAction() {
         show(parked = true)
         compose.onNodeWithText("아직 계정 연결을 이용할 수 없어요.", substring = true).assertExists()
-        compose.onNodeWithText("QR로 연결하기").performScrollTo().assertIsNotEnabled()
+        compose.onNodeWithText("QR로 연결하기").assertIsDisplayed().assertIsNotEnabled()
     }
 
     @Test
@@ -147,7 +147,7 @@ class AiFeatureTest {
         compose.onNodeWithText("루나와 이야기해요.").assertIsDisplayed()
         compose.onNodeWithText("친구 정보를 갱신하지 못했어요.", substring = true).assertDoesNotExist()
         compose.onNodeWithText("다시 시도").assertDoesNotExist()
-        compose.onNodeWithText("QR로 연결하기").performScrollTo().assertIsNotEnabled()
+        compose.onNodeWithText("QR로 연결하기").assertIsDisplayed().assertIsNotEnabled()
         compose.runOnIdle { route = AiRoute.CONVERSATION }
         compose.waitForIdle()
         compose.runOnIdle { route = AiRoute.COPILOT }
@@ -177,7 +177,6 @@ class AiFeatureTest {
     }
 
     @OptIn(ExperimentalTestApi::class)
-    @Config(qualifiers = "ko-rKR-w600dp-h600dp")
     @Test
     fun retainedContextRetryIsKeyboardReachableWithEnlargedText() {
         show(fontScale = 2f)

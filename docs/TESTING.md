@@ -7,6 +7,18 @@
 Use JUnit 4, coroutines-test, Robolectric/Compose Testing and Hilt/Room device tests.
 Review images exist; golden comparisons and system-UI automation are not configured.
 
+Screen tests and previews follow the fixed-display scope in
+[DESIGN.md](DESIGN.md#visual-language), not a multiple-resolution device matrix.
+Retain reference content, AAOS compatibility density, enlarged text and IME resizing.
+The 2560 × 1268 reference content and approximately 1792 × 888 compatibility-dp
+content represent the same 2560 × 1440px target after bars and scaling.
+Robolectric qualifiers describe the test host, not necessarily the content bounds:
+the 2560 × 1332dp review host leaves 1268dp after its 64dp decor inset;
+1792 × 952dp similarly leaves 888dp. Decor-free shell tests use content sizes directly.
+Isolated component and synthetic motion tests may use smaller fixtures; these do
+not imply support for additional display sizes. CI's physical display is defined
+in [cstd.ini](../.github/avd/cstd.ini).
+
 Tests live in the subject module's `src/test`; device tests use `src/androidTest`.
 Debug-only behavior uses `src/testDebug`. Two shared source sets need explicit wiring:
 
@@ -36,7 +48,7 @@ After the final UI change, compare affected states with full-resolution
 [v5 exports](ui/README.md), matching data, window size and display/font scale.
 Compare app content without exported system bars or Debug controls. Inspect artwork,
 typography/wrapping, geometry, colors, icons, insets and touch bounds. Also check
-compact/enlarged text and the actual AAOS window, including focus, recovery and
+enlarged text and the actual AAOS content window, including focus, recovery and
 interrupted motion.
 
 Record references, review images and unresolved differences in the PR. Missing
@@ -68,7 +80,7 @@ Related suites share the linked module/package.
 | OAuth request/response validation, HTTP errors and redirects | [OkHttpGitHubApiTest](../core/core-auth/src/test/java/com/monsters/mobimon/core/auth/OkHttpGitHubApiTest.kt); MockWebServer |
 | Poll intervals, slowdown, expiry, cancellation, persistence, refresh and revocation | [PersistentGitHubAuthenticationTest](../core/core-auth/src/test/java/com/monsters/mobimon/core/auth/PersistentGitHubAuthenticationTest.kt); fake provider/store |
 | Keystore encryption, reopening, tamper rejection and deletion | [EncryptedCredentialStoreTest](../core/core-auth/src/androidTest/java/com/monsters/mobimon/core/auth/EncryptedCredentialStoreTest.kt); device |
-| Authentication guards/recovery, readiness separation, QR decoding and success/disconnect actions | [Authentication feature suites](../feature/feature-auth/src/test/java/com/monsters/mobimon/feature/auth); ViewModel and Robolectric |
+| Authentication guards/recovery, reference-layout parking guard, readiness separation, QR decoding and success/disconnect actions | [Authentication feature suites](../feature/feature-auth/src/test/java/com/monsters/mobimon/feature/auth); ViewModel and Robolectric |
 
 ### Presentation and navigation
 
@@ -80,9 +92,9 @@ Related suites share the linked module/package.
 | Independent settings writes, failure/retry and DataStore keys | [SettingsViewModelTest](../feature/feature-pet/src/test/java/com/monsters/mobimon/feature/pet/SettingsViewModelTest.kt), [DataStoreSettingsRepositoryTest](../core/core-database/src/test/java/com/monsters/mobimon/core/database/DataStoreSettingsRepositoryTest.kt) |
 | Artwork, background periods/dimensions, reduced motion and shared control bounds | [Core UI suites](../core/core-ui/src/test/java/com/monsters/mobimon/core/ui); native Robolectric images |
 | Home/Settings, vehicle, store and quest layouts, focus and recovery | Owning feature `src/test` suites, including `CompanionReviewTest`, `VehicleReviewTest` and `StoreReferenceScreenTest` |
-| Menu reference/AAOS-density/compact bounds, focus, authenticated chat routing, connection origin after authentication loss, recreation and restricted/outgoing input | [Shell suites](../app/src/test/java/com/monsters/mobimon/ui), [CopilotConnectionJourneyTest](../app/src/journeyTest/java/com/monsters/mobimon/CopilotConnectionJourneyTest.kt) |
+| Menu reference/AAOS-density/enlarged-text bounds, focus, authenticated chat routing, connection origin after authentication loss, recreation and restricted/outgoing input | [Shell suites](../app/src/test/java/com/monsters/mobimon/ui), [CopilotConnectionJourneyTest](../app/src/journeyTest/java/com/monsters/mobimon/CopilotConnectionJourneyTest.kt) |
 | Conversation reveal/return, stationary Home, visible touch bounds, interruption, reduced motion and scrolled action bounds | [ConversationRevealTest](../app/src/test/java/com/monsters/mobimon/ui/ConversationRevealTest.kt), [PetHomeScreenTest](../feature/feature-pet/src/test/java/com/monsters/mobimon/feature/pet/PetHomeScreenTest.kt); native Robolectric frames and pointer input |
-| Chat draft/composition lifetime, ownership clearing, input guards/actions and responsive layouts | [Conversation and feature suites](../feature/feature-auth/src/test/java/com/monsters/mobimon/feature/auth); native review images |
+| Chat draft/composition lifetime, ownership clearing, input guards/actions and target-display/IME layouts | [Conversation and feature suites](../feature/feature-auth/src/test/java/com/monsters/mobimon/feature/auth); native review images |
 | Native keyboard resizing and Back/draft retention | [ConversationKeyboardDeviceTest](../app/src/androidTest/java/com/monsters/mobimon/preview/ConversationKeyboardDeviceTest.kt); AAOS device |
 | Isolated Debug rehearsal and branding | [CopilotPreviewJourneyTest](../app/src/journeyTest/java/com/monsters/mobimon/preview/CopilotPreviewJourneyTest.kt), [BrandingTest](../app/src/testDebug/java/com/monsters/mobimon/BrandingTest.kt) |
 

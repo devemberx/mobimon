@@ -5,6 +5,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.test.assertContentDescriptionEquals
 import androidx.compose.ui.test.assertHeightIsAtLeast
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotEnabled
@@ -27,7 +28,7 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
 @RunWith(RobolectricTestRunner::class)
-@Config(sdk = [34], qualifiers = "ko-rKR")
+@Config(sdk = [34], qualifiers = "ko-rKR-w2560dp-h1332dp-mdpi")
 class CustomizationScreenTest {
     @get:Rule val compose = createComposeRule()
 
@@ -65,17 +66,15 @@ class CustomizationScreenTest {
 
         compose.onNodeWithText("친구").performClick()
 
-        compose.onNodeWithTag("shop-items").performScrollTo().performScrollToIndex(1)
+        compose.onNodeWithTag("shop-items").assertIsDisplayed().performScrollToIndex(1)
         compose
-            .onNodeWithText("Luna · 고양이")
-            .performScrollTo()
+            .onNodeWithText("루나")
             .assertIsDisplayed()
             .performClick()
-        compose.onNodeWithText("Luna · 고양이 · 착용 미리보기").assertExists()
+        compose.onNodeWithTag("preview-character").assertIsDisplayed().assertContentDescriptionEquals("Luna 고양이")
         org.junit.Assert.assertNull(applied)
         compose
-            .onNodeWithText("이 모습 적용")
-            .performScrollTo()
+            .onNodeWithText("루나와 함께하기")
             .assertIsDisplayed()
             .performClick()
         org.junit.Assert.assertEquals("friend:luna", applied)
@@ -133,8 +132,8 @@ class CustomizationScreenTest {
         }
 
         compose
-            .onNodeWithText("300 P로 구매")
-            .performScrollTo()
+            .onNodeWithText("300 P 구매")
+            .assertIsDisplayed()
             .assertIsNotEnabled()
             .performClick()
         org.junit.Assert.assertEquals(0, purchases)
@@ -213,7 +212,6 @@ class CustomizationScreenTest {
         compose.onNodeWithTag("preview-character").assertExists()
         compose
             .onNodeWithText("다시 시도")
-            .performScrollTo()
             .assertIsDisplayed()
             .performClick()
         org.junit.Assert.assertEquals(1, retries)
@@ -243,11 +241,10 @@ class CustomizationScreenTest {
         compose.onNodeWithTag("preview-character").assertExists()
         compose
             .onNodeWithText("다시 시도")
-            .performScrollTo()
             .assertIsDisplayed()
             .performClick()
         org.junit.Assert.assertEquals(1, retries)
-        compose.onNodeWithText("Mobi · 강아지 · 현재 착용").assertExists()
+        compose.onNodeWithTag("preview-character").assertIsDisplayed().assertContentDescriptionEquals("Mobi 강아지")
     }
 
     @Test fun enlargedTextKeepsRecoveryReachableByScrolling() {
@@ -325,9 +322,9 @@ class CustomizationScreenTest {
         }
 
         compose.onNodeWithText("옷과 소품").performClick()
-        compose.onNodeWithTag("shop-items").performScrollTo().performScrollToIndex(0)
-        compose.onNodeWithText("기본 (미착용)").performScrollTo().performClick()
-        compose.onNodeWithText("이 모습 적용").performScrollTo().performClick()
+        compose.onNodeWithTag("shop-items").assertIsDisplayed().performScrollToIndex(0)
+        compose.onNodeWithText("기본 (미착용)").assertIsDisplayed().performClick()
+        compose.onNodeWithText("이 모습 적용").assertIsDisplayed().performClick()
         org.junit.Assert.assertEquals("none:accessory", unequippedSlot)
     }
 
@@ -363,9 +360,9 @@ class CustomizationScreenTest {
         }
 
         compose.onNodeWithText("배경").performClick()
-        compose.onNodeWithTag("shop-items").performScrollTo().performScrollToIndex(0)
-        compose.onNodeWithText("반짝이는 별").performScrollTo().performClick()
-        compose.onNodeWithText("반짝이는 별 · 착용 미리보기").assertIsDisplayed()
-        compose.onNodeWithTag("preview-background-particles").assertIsDisplayed()
+        compose.onNodeWithTag("shop-items").assertIsDisplayed().performScrollToIndex(0)
+        compose.onNodeWithText("반짝이는 별").assertIsDisplayed().performClick()
+        compose.onNodeWithText("미리보기").assertIsDisplayed()
+        compose.onNodeWithTag("store-preview-particles").assertIsDisplayed()
     }
 }

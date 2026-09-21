@@ -98,24 +98,24 @@ class CompanionMenuReviewTest {
     }
 
     @Test
-    @Config(qualifiers = "ko-rKR-w800dp-h600dp-mdpi")
-    fun compactMenuKeepsFooterAndSettingsReachableAtEnlargedText() {
+    @Config(qualifiers = "ko-rKR-w1792dp-h888dp-mdpi")
+    fun aaosMenuKeepsFooterAndSettingsReachableAtEnlargedText() {
         show(fontScale = 1.5f)
-        capture("menu-compact")
+        capture("menu-aaos-enlarged-text")
         compose.onNodeWithText("설정").performScrollTo().assertIsDisplayed()
-        capture("menu-compact-settings")
+        capture("menu-aaos-enlarged-text-settings")
         compose.onNodeWithText("v0.1.0").performScrollTo().assertIsDisplayed()
         compose.onNodeWithContentDescription("닫기").performScrollTo().performClick()
         compose.onNodeWithTag("companion-menu").assertDoesNotExist()
     }
 
     @Test
-    @Config(qualifiers = "ko-rKR-w1400dp-h864dp-mdpi")
-    fun narrowLandscapeMenuKeepsDestinationTargetsSeparate() {
+    @Config(qualifiers = "ko-rKR-w1792dp-h888dp-mdpi")
+    fun aaosMenuKeepsDestinationTouchTargetsSeparate() {
         var selected: AppRoute? = null
         show(onNavigate = { selected = it })
         val labels = listOf("홈", "대화하기", "퀘스트", "차량 상태", "꾸미기", "설정")
-        capture("menu-narrow-landscape")
+        capture("menu-aaos-touch-targets")
         labels.zipWithNext().forEach { (upperLabel, lowerLabel) ->
             val lower =
                 compose

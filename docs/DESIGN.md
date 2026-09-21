@@ -14,9 +14,14 @@ never diagnose a vehicle or replace warnings.
 
 ## Visual language
 
+- Target the fixed 2560 × 1440px AAOS display. Other display resolutions,
+  aspect ratios and arbitrary compact windows are outside the product scope.
+  App content excludes system bars; AAOS compatibility density changes its dp
+  dimensions. Preserve the target layout with those insets, enlarged text and
+  the system keyboard's reduced content height.
 - Use `MobiMonTheme`, Twilight colors and bundled Noto Sans KR. Follow export
   positions, typography, proportions and icons; use actual runtime insets.
-- Reflow or scroll for compact windows and enlarged text. Controls are at least
+- Reflow or scroll when enlarged text or the keyboard requires it. Controls are at least
   76 × 76dp, with 24dp spacing/edge clearance where possible. Maintain 4.5:1 text
   contrast and 3:1 control/icon contrast; pair status colors with labels or shapes.
 - Reuse shared navigation controls and `MobiMonParkingBadge`. Keep points and
@@ -63,7 +68,7 @@ Controls remain untinted.
 
 Home follows [home.svg](ui/shell/home.svg). Its menu overlays the same scene.
 The animated time phrase replaces the SVG subtitle. Availability notices must not
-move the main action; compact layouts remain scrollable.
+move the main action; enlarged-text layouts remain scrollable.
 
 ## Screens and navigation
 
@@ -116,7 +121,7 @@ unfinished IME input. Blank input cannot be sent.
 
 Use the system keyboard; [keyboard-input.svg](ui/conversation/keyboard-input.svg)
 defines the resized app layout. Keep header scale and the composer above the IME,
-shorten the panels and shrink the companion. Compact/enlarged-text windows prioritize
+shorten the panels and shrink the companion. Enlarged-text layouts prioritize
 chat and hide secondary content. Preserve visible control geometry while meeting
 minimum touch bounds at AAOS density.
 

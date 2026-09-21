@@ -44,13 +44,13 @@ import org.robolectric.annotation.GraphicsMode
 import java.io.File
 
 @RunWith(RobolectricTestRunner::class)
-@Config(sdk = [34], qualifiers = "ko-rKR-w1000dp-h800dp")
+@Config(sdk = [34], qualifiers = "ko-rKR-w2560dp-h1332dp-mdpi")
 @OptIn(ExperimentalTestApi::class)
 class CopilotConnectionScreenTest {
     @get:Rule val compose = createComposeRule()
+    private lateinit var reviewView: View
 
     @Test
-    @Config(qualifiers = "ko-rKR-w2560dp-h1268dp")
     @GraphicsMode(GraphicsMode.Mode.NATIVE)
     fun unavailableIntroductionKeepsReferenceCompositionAndDisablesQr() {
         var unavailable by mutableStateOf(false)
@@ -87,7 +87,7 @@ class CopilotConnectionScreenTest {
 
     @Test
     @GraphicsMode(GraphicsMode.Mode.NATIVE)
-    fun compactUnavailableIntroductionKeepsStepsAndDisabledQr() {
+    fun unavailableIntroductionKeepsStepsAndDisabledQr() {
         lateinit var view: View
         compose.setContent {
             val currentView = LocalView.current
@@ -100,19 +100,19 @@ class CopilotConnectionScreenTest {
                 )
             }
         }
-        compose.onNodeWithTag("copilot-reference").assertDoesNotExist()
+        compose.onNodeWithTag("copilot-reference").assertExists()
         compose.onNodeWithText("계정 연결").assertExists()
         compose.onNodeWithText("아직 계정 연결을 이용할 수 없어요.", substring = true).assertExists()
         compose.runOnIdle {
             val bitmap = Bitmap.createBitmap(view.width, view.height, Bitmap.Config.ARGB_8888)
             view.draw(Canvas(bitmap))
             val directory = File("build/reports/copilot-ui").apply { mkdirs() }
-            File(directory, "P51-unavailable-compact.png").outputStream().use {
+            File(directory, "P51-unavailable-target.png").outputStream().use {
                 assertTrue(bitmap.compress(Bitmap.CompressFormat.PNG, 100, it))
             }
             bitmap.recycle()
         }
-        compose.onNodeWithText("QR로 연결하기").performScrollTo().assertIsNotEnabled()
+        compose.onNodeWithText("QR로 연결하기").assertIsDisplayed().assertIsNotEnabled()
     }
 
     @Test
@@ -128,15 +128,25 @@ class CopilotConnectionScreenTest {
     }
 
     @Test
+    @GraphicsMode(GraphicsMode.Mode.NATIVE)
     fun unknownParkingBlocksConnectionButKeepsExitAvailable() {
         val actions = mutableListOf<CopilotAction>()
         show(CopilotUiState.Introduction(), actions::add, allowed = false)
         compose
             .onNodeWithText("QR로 연결하기")
-            .performScrollTo()
+            .assertIsDisplayed()
             .assertIsNotEnabled()
             .performClick()
-        compose.onNodeWithContentDescription("뒤로").performScrollTo().performClick()
+        compose.runOnIdle {
+            val bitmap = Bitmap.createBitmap(reviewView.width, reviewView.height, Bitmap.Config.ARGB_8888)
+            reviewView.draw(Canvas(bitmap))
+            val directory = File("build/reports/copilot-ui").apply { mkdirs() }
+            File(directory, "introduction-parking-unverified.png").outputStream().use {
+                assertTrue(bitmap.compress(Bitmap.CompressFormat.PNG, 100, it))
+            }
+            bitmap.recycle()
+        }
+        compose.onNodeWithContentDescription("뒤로").assertIsDisplayed().performClick()
         assertEquals(listOf(CopilotAction.BACK), actions)
     }
 
@@ -149,7 +159,7 @@ class CopilotConnectionScreenTest {
         compose.onNodeWithText("TEST · CODE").assertExists()
         click("QR 스캔이 어려워요")
         click("승인했어요")
-        compose.onNodeWithContentDescription("계정 연결 닫기").performScrollTo().performClick()
+        compose.onNodeWithContentDescription("계정 연결 닫기").assertIsDisplayed().performClick()
         assertEquals(listOf(CopilotAction.SHOW_ADDRESS, CopilotAction.RECHECK, CopilotAction.CANCEL), actions)
         compose.onNodeWithText("연결이 완료됐어요.").assertDoesNotExist()
     }
@@ -178,7 +188,7 @@ class CopilotConnectionScreenTest {
         compose.setContent { MobiMonTheme { CopilotConnectionScreen(state, actions::add, interactionAllowed = true) } }
         compose
             .onNodeWithText("승인했어요")
-            .performScrollTo()
+            .assertIsDisplayed()
             .assertIsNotEnabled()
             .performClick()
         assertTrue(actions.isEmpty())
@@ -232,15 +242,14 @@ class CopilotConnectionScreenTest {
         compose.runOnIdle { state = state.copy(disconnecting = true, error = null) }
         compose
             .onNodeWithText("연결 해제")
-            .performScrollTo()
+            .assertIsDisplayed()
             .assertIsNotEnabled()
             .performClick()
         assertEquals(2, actions.size)
     }
 
     @Test
-    @Config(qualifiers = "ko-rKR-w600dp-h800dp")
-    fun compactLargeTextKeepsActionsReachableAndKeyboardOperable() {
+    fun largeTextKeepsActionsReachableAndKeyboardOperable() {
         val actions = mutableListOf<CopilotAction>()
         compose.setContent {
             CompositionLocalProvider(LocalDensity provides Density(LocalDensity.current.density, 1.5f)) {
@@ -269,7 +278,6 @@ class CopilotConnectionScreenTest {
     }
 
     @Test
-    @Config(qualifiers = "ko-rKR-w600dp-h800dp")
     @GraphicsMode(GraphicsMode.Mode.NATIVE)
     fun largeTextLabelsRenderWithoutClipping() {
         compose.setContent {
@@ -297,7 +305,6 @@ class CopilotConnectionScreenTest {
     }
 
     @Test
-    @Config(qualifiers = "ko-rKR-w2560dp-h1332dp-mdpi")
     @GraphicsMode(GraphicsMode.Mode.NATIVE)
     fun referenceScreensKeepPanelProportionsAndProduceReviewImages() {
         var state: CopilotUiState by mutableStateOf(CopilotUiState.Introduction())
@@ -358,17 +365,15 @@ class CopilotConnectionScreenTest {
     }
 
     @Test
-    @Config(qualifiers = "ko-rKR-w2560dp-h1332dp-mdpi")
     @GraphicsMode(GraphicsMode.Mode.NATIVE)
     fun authenticationStatesRenderWithoutClaimingConversationReadiness() {
         renderAuthenticationStates(1f, "reference")
     }
 
     @Test
-    @Config(qualifiers = "ko-rKR-w1000dp-h800dp")
     @GraphicsMode(GraphicsMode.Mode.NATIVE)
     fun authenticationStatesReflowWithEnlargedText() {
-        renderAuthenticationStates(1.6f, "compact")
+        renderAuthenticationStates(1.6f, "enlarged-text")
     }
 
     private fun renderAuthenticationStates(
@@ -404,11 +409,11 @@ class CopilotConnectionScreenTest {
                 compose.onNodeWithText("GitHub 계정 인증이 완료됐어요.").assertExists()
                 compose.onNodeWithText("Copilot 대화 이용 가능", substring = true).assertDoesNotExist()
                 val chat = compose.onNodeWithText("모비와 대화하기")
-                if (label == "compact") chat.performScrollTo()
+                if (label == "enlarged-text") chat.performScrollTo()
                 chat.assertIsDisplayed().assertIsEnabled().performClick()
                 assertEquals(CopilotAction.START_CONVERSATION, actions.last())
                 val settings = compose.onNodeWithText("설정으로")
-                if (label == "compact") settings.performScrollTo()
+                if (label == "enlarged-text") settings.performScrollTo()
                 settings.assertIsDisplayed().performClick()
                 assertEquals(CopilotAction.OPEN_SETTINGS, actions.last())
                 if (label == "reference") {
@@ -420,7 +425,7 @@ class CopilotConnectionScreenTest {
                     assertEquals(112f, bounds.height, 1f)
                 }
                 val disconnect = compose.onNodeWithText("연결 해제")
-                if (label == "compact") disconnect.performScrollTo()
+                if (label == "enlarged-text") disconnect.performScrollTo()
                 disconnect.assertHeightIsAtLeast(76.dp).assertIsDisplayed().performClick()
                 assertEquals(CopilotAction.CONFIRM_DISCONNECT, actions.last())
             } else {
@@ -445,6 +450,8 @@ class CopilotConnectionScreenTest {
         qr: Boolean = true,
     ) {
         compose.setContent {
+            val currentView = LocalView.current
+            SideEffect { reviewView = currentView }
             MobiMonTheme {
                 CopilotConnectionScreen(
                     state,
@@ -456,5 +463,5 @@ class CopilotConnectionScreenTest {
         }
     }
 
-    private fun click(text: String) = compose.onNodeWithText(text).performScrollTo().performClick()
+    private fun click(text: String) = compose.onNodeWithText(text).assertIsDisplayed().performClick()
 }

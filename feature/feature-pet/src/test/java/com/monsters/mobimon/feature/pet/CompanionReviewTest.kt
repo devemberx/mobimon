@@ -86,16 +86,19 @@ class CompanionReviewTest {
     @Test fun sunsetHomeReferenceRender() = homeRender("Sunset")
 
     @Test
-    @Config(qualifiers = "ko-rKR-w1414dp-h828dp-mdpi")
-    fun smallerLandscapeKeepsSpeechBubbleTextAndProportions() {
-        render("home-smaller-landscape") { ReviewHome("Night") }
+    @Config(qualifiers = "ko-rKR-w1792dp-h952dp-mdpi")
+    fun aaosContentKeepsSpeechBubbleTextAndProportions() {
+        val view = render("home-aaos-content") { ReviewHome("Night") }
+        compose.runOnIdle {
+            assertEquals(1792, view.width)
+            assertEquals(888, view.height)
+        }
         compose.onNodeWithTag("home-companion-message").assertIsDisplayed()
         assertSpeechBubbleTextAndProportions()
     }
 
     @Test
-    @Config(qualifiers = "ko-rKR-w800dp-h600dp-mdpi")
-    fun compactHomeUpdatesAllBackgroundsWithoutRecreatingContent() {
+    fun enlargedTextHomeUpdatesAllBackgroundsWithoutRecreatingContent() {
         val time = mutableStateOf("Morning")
         lateinit var view: View
         compose.setContent {
@@ -117,7 +120,7 @@ class CompanionReviewTest {
                 view.draw(Canvas(bitmap))
                 skyColors += bitmap.getPixel(12, 12)
                 val directory = File("build/reports/companion-ui").apply { mkdirs() }
-                File(directory, "home-compact-${period.lowercase()}.png").outputStream().use {
+                File(directory, "home-enlarged-text-${period.lowercase()}.png").outputStream().use {
                     assertTrue(bitmap.compress(Bitmap.CompressFormat.PNG, 100, it))
                 }
                 bitmap.recycle()
@@ -126,9 +129,9 @@ class CompanionReviewTest {
         assertEquals("Each period must render its own background", 5, skyColors.size)
         compose.onNodeWithTag("home-companion-message").performScrollTo().assertIsDisplayed()
         assertSpeechBubbleTextAndProportions()
-        capture(view, "home-compact-bubble")
+        capture(view, "home-enlarged-text-bubble")
         compose.onNodeWithTag("home-conversation-action").performScrollTo().assertIsDisplayed()
-        capture(view, "home-compact-action")
+        capture(view, "home-enlarged-text-action")
     }
 
     private fun homeRender(period: String) {
@@ -204,20 +207,19 @@ class CompanionReviewTest {
     }
 
     @Test
-    @Config(qualifiers = "ko-rKR-w800dp-h600dp-mdpi")
-    fun compactSettingsKeepsDoneReachableAtEnlargedText() {
+    fun settingsKeepsDoneReachableAtEnlargedText() {
         val view =
-            render("settings-compact") {
+            render("settings-enlarged-text") {
                 CompositionLocalProvider(LocalDensity provides Density(1f, 1.5f)) {
                     SettingsScreen(CompanionSettings(reducedMotion = true), {
                     }, debugModeAvailable = true, parkedVerified = true, onOpenCopilot = {})
                 }
             }
         compose.onNodeWithText("움직임 줄이기").performScrollTo().assertIsDisplayed()
-        capture(view, "settings-compact-motion")
+        capture(view, "settings-enlarged-text-motion")
         compose.onNodeWithText("Debugger").performScrollTo().assertIsDisplayed()
         compose.onNodeWithTag("settings-done").assertIsDisplayed()
-        capture(view, "settings-compact-debugger")
+        capture(view, "settings-enlarged-text-debugger")
     }
 
     private fun render(

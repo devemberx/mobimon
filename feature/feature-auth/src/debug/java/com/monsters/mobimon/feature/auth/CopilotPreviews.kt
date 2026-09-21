@@ -61,6 +61,12 @@ private fun AccessPreview() = Sample(copilotPreviewStates.getValue("P56-access")
 @Composable
 private fun DisconnectPreview() = Sample(copilotPreviewStates.getValue("P55-disconnect"))
 
-@Preview(name = "Compact · Large text", group = "Copilot UI samples", widthDp = 600, heightDp = 800, fontScale = 1.5f)
+@Preview(
+    name = "Head unit · Large text",
+    group = "Copilot UI samples",
+    widthDp = 1792,
+    heightDp = 888,
+    fontScale = 1.5f,
+)
 @Composable
-private fun CompactPreview() = Sample(CopilotUiState.Introduction())
+private fun EnlargedTextPreview() = Sample(CopilotUiState.Introduction())
