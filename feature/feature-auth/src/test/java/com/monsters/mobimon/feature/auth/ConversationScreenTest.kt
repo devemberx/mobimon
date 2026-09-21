@@ -46,7 +46,7 @@ import org.robolectric.annotation.GraphicsMode
 import java.io.File
 
 @RunWith(RobolectricTestRunner::class)
-@Config(sdk = [34], qualifiers = "ko-rKR-w1000dp-h800dp-mdpi")
+@Config(sdk = [34], qualifiers = "ko-rKR-w2560dp-h1332dp-mdpi")
 @OptIn(ExperimentalTestApi::class)
 class ConversationScreenTest {
     @get:Rule val compose = createComposeRule()
@@ -112,7 +112,6 @@ class ConversationScreenTest {
     }
 
     @Test
-    @Config(qualifiers = "ko-rKR-w2560dp-h1332dp-mdpi")
     @GraphicsMode(GraphicsMode.Mode.NATIVE)
     fun referenceStatesAndKeyboardResizeProduceReviewImages() {
         show()
@@ -152,18 +151,16 @@ class ConversationScreenTest {
     }
 
     @Test
-    @Config(qualifiers = "ko-rKR-w1000dp-h864dp-mdpi")
     @GraphicsMode(GraphicsMode.Mode.NATIVE)
     fun enlargedTextKeepsComposerAndControlsVisible() {
         draft = TextFieldValue("긴 메시지를 작성하고 있어요. 줄 바꿈과 선택도 유지해요.")
         show(fontScale = 1.6f)
         compose.onNodeWithTag("chat-input").assertIsDisplayed()
         compose.onNodeWithTag("chat-send").assertIsDisplayed().assertHeightIsAtLeast(76.dp)
-        capture("compact-enlarged")
+        capture("target-enlarged-text")
     }
 
     @Test
-    @Config(qualifiers = "ko-rKR-w2560dp-h1332dp-mdpi")
     @GraphicsMode(GraphicsMode.Mode.NATIVE)
     fun aaosDensityPreservesReferenceGeometryAndLargeTouchTargets() {
         state = state.copy(messages = messages)

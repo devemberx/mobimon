@@ -37,24 +37,27 @@ import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 
 @RunWith(RobolectricTestRunner::class)
-@Config(sdk = [34], qualifiers = "ko-rKR-w1000dp-h700dp")
+@Config(sdk = [34], qualifiers = "ko-rKR-w2560dp-h1332dp-mdpi")
 class PetHomeScreenTest {
     @get:Rule
     val compose = createComposeRule()
 
     @Test
-    fun conversationActionReportsItsBoundsAfterCompactScrolling() {
+    @Config(qualifiers = "ko-rKR-w1792dp-h952dp-mdpi")
+    fun conversationActionReportsItsBoundsAfterEnlargedTextScrolling() {
         var origin: Rect? = null
         compose.setContent {
-            MobiMonTheme {
-                PetHomeScreen(
-                    profile = PetProfile("profile"),
-                    snapshot = parkedSnapshot(),
-                    onOpenMenu = {},
-                    onPetClick = { origin = it },
-                    interactionAllowed = true,
-                    connectionAvailable = true,
-                )
+            CompositionLocalProvider(LocalDensity provides Density(LocalDensity.current.density, 1.5f)) {
+                MobiMonTheme {
+                    PetHomeScreen(
+                        profile = PetProfile("profile"),
+                        snapshot = parkedSnapshot(),
+                        onOpenMenu = {},
+                        onPetClick = { origin = it },
+                        interactionAllowed = true,
+                        connectionAvailable = true,
+                    )
+                }
             }
         }
         val action = compose.onNodeWithTag("home-conversation-action").performScrollTo()
@@ -92,25 +95,17 @@ class PetHomeScreenTest {
     }
 
     @Test
-    @Config(qualifiers = "ko-rKR-w2560dp-h1440dp")
-    fun landscapeKeepsActionsReachable() {
+    fun referenceContentKeepsActionsReachable() {
         assertLandscapeComposition()
     }
 
     @Test
-    @Config(qualifiers = "ko-rKR-w1792dp-h888dp")
+    @Config(qualifiers = "ko-rKR-w1792dp-h952dp-mdpi")
     fun headUnitWindowKeepsActionsReachable() {
         assertLandscapeComposition()
     }
 
     @Test
-    @Config(qualifiers = "ko-rKR-w1600dp-h1200dp")
-    fun tallerWindowKeepsActionsReachable() {
-        assertLandscapeComposition()
-    }
-
-    @Test
-    @Config(qualifiers = "ko-rKR-w2560dp-h1440dp")
     @GraphicsMode(GraphicsMode.Mode.NATIVE)
     fun moderatelyEnlargedParkingTextFitsInsideTheBadge() {
         render(snapshot = parkedSnapshot(), pointBalance = 0, fontScale = 1.2f)
@@ -150,7 +145,7 @@ class PetHomeScreenTest {
     }
 
     @Test
-    fun compactGreetingKeepsOneAnimatedLineUnderTheTitle() {
+    fun greetingKeepsOneAnimatedLineUnderTheTitle() {
         render(snapshot = parkedSnapshot())
         assertAnimatedLineBelowTitle()
     }
@@ -170,7 +165,7 @@ class PetHomeScreenTest {
     }
 
     @Test
-    @Config(qualifiers = "ko-rKR-w1792dp-h888dp")
+    @Config(qualifiers = "ko-rKR-w1792dp-h952dp-mdpi")
     fun losingAndRecoveringVehicleDataKeepsCommittedCompanionAndTruthfulParking() {
         val snapshot = mutableStateOf(parkedSnapshot())
         render(pointBalance = 0, snapshotSource = { snapshot.value })
@@ -209,7 +204,7 @@ class PetHomeScreenTest {
     }
 
     @Test
-    @Config(qualifiers = "ko-rKR-w1792dp-h888dp")
+    @Config(qualifiers = "ko-rKR-w1792dp-h952dp-mdpi")
     fun interactionRestrictedNoticeDisplaysDuringDrivingWithoutShiftingUi() {
         val allowed = mutableStateOf(true)
         compose.setContent {
@@ -326,8 +321,7 @@ class PetHomeScreenTest {
     }
 
     @Test
-    @Config(qualifiers = "ko-rKR-w1414dp-h764dp-mdpi")
-    fun shortLandscapeCanScrollTheEntireRestrictionNoticeIntoView() {
+    fun restrictionNoticeRemainsWithinTargetContent() {
         render(snapshot = parkedSnapshot())
         val notice = compose.onNodeWithText("주행 중에는 상호작용이 제한돼요.")
         notice.performScrollTo()

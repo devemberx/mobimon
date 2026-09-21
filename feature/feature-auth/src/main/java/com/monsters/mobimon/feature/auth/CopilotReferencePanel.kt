@@ -58,6 +58,7 @@ internal fun CopilotReferencePanel(
     friend: String,
     qrCode: Painter?,
     scale: Float,
+    interactionAllowed: Boolean,
     modifier: Modifier = Modifier,
 ) {
     Box(modifier.testTag("copilot-panel").background(Colors.panel, RoundedCornerShape(48.dp * scale))) {
@@ -92,7 +93,7 @@ internal fun CopilotReferencePanel(
                         1064f,
                         1088f,
                         816f,
-                        enabled = !state.connectionUnavailable,
+                        enabled = interactionAllowed && !state.connectionUnavailable,
                         icon = R.drawable.copilot_qr,
                         iconX = 1294.08f,
                     )

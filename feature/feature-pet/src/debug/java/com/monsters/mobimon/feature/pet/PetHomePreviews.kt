@@ -12,32 +12,31 @@ import com.monsters.mobimon.core.ui.MobiMonTheme
 // Include the head unit's smaller content window after system bars and AAOS app scaling.
 @Preview(name = "Head unit content - simulated ready", widthDp = 1792, heightDp = 888, locale = "ko")
 @Preview(name = "AAOS content excluding OS bars", widthDp = 2560, heightDp = 1268, locale = "ko")
-@Preview(name = "Tall landscape window", widthDp = 1600, heightDp = 1200, locale = "ko")
-@Preview(name = "Compact - enlarged text", widthDp = 1000, heightDp = 700, fontScale = 1.5f, locale = "ko")
+@Preview(name = "Head unit - enlarged text", widthDp = 1792, heightDp = 888, fontScale = 1.5f, locale = "ko")
 @Composable
 private fun HomeReadyPreview() {
     HomePreview()
 }
 
-@Preview(name = "Profile loading", widthDp = 2560, heightDp = 1440, locale = "ko")
+@Preview(name = "Profile loading", widthDp = 2560, heightDp = 1268, locale = "ko")
 @Composable
 private fun HomeLoadingPreview() {
     MobiMonTheme { PetHomeLoadingScreen(failed = false, onRetry = {}) }
 }
 
-@Preview(name = "Profile failure", widthDp = 2560, heightDp = 1440, locale = "ko")
+@Preview(name = "Profile failure", widthDp = 2560, heightDp = 1268, locale = "ko")
 @Composable
 private fun HomeFailurePreview() {
     MobiMonTheme { PetHomeLoadingScreen(failed = true, onRetry = {}) }
 }
 
-@Preview(name = "Empty selection - unavailable vehicle", widthDp = 1000, heightDp = 700, locale = "ko")
+@Preview(name = "Empty selection - unavailable vehicle", widthDp = 1792, heightDp = 888, locale = "ko")
 @Composable
 private fun HomeEmptyPreview() {
     HomePreview(empty = true)
 }
 
-@Preview(name = "Stale parking - fresh battery", widthDp = 1000, heightDp = 700, locale = "ko")
+@Preview(name = "Stale parking - fresh battery", widthDp = 1792, heightDp = 888, locale = "ko")
 @Composable
 private fun HomeStalePreview() {
     HomePreview(stale = true)

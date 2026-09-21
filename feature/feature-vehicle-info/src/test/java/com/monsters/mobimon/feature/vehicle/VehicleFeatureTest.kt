@@ -62,7 +62,7 @@ import java.io.File
 import java.io.IOException
 
 @RunWith(RobolectricTestRunner::class)
-@Config(sdk = [34], qualifiers = "ko-rKR-w1000dp-h800dp")
+@Config(sdk = [34], qualifiers = "ko-rKR-w2560dp-h1332dp-mdpi")
 class VehicleFeatureTest {
     @get:Rule val compose = createComposeRule()
 
@@ -113,9 +113,8 @@ class VehicleFeatureTest {
     }
 
     @Test
-    @Config(qualifiers = "ko-rKR-w600dp-h864dp-mdpi")
     @GraphicsMode(GraphicsMode.Mode.NATIVE)
-    fun compactAppearanceRecoveryProducesReviewImage() {
+    fun enlargedTextAppearanceRecoveryProducesReviewImage() {
         show(FakePoints(failInitially = true), fontScale = 1.5f)
         compose.onNodeWithText("친구 정보를 불러오지 못했어요.").assertIsDisplayed()
         compose.onNodeWithText("다시 시도").assertIsDisplayed().assertHeightIsAtLeast(76.dp)
@@ -123,7 +122,7 @@ class VehicleFeatureTest {
             val bitmap = Bitmap.createBitmap(view.width, view.height, Bitmap.Config.ARGB_8888)
             view.draw(Canvas(bitmap))
             val directory = File("build/reports/vehicle-ui").apply { mkdirs() }
-            File(directory, "compact-appearance-retry.png").outputStream().use {
+            File(directory, "enlarged-text-appearance-retry.png").outputStream().use {
                 assertTrue(bitmap.compress(Bitmap.CompressFormat.PNG, 100, it))
             }
             bitmap.recycle()

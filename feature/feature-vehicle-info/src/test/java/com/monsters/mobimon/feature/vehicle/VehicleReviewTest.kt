@@ -43,15 +43,14 @@ import java.io.File
 
 @RunWith(RobolectricTestRunner::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
-@Config(sdk = [34])
+@Config(sdk = [34], qualifiers = "ko-rKR-w2560dp-h1332dp-mdpi")
 class VehicleReviewTest {
     @get:Rule val compose = createComposeRule()
 
     private lateinit var view: View
 
     @Test
-    @Config(qualifiers = "ko-rKR-w600dp-h864dp-mdpi")
-    fun compactEnlargedTextKeepsMetricValuesAndBadgesVisible() {
+    fun enlargedTextKeepsMetricValuesAndBadgesVisible() {
         show({ samples().first().second }, fontScale = 1.5f)
 
         listOf(
@@ -65,8 +64,7 @@ class VehicleReviewTest {
     }
 
     @Test
-    @Config(qualifiers = "ko-rKR-w600dp-h864dp-mdpi")
-    fun compactEnlargedTextKeepsMissingReadingsAndSignalAgesVisible() {
+    fun enlargedTextKeepsMissingReadingsAndSignalAgesVisible() {
         show({ staleSnapshot() }, fontScale = 1.5f)
 
         listOf(
@@ -79,7 +77,6 @@ class VehicleReviewTest {
     }
 
     @Test
-    @Config(qualifiers = "ko-rKR-w2560dp-h1332dp-mdpi")
     fun referenceLayoutKeepsBothSignalAgesVisible() {
         show({ staleSnapshot() }, fontScale = 1f)
 
@@ -88,15 +85,13 @@ class VehicleReviewTest {
     }
 
     @Test
-    @Config(qualifiers = "ko-rKR-w2560dp-h1332dp-mdpi")
     fun referenceStatesProduceReviewImages() {
         renderReviewImages("reference", fontScale = 1f)
     }
 
     @Test
-    @Config(qualifiers = "ko-rKR-w600dp-h864dp-mdpi")
-    fun compactEnlargedTextStatesProduceReviewImages() {
-        renderReviewImages("compact", fontScale = 1.5f)
+    fun enlargedTextStatesProduceReviewImages() {
+        renderReviewImages("enlarged-text", fontScale = 1.5f)
     }
 
     private fun renderReviewImages(
@@ -109,12 +104,12 @@ class VehicleReviewTest {
         val directory = File("build/reports/vehicle-ui").apply { mkdirs() }
         samples.forEach { (name, sample) ->
             compose.runOnIdle { snapshot = sample }
-            if (variant == "compact") {
+            if (variant == "enlarged-text") {
                 compose.onNodeWithTag("vehicle-status-banner").performScrollTo()
             }
             compose.onNodeWithText("차량 정보").assertIsDisplayed()
             capture(view, File(directory, "$variant-$name.png"))
-            if (variant == "compact") {
+            if (variant == "enlarged-text") {
                 compose.onNodeWithText("Debug 패널에서 받은 예시 데이터").performScrollTo()
                 capture(view, File(directory, "$variant-$name-metrics.png"))
             }

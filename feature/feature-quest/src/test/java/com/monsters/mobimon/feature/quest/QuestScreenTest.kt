@@ -40,14 +40,13 @@ import org.robolectric.annotation.GraphicsMode
 import java.io.File
 
 @RunWith(RobolectricTestRunner::class)
-@Config(sdk = [34], qualifiers = "ko-rKR-w1000dp-h800dp")
+@Config(sdk = [34], qualifiers = "ko-rKR-w2560dp-h1332dp-mdpi")
 class QuestScreenTest {
     @get:Rule val compose = createComposeRule()
     private val context = ApplicationProvider.getApplicationContext<Context>()
     private val catalog = QuestCatalog(DefaultPointQuestCatalog())
 
     @Test
-    @Config(qualifiers = "ko-rKR-w2560dp-h1268dp")
     fun claimDoesNotInventCompletionOrSuccessBeforeCommittedResult() {
         var claimedId: String? = null
         render(presentation(friend = "friend:luna"), onClaim = { claimedId = it })
@@ -58,7 +57,6 @@ class QuestScreenTest {
     }
 
     @Test
-    @Config(qualifiers = "ko-rKR-w2560dp-h1268dp")
     fun pendingDisablesHiddenClaim() {
         render(
             presentation(
@@ -99,11 +97,11 @@ class QuestScreenTest {
         restoration.setContent {
             MobiMonTheme { QuestScreen(state, {}, {}, {}, {}, {}, {}, {}) }
         }
-        compose.onNodeWithTag("quest-tab-completed").performScrollTo().performClick()
+        compose.onNodeWithTag("quest-tab-completed").assertIsDisplayed().performClick()
         compose.onNodeWithTag("quest-card-${DrivingQuestIds.SEATBELT}").performScrollTo().performClick()
         restoration.emulateSavedInstanceStateRestore()
-        compose.onNodeWithTag("quest-detail-back-button").performScrollTo().performClick()
-        compose.onNodeWithTag("quest-tab-completed").performScrollTo().assertIsSelected()
+        compose.onNodeWithTag("quest-detail-back-button").assertIsDisplayed().performClick()
+        compose.onNodeWithTag("quest-tab-completed").assertIsDisplayed().assertIsSelected()
         compose.onNodeWithTag("quest-card-${DrivingQuestIds.SAFE_DRIVE}").assertDoesNotExist()
         compose.onNodeWithText("2026.09.14", substring = true).assertDoesNotExist()
     }
@@ -113,12 +111,11 @@ class QuestScreenTest {
         var route: AppRoute? = null
         render(presentation(), onNavigate = { route = it })
         compose.onNodeWithTag("quest-btn-detail-${DrivingQuestIds.SEATBELT}").performScrollTo().performClick()
-        compose.onNodeWithTag("quest-btn-detail-execute").performScrollTo().performClick()
+        compose.onNodeWithTag("quest-btn-detail-execute").assertIsDisplayed().performClick()
         assertEquals(VehicleRoute.VEHICLE_INFO, route)
     }
 
     @Test
-    @Config(qualifiers = "ko-rKR-w2560dp-h1268dp")
     fun failedClaimRemainsVisibleAndCanBeRetried() {
         var claims = 0
         val state =
@@ -134,7 +131,6 @@ class QuestScreenTest {
     }
 
     @Test
-    @Config(qualifiers = "ko-rKR-w2560dp-h1268dp")
     fun committedSuccessDisplaysActualPointsAndDismissesThroughOwner() {
         var state by mutableStateOf(
             presentation(
@@ -152,7 +148,6 @@ class QuestScreenTest {
     }
 
     @Test
-    @Config(qualifiers = "ko-rKR-w2560dp-h1268dp")
     fun hiddenDismissalUsesOwnerStateWithoutClaimingReward() {
         var state by mutableStateOf(presentation(friend = "friend:luna"))
         var dismissed: String? = null
@@ -186,21 +181,20 @@ class QuestScreenTest {
         compose.onNodeWithText("포인트 다시 확인").performClick()
         assertEquals(1, questRetries)
         assertEquals(1, walletRetries)
-        compose.onNodeWithText("포인트를 확인할 수 없어요").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText("포인트를 확인할 수 없어요").assertIsDisplayed()
     }
 
     @Test
     fun walletLoadingAndZeroRemainDistinct() {
         var state by mutableStateOf(presentation().copy(pointBalance = PointBalanceState.Loading))
         compose.setContent { MobiMonTheme { QuestScreen(state, {}, {}, {}, {}, {}, {}, {}) } }
-        compose.onNodeWithText("포인트 확인 중").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText("포인트 확인 중").assertIsDisplayed()
         compose.runOnIdle { state = state.copy(pointBalance = PointBalanceState.Ready(0)) }
-        compose.onNodeWithText("포인트 0 P").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText("포인트 0 P").assertIsDisplayed()
         compose.onNodeWithText("0P를 받았어요").assertDoesNotExist()
     }
 
     @Test
-    @Config(qualifiers = "ko-rKR-w2560dp-h1332dp-mdpi")
     @GraphicsMode(GraphicsMode.Mode.NATIVE)
     fun renderClaimPendingAndFailureForVisualReview() {
         var state by mutableStateOf(presentation())

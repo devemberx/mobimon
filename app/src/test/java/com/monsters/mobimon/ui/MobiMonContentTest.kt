@@ -36,7 +36,7 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
 @RunWith(RobolectricTestRunner::class)
-@Config(sdk = [34], application = Application::class, qualifiers = "ko-rKR-w1000dp-h700dp")
+@Config(sdk = [34], application = Application::class, qualifiers = "ko-rKR-w2560dp-h1268dp-mdpi")
 class MobiMonContentTest {
     @get:Rule val compose = createComposeRule()
     private val mountedRoutes = mutableStateListOf<AppRoute>()
