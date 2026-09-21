@@ -14,11 +14,13 @@ import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsFocused
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performKeyInput
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performSemanticsAction
+import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.pressKey
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
@@ -28,6 +30,7 @@ import com.monsters.mobimon.core.domain.CosmeticItem
 import com.monsters.mobimon.core.domain.CosmeticSlot
 import com.monsters.mobimon.core.domain.DrivingState
 import com.monsters.mobimon.core.domain.EquipResult
+import com.monsters.mobimon.core.domain.GitHubAccount
 import com.monsters.mobimon.core.domain.GitHubAuthentication
 import com.monsters.mobimon.core.domain.GitHubSession
 import com.monsters.mobimon.core.domain.GitHubSignIn
@@ -70,6 +73,7 @@ class AiFeatureTest {
 
     private val pets = FakePets()
     private val points = FakePoints()
+    private val session = MutableStateFlow<GitHubSession>(GitHubSession.SignedOut)
     private var route by mutableStateOf(AiRoute.COPILOT)
 
     @Test
@@ -85,6 +89,35 @@ class AiFeatureTest {
         route = AiRoute.CONVERSATION
         show()
         compose.onNodeWithText("연결 안내 열기").assertIsNotEnabled()
+    }
+
+    @Test
+    fun authenticatedAccountCanDraftButCannotSendWithoutProvider() {
+        route = AiRoute.CONVERSATION
+        show(parked = true, authenticated = true)
+        compose.onNodeWithTag("chat-input").performTextInput("오늘의 이야기")
+        compose.onNodeWithTag("chat-send").assertIsNotEnabled()
+        compose.onNodeWithText("Copilot 연결됨").assertDoesNotExist()
+        compose.runOnIdle { route = AiRoute.COPILOT }
+        compose.onNodeWithText("GitHub 계정 인증이 완료됐어요.").assertIsDisplayed()
+        compose.onNodeWithText("모비와 대화하기").performScrollTo().performClick()
+        compose.onNodeWithText("오늘의 이야기").assertIsDisplayed()
+        compose.onNodeWithTag("chat-send").assertIsNotEnabled()
+    }
+
+    @Test
+    fun signOutInConnectionClearsDraftBeforeSameAccountReconnect() {
+        route = AiRoute.CONVERSATION
+        show(parked = true, authenticated = true)
+        compose.onNodeWithTag("chat-input").performTextInput("이전 계정 세션의 초안")
+        compose.runOnIdle { route = AiRoute.COPILOT }
+        compose.onNodeWithText("GitHub 계정 인증이 완료됐어요.").assertIsDisplayed()
+        compose.runOnIdle { session.value = GitHubSession.SignedOut }
+        compose.onNodeWithText("QR로 연결하기").assertExists()
+        compose.runOnIdle { session.value = GitHubSession.Authenticated(GitHubAccount(1, "sample")) }
+        compose.onNodeWithText("모비와 대화하기").performScrollTo().performClick()
+        compose.onNodeWithTag("chat-input").assertExists()
+        compose.onNodeWithText("이전 계정 세션의 초안").assertDoesNotExist()
     }
 
     @Test
@@ -166,7 +199,10 @@ class AiFeatureTest {
     private fun show(
         fontScale: Float = 1f,
         parked: Boolean = false,
+        authenticated: Boolean = false,
     ) {
+        session.value =
+            if (authenticated) GitHubSession.Authenticated(GitHubAccount(1, "sample")) else GitHubSession.SignedOut
         val vehicle =
             object : VehicleRepository {
                 override val snapshots =
@@ -200,7 +236,7 @@ class AiFeatureTest {
                     UtcClock { 0L },
                 ),
                 object : GitHubAuthentication {
-                    override val session = MutableStateFlow<GitHubSession>(GitHubSession.SignedOut)
+                    override val session = this@AiFeatureTest.session
                     override val configured = false
 
                     override suspend fun restore() = Unit

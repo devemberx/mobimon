@@ -23,6 +23,7 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.monsters.mobimon.core.domain.CosmeticSlot
 import com.monsters.mobimon.core.domain.GitHubAuthentication
+import com.monsters.mobimon.core.domain.GitHubSession
 import com.monsters.mobimon.core.domain.PetRepository
 import com.monsters.mobimon.core.domain.PointEconomy
 import com.monsters.mobimon.core.domain.SignalSource
@@ -56,23 +57,6 @@ class AiFeature(
         modifier: Modifier,
     ) {
         val snapshot = vehicle.snapshot()
-        if (route == AiRoute.CONVERSATION) {
-            MobiMonDestination(
-                stringResource(R.string.conversation_title),
-                navigator.back,
-                navigator.returnHome,
-                modifier,
-            ) {
-                MobiMonContentColumn {
-                    MobiMonMessage(stringResource(R.string.conversation_not_connected))
-                    MobiMonButton(
-                        onClick = { navigator.navigate(AiRoute.COPILOT) },
-                        enabled = snapshot.parkedVerified,
-                    ) { Text(stringResource(R.string.conversation_connect)) }
-                }
-            }
-            return
-        }
         val authenticationFactory =
             remember(this) {
                 viewModelFactory { initializer { GitHubAuthenticationViewModel(authentication) } }
@@ -80,7 +64,8 @@ class AiFeature(
         val authenticationModel: GitHubAuthenticationViewModel = viewModel(factory = authenticationFactory)
         val authenticationState by authenticationModel.state.collectAsStateWithLifecycle()
         val lifecycle = LocalLifecycleOwner.current.lifecycle
-        LaunchedEffect(authenticationModel, lifecycle, snapshot.parkedVerified) {
+        LaunchedEffect(authenticationModel, lifecycle, snapshot.parkedVerified, route) {
+            if (route != AiRoute.COPILOT) return@LaunchedEffect
             lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 authenticationModel.activate(snapshot.parkedVerified)
                 try {
@@ -114,6 +99,9 @@ class AiFeature(
             }
             return
         }
+        val session by authentication.session.collectAsStateWithLifecycle()
+        val draftModel: ConversationDraftViewModel = viewModel()
+        LaunchedEffect(draftModel, profile.id, session) { draftModel.bind(profile.id, session) }
         Column(modifier.fillMaxSize()) {
             if (companion.failed) {
                 Row(
@@ -129,6 +117,36 @@ class AiFeature(
                     MobiMonButton(onClick = model::retry) { Text(stringResource(R.string.ai_retry)) }
                 }
             }
+            if (route == AiRoute.CONVERSATION) {
+                val account = (session as? GitHubSession.Authenticated)?.account
+                ConversationScreen(
+                    state =
+                        ConversationUiState(
+                            connection =
+                                if (account !=
+                                    null
+                                ) {
+                                    ConversationConnection.UNAVAILABLE
+                                } else {
+                                    ConversationConnection.SIGNED_OUT
+                                },
+                        ),
+                    draft = draftModel.draft,
+                    onDraftChange = draftModel::edit,
+                    onSend = {}, // No verified conversation transport exists in this build.
+                    onCancelReply = {},
+                    onBack = navigator.back,
+                    onOpenConnection = { if (snapshot.parkedVerified) navigator.navigate(AiRoute.COPILOT) },
+                    modifier = Modifier.weight(1f),
+                    interactionAllowed = snapshot.parkedVerified,
+                    simulatedVehicle = snapshot.source == SignalSource.SIMULATED,
+                    friendId = companion.inventory?.equippedItemIds?.get(CosmeticSlot.FRIEND) ?: "friend:mobi",
+                    appearanceKey = profile.appearance.name,
+                    accessoryId = companion.inventory?.equippedItemIds?.get(CosmeticSlot.ACCESSORY),
+                    outfitId = companion.inventory?.equippedItemIds?.get(CosmeticSlot.OUTFIT),
+                )
+                return@Column
+            }
             CopilotConnectionScreen(
                 state = authenticationState,
                 qrCode = qrCode,
@@ -137,6 +155,12 @@ class AiFeature(
                     when (action) {
                         CopilotAction.BACK, CopilotAction.CANCEL -> navigator.back()
                         CopilotAction.OPEN_SETTINGS -> navigator.navigate(CompanionRoute.SETTINGS)
+                        CopilotAction.START_CONVERSATION ->
+                            if (snapshot.parkedVerified) {
+                                navigator.navigate(
+                                    AiRoute.CONVERSATION,
+                                )
+                            }
                         else -> Unit
                     }
                 },

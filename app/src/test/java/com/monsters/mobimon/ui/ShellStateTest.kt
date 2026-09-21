@@ -8,6 +8,40 @@ import org.junit.Test
 
 class ShellStateTest {
     @Test
+    fun chatRequiresAccountAndConnectionBackKeepsEntryOrigin() {
+        listOf(CompanionRoute.HOME, CompanionRoute.SETTINGS).forEach { origin ->
+            val disconnected = ShellState(route = origin).navigate(AiRoute.CONVERSATION)
+            assertEquals(AiRoute.COPILOT, disconnected.route)
+            assertEquals(origin, disconnected.back().route)
+            assertEquals(AiRoute.CONVERSATION, ShellState(route = origin).navigate(AiRoute.CONVERSATION, true).route)
+        }
+    }
+
+    @Test
+    fun disconnectedRestoredChatAndConnectionOriginCannotLoopBackToChat() {
+        listOf("HOME", "SETTINGS", "CONVERSATION").forEach { origin ->
+            val restored = ShellSaver.restore(listOf("CONVERSATION", origin))!!
+            assertEquals(AiRoute.COPILOT, restored.requireConversationAccount(false).route)
+            assertEquals(CompanionRoute.HOME, restored.requireConversationAccount(false).back().route)
+        }
+        val connection = ShellState(route = AiRoute.CONVERSATION).openCopilot().requireConversationAccount(false)
+        assertEquals(CompanionRoute.HOME, connection.back().route)
+    }
+
+    @Test
+    fun authenticationLossInReopenedChatDoesNotReuseEarlierSettingsOrigin() {
+        val settingsConnection = ShellState(route = CompanionRoute.SETTINGS).openCopilot()
+        assertEquals(CompanionRoute.SETTINGS, settingsConnection.requireConversationAccount(false).back().route)
+        val home = settingsConnection.navigate(AiRoute.CONVERSATION, true).back()
+        assertEquals(CompanionRoute.HOME, home.route)
+
+        val reopenedChat = home.navigate(AiRoute.CONVERSATION, true)
+        val connection = reopenedChat.requireConversationAccount(false)
+        assertEquals(AiRoute.COPILOT, connection.route)
+        assertEquals(CompanionRoute.HOME, connection.back().route)
+    }
+
+    @Test
     fun copilotBackReturnsToItsOriginIncludingAfterRestoration() {
         listOf(CompanionRoute.HOME, CompanionRoute.SETTINGS, AiRoute.CONVERSATION).forEach { origin ->
             val state = ShellState(route = origin).openCopilot()

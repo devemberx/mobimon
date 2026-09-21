@@ -358,7 +358,7 @@ class CopilotConnectionScreenTest {
     }
 
     @Test
-    @Config(qualifiers = "ko-rKR-w2560dp-h1268dp")
+    @Config(qualifiers = "ko-rKR-w2560dp-h1332dp-mdpi")
     @GraphicsMode(GraphicsMode.Mode.NATIVE)
     fun authenticationStatesRenderWithoutClaimingConversationReadiness() {
         renderAuthenticationStates(1f, "reference")
@@ -376,13 +376,14 @@ class CopilotConnectionScreenTest {
         label: String,
     ) {
         var state: CopilotUiState by mutableStateOf(CopilotUiState.AuthenticationStatus(pending = true))
+        val actions = mutableListOf<CopilotAction>()
         lateinit var view: View
         compose.setContent {
             val currentView = LocalView.current
             SideEffect { view = currentView }
             CompositionLocalProvider(LocalDensity provides Density(LocalDensity.current.density, fontScale)) {
                 MobiMonTheme {
-                    CopilotConnectionScreen(state, {}, interactionAllowed = true)
+                    CopilotConnectionScreen(state, actions::add, interactionAllowed = true)
                 }
             }
         }
@@ -399,12 +400,31 @@ class CopilotConnectionScreenTest {
         states.forEach { (name, sample) ->
             compose.runOnIdle { state = sample }
             compose.waitForIdle()
-            compose.onNodeWithText("모비와 대화하기").assertDoesNotExist()
             if (sample.account != null) {
                 compose.onNodeWithText("GitHub 계정 인증이 완료됐어요.").assertExists()
+                compose.onNodeWithText("Copilot 대화 이용 가능", substring = true).assertDoesNotExist()
+                val chat = compose.onNodeWithText("모비와 대화하기")
+                if (label == "compact") chat.performScrollTo()
+                chat.assertIsDisplayed().assertIsEnabled().performClick()
+                assertEquals(CopilotAction.START_CONVERSATION, actions.last())
+                val settings = compose.onNodeWithText("설정으로")
+                if (label == "compact") settings.performScrollTo()
+                settings.assertIsDisplayed().performClick()
+                assertEquals(CopilotAction.OPEN_SETTINGS, actions.last())
+                if (label == "reference") {
+                    val reference = compose.onNodeWithTag("copilot-reference").fetchSemanticsNode().boundsInRoot
+                    val bounds = chat.fetchSemanticsNode().boundsInRoot
+                    assertEquals(reference.left + 1064f, bounds.left, 1f)
+                    assertEquals(reference.top + 1012f, bounds.top, 1f)
+                    assertEquals(816f, bounds.width, 1f)
+                    assertEquals(112f, bounds.height, 1f)
+                }
                 val disconnect = compose.onNodeWithText("연결 해제")
                 if (label == "compact") disconnect.performScrollTo()
-                disconnect.assertHeightIsAtLeast(76.dp).assertIsDisplayed()
+                disconnect.assertHeightIsAtLeast(76.dp).assertIsDisplayed().performClick()
+                assertEquals(CopilotAction.CONFIRM_DISCONNECT, actions.last())
+            } else {
+                compose.onNodeWithText("모비와 대화하기").assertDoesNotExist()
             }
             compose.runOnIdle {
                 val bitmap = Bitmap.createBitmap(view.width, view.height, Bitmap.Config.ARGB_8888)

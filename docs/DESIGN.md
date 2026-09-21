@@ -108,14 +108,23 @@ No cash purchases, top-ups or conversion.
 
 ## Conversation
 
-Conversation remains planned. Voice follows **permission → listening → transcript
-review → send → wait → reply**. Stopping recording never submits. Offer text input,
-keep the composer above the keyboard and preserve unfinished IME input.
+Keyboard chat uses the V5 split panels. Home/menu Chat opens connection settings
+when signed out and chat when authenticated. The Settings account card always opens
+connection management. Until a reply provider exists, explain the limitation and
+disable Send. Suggestions fill the draft without sending; preserve selection and
+unfinished IME input. Blank input cannot be sent.
 
-Identify speakers, block duplicate sends and preserve drafts/replies on recoverable
-errors. Leaving cancels pending work; completed exchanges survive navigation within
-the session, but a new session/restart clears them. Playback yields to calls/navigation;
-restrictions stop playback and recording.
+Use the system keyboard; [keyboard-input.svg](ui/conversation/keyboard-input.svg)
+defines the resized app layout. Keep header scale and the composer above the IME,
+shorten the panels and shrink the companion. Compact/enlarged-text windows prioritize
+chat and hide secondary content. Preserve visible control geometry while meeting
+minimum touch bounds at AAOS density.
+
+With a verified provider, identify speakers, block duplicate sends and preserve
+drafts/replies on recoverable errors. Leaving cancels pending work; completed exchanges
+last for the session. Voice controls remain hidden until supported. Future voice input
+requires permission, transcript review and explicit Send; stopping never submits.
+Playback yields to calls/navigation; restrictions stop playback and recording.
 
 Explain transmitted data and provider retention before enabling conversation.
 Disconnect/session clearing does not promise provider deletion. Long-term memory
@@ -145,19 +154,18 @@ Configured builds show GitHub's approval URL as a QR with a separate user code a
 address help. Update approval status automatically and hide expired codes. Apply the
 [authentication lifecycle rules](ARCHITECTURE.md#copilot-connection-ui).
 
-Authentication success shows the verified account and local session persistence,
-while explicitly stating that Copilot conversation remains unavailable. It must not
-render fully `Connected`. A successful restoration replaces the previous sign-in
-error with the verified account panel. Loading/failures offer retry or local clearing;
-companion read failures retain appearance with Retry.
+Authentication success uses [connected.svg](ui/connection/connected.svg) geometry,
+with “모비와 대화하기” (the equipped friend's name) opening keyboard chat and Settings
+secondary. Show the verified account and local persistence while stating that Copilot
+replies remain unavailable; do not claim full `Connected` readiness. Successful
+restoration replaces prior sign-in errors. Loading/failures offer retry or local
+clearing; companion read failures retain appearance with Retry.
 
-Confirm disconnect and explain that it removes only the local connection; preserve
-points/cosmetics. Offer approval again for revoked/expired credentials. Unconfigured
-builds disable sign-in. Debug example states never verify a provider.
+Account-row Disconnect opens confirmation and explains that only the local connection
+is removed; preserve points/cosmetics. Offer approval again for revoked/expired
+credentials. Unconfigured builds disable sign-in. Debug examples never verify a provider.
 
-Authentication-only states have no v5 export; reuse panel typography, colors and
-controls. [Visual acceptance](TESTING.md#final-figma-visual-acceptance) covers review sizes
-and missing references.
+Loading and failure states have no v5 export; reuse panel typography and controls.
 
 ## Motion
 

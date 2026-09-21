@@ -96,7 +96,7 @@ private const val MIN_REFERENCE_MENU_SCALE = 76f / 112f
 private val destinations =
     listOf(
         DrawerDestination(R.string.drawer_menu_home, R.drawable.drawer_home, CompanionRoute.HOME),
-        DrawerDestination(R.string.drawer_menu_chat, R.drawable.drawer_chat, AiRoute.COPILOT),
+        DrawerDestination(R.string.drawer_menu_chat, R.drawable.drawer_chat, AiRoute.CONVERSATION),
         DrawerDestination(R.string.drawer_menu_quests, R.drawable.drawer_quest, QuestRoute.QUESTS),
         DrawerDestination(R.string.drawer_menu_vehicle, R.drawable.drawer_vehicle, VehicleRoute.VEHICLE_INFO),
         DrawerDestination(R.string.drawer_menu_appearance, R.drawable.drawer_appearance, CompanionRoute.APPEARANCE),

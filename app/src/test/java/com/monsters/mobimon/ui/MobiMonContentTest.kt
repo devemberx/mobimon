@@ -71,6 +71,32 @@ class MobiMonContentTest {
     }
 
     @Test
+    fun chatRoutesFromHomeAndSettingsTrackAccountWithoutAConnectionLoop() {
+        val authenticated = mutableStateOf(false)
+        compose.setContent {
+            MobiMonContent(entries, appUseState = AppUseState.ALLOWED, conversationAuthenticated = authenticated.value)
+        }
+        compose.onNodeWithText("Chat").performClick()
+        compose.onNodeWithText("Route COPILOT").assertExists()
+        compose.onNodeWithText("Back").performClick()
+        compose.onNodeWithText("Open menu").performClick()
+        clickMenuItem("설정")
+        compose.onNodeWithText("Chat").performClick()
+        compose.onNodeWithText("Route COPILOT").assertExists()
+        compose.onNodeWithText("Back").performClick()
+        compose.onNodeWithText("Route SETTINGS").assertExists()
+        compose.runOnIdle { authenticated.value = true }
+        compose.onNodeWithText("Open menu").performClick()
+        clickMenuItem("대화하기")
+        compose.onNodeWithText("Route CONVERSATION").assertExists()
+        compose.runOnIdle { authenticated.value = false }
+        compose.onNodeWithText("Route CONVERSATION").assertDoesNotExist()
+        compose.onNodeWithText("Route COPILOT").assertExists()
+        compose.onNodeWithText("Back").performClick()
+        compose.onNodeWithText("Route HOME").assertExists()
+    }
+
+    @Test
     fun menuRoutesVehicleAndCustomizationAndClosesWithBackAndClose() {
         show()
         compose.onNodeWithText("Open menu").performClick()
@@ -214,6 +240,7 @@ class MobiMonContentTest {
                         Text("Route ${route.name}")
                         TextButton(onClick = navigator.openMenu) { Text("Open menu") }
                         TextButton(onClick = { navigator.navigate(AiRoute.COPILOT) }) { Text("Connect") }
+                        TextButton(onClick = { navigator.navigate(AiRoute.CONVERSATION) }) { Text("Chat") }
                         TextButton(onClick = navigator.back) { Text("Back") }
                     }
                 }

@@ -8,7 +8,9 @@ import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.requiredHeight
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
@@ -19,6 +21,7 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -76,7 +79,15 @@ internal fun CopilotPanel(
                             null,
                             scale,
                         )
-                        if (state.account != null) AccountCard(state.account, null, scale)
+                        if (state.account != null) {
+                            AccountCard(state.account, null, scale) {
+                                AccountDisconnectAction(
+                                    { onAction(CopilotAction.CONFIRM_DISCONNECT) },
+                                    interactionAllowed && !state.pending,
+                                    scale,
+                                )
+                            }
+                        }
                         if (state.pending) {
                             LinearProgressIndicator(Modifier.fillMaxWidth())
                             PanelText(R.string.github_checking, scale)
@@ -356,12 +367,12 @@ private fun PanelActions(
                     state.pending -> listOf(ActionButton(stringResource(R.string.copilot_later), CopilotAction.CANCEL))
                     state.account != null ->
                         listOf(
-                            ActionButton(stringResource(R.string.copilot_settings), CopilotAction.OPEN_SETTINGS),
                             ActionButton(
-                                stringResource(R.string.copilot_disconnect),
-                                CopilotAction.CONFIRM_DISCONNECT,
-                                allowed,
+                                stringResource(R.string.copilot_chat, friend),
+                                CopilotAction.START_CONVERSATION,
+                                allowed && state.problem == null,
                             ),
+                            ActionButton(stringResource(R.string.copilot_settings), CopilotAction.OPEN_SETTINGS),
                         )
                     else ->
                         listOf(
@@ -632,11 +643,26 @@ private fun AccountCard(
     account: String,
     detail: String?,
     scale: Float,
+    trailing: (@Composable () -> Unit)? = null,
 ) {
     MobiMonListItem(
         Modifier.fillMaxWidth(),
         supporting = detail?.let { text -> { Text(text, style = copilotStyle(28f, scale), color = Colors.muted) } },
+        trailing = trailing,
     ) { Text(account, style = copilotStyle(36f, scale, true)) }
+}
+
+@Composable
+internal fun AccountDisconnectAction(
+    onClick: () -> Unit,
+    enabled: Boolean,
+    scale: Float,
+) {
+    Box(Modifier.height(44.dp * scale), contentAlignment = Alignment.Center) {
+        TextButton(onClick, Modifier.requiredHeight(76.dp), enabled = enabled) {
+            Text(stringResource(R.string.copilot_disconnect), style = copilotStyle(26f, scale), color = Colors.accent)
+        }
+    }
 }
 
 @Composable

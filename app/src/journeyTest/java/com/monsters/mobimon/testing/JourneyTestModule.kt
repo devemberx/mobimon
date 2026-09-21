@@ -9,6 +9,7 @@ import com.monsters.mobimon.core.database.AppDatabase
 import com.monsters.mobimon.core.domain.AppUseState
 import com.monsters.mobimon.core.domain.Clock
 import com.monsters.mobimon.core.domain.DrivingState
+import com.monsters.mobimon.core.domain.GitHubAccount
 import com.monsters.mobimon.core.domain.GitHubAuthentication
 import com.monsters.mobimon.core.domain.GitHubSession
 import com.monsters.mobimon.core.domain.GitHubSignIn
@@ -51,17 +52,7 @@ import javax.inject.Singleton
 object JourneyTestModule {
     @Provides
     @Singleton
-    fun authentication(): GitHubAuthentication =
-        object : GitHubAuthentication {
-            override val session = MutableStateFlow<GitHubSession>(GitHubSession.SignedOut)
-            override val configured = false
-
-            override suspend fun restore() = Unit
-
-            override suspend fun disconnect() = Unit
-
-            override fun signIn() = emptyFlow<GitHubSignIn>()
-        }
+    fun authentication(authentication: JourneyAuthentication): GitHubAuthentication = authentication
 
     @Provides
     fun clock(): Clock = Clock { 10_000L }
@@ -85,6 +76,26 @@ object JourneyTestModule {
     @Provides
     fun preferences(storage: JourneyStorage): DataStore<Preferences> = storage.preferences
 }
+
+@Singleton
+class JourneyAuthentication
+    @Inject
+    constructor() : GitHubAuthentication {
+        override val session = MutableStateFlow<GitHubSession>(GitHubSession.SignedOut)
+        override val configured = false
+
+        fun approve() {
+            session.value = GitHubSession.Authenticated(GitHubAccount(1, "journey-sample"))
+        }
+
+        override suspend fun restore() = Unit
+
+        override suspend fun disconnect() {
+            session.value = GitHubSession.SignedOut
+        }
+
+        override fun signIn() = emptyFlow<GitHubSignIn>()
+    }
 
 @Singleton
 class JourneyAppUse

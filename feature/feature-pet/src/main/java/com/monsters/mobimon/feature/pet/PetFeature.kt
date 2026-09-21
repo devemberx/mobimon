@@ -59,7 +59,7 @@ class PetFeature(
             snapshot = snapshot,
             onOpenMenu = navigator.openMenu,
             onPetClick = { bounds ->
-                if (snapshot.parkedVerified) navigator.navigateFrom(AiRoute.COPILOT, bounds)
+                if (snapshot.parkedVerified) navigator.navigateFrom(AiRoute.CONVERSATION, bounds)
             },
             modifier = modifier,
             pointBalance = (pointBalance as? PointBalanceState.Ready)?.balance,

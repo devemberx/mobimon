@@ -2,6 +2,11 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
   <application>
     <activity
+        android:name="com.monsters.mobimon.feature.auth.preview.ConversationPreviewActivity"
+        android:exported="true"
+        android:windowSoftInputMode="adjustResize"
+        android:label="MobiMon conversation UI preview" />
+    <activity
         android:name="com.monsters.mobimon.feature.auth.preview.CopilotPreviewActivity"
         android:exported="true"
         android:label="@string/copilot_preview_name">
