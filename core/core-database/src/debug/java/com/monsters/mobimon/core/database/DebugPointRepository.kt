@@ -57,6 +57,9 @@ class DebugPointRepository(
     suspend fun resetQuestCompletions(): DebugPointResult =
         transact {
             clearQuestCompletions(profileId)
+            // Clear the matching award ledger rows too; otherwise the unique (profileId, referenceKey)
+            // index survives the reset and makes every subsequent re-claim fail with StorageFailure.
+            clearQuestLedger(profileId)
             DebugPointResult.UPDATED
         }
 

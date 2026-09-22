@@ -9,6 +9,7 @@ import com.monsters.mobimon.core.domain.CosmeticSlot
 import com.monsters.mobimon.core.domain.CurrentAppUse
 import com.monsters.mobimon.core.domain.CurrentVehicleEvidence
 import com.monsters.mobimon.core.domain.DriveEvaluationData
+import com.monsters.mobimon.core.domain.DrivingQuestEvaluator
 import com.monsters.mobimon.core.domain.EquipResult
 import com.monsters.mobimon.core.domain.IdGenerator
 import com.monsters.mobimon.core.domain.PointAwardResult
@@ -42,6 +43,7 @@ class PointEconomyRepository(
     private val clock: Clock,
     private val evaluator: QuestEvaluator,
     private val quests: PointQuestCatalog,
+    private val drivingEvaluator: DrivingQuestEvaluator = DrivingQuestEvaluator(),
 ) : PointEconomy {
     private val dao = database.economyDao()
 
@@ -218,6 +220,11 @@ class PointEconomyRepository(
                     return@withTransaction PointAwardResult.InteractionRestricted
                 }
                 if (current != displayedSnapshot) return@withTransaction PointAwardResult.EvidenceChanged
+                // Gate driving quests on their per-quest evidence; hidden quests (null) stay ungated.
+                val drivingResult = drivingEvaluator.evaluateById(questId, _driveEvaluation.value)
+                if (drivingResult != null && !drivingResult.isSatisfied) {
+                    return@withTransaction PointAwardResult.ConditionNotMet
+                }
                 val completedAt = utcClock.nowEpochMillis()
                 val occurrence =
                     definition.schedule.occurrenceKey(completedAt)

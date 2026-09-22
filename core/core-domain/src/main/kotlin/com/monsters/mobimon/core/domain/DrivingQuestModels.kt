@@ -23,7 +23,8 @@ data class DriveEvaluationData(
     val isDestinationMaintenanceCenter: Boolean = false,
     val isDestinationReached: Boolean = false,
     val totalDistanceKm: Float = 0f,
-    val safeDriveDaysCount: Int = 0,
+    // Number of completed safe drives (each >= MIN_DRIVE_DISTANCE_KM and passing the safe-drive check).
+    val safeDriveCount: Int = 0,
     val weather: WeatherCondition = WeatherCondition.CLEAR,
     val isBatteryChargedProperly: Boolean = false,
     val hasRestedDuringLongDrive: Boolean = false,

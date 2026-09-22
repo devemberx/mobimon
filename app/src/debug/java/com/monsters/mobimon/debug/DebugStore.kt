@@ -192,6 +192,21 @@ class DebugStore
         private val _state = MutableStateFlow(loadState())
         override val state: StateFlow<DebugVssState> = _state.asStateFlow()
 
+        // Count of completed safe drives. VSS is a snapshot and cannot express this history, so the
+        // debug overlay accumulates it: each qualifying VSS-derived drive records one.
+        private val _safeDriveCount = MutableStateFlow(prefs.getInt(SAFE_DRIVE_COUNT_KEY, 0))
+        val safeDriveCount: StateFlow<Int> = _safeDriveCount.asStateFlow()
+
+        fun recordSafeDrive() {
+            _safeDriveCount.value += 1
+            prefs.edit().putInt(SAFE_DRIVE_COUNT_KEY, _safeDriveCount.value).apply()
+        }
+
+        fun resetSafeDriveCount() {
+            _safeDriveCount.value = 0
+            prefs.edit().putInt(SAFE_DRIVE_COUNT_KEY, 0).apply()
+        }
+
         private fun loadState(): DebugVssState =
             DebugVssState(
                 raw =
@@ -385,6 +400,7 @@ class DebugStore
         }
     }
 
+private const val SAFE_DRIVE_COUNT_KEY = "debug.safeDriveCount"
 private const val DISTRACTION_THRESHOLD_PERCENT = 70f
 private const val FATIGUE_THRESHOLD_PERCENT = 70f
 private const val ARRIVAL_THRESHOLD_METERS = 100

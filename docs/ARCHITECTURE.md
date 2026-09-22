@@ -187,10 +187,14 @@ These are integration gaps, not completed functionality.
 ### Points, cosmetics and quest occurrences
 
 [Catalogs](../core/core-domain/src/main/kotlin/com/monsters/mobimon/core/domain/PointQuestModels.kt)
-define rewards, not SVG examples. Driving evaluation currently uses in-memory data;
-the award transaction checks parking and credits catalog amounts, not driving/hidden
-conditions. Production needs trusted per-quest evidence validated inside the credit
-transaction, real occurrence IDs/counts and agreement with evaluator amounts.
+define rewards, not SVG examples. The award transaction now gates each driving quest on
+its per-quest evidence (`DrivingQuestEvaluator.evaluateById` over the in-memory drive
+evaluation) inside the credit transaction, returning `ConditionNotMet` when unsatisfied;
+hidden quests have no driving condition and stay ungated. In debug the evidence is derived
+live from the simulated VSS signals (`DebugVssState.toDriveEvaluationData`), and history
+VSS cannot express (safe-drive count) is accumulated in the overlay. Evidence is still
+simulated in-memory data crediting catalog base amounts. Production needs a trusted evidence
+source, real occurrence IDs/counts and agreement with weather-scaled evaluator amounts.
 
 `completedQuestIds` cannot represent repeat eligibility. Define recurrence, reset
 zone/clock, interruption and evidence explicitly without weakening uniqueness.
