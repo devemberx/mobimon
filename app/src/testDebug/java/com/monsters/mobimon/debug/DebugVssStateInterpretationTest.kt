@@ -1,5 +1,6 @@
 package com.monsters.mobimon.debug
 
+import com.monsters.mobimon.core.vss.interpretVssTimeOfDay
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -128,7 +129,7 @@ class DebugVssStateInterpretationTest {
                 "Night",
             )
         expected.forEachIndexed { hour, period ->
-            assertEquals("Hour $hour", period, hour.toString().toTimeOfDay())
+            assertEquals("Hour $hour", period, interpretVssTimeOfDay(hour.toString()))
             assertEquals(
                 com.monsters.mobimon.core.ui
                     .companionBackgroundRes(period),
@@ -137,10 +138,10 @@ class DebugVssStateInterpretationTest {
             )
         }
         listOf("afternoon", "오후", "늦은 오후", "16:30", "17시").forEach {
-            assertEquals("Afternoon", it.toTimeOfDay())
+            assertEquals("Afternoon", interpretVssTimeOfDay(it))
         }
         listOf("sunset", "노을", "저녁", "18:30", "19시").forEach {
-            assertEquals("Sunset", it.toTimeOfDay())
+            assertEquals("Sunset", interpretVssTimeOfDay(it))
         }
     }
 
