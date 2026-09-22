@@ -84,7 +84,14 @@ keeps friend-specific equipment; preview reaches shared appearance only on commi
 Background time uses supplied time or `UtcClock` plus local time zone and never
 changes vehicle evidence.
 [PetAvatar](../core/core-ui/src/main/java/com/monsters/mobimon/core/ui/PetAvatar.kt)
-never owns rewards, equipment or authorization. Failed/unknown motion preferences
+never owns rewards, equipment or authorization. Mobi's idle renderer caches one
+atlas off the main thread, selects cells from elapsed Compose frame time, and
+reads time only during draw/layer updates. Its fixed destination preserves layout. Adjacent cells blend with complementary
+alpha in an isolated reusable layer (two atlas draws, no bitmap crops). Continuous
+breath, sway and bob use separate periods; hands and wheel transform together.
+The 7524 x 5016 asset retains every source pixel; runtime keeps the prior 2x decode
+sampling (627px cells, about 36MiB) to fit a 4096px texture without a 144MiB bitmap.
+Leaving composition cancels playback; reduced motion renders the static fallback. Failed/unknown motion preferences
 pause decoration; retries follow shell subscription.
 
 ### Copilot connection UI

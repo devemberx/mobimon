@@ -163,7 +163,52 @@ class DecorativeMotionTest {
         assertTrue("Updated particle size must affect the rendered area", enlargedArea > initialArea * 4)
     }
 
+    @Test
+    fun mobiSpriteKeepsLayoutBoundsAcrossBreathingAndTilt() {
+        show { PetAvatar(Modifier.size(240.dp).testTag("mobi")) }
+        val bounds = compose.onNodeWithTag("mobi").fetchSemanticsNode().boundsInRoot
+        val initial = pixels("mobi")
+        compose.mainClock.advanceTimeBy(2_150)
+        assertTrue("Sprite and tilt advance", initial != pixels("mobi"))
+        assertTrue(
+            "Animation does not remeasure its parent",
+            bounds == compose.onNodeWithTag("mobi").fetchSemanticsNode().boundsInRoot,
+        )
+        compose.runOnIdle {
+            val bitmap = Bitmap.createBitmap(view.width, view.height, Bitmap.Config.ARGB_8888)
+            view.draw(Canvas(bitmap))
+            val output = java.io.File("build/reports/mobi-idle-sprite-review.png")
+            output.parentFile?.mkdirs()
+            output.outputStream().use { bitmap.compress(Bitmap.CompressFormat.PNG, 100, it) }
+            bitmap.recycle()
+        }
+        compose.mainClock.advanceTimeBy(4_300)
+        assertTrue(
+            "Opposite tilt retains layout",
+            bounds == compose.onNodeWithTag("mobi").fetchSemanticsNode().boundsInRoot,
+        )
+    }
+
+    @Test
+    fun mobiBlendsBetweenSourceTicksWithoutFadingItsOpaqueBody() {
+        show { PetAvatar(Modifier.size(240.dp).testTag("mobi")) }
+        val initial = pixels("mobi")
+        compose.mainClock.advanceTimeBy(64)
+        val middle = pixels("mobi")
+        assertTrue("Motion progresses inside a source-frame interval", initial != middle)
+        for (step in 0..24) {
+            val sample = pixels("mobi")
+            // The original body is near-opaque (alpha 253), not 255. Allow two levels of raster rounding.
+            assertTrue("Blending preserves source body opacity", (sample[130 * 240 + 120] ushr 24) >= 251)
+            compose.mainClock.advanceTimeBy(32)
+        }
+    }
+
     private fun show(content: @Composable () -> Unit) {
+        val context =
+            androidx.test.core.app.ApplicationProvider
+                .getApplicationContext<android.content.Context>()
+        requireNotNull(MobiSpriteCache.getOrLoad(context))
         compose.mainClock.autoAdvance = false
         compose.setContent {
             val currentView = LocalView.current
