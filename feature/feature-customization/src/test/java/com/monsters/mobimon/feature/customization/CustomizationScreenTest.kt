@@ -403,4 +403,83 @@ class CustomizationScreenTest {
         compose.onAllNodesWithText("동행 중").assertCountEquals(3)
         compose.onNodeWithText("사용 중").assertDoesNotExist()
     }
+
+    @Test fun currentlyEquippedAccessoryDisplaysWearingStatus() {
+        val catalog =
+            listOf(
+                CosmeticItem("friend:mobi", CosmeticSlot.FRIEND, 0),
+                CosmeticItem("accessory:mobi_headphones", CosmeticSlot.ACCESSORY, 300, "friend:mobi"),
+            )
+        val inventory =
+            CosmeticInventory(
+                ownedItemIds = setOf("friend:mobi", "accessory:mobi_headphones"),
+                equippedItemIds =
+                    mapOf(
+                        CosmeticSlot.FRIEND to "friend:mobi",
+                        CosmeticSlot.ACCESSORY to "accessory:mobi_headphones",
+                    ),
+            )
+
+        compose.setContent {
+            var selectedId by androidx.compose.runtime.remember { mutableStateOf<String?>("accessory:mobi_headphones") }
+            MobiMonTheme {
+                CustomizationScreen(
+                    inventory = inventory,
+                    catalog = catalog,
+                    selectedItemId = selectedId,
+                    purchasing = false,
+                    purchaseFailed = false,
+                    onSelectItem = { selectedId = it },
+                    onPurchaseItem = { _, _ -> },
+                    onEquipItem = {},
+                    onEquipFriend = {},
+                    pointBalance = 300,
+                    pointLoadFailed = false,
+                )
+            }
+        }
+
+        compose.onNodeWithText("옷과 소품").performClick()
+        compose.onAllNodesWithText("착용 중").assertCountEquals(3)
+        compose.onNodeWithText("사용 중").assertDoesNotExist()
+    }
+
+    @Test fun currentlyEquippedBackgroundDisplaysInUseStatus() {
+        val catalog =
+            listOf(
+                CosmeticItem("friend:mobi", CosmeticSlot.FRIEND, 0),
+                CosmeticItem("background:star", CosmeticSlot.BACKGROUND, 200),
+            )
+        val inventory =
+            CosmeticInventory(
+                ownedItemIds = setOf("friend:mobi", "background:star"),
+                equippedItemIds =
+                    mapOf(
+                        CosmeticSlot.FRIEND to "friend:mobi",
+                        CosmeticSlot.BACKGROUND to "background:star",
+                    ),
+            )
+
+        compose.setContent {
+            var selectedId by androidx.compose.runtime.remember { mutableStateOf<String?>("background:star") }
+            MobiMonTheme {
+                CustomizationScreen(
+                    inventory = inventory,
+                    catalog = catalog,
+                    selectedItemId = selectedId,
+                    purchasing = false,
+                    purchaseFailed = false,
+                    onSelectItem = { selectedId = it },
+                    onPurchaseItem = { _, _ -> },
+                    onEquipItem = {},
+                    onEquipFriend = {},
+                    pointBalance = 500,
+                    pointLoadFailed = false,
+                )
+            }
+        }
+
+        compose.onNodeWithText("배경").performClick()
+        compose.onAllNodesWithText("사용 중").assertCountEquals(3)
+    }
 }
