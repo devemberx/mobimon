@@ -67,6 +67,7 @@ import com.monsters.mobimon.core.domain.WeatherCondition
 import com.monsters.mobimon.debug.DebugInterpretationOverrides
 import com.monsters.mobimon.debug.DebugRawVssState
 import com.monsters.mobimon.debug.DebugVssState
+import com.monsters.mobimon.debug.deriveWeatherCondition
 import com.monsters.mobimon.debug.toDriveEvaluationData
 import dagger.hilt.EntryPoint
 import dagger.hilt.InstallIn
@@ -129,7 +130,7 @@ fun DebugOverlay() {
 
         var questWeather by remember { mutableStateOf(WeatherCondition.CLEAR) }
         var questStatusMessage by remember { mutableStateOf("") }
-        var simDistanceKm by remember { mutableStateOf("5") }
+        var simDistanceKm by remember { mutableStateOf("35") }
         var simSafeBeltMinutes by remember { mutableStateOf("10") }
         var simSafeScore by remember { mutableStateOf("85") }
         var simTotalDistanceKm by remember { mutableStateOf("100") }
@@ -138,7 +139,15 @@ fun DebugOverlay() {
         var simLaneDepartures by remember { mutableStateOf("0") }
         var simNoViolations by remember { mutableStateOf(true) }
         var simMaintenanceReached by remember { mutableStateOf(true) }
+        var simBatteryChargedProperly by remember { mutableStateOf(true) }
+        var simRestedDuringLongDrive by remember { mutableStateOf(true) }
+        var simWasherFluidRefilled by remember { mutableStateOf(true) }
+        var simTirePressureNormalWeekly by remember { mutableStateOf(true) }
         var evalResults by remember { mutableStateOf<List<DrivingQuestResult>>(emptyList()) }
+
+        LaunchedEffect(state.isRaining, state.raw.rainIntensity, state.timeOfDay) {
+            questWeather = state.deriveWeatherCondition()
+        }
 
         // Live-link the simulated VSS signals to per-quest evidence so toggling a raw signal (seatbelt,
         // distraction, distance, turn signal, tire, …) advances the matching quest. The simulator below
@@ -305,12 +314,39 @@ fun DebugOverlay() {
                                 WeatherCondition.RAIN_OR_SNOW -> "RAIN/SNOW"
                             },
                         ) { sel ->
-                            questWeather =
+                            val newWeather =
                                 when (sel) {
                                     "CLOUDY" -> WeatherCondition.CLOUDY_OR_NIGHT
                                     "RAIN/SNOW" -> WeatherCondition.RAIN_OR_SNOW
                                     else -> WeatherCondition.CLEAR
                                 }
+                            questWeather = newWeather
+                            when (newWeather) {
+                                WeatherCondition.RAIN_OR_SNOW -> {
+                                    updateState {
+                                        it.copy(
+                                            raw = it.raw.copy(rainIntensity = 3),
+                                            overrides = it.overrides.copy(isRaining = true),
+                                        )
+                                    }
+                                }
+                                WeatherCondition.CLOUDY_OR_NIGHT -> {
+                                    updateState {
+                                        it.copy(
+                                            raw = it.raw.copy(rainIntensity = 0),
+                                            overrides = it.overrides.copy(isRaining = false, timeOfDay = "NIGHT"),
+                                        )
+                                    }
+                                }
+                                WeatherCondition.CLEAR -> {
+                                    updateState {
+                                        it.copy(
+                                            raw = it.raw.copy(rainIntensity = 0),
+                                            overrides = it.overrides.copy(isRaining = false, timeOfDay = "DAY"),
+                                        )
+                                    }
+                                }
+                            }
                         }
 
                         Text(
@@ -414,7 +450,7 @@ fun DebugOverlay() {
                                     // Shortcut: satisfy every driving condition so the gated award path grants all.
                                     pointEconomy.updateDriveEvaluation(
                                         DriveEvaluationData(
-                                            distanceKm = 10f,
+                                            distanceKm = 35f,
                                             safeBeltMinutes = 15,
                                             safeDriveScore = 95,
                                             totalDistanceKm = 150f,
@@ -505,6 +541,15 @@ fun DebugOverlay() {
                         DebugInputRow("차선이탈 (회)", simLaneDepartures) { simLaneDepartures = it }
                         DebugToggleRow("위반 없음 (급제동/급가속/과속 0)", simNoViolations) { simNoViolations = it }
                         DebugToggleRow("정비소 목적지 도착 완료", simMaintenanceReached) { simMaintenanceReached = it }
+                        DebugToggleRow("배터리 적정 충전 완료", simBatteryChargedProperly) { simBatteryChargedProperly = it }
+                        DebugToggleRow("장거리 주행 중 휴식 완료", simRestedDuringLongDrive) { simRestedDuringLongDrive = it }
+                        DebugToggleRow("워셔액 보충 확인", simWasherFluidRefilled) { simWasherFluidRefilled = it }
+                        DebugToggleRow(
+                            label = "타이어 공기압 정상 유지",
+                            checked = simTirePressureNormalWeekly,
+                        ) {
+                            simTirePressureNormalWeekly = it
+                        }
 
                         Button(
                             onClick = {
@@ -533,6 +578,10 @@ fun DebugOverlay() {
                                         overspeedCount = violations,
                                         isDestinationMaintenanceCenter = simMaintenanceReached,
                                         isDestinationReached = simMaintenanceReached,
+                                        isBatteryChargedProperly = simBatteryChargedProperly,
+                                        hasRestedDuringLongDrive = simRestedDuringLongDrive,
+                                        isWasherFluidRefilled = simWasherFluidRefilled,
+                                        isTirePressureNormalWeekly = simTirePressureNormalWeekly,
                                         weather = questWeather,
                                     )
                                 evalResults = DrivingQuestEvaluator().evaluateAll(evalData)
@@ -557,7 +606,7 @@ fun DebugOverlay() {
                         ) {
                             Button(
                                 onClick = {
-                                    simDistanceKm = "10"
+                                    simDistanceKm = "35"
                                     simSafeBeltMinutes = "15"
                                     simSafeScore = "95"
                                     simTotalDistanceKm = "150"
@@ -566,10 +615,14 @@ fun DebugOverlay() {
                                     simLaneDepartures = "0"
                                     simNoViolations = true
                                     simMaintenanceReached = true
+                                    simBatteryChargedProperly = true
+                                    simRestedDuringLongDrive = true
+                                    simWasherFluidRefilled = true
+                                    simTirePressureNormalWeekly = true
 
                                     val allSatisfiedData =
                                         DriveEvaluationData(
-                                            distanceKm = 10f,
+                                            distanceKm = 35f,
                                             safeBeltMinutes = 15,
                                             safeDriveScore = 95,
                                             totalDistanceKm = 150f,
@@ -612,6 +665,10 @@ fun DebugOverlay() {
                                     simLaneDepartures = "0"
                                     simNoViolations = false
                                     simMaintenanceReached = false
+                                    simBatteryChargedProperly = false
+                                    simRestedDuringLongDrive = false
+                                    simWasherFluidRefilled = false
+                                    simTirePressureNormalWeekly = false
 
                                     val emptyData = DriveEvaluationData()
                                     evalResults = DrivingQuestEvaluator().evaluateAll(emptyData)

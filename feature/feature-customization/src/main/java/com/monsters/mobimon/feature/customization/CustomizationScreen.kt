@@ -224,7 +224,15 @@ fun CustomizationScreen(
                         horizontalArrangement = Arrangement.Start,
                     ) {
                         Text(
-                            if (equipped) "사용 중" else "미리보기",
+                            if (equipped) {
+                                when (tab) {
+                                    CosmeticSlot.FRIEND -> "동행 중"
+                                    CosmeticSlot.ACCESSORY -> "착용 중"
+                                    else -> "사용 중"
+                                }
+                            } else {
+                                "미리보기"
+                            },
                             color = MobiMonColors.accent,
                             fontSize = (28f * scale).sp,
                             modifier =
@@ -409,7 +417,7 @@ fun CustomizationScreen(
                                         val selectedCard = item.id == selected?.id
                                         Text(
                                             if (active) {
-                                                "사용 중"
+                                                "동행 중"
                                             } else if (selectedCard) {
                                                 "✓  선택됨"
                                             } else {
@@ -449,7 +457,7 @@ fun CustomizationScreen(
                                     Spacer(Modifier.height(12.dp * scale))
                                     Text(
                                         when {
-                                            active -> "사용 중"
+                                            active -> if (tab == CosmeticSlot.ACCESSORY) "착용 중" else "사용 중"
                                             item.id == selected?.id -> "✓ 선택됨"
                                             isNone || item.id in inventory.ownedItemIds -> "보유 중"
                                             else -> "${item.price} P"
@@ -521,6 +529,8 @@ fun CustomizationScreen(
                     when {
                         saving || purchasing -> "적용 중…"
                         selected == null -> "아이템을 골라 주세요"
+                        equipped && tab == CosmeticSlot.FRIEND -> "동행 중"
+                        equipped && tab == CosmeticSlot.ACCESSORY -> "착용 중"
                         equipped -> "사용 중"
                         owned && tab == CosmeticSlot.FRIEND -> "${storeFriendName(selected.id)}와 함께하기"
                         owned -> "이 모습 적용"

@@ -6,7 +6,6 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
@@ -14,6 +13,7 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -37,6 +37,8 @@ import com.monsters.mobimon.core.ui.MobiMonColors as Colors
 @Composable
 internal fun QuestRewardSuccessModal(
     points: Long,
+    bonusPoints: Long = 0L,
+    weatherMultiplier: Float = 1.0f,
     friendId: String,
     accessoryId: String?,
     outfitId: String?,
@@ -74,14 +76,20 @@ internal fun QuestRewardSuccessModal(
                 Box(
                     modifier =
                         Modifier
-                            .width(160.dp * scale)
+                            .widthIn(min = 160.dp * scale)
                             .height(44.dp * scale)
                             .clip(RoundedCornerShape(12.dp * scale))
-                            .background(Colors.raised),
+                            .background(Colors.raised)
+                            .padding(horizontal = 20.dp * scale),
                     contentAlignment = Alignment.Center,
                 ) {
                     Text(
-                        text = stringResource(R.string.quest_modal_badge),
+                        text =
+                            if (bonusPoints > 0) {
+                                stringResource(R.string.quest_modal_badge_weather_bonus)
+                            } else {
+                                stringResource(R.string.quest_modal_badge)
+                            },
                         style = questTextStyle(24f, scale, bold = false, color = Colors.accent),
                     )
                 }
@@ -125,13 +133,22 @@ internal fun QuestRewardSuccessModal(
                     textAlign = TextAlign.Center,
                 )
 
-                Spacer(Modifier.height(28.dp * scale))
+                if (bonusPoints > 0) {
+                    Spacer(Modifier.height(10.dp * scale))
+                    Text(
+                        text = stringResource(R.string.quest_modal_weather_bonus, bonusPoints),
+                        style = questTextStyle(26f, scale, bold = true, color = Colors.accent),
+                        textAlign = TextAlign.Center,
+                    )
+                }
+
+                Spacer(Modifier.height(if (bonusPoints > 0) 18.dp * scale else 28.dp * scale))
 
                 // Reward chip
                 Box(
                     modifier =
                         Modifier
-                            .width(520.dp * scale)
+                            .width(if (bonusPoints > 0) 640.dp * scale else 520.dp * scale)
                             .height(64.dp * scale)
                             .clip(RoundedCornerShape(16.dp * scale))
                             .background(Color(0xFF0E2034))
@@ -139,12 +156,23 @@ internal fun QuestRewardSuccessModal(
                     contentAlignment = Alignment.Center,
                 ) {
                     Text(
-                        text = stringResource(R.string.quest_modal_chip, points),
-                        style = questTextStyle(32f, scale, bold = true, color = Colors.success),
+                        text =
+                            if (bonusPoints > 0) {
+                                stringResource(R.string.quest_modal_chip_weather_bonus, points, bonusPoints)
+                            } else {
+                                stringResource(R.string.quest_modal_chip, points)
+                            },
+                        style =
+                            questTextStyle(
+                                baseSp = if (bonusPoints > 0) 28f else 32f,
+                                scale = scale,
+                                bold = true,
+                                color = Colors.success,
+                            ),
                     )
                 }
 
-                Spacer(Modifier.height(36.dp * scale))
+                Spacer(Modifier.height(if (bonusPoints > 0) 24.dp * scale else 36.dp * scale))
 
                 // Confirm button (440x96)
                 Box(
@@ -191,7 +219,8 @@ internal fun QuestHiddenClaimModal(
                 Modifier
                     .fillMaxSize()
                     .background(Color(0xE6050C16))
-                    .clickable(enabled = !isBusy, onClick = onDismiss),
+                    .clickable(enabled = !isBusy, onClick = onDismiss)
+                    .testTag("quest-hidden-backdrop"),
             contentAlignment = Alignment.Center,
         ) {
             Column(
@@ -282,45 +311,28 @@ internal fun QuestHiddenClaimModal(
 
                 Spacer(Modifier.height(30.dp * scale))
 
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(16.dp * scale),
-                    verticalAlignment = Alignment.CenterVertically,
+                // Claim button (440x96)
+                Box(
+                    modifier =
+                        Modifier
+                            .width(440.dp * scale)
+                            .height(96.dp * scale)
+                            .clip(RoundedCornerShape(20.dp * scale))
+                            .background(if (canClaim) Colors.button else Colors.raised)
+                            .clickable(enabled = canClaim, onClick = onClaim)
+                            .testTag("quest-hidden-btn-claim"),
+                    contentAlignment = Alignment.Center,
                 ) {
-                    // Dismiss button
-                    Box(
-                        modifier =
-                            Modifier
-                                .width(200.dp * scale)
-                                .height(88.dp * scale)
-                                .clip(RoundedCornerShape(20.dp * scale))
-                                .background(Colors.raised)
-                                .clickable(enabled = !isBusy, onClick = onDismiss)
-                                .testTag("quest-hidden-btn-dismiss"),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Text(
-                            text = stringResource(R.string.quest_hidden_dismiss),
-                            style = questTextStyle(32f, scale, bold = false, color = Colors.muted),
-                        )
-                    }
-
-                    // Claim button
-                    Box(
-                        modifier =
-                            Modifier
-                                .width(340.dp * scale)
-                                .height(88.dp * scale)
-                                .clip(RoundedCornerShape(20.dp * scale))
-                                .background(Colors.button)
-                                .clickable(enabled = canClaim, onClick = onClaim)
-                                .testTag("quest-hidden-btn-claim"),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Text(
-                            text = stringResource(R.string.quest_action_claim),
-                            style = questTextStyle(36f, scale, bold = true, color = Colors.onButton),
-                        )
-                    }
+                    Text(
+                        text = stringResource(R.string.quest_action_claim),
+                        style =
+                            questTextStyle(
+                                baseSp = 36f,
+                                scale = scale,
+                                bold = true,
+                                color = if (canClaim) Colors.onButton else Colors.muted,
+                            ),
+                    )
                 }
             }
         }

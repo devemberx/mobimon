@@ -155,6 +155,8 @@ fun QuestScreen(
             state.rewardSuccess?.let { success ->
                 QuestRewardSuccessModal(
                     points = success.points,
+                    bonusPoints = success.bonusPoints,
+                    weatherMultiplier = success.weatherMultiplier,
                     friendId = state.appearance.friendId,
                     accessoryId = state.appearance.accessoryId,
                     outfitId = state.appearance.outfitId,

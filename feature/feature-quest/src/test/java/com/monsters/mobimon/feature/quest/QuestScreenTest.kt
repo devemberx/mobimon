@@ -65,7 +65,7 @@ class QuestScreenTest {
             ),
         )
         compose.onNodeWithTag("quest-hidden-btn-claim").assertIsNotEnabled()
-        compose.onNodeWithTag("quest-hidden-btn-dismiss").assertIsNotEnabled()
+        compose.onNodeWithTag("quest-hidden-btn-dismiss").assertDoesNotExist()
         compose.onNodeWithTag("quest-reward-success-modal").assertDoesNotExist()
     }
 
@@ -148,22 +148,38 @@ class QuestScreenTest {
     }
 
     @Test
-    fun hiddenDismissalUsesOwnerStateWithoutClaimingReward() {
-        var state by mutableStateOf(presentation(friend = "friend:luna"))
-        var dismissed: String? = null
-        var claims = 0
+    fun committedSuccessWithWeatherBonusDisplaysBonusBadgeNotificationAndChip() {
+        val state =
+            presentation(
+                QuestUiState(
+                    isLoading = false,
+                    rewardSuccess =
+                        QuestRewardSuccess(
+                            questId = DrivingQuestIds.SEATBELT,
+                            points = 8,
+                            basePoints = 5,
+                            weatherMultiplier = 1.5f,
+                        ),
+                ),
+            )
         compose.setContent {
             MobiMonTheme {
-                QuestScreen(state, { claims++ }, {
-                    dismissed = it
-                    state = state.copy(hiddenQuests = emptyList())
-                }, {}, {}, {}, {}, {})
+                QuestScreen(state, {}, {}, {}, {}, {}, {}, {})
             }
         }
-        compose.onNodeWithTag("quest-hidden-btn-dismiss").performClick()
-        assertEquals(DrivingQuestIds.HIDDEN_NEW_FRIEND, dismissed)
-        assertEquals(0, claims)
-        compose.onNodeWithTag("quest-hidden-claim-modal").assertDoesNotExist()
+        compose.onNodeWithText("8포인트를 획득했어요!!").assertIsDisplayed()
+        compose.onNodeWithText("퀘스트 완료 · 날씨 보너스").assertIsDisplayed()
+        compose.onNodeWithText("날씨 가중치 적용으로 3포인트를 더 받았어요!").assertIsDisplayed()
+        compose.onNodeWithText("보상 · 8 Point (날씨 보너스 +3)").assertIsDisplayed()
+    }
+
+    @Test
+    fun hiddenClaimModalDoesNotOfferDismissButton() {
+        render(presentation(friend = "friend:luna"))
+        compose.onNodeWithTag("quest-hidden-claim-modal").assertIsDisplayed()
+        compose.onNodeWithTag("quest-hidden-btn-claim").assertIsDisplayed()
+        compose.onNodeWithTag("quest-hidden-btn-dismiss").assertDoesNotExist()
+        compose.onNodeWithText("닫기").assertDoesNotExist()
     }
 
     @Test
