@@ -177,6 +177,8 @@ sealed interface PointAwardResult {
 
     data object QuestUnavailable : PointAwardResult
 
+    data object ConditionNotMet : PointAwardResult
+
     data object InteractionRestricted : PointAwardResult
 
     data object EvidenceChanged : PointAwardResult

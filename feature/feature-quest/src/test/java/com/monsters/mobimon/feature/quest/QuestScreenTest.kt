@@ -239,8 +239,7 @@ class QuestScreenTest {
     }
 
     @Test
-    fun headerHomeButtonCallsOnHome() {
-        var homeCalled = false
+    fun headerHomeButtonDoesNotExist() {
         val state = presentation()
         compose.setContent {
             MobiMonTheme {
@@ -253,12 +252,10 @@ class QuestScreenTest {
                     onRetryWallet = {},
                     onRetryAppearance = {},
                     onNavigateRoute = {},
-                    onHome = { homeCalled = true },
                 )
             }
         }
-        compose.onNodeWithTag("quest-header-home-button").performClick()
-        assertTrue(homeCalled)
+        compose.onNodeWithTag("quest-header-home-button").assertDoesNotExist()
     }
 
     @Test
@@ -285,6 +282,22 @@ class QuestScreenTest {
         compose.onNodeWithTag("quest-header-back-button").performClick()
         compose.onNodeWithTag("quest-card-${DrivingQuestIds.SEATBELT}").assertIsDisplayed()
         assertFalse(backCalled)
+    }
+
+    @Test
+    fun claimableQuestAppearsAtTopInList() {
+        val state =
+            presentation(
+                QuestUiState(
+                    isLoading = false,
+                    satisfiedDrivingQuestIds = setOf(DrivingQuestIds.TIRE_CHECK),
+                ),
+            )
+        render(state)
+        assertEquals(DrivingQuestIds.TIRE_CHECK, state.quests.first().id)
+        assertEquals(QuestItemStatus.CLAIMABLE, state.quests.first().status)
+        compose.onNodeWithTag("quest-card-${DrivingQuestIds.TIRE_CHECK}").assertIsDisplayed()
+        compose.onNodeWithTag("quest-btn-claim-${DrivingQuestIds.TIRE_CHECK}").assertIsDisplayed()
     }
 
     private fun render(

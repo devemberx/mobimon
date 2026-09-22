@@ -176,12 +176,12 @@ class PetPreferencesScreenTest {
     }
 
     @Test
-    fun simulatedParkingIsExplicitlyLabeled() {
+    fun settingsOmitsSimulationBadge() {
         compose.setContent {
             MobiMonTheme { SettingsScreen(CompanionSettings(), {}, parkedVerified = true, simulatedVehicle = true) }
         }
         compose.onNodeWithText("주차 확인됨").assertExists()
-        compose.onNodeWithText("시뮬레이션").assertExists()
+        compose.onNodeWithText("시뮬레이션").assertDoesNotExist()
     }
 
     @Test

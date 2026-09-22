@@ -82,6 +82,37 @@ class DebugPointRepositoryTest {
         }
 
     @Test
+    fun `resetQuestCompletions clears award ledger so a re-claim cannot hit the unique reference index`() =
+        runBlocking {
+            val dao = database.economyDao()
+            dao.insertQuestCompletion(
+                PointQuestCompletionEntity(
+                    id = "completion-1",
+                    profileId = "profile",
+                    questId = "quest_seatbelt",
+                    occurrenceKey = "once",
+                    rewardPoints = 5,
+                    completedAtUtcMillis = 1_800_000_000_000L,
+                    snapshotId = "snap",
+                    snapshotEpoch = "epoch",
+                    snapshotSequence = 1,
+                    snapshotSource = "SIMULATED",
+                ),
+            )
+            dao.insertLedger(PointLedgerEntity("led-quest", "profile", "quest:quest_seatbelt:once", 5, 1L))
+            dao.insertLedger(PointLedgerEntity("led-debug", "profile", "debug:led-debug", 100, 2L))
+
+            assertEquals(DebugPointResult.UPDATED, subject().resetQuestCompletions())
+
+            assertEquals(emptyList<PointQuestCompletionEntity>(), dao.questCompletions("profile"))
+            // Only the quest ledger row is removed; unrelated debug ledger entries are preserved.
+            assertEquals(listOf("debug:led-debug"), dao.ledger("profile").map { it.referenceKey })
+            // The freed reference key can be reused, so a subsequent re-award no longer conflicts.
+            dao.insertLedger(PointLedgerEntity("led-quest-2", "profile", "quest:quest_seatbelt:once", 5, 3L))
+            assertEquals(2, dao.ledger("profile").size)
+        }
+
+    @Test
     fun `restricted app use rejects debug adjustment inside transaction`() =
         runBlocking {
             appUse = AppUseState.RESTRICTED

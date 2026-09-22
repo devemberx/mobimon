@@ -18,33 +18,34 @@ internal class QuestCatalog(
         text: (Int) -> String,
     ): QuestScreenState {
         val quests =
-            drivingContent.mapNotNull { content ->
-                val definition = catalog.find(content.id) ?: return@mapNotNull null
-                val status =
-                    when (content.id) {
-                        in state.completedPointQuestIds -> QuestItemStatus.COMPLETED
-                        in state.satisfiedDrivingQuestIds -> QuestItemStatus.CLAIMABLE
-                        else -> QuestItemStatus.IN_PROGRESS
-                    }
-                QuestItemUiModel(
-                    id = content.id,
-                    title = text(content.title),
-                    description = text(content.description),
-                    detailLine1 = text(content.detailLine1),
-                    detailLine2 = text(content.detailLine2),
-                    scheduleText = text(definition.schedule.textResource()),
-                    scheduleFullText = text(definition.schedule.textResource()),
-                    rewardPoints = definition.rewardPoints,
-                    status = status,
-                    actionType =
-                        when (status) {
-                            QuestItemStatus.CLAIMABLE -> QuestActionType.CLAIM_REWARD
-                            QuestItemStatus.COMPLETED -> QuestActionType.ALREADY_CLAIMED
-                            QuestItemStatus.IN_PROGRESS -> QuestActionType.VIEW_DETAIL
-                        },
-                    targetRoute = VehicleRoute.VEHICLE_INFO,
-                )
-            }
+            drivingContent
+                .mapNotNull { content ->
+                    val definition = catalog.find(content.id) ?: return@mapNotNull null
+                    val status =
+                        when (content.id) {
+                            in state.completedPointQuestIds -> QuestItemStatus.COMPLETED
+                            in state.satisfiedDrivingQuestIds -> QuestItemStatus.CLAIMABLE
+                            else -> QuestItemStatus.IN_PROGRESS
+                        }
+                    QuestItemUiModel(
+                        id = content.id,
+                        title = text(content.title),
+                        description = text(content.description),
+                        detailLine1 = text(content.detailLine1),
+                        detailLine2 = text(content.detailLine2),
+                        scheduleText = text(definition.schedule.textResource()),
+                        scheduleFullText = text(definition.schedule.textResource()),
+                        rewardPoints = definition.rewardPoints,
+                        status = status,
+                        actionType =
+                            when (status) {
+                                QuestItemStatus.CLAIMABLE -> QuestActionType.CLAIM_REWARD
+                                QuestItemStatus.COMPLETED -> QuestActionType.ALREADY_CLAIMED
+                                QuestItemStatus.IN_PROGRESS -> QuestActionType.VIEW_DETAIL
+                            },
+                        targetRoute = VehicleRoute.VEHICLE_INFO,
+                    )
+                }.sortedBy { it.status.sortPriority }
         val hiddenQuests =
             hiddenContent
                 .filter { content ->

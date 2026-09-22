@@ -37,14 +37,20 @@ data class AssetCrop(
 object CharacterArtwork {
     val characters =
         mapOf(
-            "friend:mobi" to CharacterAsset(R.drawable.mobimon_mobi),
+            "friend:mobi" to CharacterAsset(R.drawable.mobimon_mobi, translationYFraction = -35.24f / 1254f),
             "friend:luna" to CharacterAsset(R.drawable.mobimon_luna, visualScale = 0.87f),
         )
 
     val equippedLooks =
         mapOf(
-            "accessory:mobi_headphones" to CharacterAsset(R.drawable.mobimon_mobi_headphones, visualScale = 0.93f),
-            "accessory:mobi_goggles" to CharacterAsset(R.drawable.mobimon_mobi_goggles),
+            "accessory:mobi_headphones" to
+                CharacterAsset(
+                    R.drawable.mobimon_mobi_headphones,
+                    visualScale = 0.93f,
+                    translationYFraction = -35.24f / 1254f,
+                ),
+            "accessory:mobi_goggles" to
+                CharacterAsset(R.drawable.mobimon_mobi_goggles, translationYFraction = -35.24f / 1254f),
             "accessory:luna_cap" to
                 CharacterAsset(
                     R.drawable.mobimon_luna_cap,
@@ -76,14 +82,16 @@ object CharacterArtwork {
 
     val happyCharacters =
         mapOf(
-            "friend:mobi" to CharacterAsset(R.drawable.mobimon_mobi_happy),
+            "friend:mobi" to CharacterAsset(R.drawable.mobimon_mobi_happy, translationYFraction = -35.24f / 1254f),
             "friend:luna" to CharacterAsset(R.drawable.mobimon_luna_happy, visualScale = 0.87f),
         )
 
     val happyEquippedLooks =
         mapOf(
-            "accessory:mobi_headphones" to CharacterAsset(R.drawable.mobimon_mobi_headphones_happy),
-            "accessory:mobi_goggles" to CharacterAsset(R.drawable.mobimon_mobi_goggles_happy),
+            "accessory:mobi_headphones" to
+                CharacterAsset(R.drawable.mobimon_mobi_headphones_happy, translationYFraction = -35.24f / 1254f),
+            "accessory:mobi_goggles" to
+                CharacterAsset(R.drawable.mobimon_mobi_goggles_happy, translationYFraction = -35.24f / 1254f),
             "accessory:luna_cap" to
                 CharacterAsset(
                     R.drawable.mobimon_luna_cap_happy,

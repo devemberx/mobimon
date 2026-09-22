@@ -185,15 +185,15 @@ class DrivingQuestEvaluator(
         )
     }
 
-    fun evaluate5DaysSafeDrive(data: DriveEvaluationData): DrivingQuestResult {
+    fun evaluateSafeDriveStreak(data: DriveEvaluationData): DrivingQuestResult {
         val basePoints = 50L
-        val satisfied = data.safeDriveDaysCount >= REQUIRED_CONSECUTIVE_SAFE_DAYS
+        val satisfied = data.safeDriveCount >= REQUIRED_SAFE_DRIVES
         val earned = if (satisfied) calculatePoints(basePoints, data.weather) else 0L
         val reason =
             if (satisfied) {
-                "${REQUIRED_CONSECUTIVE_SAFE_DAYS}일 연속 안전 주행 달성"
+                "안전 주행 ${REQUIRED_SAFE_DRIVES}회 달성"
             } else {
-                "연속 안전 주행 일수(${data.safeDriveDaysCount}/$REQUIRED_CONSECUTIVE_SAFE_DAYS) 부족"
+                "안전 주행 횟수(${data.safeDriveCount}/$REQUIRED_SAFE_DRIVES) 부족"
             }
         return DrivingQuestResult(
             questId = DrivingQuestIds.SAFE_5DAYS,
@@ -265,6 +265,33 @@ class DrivingQuestEvaluator(
         )
     }
 
+    /**
+     * Evaluates the single quest identified by [questId] against the same evidence used by
+     * [evaluateAll]. Returns null for ids without a driving condition (e.g. hidden quests),
+     * so callers can tell "not driving-gated" apart from "driving condition not met".
+     */
+    fun evaluateById(
+        questId: String,
+        data: DriveEvaluationData,
+    ): DrivingQuestResult? =
+        when (questId) {
+            DrivingQuestIds.SEATBELT -> evaluateSeatbelt(data)
+            DrivingQuestIds.SAFE_DRIVE -> evaluateSafeDriveCompletion(data)
+            DrivingQuestIds.DISTANCE_100KM -> evaluate100KmDrive(data)
+            DrivingQuestIds.CLEAN_DRIVE -> evaluateCleanDriveBonus(data)
+            DrivingQuestIds.FIRST_DRIVE -> evaluateFirstDriveOfDay(data)
+            DrivingQuestIds.FOCUS_DRIVE -> evaluateFocusedDrive(data)
+            DrivingQuestIds.LANE_KEEP -> evaluateLaneKeeping(data)
+            DrivingQuestIds.MAINTENANCE -> evaluateMaintenanceVisit(data)
+            DrivingQuestIds.TURN_SIGNAL -> evaluateTurnSignalManner(data)
+            DrivingQuestIds.SAFE_5DAYS -> evaluateSafeDriveStreak(data)
+            DrivingQuestIds.BATTERY_CARE -> evaluateBatteryCare(data)
+            DrivingQuestIds.LONG_TRIP_REST -> evaluateLongTripRest(data)
+            DrivingQuestIds.WASHER_FLUID -> evaluateWasherFluid(data)
+            DrivingQuestIds.TIRE_CHECK -> evaluateTireCheck(data)
+            else -> null
+        }
+
     fun evaluateAll(data: DriveEvaluationData): List<DrivingQuestResult> =
         listOf(
             evaluateSeatbelt(data),
@@ -276,7 +303,7 @@ class DrivingQuestEvaluator(
             evaluateLaneKeeping(data),
             evaluateMaintenanceVisit(data),
             evaluateTurnSignalManner(data),
-            evaluate5DaysSafeDrive(data),
+            evaluateSafeDriveStreak(data),
             evaluateBatteryCare(data),
             evaluateLongTripRest(data),
             evaluateWasherFluid(data),
@@ -289,7 +316,7 @@ class DrivingQuestEvaluator(
         const val TARGET_TOTAL_DISTANCE_KM = 100.0f
         const val MAX_LANE_DEPARTURES = 10
         const val MAX_DAILY_TURN_SIGNAL_POINTS = 10
-        const val REQUIRED_CONSECUTIVE_SAFE_DAYS = 5
+        const val REQUIRED_SAFE_DRIVES = 5
         const val SAFE_DRIVE_DEFAULT_PASS_SCORE = 80
     }
 }

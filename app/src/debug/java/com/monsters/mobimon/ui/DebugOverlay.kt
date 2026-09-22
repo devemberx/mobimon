@@ -67,6 +67,7 @@ import com.monsters.mobimon.core.domain.WeatherCondition
 import com.monsters.mobimon.debug.DebugInterpretationOverrides
 import com.monsters.mobimon.debug.DebugRawVssState
 import com.monsters.mobimon.debug.DebugVssState
+import com.monsters.mobimon.debug.toDriveEvaluationData
 import dagger.hilt.EntryPoint
 import dagger.hilt.InstallIn
 import dagger.hilt.android.EntryPointAccessors
@@ -113,6 +114,7 @@ fun DebugOverlay() {
         remember(settingsRepository) { settingsRepository.settings.map { it.debugModeEnabled } }
     val isDebugEnabled by isDebugEnabledFlow.collectAsStateWithLifecycle(initialValue = false)
     val state by debugStore.state.collectAsStateWithLifecycle()
+    val safeDriveCount by debugStore.safeDriveCount.collectAsStateWithLifecycle()
 
     fun updateState(reducer: (DebugVssState) -> DebugVssState) {
         debugStore.updateState(reducer)
@@ -137,6 +139,13 @@ fun DebugOverlay() {
         var simNoViolations by remember { mutableStateOf(true) }
         var simMaintenanceReached by remember { mutableStateOf(true) }
         var evalResults by remember { mutableStateOf<List<DrivingQuestResult>>(emptyList()) }
+
+        // Live-link the simulated VSS signals to per-quest evidence so toggling a raw signal (seatbelt,
+        // distraction, distance, turn signal, tire, …) advances the matching quest. The simulator below
+        // stays a manual override for aggregates VSS cannot express (safe days, long-trip rest).
+        LaunchedEffect(state, questWeather, safeDriveCount) {
+            pointEconomy.updateDriveEvaluation(state.toDriveEvaluationData(questWeather, safeDriveCount))
+        }
 
         Box(modifier = Modifier.fillMaxSize()) {
             Box(
@@ -358,10 +367,74 @@ fun DebugOverlay() {
                             }
                         }
 
+                        // Quest "안전 주행 5회": VSS judges each drive (5km+안전), the app accumulates the count.
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        ) {
+                            Button(
+                                onClick = {
+                                    val qualifies =
+                                        DrivingQuestEvaluator()
+                                            .evaluateSafeDriveCompletion(
+                                                state.toDriveEvaluationData(questWeather, safeDriveCount),
+                                            ).isSatisfied
+                                    if (qualifies) {
+                                        debugStore.recordSafeDrive()
+                                        questStatusMessage = "안전 주행 1회 기록 (${safeDriveCount + 1}/5)"
+                                    } else {
+                                        questStatusMessage = "이번 주행은 안전 주행 조건 미충족 (5km↑·안전점수 80↑)"
+                                    }
+                                },
+                                modifier = Modifier.weight(1f),
+                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1E5B42)),
+                                shape = RoundedCornerShape(8.dp),
+                                contentPadding = PaddingValues(horizontal = 4.dp, vertical = 6.dp),
+                            ) {
+                                Text("안전 주행 1회 기록 ($safeDriveCount/5)", color = Color.White, fontSize = 11.sp)
+                            }
+                            Button(
+                                onClick = {
+                                    debugStore.resetSafeDriveCount()
+                                    questStatusMessage = "안전 주행 횟수 초기화"
+                                },
+                                modifier = Modifier.weight(1f),
+                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF6B3A2A)),
+                                shape = RoundedCornerShape(8.dp),
+                                contentPadding = PaddingValues(horizontal = 4.dp, vertical = 6.dp),
+                            ) {
+                                Text("횟수 초기화", color = Color.White, fontSize = 11.sp)
+                            }
+                        }
+
                         Button(
                             onClick = {
                                 scope.launch {
                                     val snapshot = vehicleRepository.snapshots.value
+                                    // Shortcut: satisfy every driving condition so the gated award path grants all.
+                                    pointEconomy.updateDriveEvaluation(
+                                        DriveEvaluationData(
+                                            distanceKm = 10f,
+                                            safeBeltMinutes = 15,
+                                            safeDriveScore = 95,
+                                            totalDistanceKm = 150f,
+                                            safeDriveCount = 5,
+                                            turnSignalOnCount = 5,
+                                            continuousDistanceKm = 35f,
+                                            isDistracted = false,
+                                            laneDepartureCount = 0,
+                                            hardBrakeCount = 0,
+                                            hardAccelCount = 0,
+                                            overspeedCount = 0,
+                                            isDestinationMaintenanceCenter = true,
+                                            isDestinationReached = true,
+                                            isBatteryChargedProperly = true,
+                                            hasRestedDuringLongDrive = true,
+                                            isWasherFluidRefilled = true,
+                                            isTirePressureNormalWeekly = true,
+                                            weather = questWeather,
+                                        ),
+                                    )
                                     val allQuests =
                                         listOf(
                                             DrivingQuestIds.SEATBELT,
@@ -427,7 +500,7 @@ fun DebugOverlay() {
                         DebugInputRow("안전벨트 착용 (분)", simSafeBeltMinutes) { simSafeBeltMinutes = it }
                         DebugInputRow("안전운전 점수 (0-100)", simSafeScore) { simSafeScore = it }
                         DebugInputRow("누적거리 (km)", simTotalDistanceKm) { simTotalDistanceKm = it }
-                        DebugInputRow("연속 안전일수 (일)", simSafeDays) { simSafeDays = it }
+                        DebugInputRow("안전 주행 횟수 (회)", simSafeDays) { simSafeDays = it }
                         DebugInputRow("방향지시등 (회)", simTurnSignals) { simTurnSignals = it }
                         DebugInputRow("차선이탈 (회)", simLaneDepartures) { simLaneDepartures = it }
                         DebugToggleRow("위반 없음 (급제동/급가속/과속 0)", simNoViolations) { simNoViolations = it }
@@ -450,7 +523,7 @@ fun DebugOverlay() {
                                         safeBeltMinutes = belt,
                                         safeDriveScore = score,
                                         totalDistanceKm = total,
-                                        safeDriveDaysCount = safeDays,
+                                        safeDriveCount = safeDays,
                                         turnSignalOnCount = signals,
                                         continuousDistanceKm = dist,
                                         isDistracted = state.isDistracted,
@@ -500,7 +573,7 @@ fun DebugOverlay() {
                                             safeBeltMinutes = 15,
                                             safeDriveScore = 95,
                                             totalDistanceKm = 150f,
-                                            safeDriveDaysCount = 5,
+                                            safeDriveCount = 5,
                                             turnSignalOnCount = 5,
                                             continuousDistanceKm = 35f,
                                             isDistracted = false,

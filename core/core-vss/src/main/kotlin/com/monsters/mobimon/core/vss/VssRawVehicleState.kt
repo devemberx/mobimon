@@ -279,21 +279,27 @@ private fun distanceMeters(
     return EARTH_RADIUS_METERS * c
 }
 
-internal fun String.toTimeOfDay(): String {
-    val trimmed = trim()
+fun interpretVssTimeOfDay(input: String): String {
+    val trimmed = input.trim()
     when (trimmed.lowercase()) {
         "morning", "아침" -> return "Morning"
         "day", "낮" -> return "Day"
+        "afternoon", "오후", "늦은 오후" -> return "Afternoon"
+        "sunset", "노을", "저녁" -> return "Sunset"
         "night", "밤" -> return "Night"
     }
 
     val hour = extractHour(trimmed) ?: return "Day"
     return when (hour) {
-        in 8..11 -> "Morning"
-        in 12..18 -> "Day"
+        in 6..11 -> "Morning"
+        in 12..15 -> "Day"
+        in 16..17 -> "Afternoon"
+        in 18..19 -> "Sunset"
         else -> "Night"
     }
 }
+
+internal fun String.toTimeOfDay(): String = interpretVssTimeOfDay(this)
 
 private fun extractHour(input: String): Int? {
     val koreanHourMatch = Regex("""^(\d{1,2})\s*시""").find(input)

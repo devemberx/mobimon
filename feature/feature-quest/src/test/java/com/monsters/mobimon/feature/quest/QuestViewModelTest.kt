@@ -244,6 +244,7 @@ class QuestViewModelTest {
             runCurrent()
             for ((result, message) in listOf(
                 PointAwardResult.EvidenceChanged to QuestMessage.REFRESH_REQUIRED,
+                PointAwardResult.ConditionNotMet to QuestMessage.CONDITION_NOT_MET,
                 PointAwardResult.InteractionRestricted to QuestMessage.INTERACTION_RESTRICTED,
                 PointAwardResult.QuestUnavailable to QuestMessage.UNSUPPORTED,
             )) {
