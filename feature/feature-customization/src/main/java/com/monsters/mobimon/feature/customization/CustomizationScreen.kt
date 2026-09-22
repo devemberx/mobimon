@@ -155,7 +155,10 @@ fun CustomizationScreen(
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.Center,
                     ) {
-                        BoxWithConstraints(Modifier.fillMaxWidth().weight(1f).clipToBounds(), contentAlignment = Alignment.Center) {
+                        BoxWithConstraints(
+                            Modifier.fillMaxWidth().weight(1f).clipToBounds(),
+                            contentAlignment = Alignment.Center,
+                        ) {
                             Image(
                                 painter = painterResource(companionBackgroundRes(timeOfDay)),
                                 contentDescription = null,
@@ -181,7 +184,7 @@ fun CustomizationScreen(
                             }
                             if (tab != CosmeticSlot.BACKGROUND) {
                                 val characterSize = minOf(maxWidth, maxHeight) * 0.58f
-                                val topOffset = maxHeight * 0.28f
+                                val topOffset = maxHeight * 0.21f
                                 PetAvatar(
                                     Modifier
                                         .align(Alignment.TopCenter)

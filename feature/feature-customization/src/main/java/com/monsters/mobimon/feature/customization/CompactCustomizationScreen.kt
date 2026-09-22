@@ -191,7 +191,7 @@ internal fun CompactCustomizationScreen(
                         }
                         if (activeTab != CosmeticSlot.BACKGROUND) {
                             val characterSize = minOf(maxWidth, maxHeight) * 0.58f
-                            val topOffset = maxHeight * 0.28f
+                            val topOffset = maxHeight * 0.21f
                             PetAvatar(
                                 modifier =
                                     Modifier
