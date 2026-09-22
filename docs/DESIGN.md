@@ -47,7 +47,8 @@ Do not package full-screen references or generation drafts as runtime UI.
 
 | Asset | Location |
 | --- | --- |
-| Character frames | `core/core-ui/src/main/assets/characters/{mobi,luna}/idle_breath/` |
+| Mobi idle sprite / Luna frames | `core/core-ui/src/main/assets/characters/{mobi,luna}/idle_breath/` |
+| Original Mobi source frames | `docs/art/characters/mobi/idle_breath/` (not packaged) |
 | Shared artwork, accessories and backgrounds | `core/core-ui/src/main/res/drawable-nodpi/` |
 | Feature icons/artwork | Owning module's `res/drawable/` or `res/drawable-nodpi/` |
 | References | [docs/ui](ui/README.md) |
@@ -56,6 +57,17 @@ Do not package full-screen references or generation drafts as runtime UI.
 Use approved master assets for variants. Preserve identity, proportions, style,
 scene geometry, canvas size, framing, subject scale/anchor and transparency; change
 only requested properties. Check dimensions and compare visually before use.
+
+Mobi idle uses a lossless 6 x 4 atlas of all 24 original 1254px RGBA frames.
+Rebuild with `python scripts/build_mobi_idle_sprite.py` (Pillow required).
+Forward playback already contains inhale/exhale; 24-to-01 is visually identical.
+The 4.05-second cycle includes the source's repeated extreme poses, with
+an independent 6.2-second, +/-2.35-degree seated-pivot tilt. Eyes and sprout are baked
+in; there are no synthetic blink/sprout layers. Original source discontinuities
+remain strongest at 08-to-09, 13-to-14 and 14-to-15; alpha-correct adjacent-cell blending softens these jumps but cannot repair artwork.
+Breathing adds up to 1.2% width/2.4% height; a separate 6.6-second bob adds tiny
+settle and lift. All transforms share the seated pivot and preserve layout.
+
 Use the replaceable [PetAvatar](ARCHITECTURE.md#state-and-lifecycle) renderer.
 
 ### Home scene

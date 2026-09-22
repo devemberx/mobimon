@@ -33,38 +33,6 @@ import java.util.Locale
 private val IDLE_BREATH_FRAME_DURATIONS_MS =
     IntArray(24) { if (it == 23) 130 else 90 }
 
-internal object MobiAnimationCache {
-    @Volatile
-    private var cachedFrames: List<ImageBitmap>? = null
-
-    fun getOrLoadFrames(context: Context): List<ImageBitmap> {
-        cachedFrames?.let { return it }
-        return synchronized(this) {
-            cachedFrames?.let { return it }
-            try {
-                val assetManager = context.applicationContext?.assets ?: context.assets
-                val decodeOptions = BitmapFactory.Options().apply { inSampleSize = 2 }
-                val frames =
-                    (1..24).map { i ->
-                        val path =
-                            String.format(
-                                Locale.US,
-                                "characters/mobi/idle_breath/mobi_idle_breath_%02d.png",
-                                i,
-                            )
-                        assetManager.open(path).use { stream ->
-                            BitmapFactory.decodeStream(stream, null, decodeOptions)!!.asImageBitmap()
-                        }
-                    }
-                cachedFrames = frames
-                frames
-            } catch (_: Exception) {
-                emptyList()
-            }
-        }
-    }
-}
-
 internal object LunaAnimationCache {
     @Volatile
     private var cachedFrames: List<ImageBitmap>? = null
@@ -163,15 +131,6 @@ fun PetAvatar(
         drawCircle(fur, radius, center)
         drawCircle(Color(0xFF51402C), radius * 0.1f, center + Offset(0f, radius * 0.25f))
     }
-}
-
-@Composable
-fun MobiIdleBreathAnimation(
-    modifier: Modifier = Modifier,
-    contentDescription: String? = null,
-    fallbackAsset: CharacterAsset = CharacterArtwork.characters.getValue("friend:mobi"),
-) {
-    IdleBreathAnimation(MobiAnimationCache::getOrLoadFrames, false, modifier, contentDescription, fallbackAsset)
 }
 
 @Composable
