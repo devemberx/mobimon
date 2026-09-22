@@ -2,13 +2,11 @@ package com.monsters.mobimon.debug
 
 import android.content.Context
 import android.content.SharedPreferences
+import com.monsters.mobimon.core.vss.interpretVssTimeOfDay
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import java.time.LocalDateTime
-import java.time.OffsetDateTime
-import java.time.format.DateTimeParseException
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.math.atan2
@@ -176,7 +174,7 @@ data class DebugVssState(
         get() = overrides.isEngineOn ?: raw.combustionEngineRunning
 
     val timeOfDay: String
-        get() = overrides.timeOfDay?.toTimeOfDay() ?: raw.currentLocationTimestamp.toTimeOfDay()
+        get() = overrides.timeOfDay?.let(::interpretVssTimeOfDay) ?: interpretVssTimeOfDay(raw.currentLocationTimestamp)
 }
 
 interface DebugVssProvider {
@@ -418,64 +416,6 @@ private fun distanceMeters(
             cos(fromLatRad) * cos(toLatRad) * sin(lonDelta / 2) * sin(lonDelta / 2)
     val c = 2 * atan2(sqrt(a), sqrt(1 - a))
     return EARTH_RADIUS_METERS * c
-}
-
-internal fun String.toTimeOfDay(): String {
-    val trimmed = trim()
-    when (trimmed.lowercase()) {
-        "morning", "아침" -> return "Morning"
-        "day", "낮" -> return "Day"
-        "afternoon", "오후", "늦은 오후" -> return "Afternoon"
-        "sunset", "노을", "저녁" -> return "Sunset"
-        "night", "밤" -> return "Night"
-    }
-
-    val hour = extractHour(trimmed) ?: return "Day"
-    return when (hour) {
-        in 6..11 -> "Morning"
-        in 12..15 -> "Day"
-        in 16..17 -> "Afternoon"
-        in 18..19 -> "Sunset"
-        else -> "Night"
-    }
-}
-
-private fun extractHour(input: String): Int? {
-    val koreanHourMatch = Regex("""^(\d{1,2})\s*시""").find(input)
-    if (koreanHourMatch != null) {
-        val h = koreanHourMatch.groupValues[1].toIntOrNull()
-        if (h != null && h in 0..24) return if (h == 24) 0 else h
-    }
-
-    input.toIntOrNull()?.let {
-        if (it in 0..24) {
-            return if (it == 24) 0 else it
-        }
-    }
-
-    val timeMatch = Regex("""^(\d{1,2}):\d{2}(?::\d{2})?""").find(input)
-    if (timeMatch != null) {
-        val h = timeMatch.groupValues[1].toIntOrNull()
-        if (h != null && h in 0..23) return h
-    }
-
-    try {
-        return OffsetDateTime.parse(input).hour
-    } catch (_: DateTimeParseException) {
-    }
-
-    try {
-        return LocalDateTime.parse(input).hour
-    } catch (_: DateTimeParseException) {
-    }
-
-    val generalTimeMatch = Regex("""[T ](\d{1,2}):\d{2}""").find(input)
-    if (generalTimeMatch != null) {
-        val h = generalTimeMatch.groupValues[1].toIntOrNull()
-        if (h != null && h in 0..23) return h
-    }
-
-    return null
 }
 
 private fun SharedPreferences.bool(
