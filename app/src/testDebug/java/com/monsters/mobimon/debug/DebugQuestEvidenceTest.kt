@@ -1,5 +1,6 @@
 package com.monsters.mobimon.debug
 
+import com.monsters.mobimon.core.domain.DriveEvaluationData
 import com.monsters.mobimon.core.domain.DrivingQuestEvaluator
 import com.monsters.mobimon.core.domain.DrivingQuestIds
 import com.monsters.mobimon.core.domain.WeatherCondition
@@ -150,5 +151,49 @@ class DebugQuestEvidenceTest {
                 DebugRawVssState(traveledDistanceSinceStartKm = 10f, tripDurationSeconds = 6000f),
             ).toDriveEvaluationData(WeatherCondition.CLEAR)
         assertFalse(shortTrip.hasRestedDuringLongDrive)
+    }
+
+    @Test
+    fun washerFluidSignalsDriveTheWasherFluidQuest() {
+        val refilled =
+            state(
+                DebugRawVssState(
+                    washerFluidLow = false,
+                    washerFluidLevel = 85,
+                ),
+            ).toDriveEvaluationData(WeatherCondition.CLEAR)
+        assertTrue(refilled.isWasherFluidRefilled)
+        assertTrue(evaluator.evaluateById(DrivingQuestIds.WASHER_FLUID, refilled)!!.isSatisfied)
+
+        val low =
+            state(
+                DebugRawVssState(
+                    washerFluidLow = true,
+                    washerFluidLevel = 30,
+                ),
+            ).toDriveEvaluationData(WeatherCondition.CLEAR)
+        assertFalse(low.isWasherFluidRefilled)
+        assertFalse(evaluator.evaluateById(DrivingQuestIds.WASHER_FLUID, low)!!.isSatisfied)
+    }
+
+    @Test
+    fun manualDriveEvaluationReflectsMissingVssConditionsIndividually() {
+        val baseData = DriveEvaluationData()
+        assertFalse(evaluator.evaluateById(DrivingQuestIds.BATTERY_CARE, baseData)!!.isSatisfied)
+        assertFalse(evaluator.evaluateById(DrivingQuestIds.LONG_TRIP_REST, baseData)!!.isSatisfied)
+        assertFalse(evaluator.evaluateById(DrivingQuestIds.WASHER_FLUID, baseData)!!.isSatisfied)
+        assertFalse(evaluator.evaluateById(DrivingQuestIds.TIRE_CHECK, baseData)!!.isSatisfied)
+
+        val batteryCareSatisfied = baseData.copy(isBatteryChargedProperly = true)
+        assertTrue(evaluator.evaluateById(DrivingQuestIds.BATTERY_CARE, batteryCareSatisfied)!!.isSatisfied)
+
+        val longTripRestSatisfied = baseData.copy(hasRestedDuringLongDrive = true)
+        assertTrue(evaluator.evaluateById(DrivingQuestIds.LONG_TRIP_REST, longTripRestSatisfied)!!.isSatisfied)
+
+        val washerFluidSatisfied = baseData.copy(isWasherFluidRefilled = true)
+        assertTrue(evaluator.evaluateById(DrivingQuestIds.WASHER_FLUID, washerFluidSatisfied)!!.isSatisfied)
+
+        val tireCheckSatisfied = baseData.copy(isTirePressureNormalWeekly = true)
+        assertTrue(evaluator.evaluateById(DrivingQuestIds.TIRE_CHECK, tireCheckSatisfied)!!.isSatisfied)
     }
 }

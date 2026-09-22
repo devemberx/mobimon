@@ -138,6 +138,10 @@ fun DebugOverlay() {
         var simLaneDepartures by remember { mutableStateOf("0") }
         var simNoViolations by remember { mutableStateOf(true) }
         var simMaintenanceReached by remember { mutableStateOf(true) }
+        var simBatteryChargedProperly by remember { mutableStateOf(true) }
+        var simRestedDuringLongDrive by remember { mutableStateOf(true) }
+        var simWasherFluidRefilled by remember { mutableStateOf(true) }
+        var simTirePressureNormalWeekly by remember { mutableStateOf(true) }
         var evalResults by remember { mutableStateOf<List<DrivingQuestResult>>(emptyList()) }
 
         // Live-link the simulated VSS signals to per-quest evidence so toggling a raw signal (seatbelt,
@@ -505,6 +509,15 @@ fun DebugOverlay() {
                         DebugInputRow("차선이탈 (회)", simLaneDepartures) { simLaneDepartures = it }
                         DebugToggleRow("위반 없음 (급제동/급가속/과속 0)", simNoViolations) { simNoViolations = it }
                         DebugToggleRow("정비소 목적지 도착 완료", simMaintenanceReached) { simMaintenanceReached = it }
+                        DebugToggleRow("배터리 적정 충전 완료", simBatteryChargedProperly) { simBatteryChargedProperly = it }
+                        DebugToggleRow("장거리 주행 중 휴식 완료", simRestedDuringLongDrive) { simRestedDuringLongDrive = it }
+                        DebugToggleRow("워셔액 보충 확인", simWasherFluidRefilled) { simWasherFluidRefilled = it }
+                        DebugToggleRow(
+                            label = "타이어 공기압 정상 유지",
+                            checked = simTirePressureNormalWeekly,
+                        ) {
+                            simTirePressureNormalWeekly = it
+                        }
 
                         Button(
                             onClick = {
@@ -533,6 +546,10 @@ fun DebugOverlay() {
                                         overspeedCount = violations,
                                         isDestinationMaintenanceCenter = simMaintenanceReached,
                                         isDestinationReached = simMaintenanceReached,
+                                        isBatteryChargedProperly = simBatteryChargedProperly,
+                                        hasRestedDuringLongDrive = simRestedDuringLongDrive,
+                                        isWasherFluidRefilled = simWasherFluidRefilled,
+                                        isTirePressureNormalWeekly = simTirePressureNormalWeekly,
                                         weather = questWeather,
                                     )
                                 evalResults = DrivingQuestEvaluator().evaluateAll(evalData)
@@ -566,6 +583,10 @@ fun DebugOverlay() {
                                     simLaneDepartures = "0"
                                     simNoViolations = true
                                     simMaintenanceReached = true
+                                    simBatteryChargedProperly = true
+                                    simRestedDuringLongDrive = true
+                                    simWasherFluidRefilled = true
+                                    simTirePressureNormalWeekly = true
 
                                     val allSatisfiedData =
                                         DriveEvaluationData(
@@ -612,6 +633,10 @@ fun DebugOverlay() {
                                     simLaneDepartures = "0"
                                     simNoViolations = false
                                     simMaintenanceReached = false
+                                    simBatteryChargedProperly = false
+                                    simRestedDuringLongDrive = false
+                                    simWasherFluidRefilled = false
+                                    simTirePressureNormalWeekly = false
 
                                     val emptyData = DriveEvaluationData()
                                     evalResults = DrivingQuestEvaluator().evaluateAll(emptyData)
