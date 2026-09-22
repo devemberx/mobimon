@@ -284,6 +284,22 @@ class QuestScreenTest {
         assertFalse(backCalled)
     }
 
+    @Test
+    fun claimableQuestAppearsAtTopInList() {
+        val state =
+            presentation(
+                QuestUiState(
+                    isLoading = false,
+                    satisfiedDrivingQuestIds = setOf(DrivingQuestIds.TIRE_CHECK),
+                ),
+            )
+        render(state)
+        assertEquals(DrivingQuestIds.TIRE_CHECK, state.quests.first().id)
+        assertEquals(QuestItemStatus.CLAIMABLE, state.quests.first().status)
+        compose.onNodeWithTag("quest-card-${DrivingQuestIds.TIRE_CHECK}").assertIsDisplayed()
+        compose.onNodeWithTag("quest-btn-claim-${DrivingQuestIds.TIRE_CHECK}").assertIsDisplayed()
+    }
+
     private fun render(
         state: QuestScreenState,
         onClaim: (String) -> Unit = {},
