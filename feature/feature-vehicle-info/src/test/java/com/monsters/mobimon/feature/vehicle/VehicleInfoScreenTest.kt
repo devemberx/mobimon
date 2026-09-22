@@ -141,24 +141,20 @@ class VehicleInfoScreenTest {
     }
 
     @Test
-    fun headerNavigationInvokesCallbacks() {
+    fun headerBackButtonCallsOnBackAndHomeButtonDoesNotExist() {
         var backClicked = false
-        var homeClicked = false
         compose.setContent {
             MaterialTheme {
                 VehicleInfoScreen(
                     snapshot = snapshot(),
                     onBack = { backClicked = true },
-                    onHome = { homeClicked = true },
                 )
             }
         }
 
         compose.onNodeWithTag("vehicle-header-back-button").performClick()
         assertTrue("Back callback invoked", backClicked)
-
-        compose.onNodeWithTag("vehicle-header-home-button").performClick()
-        assertTrue("Home callback invoked", homeClicked)
+        compose.onNodeWithTag("vehicle-header-home-button").assertDoesNotExist()
     }
 
     private fun render(snapshot: VehicleSnapshot) {

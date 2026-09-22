@@ -52,12 +52,9 @@ import com.monsters.mobimon.core.domain.SignalUnavailableReason
 import com.monsters.mobimon.core.domain.VehicleSnapshot
 import com.monsters.mobimon.core.domain.VehicleWarning
 import com.monsters.mobimon.core.domain.WarningSeverity
-import com.monsters.mobimon.core.ui.MobiMonButton
-import com.monsters.mobimon.core.ui.MobiMonButtonStyle
 import com.monsters.mobimon.core.ui.MobiMonColors
 import com.monsters.mobimon.core.ui.MobiMonDimensions
 import com.monsters.mobimon.core.ui.MobiMonParkingBadge
-import com.monsters.mobimon.core.ui.MobiMonSourceBadge
 import com.monsters.mobimon.core.ui.PetAvatar
 import com.monsters.mobimon.core.ui.R as CoreUiR
 
@@ -249,26 +246,6 @@ internal fun VehicleHeader(
                 color = MobiMonColors.muted,
                 fontSize = if (scale >= 0.7f) (28f * scale).sp else 14.sp,
             )
-        }
-
-        if (snapshot.source == SignalSource.SIMULATED) {
-            MobiMonSourceBadge(simulated = true)
-            Spacer(Modifier.width(if (scale >= 0.7f) 16.dp * scale else 12.dp))
-        }
-
-        if (onHome != null) {
-            val homeHeight = if (scale >= 0.7f) 76.dp * scale else MobiMonDimensions.touchTarget
-            MobiMonButton(
-                style = MobiMonButtonStyle.SECONDARY,
-                onClick = onHome,
-                modifier = Modifier.height(homeHeight).testTag("vehicle-header-home-button"),
-            ) {
-                Text(
-                    text = stringResource(CoreUiR.string.mobimon_home),
-                    fontSize = if (scale >= 0.7f) (28f * scale).sp else 14.sp,
-                    color = MobiMonColors.text,
-                )
-            }
         }
     }
 }
