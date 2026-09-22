@@ -182,7 +182,8 @@ fun MobiIdleBreathAnimation(
                 rotationZ = MobiIdleTimeline.tiltAt(time)
                 scaleX = MobiIdleTimeline.scaleXAt(time)
                 scaleY = MobiIdleTimeline.scaleYAt(time)
-                translationY = size.minDimension * MobiIdleTimeline.liftFractionAt(time)
+                translationY =
+                    size.minDimension * (MobiIdleTimeline.liftFractionAt(time) + fallbackAsset.translationYFraction)
                 // Isolate premultiplied interpolation from the Home background; keep body/hands/wheel together.
                 compositingStrategy = CompositingStrategy.Offscreen
                 transformOrigin = TransformOrigin(0.5f, 0.9f)
