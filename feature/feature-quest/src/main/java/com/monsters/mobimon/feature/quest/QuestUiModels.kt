@@ -6,7 +6,13 @@ import com.monsters.mobimon.core.presentation.PointBalanceState
 
 enum class QuestFilterTab { ALL, IN_PROGRESS, COMPLETED }
 
-enum class QuestItemStatus { IN_PROGRESS, CLAIMABLE, COMPLETED }
+enum class QuestItemStatus(
+    val sortPriority: Int,
+) {
+    CLAIMABLE(0),
+    IN_PROGRESS(1),
+    COMPLETED(2),
+}
 
 enum class QuestActionType { CLAIM_REWARD, VIEW_DETAIL, ALREADY_CLAIMED }
 
