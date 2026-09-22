@@ -62,8 +62,10 @@ class QuestFeatureTest {
     @GraphicsMode(GraphicsMode.Mode.NATIVE)
     fun productionRouteProducesReviewImage() {
         show()
-        compose.onNodeWithTag("quest-hidden-btn-dismiss").performClick()
+        compose.onNodeWithTag("quest-hidden-btn-claim").performClick()
         compose.onNodeWithTag("quest-hidden-claim-modal").assertDoesNotExist()
+        compose.onNodeWithTag("quest-modal-btn-confirm").performClick()
+        compose.onNodeWithTag("quest-reward-success-modal").assertDoesNotExist()
         compose.runOnIdle {
             val bitmap = Bitmap.createBitmap(contentView.width, contentView.height, Bitmap.Config.ARGB_8888)
             contentView.draw(Canvas(bitmap))

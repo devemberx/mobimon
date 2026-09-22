@@ -225,6 +225,9 @@ class PointEconomyRepository(
                 if (drivingResult != null && !drivingResult.isSatisfied) {
                     return@withTransaction PointAwardResult.ConditionNotMet
                 }
+                val awardedPoints = drivingResult?.earnedPoints ?: definition.rewardPoints
+                val basePoints = drivingResult?.basePoints ?: definition.rewardPoints
+                val weatherMultiplier = drivingResult?.weatherCondition?.multiplier ?: 1.0f
                 val completedAt = utcClock.nowEpochMillis()
                 val occurrence =
                     definition.schedule.occurrenceKey(completedAt)
@@ -233,7 +236,7 @@ class PointEconomyRepository(
                     return@withTransaction PointAwardResult.AlreadyAwarded
                 }
                 val account = dao.account(profileId) ?: return@withTransaction PointAwardResult.StorageFailure
-                if (account.balance > Long.MAX_VALUE - definition.rewardPoints) {
+                if (account.balance > Long.MAX_VALUE - awardedPoints) {
                     return@withTransaction PointAwardResult.StorageFailure
                 }
                 val completionId = ids.nextId()
@@ -243,7 +246,7 @@ class PointEconomyRepository(
                         profileId = profileId,
                         questId = questId,
                         occurrenceKey = occurrence,
-                        rewardPoints = definition.rewardPoints,
+                        rewardPoints = awardedPoints,
                         completedAtUtcMillis = completedAt,
                         snapshotId = current.id,
                         snapshotEpoch = current.epoch,
@@ -257,7 +260,7 @@ class PointEconomyRepository(
                         PointAwardResult.StorageFailure
                     }
                 }
-                if (dao.credit(profileId, definition.rewardPoints, Long.MAX_VALUE - definition.rewardPoints) != 1) {
+                if (dao.credit(profileId, awardedPoints, Long.MAX_VALUE - awardedPoints) != 1) {
                     throw SQLiteException("Account changed during point award")
                 }
                 dao.insertLedger(
@@ -265,11 +268,17 @@ class PointEconomyRepository(
                         id = ids.nextId(),
                         profileId = profileId,
                         referenceKey = "quest:$questId:$occurrence",
-                        amount = definition.rewardPoints,
+                        amount = awardedPoints,
                         occurredAtUtcMillis = completedAt,
                     ),
                 )
-                PointAwardResult.Awarded(definition.rewardPoints, account.balance + definition.rewardPoints, occurrence)
+                PointAwardResult.Awarded(
+                    points = awardedPoints,
+                    resultingBalance = account.balance + awardedPoints,
+                    occurrenceKey = occurrence,
+                    basePoints = basePoints,
+                    weatherMultiplier = weatherMultiplier,
+                )
             }
         } catch (cancelled: CancellationException) {
             throw cancelled

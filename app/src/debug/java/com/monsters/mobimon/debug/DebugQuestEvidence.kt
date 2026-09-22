@@ -38,12 +38,25 @@ private const val PENALTY_OVERSPEED = 15
 private const val PENALTY_LANE_DEPARTURE = 15
 
 /**
+ * Derives a default [WeatherCondition] from VSS weather-related signals.
+ * If raining or rain intensity is detected, maps to [WeatherCondition.RAIN_OR_SNOW].
+ * If time of day is NIGHT, maps to [WeatherCondition.CLOUDY_OR_NIGHT].
+ * Otherwise defaults to [WeatherCondition.CLEAR].
+ */
+fun DebugVssState.deriveWeatherCondition(): WeatherCondition =
+    when {
+        isRaining || raw.rainIntensity > 0 -> WeatherCondition.RAIN_OR_SNOW
+        timeOfDay.equals("NIGHT", ignoreCase = true) -> WeatherCondition.CLOUDY_OR_NIGHT
+        else -> WeatherCondition.CLEAR
+    }
+
+/**
  * Derives per-quest driving evidence from the simulated VSS signals so toggling a raw signal in the
  * debug overlay advances the matching quest. [safeDriveCount] is the app-accumulated number of
  * completed safe drives (VSS holds no such history), passed in from the overlay counter.
  */
 fun DebugVssState.toDriveEvaluationData(
-    weather: WeatherCondition,
+    weather: WeatherCondition = deriveWeatherCondition(),
     safeDriveCount: Int = 0,
 ): DriveEvaluationData {
     val driveDistanceKm = raw.traveledDistanceSinceStartKm
