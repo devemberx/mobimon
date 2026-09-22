@@ -129,7 +129,7 @@ fun DebugOverlay() {
 
         var questWeather by remember { mutableStateOf(WeatherCondition.CLEAR) }
         var questStatusMessage by remember { mutableStateOf("") }
-        var simDistanceKm by remember { mutableStateOf("5") }
+        var simDistanceKm by remember { mutableStateOf("35") }
         var simSafeBeltMinutes by remember { mutableStateOf("10") }
         var simSafeScore by remember { mutableStateOf("85") }
         var simTotalDistanceKm by remember { mutableStateOf("100") }
@@ -418,7 +418,7 @@ fun DebugOverlay() {
                                     // Shortcut: satisfy every driving condition so the gated award path grants all.
                                     pointEconomy.updateDriveEvaluation(
                                         DriveEvaluationData(
-                                            distanceKm = 10f,
+                                            distanceKm = 35f,
                                             safeBeltMinutes = 15,
                                             safeDriveScore = 95,
                                             totalDistanceKm = 150f,
@@ -574,7 +574,7 @@ fun DebugOverlay() {
                         ) {
                             Button(
                                 onClick = {
-                                    simDistanceKm = "10"
+                                    simDistanceKm = "35"
                                     simSafeBeltMinutes = "15"
                                     simSafeScore = "95"
                                     simTotalDistanceKm = "150"
@@ -590,7 +590,7 @@ fun DebugOverlay() {
 
                                     val allSatisfiedData =
                                         DriveEvaluationData(
-                                            distanceKm = 10f,
+                                            distanceKm = 35f,
                                             safeBeltMinutes = 15,
                                             safeDriveScore = 95,
                                             totalDistanceKm = 150f,
