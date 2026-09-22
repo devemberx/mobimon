@@ -126,7 +126,66 @@ class VssVehicleInterpreterTest {
         assertEquals(11, snapshot.batteryPercent)
         assertEquals("Night", snapshot.timeOfDay)
     }
+
+    @Test
+    fun timeOfDayUsesSharedFivePeriodMapping() {
+        val expected =
+            listOf(
+                "Night",
+                "Night",
+                "Night",
+                "Night",
+                "Night",
+                "Night",
+                "Morning",
+                "Morning",
+                "Morning",
+                "Morning",
+                "Morning",
+                "Morning",
+                "Day",
+                "Day",
+                "Day",
+                "Day",
+                "Afternoon",
+                "Afternoon",
+                "Sunset",
+                "Sunset",
+                "Night",
+                "Night",
+                "Night",
+                "Night",
+            )
+
+        expected.forEachIndexed { hour, period ->
+            assertEquals("Hour $hour", period, snapshotTimeOfDay(hour.toString()))
+        }
+        mapOf(
+            "afternoon" to "Afternoon",
+            "오후" to "Afternoon",
+            "늦은 오후" to "Afternoon",
+            "sunset" to "Sunset",
+            "노을" to "Sunset",
+            "저녁" to "Sunset",
+            "16:00" to "Afternoon",
+            "18시" to "Sunset",
+        ).forEach { (input, period) ->
+            assertEquals(input, period, snapshotTimeOfDay(input))
+        }
+    }
 }
+
+private fun snapshotTimeOfDay(input: String): String =
+    VssVehicleInterpreter
+        .snapshot(
+            raw = vssSignals(),
+            id = "id-$input",
+            epoch = "epoch",
+            sequence = 1,
+            observedAtMillis = 100,
+            source = SignalSource.REAL,
+            overrides = VssInterpretationOverrides(timeOfDay = input),
+        ).timeOfDay ?: error("timeOfDay should be interpreted")
 
 private fun vssSignals(
     driverFatigueLevel: Float = 0f,

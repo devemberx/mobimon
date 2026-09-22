@@ -53,6 +53,11 @@ interface PointEconomyDao {
     @Query("DELETE FROM point_quest_completions WHERE profileId = :profileId")
     suspend fun clearQuestCompletions(profileId: String): Int
 
+    // Quest award ledger keys are "quest:<id>:<occurrence>"; clearing them alongside completions
+    // keeps the reset consistent so the unique (profileId, referenceKey) index cannot block re-claims.
+    @Query("DELETE FROM point_ledger WHERE profileId = :profileId AND referenceKey LIKE 'quest:%'")
+    suspend fun clearQuestLedger(profileId: String): Int
+
     @Insert
     suspend fun insertLedger(entry: PointLedgerEntity)
 

@@ -17,6 +17,7 @@ import kotlinx.coroutines.launch
 enum class QuestMessage {
     INTERACTION_RESTRICTED,
     REFRESH_REQUIRED,
+    CONDITION_NOT_MET,
     UNSUPPORTED,
     STORAGE_FAILURE,
 }
@@ -112,6 +113,7 @@ class QuestViewModel(
                     is PointAwardResult.Awarded -> confirm(questId, QuestRewardSuccess(questId, result.points))
                     PointAwardResult.AlreadyAwarded -> confirm(questId, null)
                     PointAwardResult.EvidenceChanged -> show(QuestMessage.REFRESH_REQUIRED)
+                    PointAwardResult.ConditionNotMet -> show(QuestMessage.CONDITION_NOT_MET)
                     PointAwardResult.InteractionRestricted -> show(QuestMessage.INTERACTION_RESTRICTED)
                     PointAwardResult.QuestUnavailable -> show(QuestMessage.UNSUPPORTED)
                     PointAwardResult.StorageFailure -> show(QuestMessage.STORAGE_FAILURE)

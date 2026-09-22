@@ -239,8 +239,7 @@ class QuestScreenTest {
     }
 
     @Test
-    fun headerHomeButtonCallsOnHome() {
-        var homeCalled = false
+    fun headerHomeButtonDoesNotExist() {
         val state = presentation()
         compose.setContent {
             MobiMonTheme {
@@ -253,12 +252,10 @@ class QuestScreenTest {
                     onRetryWallet = {},
                     onRetryAppearance = {},
                     onNavigateRoute = {},
-                    onHome = { homeCalled = true },
                 )
             }
         }
-        compose.onNodeWithTag("quest-header-home-button").performClick()
-        assertTrue(homeCalled)
+        compose.onNodeWithTag("quest-header-home-button").assertDoesNotExist()
     }
 
     @Test

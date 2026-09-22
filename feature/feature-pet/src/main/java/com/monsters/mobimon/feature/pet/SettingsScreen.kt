@@ -56,7 +56,6 @@ import com.monsters.mobimon.core.ui.MobiMonMessage
 import com.monsters.mobimon.core.ui.MobiMonNavigationButton
 import com.monsters.mobimon.core.ui.MobiMonParkingBadge
 import com.monsters.mobimon.core.ui.MobiMonReferenceText
-import com.monsters.mobimon.core.ui.MobiMonSourceBadge
 import com.monsters.mobimon.core.ui.mobiMonReferenceTextStyle
 import com.monsters.mobimon.core.ui.R as CoreUiR
 
@@ -97,7 +96,7 @@ fun SettingsScreen(
             ) {
                 if (!reference) {
                     Text(stringResource(R.string.pet_settings_subtitle), color = MobiMonColors.muted)
-                    SettingsParking(parkedVerified, simulatedVehicle, 0.75f)
+                    SettingsParking(parkedVerified, 0.75f)
                 }
                 if (settingsAvailable) {
                     SettingsItem(
@@ -201,7 +200,7 @@ private fun SettingsHeader(
             borderWidth = (2 * scale).dp,
         )
     }
-    val parking: @Composable () -> Unit = { SettingsParking(parkedVerified, simulatedVehicle, scale) }
+    val parking: @Composable () -> Unit = { SettingsParking(parkedVerified, scale) }
     if (reference) {
         Box(Modifier.fillMaxWidth().height((216 * scale).dp)) {
             Box(Modifier.offset((72 * scale).dp, (56 * scale).dp)) { back() }
@@ -251,22 +250,18 @@ private fun SettingsHeader(
 @Composable
 private fun SettingsParking(
     parkedVerified: Boolean,
-    simulatedVehicle: Boolean,
     scale: Float,
 ) {
-    Column(horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        MobiMonParkingBadge(
-            stringResource(
-                if (parkedVerified) {
-                    CoreUiR.string.mobimon_parking_confirmed
-                } else {
-                    CoreUiR.string.mobimon_parking_unconfirmed
-                },
-            ),
-            scale = scale,
-        )
-        if (simulatedVehicle) MobiMonSourceBadge(simulated = true)
-    }
+    MobiMonParkingBadge(
+        stringResource(
+            if (parkedVerified) {
+                CoreUiR.string.mobimon_parking_confirmed
+            } else {
+                CoreUiR.string.mobimon_parking_unconfirmed
+            },
+        ),
+        scale = scale,
+    )
 }
 
 @Composable
