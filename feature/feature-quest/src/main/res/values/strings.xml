@@ -1,6 +1,7 @@
 <resources>
     <string name="quest_saving">진행 상황을 저장하고 있어요.</string>
     <string name="quest_refresh_required">차량 상태나 퀘스트가 바뀌었어요. 최신 내용을 확인하고 다시 눌러 주세요.</string>
+    <string name="quest_condition_not_met">아직 완료 조건을 충족하지 못했어요. 주행 기록을 확인해 주세요.</string>
     <string name="quest_unsupported">이 퀘스트는 아직 준비 중이에요.</string>
     <string name="quest_route_save_failed">저장하지 못했어요. 현재 기록을 확인하고 다시 시도해 주세요.</string>
     <string name="quest_destination_title">퀘스트</string>
@@ -97,10 +98,10 @@
     <string name="quest_turn_signal_detail_line1">차선 변경 전 방향지시등을 켜는 매너 운전으로</string>
     <string name="quest_turn_signal_detail_line2">주변 차량을 배려해 보세요. (일일 최대 10P)</string>
 
-    <string name="quest_5days_safe_name">작심오일은 없다! 5일 연속 무사고</string>
-    <string name="quest_5days_safe_short_desc">5일 연속으로 안전 운전 달성</string>
-    <string name="quest_5days_safe_detail_line1">매일 안전 운전을 이어가며</string>
-    <string name="quest_5days_safe_detail_line2">주간 5일 연속 안전 주행 보너스를 받아보세요.</string>
+    <string name="quest_5days_safe_name">티끌모아 태산! 안전 주행 5회</string>
+    <string name="quest_5days_safe_short_desc">안전 주행 5회 달성</string>
+    <string name="quest_5days_safe_detail_line1">5km 이상 안전 주행을 5회 쌓으며</string>
+    <string name="quest_5days_safe_detail_line2">안전 주행 5회 보너스를 받아보세요.</string>
 
     <!-- New Regular Driving Quests -->
     <string name="quest_battery_care_name">배터리 지킴이</string>

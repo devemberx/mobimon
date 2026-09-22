@@ -9,6 +9,7 @@ import com.monsters.mobimon.core.domain.CosmeticSlot
 import com.monsters.mobimon.core.domain.CurrentAppUse
 import com.monsters.mobimon.core.domain.CurrentVehicleEvidence
 import com.monsters.mobimon.core.domain.DefaultPointQuestCatalog
+import com.monsters.mobimon.core.domain.DriveEvaluationData
 import com.monsters.mobimon.core.domain.DrivingQuestIds
 import com.monsters.mobimon.core.domain.DrivingState
 import com.monsters.mobimon.core.domain.EquipResult
@@ -234,6 +235,7 @@ class PointEconomyRepositoryTest {
             assertEquals(100L, pointRepo.wallet.first().balance)
 
             vehicle = vehicle.copy(drivingState = DrivingState.PARKED)
+            pointRepo.updateDriveEvaluation(DriveEvaluationData(distanceKm = 10f, safeBeltMinutes = 15))
             val awardResult = pointRepo.awardQuest(DrivingQuestIds.SEATBELT, vehicle)
             assertTrue(awardResult is PointAwardResult.Awarded)
             assertEquals(5L, (awardResult as PointAwardResult.Awarded).points)
@@ -280,10 +282,46 @@ class PointEconomyRepositoryTest {
                     defaultCatalog,
                 )
 
+            debugPointRepo.updateDriveEvaluation(DriveEvaluationData(distanceKm = 10f, safeDriveScore = 90))
             val awardResult = debugPointRepo.awardQuest(DrivingQuestIds.SAFE_DRIVE, simVehicle)
             assertTrue(awardResult is PointAwardResult.Awarded)
             assertEquals(20L, (awardResult as PointAwardResult.Awarded).points)
             assertEquals(120L, debugPointRepo.wallet.first().balance)
             assertEquals(120L, database.economyDao().account("profile")?.balance)
+        }
+
+    @Test
+    fun drivingQuestAwardIsGatedOnEvidenceAndDoesNotCreditOrPersistWhenUnsatisfied() =
+        runBlocking {
+            val defaultCatalog = DefaultPointQuestCatalog()
+            val pointRepo =
+                PointEconomyRepository(
+                    database,
+                    "profile",
+                    UtcClock { utcNow },
+                    IdGenerator { "entry-${ids.incrementAndGet()}" },
+                    SignalSource.REAL,
+                    CurrentVehicleEvidence { vehicle },
+                    CurrentAppUse { appUse },
+                    Clock { 10_000 },
+                    QuestEvaluator(15_000),
+                    defaultCatalog,
+                )
+
+            // No drive evidence set: seatbelt condition is unsatisfied, so the award is refused.
+            val refused = pointRepo.awardQuest(DrivingQuestIds.SEATBELT, vehicle)
+            assertEquals(PointAwardResult.ConditionNotMet, refused)
+            assertEquals(100L, pointRepo.wallet.first().balance)
+            assertTrue(database.economyDao().questCompletions("profile").isEmpty())
+
+            // Satisfying only the seatbelt evidence unlocks that quest, leaving unrelated ones gated.
+            pointRepo.updateDriveEvaluation(DriveEvaluationData(distanceKm = 10f, safeBeltMinutes = 15))
+            assertEquals(PointAwardResult.ConditionNotMet, pointRepo.awardQuest(DrivingQuestIds.SAFE_DRIVE, vehicle))
+            val awarded = pointRepo.awardQuest(DrivingQuestIds.SEATBELT, vehicle)
+            assertTrue(awarded is PointAwardResult.Awarded)
+            assertEquals(105L, pointRepo.wallet.first().balance)
+            // Replay stays idempotent even though the evidence still satisfies the condition.
+            assertEquals(PointAwardResult.AlreadyAwarded, pointRepo.awardQuest(DrivingQuestIds.SEATBELT, vehicle))
+            assertEquals(105L, pointRepo.wallet.first().balance)
         }
 }
