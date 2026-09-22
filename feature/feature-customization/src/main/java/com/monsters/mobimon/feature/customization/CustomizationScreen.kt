@@ -36,7 +36,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
@@ -156,7 +155,7 @@ fun CustomizationScreen(
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.Center,
                     ) {
-                        Box(Modifier.fillMaxWidth().weight(1f).clipToBounds(), contentAlignment = Alignment.Center) {
+                        BoxWithConstraints(Modifier.fillMaxWidth().weight(1f).clipToBounds(), contentAlignment = Alignment.Center) {
                             Image(
                                 painter = painterResource(companionBackgroundRes(timeOfDay)),
                                 contentDescription = null,
@@ -181,13 +180,14 @@ fun CustomizationScreen(
                                 )
                             }
                             if (tab != CosmeticSlot.BACKGROUND) {
+                                val characterSize = minOf(maxWidth, maxHeight) * 0.58f
+                                val topOffset = maxHeight * 0.28f
                                 PetAvatar(
                                     Modifier
-                                        .fillMaxSize()
-                                        .graphicsLayer {
-                                            scaleX = 0.92f
-                                            scaleY = scaleX
-                                        }.testTag("preview-character"),
+                                        .align(Alignment.TopCenter)
+                                        .offset(y = topOffset)
+                                        .size(characterSize)
+                                        .testTag("preview-character"),
                                     friendId = previewFriend,
                                     accessoryId = accessory,
                                     outfitId = outfit,

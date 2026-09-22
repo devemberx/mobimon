@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
@@ -147,7 +148,7 @@ internal fun CompactCustomizationScreen(
                     shape = MaterialTheme.shapes.extraLarge,
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
                 ) {
-                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    BoxWithConstraints(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                         Box(
                             Modifier
                                 .fillMaxSize()
@@ -189,8 +190,15 @@ internal fun CompactCustomizationScreen(
                             }
                         }
                         if (activeTab != CosmeticSlot.BACKGROUND) {
+                            val characterSize = minOf(maxWidth, maxHeight) * 0.58f
+                            val topOffset = maxHeight * 0.28f
                             PetAvatar(
-                                modifier = Modifier.fillMaxSize(0.88f).testTag("preview-character"),
+                                modifier =
+                                    Modifier
+                                        .align(Alignment.TopCenter)
+                                        .offset(y = topOffset)
+                                        .size(characterSize)
+                                        .testTag("preview-character"),
                                 friendId = previewFriendId,
                                 accessoryId = previewAccessoryId,
                                 outfitId = presentation.preview.outfitId,
