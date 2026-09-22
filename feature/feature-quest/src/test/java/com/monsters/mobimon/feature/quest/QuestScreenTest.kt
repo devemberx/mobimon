@@ -148,6 +148,32 @@ class QuestScreenTest {
     }
 
     @Test
+    fun committedSuccessWithWeatherBonusDisplaysBonusBadgeNotificationAndChip() {
+        val state =
+            presentation(
+                QuestUiState(
+                    isLoading = false,
+                    rewardSuccess =
+                        QuestRewardSuccess(
+                            questId = DrivingQuestIds.SEATBELT,
+                            points = 8,
+                            basePoints = 5,
+                            weatherMultiplier = 1.5f,
+                        ),
+                ),
+            )
+        compose.setContent {
+            MobiMonTheme {
+                QuestScreen(state, {}, {}, {}, {}, {}, {}, {})
+            }
+        }
+        compose.onNodeWithText("8포인트를 획득했어요!!").assertIsDisplayed()
+        compose.onNodeWithText("퀘스트 완료 · 날씨 보너스").assertIsDisplayed()
+        compose.onNodeWithText("날씨 가중치 적용으로 3포인트를 더 받았어요!").assertIsDisplayed()
+        compose.onNodeWithText("보상 · 8 Point (날씨 보너스 +3)").assertIsDisplayed()
+    }
+
+    @Test
     fun hiddenDismissalUsesOwnerStateWithoutClaimingReward() {
         var state by mutableStateOf(presentation(friend = "friend:luna"))
         var dismissed: String? = null

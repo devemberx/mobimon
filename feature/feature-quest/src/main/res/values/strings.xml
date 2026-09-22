@@ -41,9 +41,12 @@
     <string name="quest_detail_notice">보상은 완료 기록이 저장된 뒤 지급돼요.</string>
     <string name="quest_detail_received_note">%1$d Point를 획득했어요.</string>
     <string name="quest_modal_badge">퀘스트 완료</string>
+    <string name="quest_modal_badge_weather_bonus">퀘스트 완료 · 날씨 보너스</string>
     <string name="quest_modal_title">%1$d포인트를 획득했어요!!</string>
     <string name="quest_modal_subtitle">작은 도전으로 모비와 함께 성장했어요.</string>
+    <string name="quest_modal_weather_bonus">날씨 가중치 적용으로 %1$d포인트를 더 받았어요!</string>
     <string name="quest_modal_chip">보상 · %1$d Point</string>
+    <string name="quest_modal_chip_weather_bonus">보상 · %1$d Point (날씨 보너스 +%2$d)</string>
 
 
     <string name="quest_schedule_per_drive_short">주행 당</string>

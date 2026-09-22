@@ -196,4 +196,28 @@ class DebugQuestEvidenceTest {
         val tireCheckSatisfied = baseData.copy(isTirePressureNormalWeekly = true)
         assertTrue(evaluator.evaluateById(DrivingQuestIds.TIRE_CHECK, tireCheckSatisfied)!!.isSatisfied)
     }
+
+    @Test
+    fun deriveWeatherConditionDerivesCorrectConditionFromVssSignals() {
+        val clearState = state(DebugRawVssState())
+        assertEquals(WeatherCondition.CLEAR, clearState.deriveWeatherCondition())
+        assertEquals(WeatherCondition.CLEAR, clearState.toDriveEvaluationData().weather)
+
+        val rainState = state(DebugRawVssState(rainIntensity = 2))
+        assertEquals(WeatherCondition.RAIN_OR_SNOW, rainState.deriveWeatherCondition())
+        assertEquals(WeatherCondition.RAIN_OR_SNOW, rainState.toDriveEvaluationData().weather)
+
+        val rainingOverride =
+            DebugVssState(
+                overrides = DebugInterpretationOverrides(isRaining = true),
+            )
+        assertEquals(WeatherCondition.RAIN_OR_SNOW, rainingOverride.deriveWeatherCondition())
+
+        val nightState =
+            DebugVssState(
+                overrides = DebugInterpretationOverrides(timeOfDay = "NIGHT"),
+            )
+        assertEquals(WeatherCondition.CLOUDY_OR_NIGHT, nightState.deriveWeatherCondition())
+        assertEquals(WeatherCondition.CLOUDY_OR_NIGHT, nightState.toDriveEvaluationData().weather)
+    }
 }

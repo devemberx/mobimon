@@ -67,6 +67,7 @@ import com.monsters.mobimon.core.domain.WeatherCondition
 import com.monsters.mobimon.debug.DebugInterpretationOverrides
 import com.monsters.mobimon.debug.DebugRawVssState
 import com.monsters.mobimon.debug.DebugVssState
+import com.monsters.mobimon.debug.deriveWeatherCondition
 import com.monsters.mobimon.debug.toDriveEvaluationData
 import dagger.hilt.EntryPoint
 import dagger.hilt.InstallIn
@@ -143,6 +144,10 @@ fun DebugOverlay() {
         var simWasherFluidRefilled by remember { mutableStateOf(true) }
         var simTirePressureNormalWeekly by remember { mutableStateOf(true) }
         var evalResults by remember { mutableStateOf<List<DrivingQuestResult>>(emptyList()) }
+
+        LaunchedEffect(state.isRaining, state.raw.rainIntensity, state.timeOfDay) {
+            questWeather = state.deriveWeatherCondition()
+        }
 
         // Live-link the simulated VSS signals to per-quest evidence so toggling a raw signal (seatbelt,
         // distraction, distance, turn signal, tire, …) advances the matching quest. The simulator below
@@ -309,12 +314,39 @@ fun DebugOverlay() {
                                 WeatherCondition.RAIN_OR_SNOW -> "RAIN/SNOW"
                             },
                         ) { sel ->
-                            questWeather =
+                            val newWeather =
                                 when (sel) {
                                     "CLOUDY" -> WeatherCondition.CLOUDY_OR_NIGHT
                                     "RAIN/SNOW" -> WeatherCondition.RAIN_OR_SNOW
                                     else -> WeatherCondition.CLEAR
                                 }
+                            questWeather = newWeather
+                            when (newWeather) {
+                                WeatherCondition.RAIN_OR_SNOW -> {
+                                    updateState {
+                                        it.copy(
+                                            raw = it.raw.copy(rainIntensity = 3),
+                                            overrides = it.overrides.copy(isRaining = true),
+                                        )
+                                    }
+                                }
+                                WeatherCondition.CLOUDY_OR_NIGHT -> {
+                                    updateState {
+                                        it.copy(
+                                            raw = it.raw.copy(rainIntensity = 0),
+                                            overrides = it.overrides.copy(isRaining = false, timeOfDay = "NIGHT"),
+                                        )
+                                    }
+                                }
+                                WeatherCondition.CLEAR -> {
+                                    updateState {
+                                        it.copy(
+                                            raw = it.raw.copy(rainIntensity = 0),
+                                            overrides = it.overrides.copy(isRaining = false, timeOfDay = "DAY"),
+                                        )
+                                    }
+                                }
+                            }
                         }
 
                         Text(

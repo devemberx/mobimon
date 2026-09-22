@@ -25,7 +25,11 @@ enum class QuestMessage {
 data class QuestRewardSuccess(
     val questId: String,
     val points: Long,
-)
+    val basePoints: Long = points,
+    val weatherMultiplier: Float = 1.0f,
+) {
+    val bonusPoints: Long get() = (points - basePoints).coerceAtLeast(0)
+}
 
 data class QuestUiState(
     val completedPointQuestIds: Set<String> = emptySet(),
@@ -110,7 +114,16 @@ class QuestViewModel(
         viewModelScope.launch {
             try {
                 when (val result = economy.awardQuest(questId, displayedSnapshot)) {
-                    is PointAwardResult.Awarded -> confirm(questId, QuestRewardSuccess(questId, result.points))
+                    is PointAwardResult.Awarded ->
+                        confirm(
+                            questId,
+                            QuestRewardSuccess(
+                                questId = questId,
+                                points = result.points,
+                                basePoints = result.basePoints,
+                                weatherMultiplier = result.weatherMultiplier,
+                            ),
+                        )
                     PointAwardResult.AlreadyAwarded -> confirm(questId, null)
                     PointAwardResult.EvidenceChanged -> show(QuestMessage.REFRESH_REQUIRED)
                     PointAwardResult.ConditionNotMet -> show(QuestMessage.CONDITION_NOT_MET)
