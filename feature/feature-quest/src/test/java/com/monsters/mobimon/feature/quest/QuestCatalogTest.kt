@@ -125,5 +125,39 @@ class QuestCatalogTest {
         assertTrue(parked.canClaim)
     }
 
+    @Test
+    fun questsAreOrderedByClaimableThenInProgressThenCompleted() {
+        val state =
+            ready().copy(
+                satisfiedDrivingQuestIds = setOf(DrivingQuestIds.TIRE_CHECK, DrivingQuestIds.MAINTENANCE),
+                completedPointQuestIds = setOf(DrivingQuestIds.SEATBELT),
+            )
+        val screen =
+            catalog.present(
+                state,
+                CompanionAppearanceState(),
+                PointBalanceState.Ready(0),
+                true,
+                Int::toString,
+            )
+        val quests = screen.quests
+        assertEquals(14, quests.size)
+
+        // Claimable quests come first in their catalog order
+        assertEquals(DrivingQuestIds.MAINTENANCE, quests[0].id)
+        assertEquals(QuestItemStatus.CLAIMABLE, quests[0].status)
+        assertEquals(DrivingQuestIds.TIRE_CHECK, quests[1].id)
+        assertEquals(QuestItemStatus.CLAIMABLE, quests[1].status)
+
+        // In-progress quests come next
+        val inProgressQuests = quests.subList(2, 13)
+        assertTrue(inProgressQuests.all { it.status == QuestItemStatus.IN_PROGRESS })
+        assertEquals(DrivingQuestIds.SAFE_DRIVE, inProgressQuests.first().id)
+
+        // Completed quests come last
+        assertEquals(DrivingQuestIds.SEATBELT, quests.last().id)
+        assertEquals(QuestItemStatus.COMPLETED, quests.last().status)
+    }
+
     private fun ready() = QuestUiState(isLoading = false)
 }
