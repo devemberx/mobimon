@@ -65,7 +65,7 @@ class QuestScreenTest {
             ),
         )
         compose.onNodeWithTag("quest-hidden-btn-claim").assertIsNotEnabled()
-        compose.onNodeWithTag("quest-hidden-btn-dismiss").assertIsNotEnabled()
+        compose.onNodeWithTag("quest-hidden-btn-dismiss").assertDoesNotExist()
         compose.onNodeWithTag("quest-reward-success-modal").assertDoesNotExist()
     }
 
@@ -174,22 +174,12 @@ class QuestScreenTest {
     }
 
     @Test
-    fun hiddenDismissalUsesOwnerStateWithoutClaimingReward() {
-        var state by mutableStateOf(presentation(friend = "friend:luna"))
-        var dismissed: String? = null
-        var claims = 0
-        compose.setContent {
-            MobiMonTheme {
-                QuestScreen(state, { claims++ }, {
-                    dismissed = it
-                    state = state.copy(hiddenQuests = emptyList())
-                }, {}, {}, {}, {}, {})
-            }
-        }
-        compose.onNodeWithTag("quest-hidden-btn-dismiss").performClick()
-        assertEquals(DrivingQuestIds.HIDDEN_NEW_FRIEND, dismissed)
-        assertEquals(0, claims)
-        compose.onNodeWithTag("quest-hidden-claim-modal").assertDoesNotExist()
+    fun hiddenClaimModalDoesNotOfferDismissButton() {
+        render(presentation(friend = "friend:luna"))
+        compose.onNodeWithTag("quest-hidden-claim-modal").assertIsDisplayed()
+        compose.onNodeWithTag("quest-hidden-btn-claim").assertIsDisplayed()
+        compose.onNodeWithTag("quest-hidden-btn-dismiss").assertDoesNotExist()
+        compose.onNodeWithText("닫기").assertDoesNotExist()
     }
 
     @Test

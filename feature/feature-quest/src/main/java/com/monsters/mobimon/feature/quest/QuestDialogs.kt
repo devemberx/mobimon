@@ -6,7 +6,6 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
@@ -220,7 +219,8 @@ internal fun QuestHiddenClaimModal(
                 Modifier
                     .fillMaxSize()
                     .background(Color(0xE6050C16))
-                    .clickable(enabled = !isBusy, onClick = onDismiss),
+                    .clickable(enabled = !isBusy, onClick = onDismiss)
+                    .testTag("quest-hidden-backdrop"),
             contentAlignment = Alignment.Center,
         ) {
             Column(
@@ -311,45 +311,28 @@ internal fun QuestHiddenClaimModal(
 
                 Spacer(Modifier.height(30.dp * scale))
 
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(16.dp * scale),
-                    verticalAlignment = Alignment.CenterVertically,
+                // Claim button (440x96)
+                Box(
+                    modifier =
+                        Modifier
+                            .width(440.dp * scale)
+                            .height(96.dp * scale)
+                            .clip(RoundedCornerShape(20.dp * scale))
+                            .background(if (canClaim) Colors.button else Colors.raised)
+                            .clickable(enabled = canClaim, onClick = onClaim)
+                            .testTag("quest-hidden-btn-claim"),
+                    contentAlignment = Alignment.Center,
                 ) {
-                    // Dismiss button
-                    Box(
-                        modifier =
-                            Modifier
-                                .width(200.dp * scale)
-                                .height(88.dp * scale)
-                                .clip(RoundedCornerShape(20.dp * scale))
-                                .background(Colors.raised)
-                                .clickable(enabled = !isBusy, onClick = onDismiss)
-                                .testTag("quest-hidden-btn-dismiss"),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Text(
-                            text = stringResource(R.string.quest_hidden_dismiss),
-                            style = questTextStyle(32f, scale, bold = false, color = Colors.muted),
-                        )
-                    }
-
-                    // Claim button
-                    Box(
-                        modifier =
-                            Modifier
-                                .width(340.dp * scale)
-                                .height(88.dp * scale)
-                                .clip(RoundedCornerShape(20.dp * scale))
-                                .background(Colors.button)
-                                .clickable(enabled = canClaim, onClick = onClaim)
-                                .testTag("quest-hidden-btn-claim"),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Text(
-                            text = stringResource(R.string.quest_action_claim),
-                            style = questTextStyle(36f, scale, bold = true, color = Colors.onButton),
-                        )
-                    }
+                    Text(
+                        text = stringResource(R.string.quest_action_claim),
+                        style =
+                            questTextStyle(
+                                baseSp = 36f,
+                                scale = scale,
+                                bold = true,
+                                color = if (canClaim) Colors.onButton else Colors.muted,
+                            ),
+                    )
                 }
             }
         }

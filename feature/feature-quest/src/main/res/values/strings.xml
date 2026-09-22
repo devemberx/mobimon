@@ -129,7 +129,6 @@
 
     <!-- Hidden Quests and Dialog -->
     <string name="quest_hidden_badge">히든 퀘스트 달성!</string>
-    <string name="quest_hidden_dismiss">닫기</string>
     <string name="quest_hidden_costume_name">멋쟁이 모비몬</string>
     <string name="quest_hidden_costume_desc">새로운 코스튬을 멋지게 착용했어요!</string>
 
