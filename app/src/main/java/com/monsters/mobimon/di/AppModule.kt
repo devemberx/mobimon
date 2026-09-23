@@ -94,7 +94,16 @@ object AppModule {
         currentAppUse: CurrentAppUse,
         sourceProvider: SignalSourceProvider,
     ): RoomCompanionRepository =
-        RoomCompanionRepository(database, identity, clock, ids, evaluator, currentVehicle, currentAppUse, sourceProvider)
+        RoomCompanionRepository(
+            database,
+            identity,
+            clock,
+            ids,
+            evaluator,
+            currentVehicle,
+            currentAppUse,
+            sourceProvider,
+        )
 
     @Provides
     fun pets(repository: RoomCompanionRepository): PetRepository = repository

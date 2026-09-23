@@ -4,9 +4,9 @@ import com.monsters.mobimon.core.domain.CompanionSettings
 import com.monsters.mobimon.core.domain.SettingsRepository
 import com.monsters.mobimon.core.domain.SignalSource
 import com.monsters.mobimon.core.domain.WriteResult
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
