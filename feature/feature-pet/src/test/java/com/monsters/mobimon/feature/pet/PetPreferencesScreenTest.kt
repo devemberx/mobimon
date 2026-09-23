@@ -77,6 +77,25 @@ class PetPreferencesScreenTest {
     }
 
     @Test
+    fun launcherCharacterToggleRequestsChangeWhenProvided() {
+        var requested: Boolean? = null
+        compose.setContent {
+            MobiMonTheme {
+                SettingsScreen(
+                    settings = CompanionSettings(launcherCharacterEnabled = false),
+                    parkedVerified = true,
+                    onReducedMotionChange = {},
+                    onLauncherCharacterChange = { requested = it },
+                )
+            }
+        }
+
+        compose.onNodeWithText("차량 홈 캐릭터").performScrollTo().performClick()
+
+        assertEquals(true, requested)
+    }
+
+    @Test
     fun unavailableServicesAndUnknownParkingDoNotInvokeSettingsActions() {
         var motionCalls = 0
         var debugCalls = 0
