@@ -20,6 +20,7 @@ import com.monsters.mobimon.core.domain.PointWallet
 import com.monsters.mobimon.core.domain.PurchaseResult
 import com.monsters.mobimon.core.domain.QuestEvaluator
 import com.monsters.mobimon.core.domain.SignalSource
+import com.monsters.mobimon.core.domain.SignalSourceProvider
 import com.monsters.mobimon.core.domain.UtcClock
 import com.monsters.mobimon.core.domain.VehicleSnapshot
 import kotlinx.coroutines.CancellationException
@@ -44,6 +45,7 @@ class PointEconomyRepository(
     private val evaluator: QuestEvaluator,
     private val quests: PointQuestCatalog,
     private val drivingEvaluator: DrivingQuestEvaluator = DrivingQuestEvaluator(),
+    private val sourceProvider: SignalSourceProvider = SignalSourceProvider { source },
 ) : PointEconomy {
     private val dao = database.economyDao()
 
@@ -114,7 +116,7 @@ class PointEconomyRepository(
         try {
             database.withTransaction {
                 if (appUse.state() != AppUseState.ALLOWED ||
-                    evaluator.validateSnapshot(vehicle.snapshot(), source, clock.nowMillis()) != null
+                    evaluator.validateSnapshot(vehicle.snapshot(), sourceProvider.source(), clock.nowMillis()) != null
                 ) {
                     return@withTransaction PurchaseResult.InteractionRestricted
                 }
@@ -155,7 +157,7 @@ class PointEconomyRepository(
         try {
             database.withTransaction {
                 if (appUse.state() != AppUseState.ALLOWED ||
-                    evaluator.validateSnapshot(vehicle.snapshot(), source, clock.nowMillis()) != null
+                    evaluator.validateSnapshot(vehicle.snapshot(), sourceProvider.source(), clock.nowMillis()) != null
                 ) {
                     return@withTransaction EquipResult.InteractionRestricted
                 }
@@ -214,8 +216,9 @@ class PointEconomyRepository(
                     return@withTransaction PointAwardResult.QuestUnavailable
                 }
                 val current = vehicle.snapshot()
+                val expectedSource = sourceProvider.source()
                 if (appUse.state() != AppUseState.ALLOWED ||
-                    evaluator.validateSnapshot(current, source, clock.nowMillis()) != null
+                    evaluator.validateSnapshot(current, expectedSource, clock.nowMillis()) != null
                 ) {
                     return@withTransaction PointAwardResult.InteractionRestricted
                 }

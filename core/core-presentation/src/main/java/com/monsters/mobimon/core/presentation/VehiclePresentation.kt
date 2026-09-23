@@ -11,6 +11,7 @@ import com.monsters.mobimon.core.domain.Clock
 import com.monsters.mobimon.core.domain.DrivingState
 import com.monsters.mobimon.core.domain.ProgressionIdentity
 import com.monsters.mobimon.core.domain.SignalQuality
+import com.monsters.mobimon.core.domain.SignalSourceProvider
 import com.monsters.mobimon.core.domain.UtcClock
 import com.monsters.mobimon.core.domain.VehicleFreshnessPolicy
 import com.monsters.mobimon.core.domain.VehicleRepository
@@ -23,6 +24,7 @@ class VehiclePresentation(
     private val clock: Clock,
     private val freshness: VehicleFreshnessPolicy,
     private val utcClock: UtcClock,
+    private val sourceProvider: SignalSourceProvider = SignalSourceProvider { identity.source },
 ) {
     @Composable
     fun snapshot(): VehicleSnapshot = reading().snapshot
@@ -39,6 +41,7 @@ class VehiclePresentation(
                             clock,
                             freshness,
                             utcClock,
+                            sourceProvider = sourceProvider,
                         )
                     }
                 }
