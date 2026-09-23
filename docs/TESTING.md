@@ -97,6 +97,7 @@ Related suites share the linked module/package.
 | Artwork, background periods/dimensions, reduced motion and shared control bounds | [Core UI suites](../core/core-ui/src/test/java/com/monsters/mobimon/core/ui); native Robolectric images |
 | Home/Settings, vehicle, store and quest layouts, focus and recovery | Owning feature `src/test` suites, including `CompanionReviewTest`, `VehicleReviewTest` and `StoreReferenceScreenTest` |
 | Menu reference/AAOS-density/enlarged-text bounds, focus, authenticated chat routing, connection origin after authentication loss, recreation and restricted/outgoing input | [Shell suites](../app/src/test/java/com/monsters/mobimon/ui), [CopilotConnectionJourneyTest](../app/src/journeyTest/java/com/monsters/mobimon/CopilotConnectionJourneyTest.kt) |
+| AAOS 96px status bar and 160px navigation bar | [System bar frame check](../scripts/check-aaos-system-bars.sh) in CI; local disposable AVD |
 | Conversation reveal/return, stationary Home, visible touch bounds, interruption, reduced motion and scrolled action bounds | [ConversationRevealTest](../app/src/test/java/com/monsters/mobimon/ui/ConversationRevealTest.kt), [PetHomeScreenTest](../feature/feature-pet/src/test/java/com/monsters/mobimon/feature/pet/PetHomeScreenTest.kt); native Robolectric frames and pointer input |
 | Live system-inset changes, destination/menu bounds, debugger unlock notice clearance and restoration | [MobiMonContentTest](../app/src/test/java/com/monsters/mobimon/ui/MobiMonContentTest.kt); platform inset dispatch in Robolectric |
 | Floating companion bounds use current bars/cutouts and measured size; Debug dragging and resize remain inside safe content | [OverlayMovementBoundsTest](../app/src/test/java/com/monsters/mobimon/service/OverlayMovementBoundsTest.kt), [DebugOverlayPlacementTest](../app/src/testDebug/java/com/monsters/mobimon/ui/DebugOverlayPlacementTest.kt); OEM overlay placement still requires a device |
@@ -134,9 +135,21 @@ Kover: `./gradlew :app:koverHtmlReportDebug :app:koverXmlReportDebug` (local JVM
 ### CI AAOS environment
 
 The [workflow](../.github/workflows/android-ci.yml) and [cstd.ini](../.github/avd/cstd.ini)
-define the image, extension, ABI and display. Run the required
-[host check](../scripts/check-aaos-environment.sh) with only the intended emulator
-connected, then canonical device tests. Use emulator 35.1.9 or newer.
+define the image, extension, ABI and display. The workflow builds and installs the
+[system bars overlay](../.github/avd/system-bars-overlay/AndroidManifest.xml) on its
+disposable writable AVD, then checks the 96px top and 160px bottom bars with
+[check-aaos-system-bars.sh](../scripts/check-aaos-system-bars.sh). Run the required
+[host check](../scripts/check-aaos-environment.sh) and canonical device tests after
+the overlay check. Use emulator 35.1.9 or newer.
+
+For a separate local API 34 automotive AVD named `mobimon_system_bars_*` at
+2560x1440 / 160 dpi, launch the emulator with `-writable-system`. Run
+[install-aaos-system-bars-overlay.sh](../scripts/install-aaos-system-bars-overlay.sh)
+with `AAOS_OVERLAY_AVD_NAME` set to that AVD's name.
+The installer disables verity, restarts the AVD twice and writes the APK to that
+AVD's `/product/overlay`. Do not use the existing development AVD for this test.
+After installation, launch this AVD with `-writable-system` each time; a plain
+launch shows the image's default 76px top and 96px bottom bars.
 
 CI uses a fresh, headless AVD with software rendering and disabled animations.
 Local CSTD images are separate inputs; matching metadata does not establish
