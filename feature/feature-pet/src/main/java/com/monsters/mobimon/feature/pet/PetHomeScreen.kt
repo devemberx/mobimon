@@ -58,6 +58,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.monsters.mobimon.core.domain.PetProfile
 import com.monsters.mobimon.core.domain.VehicleSnapshot
+import com.monsters.mobimon.core.presentation.VehicleCondition
+import com.monsters.mobimon.core.presentation.vehicleCondition
 import com.monsters.mobimon.core.ui.FallingParticlesEffect
 import com.monsters.mobimon.core.ui.LocalMobiMonMotionEnabled
 import com.monsters.mobimon.core.ui.MobiMonButton
@@ -119,6 +121,7 @@ fun PetHomeScreen(
                     inventoryLoaded,
                     inventoryLoadFailed,
                     companionModifier,
+                    vehicleWarning = snapshot.vehicleCondition() == VehicleCondition.WARNING,
                     onClick = { bubbleTrigger++ },
                 )
             }
@@ -296,6 +299,7 @@ private fun HomeCompanion(
     inventoryLoaded: Boolean,
     inventoryLoadFailed: Boolean,
     modifier: Modifier = Modifier,
+    vehicleWarning: Boolean,
     onClick: () -> Unit,
 ) {
     Box(modifier, contentAlignment = Alignment.Center) {
@@ -315,6 +319,7 @@ private fun HomeCompanion(
                     accessoryId = accessoryId,
                     outfitId = outfitId,
                     backgroundId = backgroundId,
+                    vehicleWarning = vehicleWarning,
                 )
             inventoryLoadFailed -> Unit
             !inventoryLoaded ->

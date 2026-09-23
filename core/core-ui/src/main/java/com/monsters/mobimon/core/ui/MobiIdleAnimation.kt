@@ -149,7 +149,7 @@ internal object MobiSpriteCache {
 
 /** One atlas, a fixed destination, and draw/layer-only clock reads. No per-frame composition or bitmap crops. */
 @Composable
-fun MobiIdleBreathAnimation(
+internal fun NormalMobiIdleAnimation(
     modifier: Modifier = Modifier,
     contentDescription: String? = null,
     fallbackAsset: CharacterAsset = CharacterArtwork.characters.getValue("friend:mobi"),
@@ -184,45 +184,54 @@ fun MobiIdleBreathAnimation(
                 compositingStrategy = CompositingStrategy.Offscreen
                 transformOrigin = TransformOrigin(0.5f, 0.9f)
                 clip = false
-            }.drawWithCache {
-                val cell = IntSize(sheet.width / MobiIdleTimeline.COLUMNS, sheet.height / MobiIdleTimeline.ROWS)
-                val sources =
-                    Array(MobiIdleTimeline.FRAME_COUNT) { index ->
-                        IntOffset(
-                            index % MobiIdleTimeline.COLUMNS * cell.width,
-                            index / MobiIdleTimeline.COLUMNS * cell.height,
-                        )
-                    }
-                val side = size.minDimension.roundToInt()
-                val destination = IntSize(side, side)
-                val destinationOffset =
-                    IntOffset(((size.width - side) / 2).roundToInt(), ((size.height - side) / 2).roundToInt())
-                onDrawBehind {
-                    val time = elapsed.longValue
-                    val frame = MobiIdleTimeline.frameAt(time)
-                    val blend = MobiIdleTimeline.blendAt(time, frame)
-                    drawImage(
-                        image = sheet,
-                        srcOffset = sources[frame],
-                        srcSize = cell,
-                        dstOffset = destinationOffset,
-                        dstSize = destination,
-                        filterQuality = FilterQuality.Low,
-                        alpha = 1f - blend,
-                    )
-                    if (blend > 0f) {
-                        drawImage(
-                            image = sheet,
-                            srcOffset = sources[(frame + 1) % MobiIdleTimeline.FRAME_COUNT],
-                            srcSize = cell,
-                            dstOffset = destinationOffset,
-                            dstSize = destination,
-                            filterQuality = FilterQuality.Low,
-                            alpha = blend,
-                            blendMode = BlendMode.Plus,
-                        )
-                    }
-                }
+            }.mobiSpriteFrames(sheet, MobiIdleTimeline.COLUMNS, MobiIdleTimeline.ROWS) {
+                val time = elapsed.longValue
+                val frame = MobiIdleTimeline.frameAt(time)
+                frame + MobiIdleTimeline.blendAt(time, frame)
             },
     )
 }
+
+/** Shared fixed-canvas atlas draw. Time/progress is read only in draw, never bitmap allocation. */
+internal fun Modifier.mobiSpriteFrames(
+    sheet: ImageBitmap,
+    columns: Int,
+    rows: Int,
+    loop: Boolean = true,
+    position: () -> Float,
+): Modifier =
+    drawWithCache {
+        val count = columns * rows
+        val cell = IntSize(sheet.width / columns, sheet.height / rows)
+        val sources = Array(count) { IntOffset(it % columns * cell.width, it / columns * cell.height) }
+        val side = size.minDimension.roundToInt()
+        val destination = IntSize(side, side)
+        val offset = IntOffset(((size.width - side) / 2).roundToInt(), ((size.height - side) / 2).roundToInt())
+        onDrawBehind {
+            val value = position().coerceIn(0f, count.toFloat())
+            val frame = value.toInt().coerceAtMost(count - 1)
+            val blend = (value - frame).coerceIn(0f, 1f)
+            drawImage(
+                sheet,
+                sources[frame],
+                cell,
+                offset,
+                destination,
+                alpha = 1f - blend,
+                filterQuality = FilterQuality.Low,
+            )
+            if (blend > 0f) {
+                val next = if (loop) (frame + 1) % count else (frame + 1).coerceAtMost(count - 1)
+                drawImage(
+                    sheet,
+                    sources[next],
+                    cell,
+                    offset,
+                    destination,
+                    alpha = blend,
+                    filterQuality = FilterQuality.Low,
+                    blendMode = BlendMode.Plus,
+                )
+            }
+        }
+    }
