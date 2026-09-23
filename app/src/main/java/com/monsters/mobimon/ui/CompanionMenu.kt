@@ -81,7 +81,6 @@ import com.monsters.mobimon.core.navigation.VehicleRoute
 import com.monsters.mobimon.core.ui.LocalMobiMonMotionEnabled
 import com.monsters.mobimon.core.ui.MobiMonColors
 import com.monsters.mobimon.core.ui.MobiMonReferenceText
-import com.monsters.mobimon.core.ui.PetAvatar
 import com.monsters.mobimon.core.ui.mobiMonReferenceTextStyle
 
 private data class DrawerDestination(
@@ -178,6 +177,7 @@ fun CompanionMenu(
     }
 }
 
+@Suppress("UNUSED_PARAMETER")
 @Composable
 private fun MenuPanel(
     windowWidth: Float,
@@ -265,22 +265,14 @@ private fun MenuPanel(
                     },
                 contentAlignment = Alignment.Center,
             ) {
-                if (friendId == "friend:mobi") {
-                    Image(
-                        painterResource(R.drawable.drawer_mobi),
-                        contentDescription = null,
-                        modifier = Modifier.size((109 * scale).dp),
-                    )
-                } else {
-                    PetAvatar(
-                        Modifier.size((109 * scale).dp),
-                        friendId = friendId ?: "friend:mobi",
-                        accessoryId = accessoryId,
-                        outfitId = outfitId,
-                        backgroundId = backgroundId,
-                        isAnimated = false,
-                    )
-                }
+                val isRunaOrLuna = friendId == "friend:luna" || friendId == "friend:runa"
+                val faceRes = if (isRunaOrLuna) R.drawable.menu_runa_face else R.drawable.menu_mobi_face
+                val imageSize = if (isRunaOrLuna) (115 * scale).dp else (135 * scale).dp
+                Image(
+                    painterResource(faceRes),
+                    contentDescription = null,
+                    modifier = Modifier.size(imageSize),
+                )
             }
         }
         val close: @Composable (Modifier) -> Unit = { modifier ->
