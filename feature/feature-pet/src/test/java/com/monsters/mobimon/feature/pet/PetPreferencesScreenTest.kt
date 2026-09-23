@@ -96,6 +96,44 @@ class PetPreferencesScreenTest {
     }
 
     @Test
+    fun launcherCharacterShowsPermissionWarningWhenEnabledWithoutOverlayPermission() {
+        compose.setContent {
+            MobiMonTheme {
+                SettingsScreen(
+                    settings = CompanionSettings(launcherCharacterEnabled = true),
+                    parkedVerified = true,
+                    onReducedMotionChange = {},
+                    onLauncherCharacterChange = {},
+                    hasOverlayPermission = false,
+                )
+            }
+        }
+
+        compose.onNodeWithText("차량 홈 캐릭터").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText("다른 앱 위에 표시 권한 허용이 필요합니다.").assertIsDisplayed()
+    }
+
+    @Test
+    fun launcherCharacterToggleOffRequestsFalseWhenEnabled() {
+        var requested: Boolean? = null
+        compose.setContent {
+            MobiMonTheme {
+                SettingsScreen(
+                    settings = CompanionSettings(launcherCharacterEnabled = true),
+                    parkedVerified = true,
+                    onReducedMotionChange = {},
+                    onLauncherCharacterChange = { requested = it },
+                    hasOverlayPermission = true,
+                )
+            }
+        }
+
+        compose.onNodeWithText("차량 홈 캐릭터").performScrollTo().performClick()
+
+        assertEquals(false, requested)
+    }
+
+    @Test
     fun unavailableServicesAndUnknownParkingDoNotInvokeSettingsActions() {
         var motionCalls = 0
         var debugCalls = 0

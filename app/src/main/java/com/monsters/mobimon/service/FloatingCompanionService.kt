@@ -1,9 +1,12 @@
 package com.monsters.mobimon.service
 
 import android.annotation.SuppressLint
+import android.app.NotificationChannel
+import android.app.NotificationManager
 import android.app.Service
 import android.content.Context
 import android.content.Intent
+import android.content.pm.ServiceInfo
 import android.graphics.PixelFormat
 import android.os.Build
 import android.os.IBinder
@@ -21,10 +24,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.platform.ViewCompositionStrategy
 import androidx.compose.ui.unit.dp
+import androidx.core.app.NotificationCompat
 import androidx.lifecycle.setViewTreeLifecycleOwner
 import androidx.lifecycle.setViewTreeViewModelStoreOwner
 import androidx.lifecycle.viewmodel.compose.LocalViewModelStoreOwner
 import androidx.savedstate.setViewTreeSavedStateRegistryOwner
+import com.monsters.mobimon.R
 import com.monsters.mobimon.core.domain.SettingsRepository
 import com.monsters.mobimon.core.presentation.CompanionAppearancePresentation
 import com.monsters.mobimon.core.ui.MobiMonTheme
@@ -38,8 +43,14 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 import kotlin.math.abs
 
+private const val NOTIFICATION_CHANNEL_ID = "mobimon_floating_companion"
+private const val NOTIFICATION_ID = 1001
+private const val DEFAULT_OVERLAY_X = 1900
+private const val DEFAULT_OVERLAY_Y = 700
+
 /**
  * Floating companion overlay service rendering the companion avatar on top of all screens.
+ * Runs as a specialUse foreground service to persist across the launcher and other apps.
  * Fails closed if overlay permission is lost or explicit opt-in preference is disabled.
  */
 @AndroidEntryPoint
@@ -63,7 +74,7 @@ class FloatingCompanionService : Service() {
             stopSelf()
             return
         }
-
+        startInForeground()
         initOverlayView()
         observeSettings()
     }
@@ -77,7 +88,46 @@ class FloatingCompanionService : Service() {
             stopSelf()
             return START_NOT_STICKY
         }
+        startInForeground()
         return START_STICKY
+    }
+
+    private fun createNotificationChannel() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val channel =
+                NotificationChannel(
+                    NOTIFICATION_CHANNEL_ID,
+                    getString(R.string.floating_service_notification_channel_name),
+                    NotificationManager.IMPORTANCE_LOW,
+                ).apply {
+                    setShowBadge(false)
+                }
+            val manager = getSystemService(Context.NOTIFICATION_SERVICE) as? NotificationManager
+            manager?.createNotificationChannel(channel)
+        }
+    }
+
+    private fun startInForeground() {
+        createNotificationChannel()
+        val notification =
+            NotificationCompat
+                .Builder(this, NOTIFICATION_CHANNEL_ID)
+                .setSmallIcon(R.mipmap.ic_launcher)
+                .setContentTitle(getString(R.string.floating_service_notification_title))
+                .setContentText(getString(R.string.floating_service_notification_text))
+                .setPriority(NotificationCompat.PRIORITY_LOW)
+                .setOngoing(true)
+                .build()
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            startForeground(
+                NOTIFICATION_ID,
+                notification,
+                ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE,
+            )
+        } else {
+            startForeground(NOTIFICATION_ID, notification)
+        }
     }
 
     @SuppressLint("ClickableViewAccessibility")
@@ -108,8 +158,8 @@ class FloatingCompanionService : Service() {
                     PixelFormat.TRANSLUCENT,
                 ).apply {
                     gravity = Gravity.TOP or Gravity.START
-                    x = 80
-                    y = 120
+                    x = DEFAULT_OVERLAY_X
+                    y = DEFAULT_OVERLAY_Y
                 }
 
         val owner = OverlayLifecycleOwner()
@@ -237,5 +287,9 @@ class FloatingCompanionService : Service() {
         lifecycleOwner?.destroy()
         lifecycleOwner = null
         windowManager = null
+        try {
+            stopForeground(STOP_FOREGROUND_REMOVE)
+        } catch (_: Exception) {
+        }
     }
 }

@@ -68,6 +68,7 @@ fun SettingsScreen(
     onDebugModeChange: (Boolean) -> Unit = {},
     debugModeAvailable: Boolean = false,
     onLauncherCharacterChange: ((Boolean) -> Unit)? = null,
+    hasOverlayPermission: Boolean = true,
     launcherSaving: Boolean = false,
     launcherError: String? = null,
     motionSaving: Boolean = false,
@@ -124,6 +125,15 @@ fun SettingsScreen(
                         onClick = onOpenCopilot,
                     )
                     if (onLauncherCharacterChange != null) {
+                        val overlayMissing = settings.launcherCharacterEnabled && !hasOverlayPermission
+                        val feedback =
+                            launcherError ?: if (launcherSaving) {
+                                stringResource(R.string.pet_saving)
+                            } else if (overlayMissing) {
+                                stringResource(R.string.pet_settings_overlay_permission_required)
+                            } else {
+                                null
+                            }
                         SettingsItem(
                             title = R.string.pet_settings_launcher_title,
                             description = if (reference) null else R.string.pet_settings_launcher_description,
@@ -138,9 +148,8 @@ fun SettingsScreen(
                             checked = settings.launcherCharacterEnabled,
                             enabled = parkedVerified && !launcherSaving,
                             onCheckedChange = onLauncherCharacterChange,
-                            feedback =
-                                launcherError ?: if (launcherSaving) stringResource(R.string.pet_saving) else null,
-                            isError = launcherError != null,
+                            feedback = feedback,
+                            isError = launcherError != null || overlayMissing,
                         )
                     } else {
                         SettingsItem(

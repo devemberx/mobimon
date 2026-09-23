@@ -3,4 +3,7 @@
   <string name="app_name">MobiMon</string>
   <string name="app_use_restricted">차량의 화면 사용 제한이 해제되면 다시 시도해 주세요.</string>
   <string name="app_use_paused">지금은 MobiMon 사용이 제한돼요</string>
+  <string name="floating_service_notification_channel_name">홈 화면 캐릭터</string>
+  <string name="floating_service_notification_title">MobiMon 홈 캐릭터</string>
+  <string name="floating_service_notification_text">홈 화면에서 캐릭터가 함께하고 있어요.</string>
 </resources>

@@ -49,4 +49,5 @@
   <string name="pet_settings_launcher_description">홈 화면과 다른 앱 위에서도 캐릭터를 플로팅으로 띄워요.</string>
   <string name="pet_settings_launcher_unavailable">앱 안의 미리보기에만 적용돼요. 실제 차량 런처는 지원하지 않아요. 현재 준비중이에요.</string>
   <string name="pet_settings_preparing">준비 중</string>
+  <string name="pet_settings_overlay_permission_required">다른 앱 위에 표시 권한 허용이 필요합니다.</string>
 </resources>

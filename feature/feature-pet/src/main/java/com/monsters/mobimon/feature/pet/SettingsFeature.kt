@@ -61,11 +61,23 @@ class SettingsFeature(
                                 }
                             context.startActivity(intent)
                         } catch (_: Exception) {
+                            try {
+                                val fallback =
+                                    Intent(
+                                        Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                                        Uri.parse("package:${context.packageName}"),
+                                    ).apply {
+                                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                                    }
+                                context.startActivity(fallback)
+                            } catch (_: Exception) {
+                            }
                         }
                     }
                     model.setLauncherCharacter(enabled)
                 }
             },
+            hasOverlayPermission = Settings.canDrawOverlays(context),
             launcherSaving = state.launcherSaving,
             launcherError = if (state.launcherSaveFailed) stringResource(R.string.pet_route_save_failed) else null,
             motionSaving = state.reducedMotionSaving,
