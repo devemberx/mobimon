@@ -36,7 +36,7 @@ internal fun DebugOverlayPlacement(content: @Composable () -> Unit) {
                         },
                     ) { change, amount ->
                         change.consume()
-                        requested += amount
+                        requested = placement.clamp(placement.clamp(requested) + amount)
                     }
                 },
             ) { content() }
@@ -52,15 +52,22 @@ internal fun DebugOverlayPlacement(content: @Composable () -> Unit) {
             )
         layout(constraints.maxWidth, constraints.maxHeight) {
             // Clamp using this measurement, including minimize and live inset changes.
-            val x = requested.x.roundToInt().coerceIn(0, (constraints.maxWidth - panel.width).coerceAtLeast(0))
-            val y = requested.y.roundToInt().coerceIn(0, (constraints.maxHeight - panel.height).coerceAtLeast(0))
-            placement.position = IntOffset(x, y)
-            panel.place(x, y)
+            placement.maximum =
+                Offset(
+                    (constraints.maxWidth - panel.width).coerceAtLeast(0).toFloat(),
+                    (constraints.maxHeight - panel.height).coerceAtLeast(0).toFloat(),
+                )
+            val clamped = placement.clamp(requested)
+            placement.position = IntOffset(clamped.x.roundToInt(), clamped.y.roundToInt())
+            panel.place(placement.position)
         }
     }
 }
 
-// Last placement is only read by drag events; it never feeds composition or measurement.
+// Geometry shared with drag events never feeds composition or measurement.
 private class DebugPlacement {
     var position = IntOffset.Zero
+    var maximum = Offset.Zero
+
+    fun clamp(position: Offset): Offset = Offset(position.x.coerceIn(0f, maximum.x), position.y.coerceIn(0f, maximum.y))
 }

@@ -115,7 +115,7 @@ internal fun QuestListContent(
                 modifier =
                     Modifier
                         .width(680.dp * scale)
-                        .heightIn(min = 964.dp * scale)
+                        .fillMaxHeight()
                         .clip(RoundedCornerShape(32.dp * scale))
                         .background(Colors.panel)
                         .padding(32.dp * scale),

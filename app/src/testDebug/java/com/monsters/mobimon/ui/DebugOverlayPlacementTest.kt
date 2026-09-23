@@ -27,6 +27,41 @@ import org.robolectric.annotation.Config
 class DebugOverlayPlacementTest {
     @get:Rule val compose = createComposeRule()
 
+    @Test fun reversingDragAtAnEdgeMovesImmediately() {
+        compose.setContent {
+            Box(Modifier.size(1000.dp, 800.dp).testTag("host")) {
+                DebugOverlayPlacement {
+                    Box(Modifier.fillMaxWidth().height(600.dp).testTag("panel"))
+                }
+            }
+        }
+        compose.onNodeWithTag("host").performTouchInput {
+            down(Offset(400f, 200f))
+            moveBy(Offset(600f, 500f))
+        }
+        val bottomRight = compose.onNodeWithTag("panel").getUnclippedBoundsInRoot()
+        assertEquals(280f, bottomRight.left.value, 1f)
+        assertEquals(200f, bottomRight.top.value, 1f)
+        compose.onNodeWithTag("host").performTouchInput {
+            moveBy(Offset(-40f, -40f))
+            up()
+        }
+        val reversed = compose.onNodeWithTag("panel").getUnclippedBoundsInRoot()
+        assertEquals(240f, reversed.left.value, 1f)
+        assertEquals(160f, reversed.top.value, 1f)
+
+        compose.onNodeWithTag("host").performTouchInput {
+            down(Offset(400f, 200f))
+            moveBy(Offset(-600f, -500f))
+            moveBy(Offset(40f, 40f))
+            up()
+        }
+        val topLeft = compose.onNodeWithTag("panel").getUnclippedBoundsInRoot()
+        assertEquals(40f, topLeft.left.value, 1f)
+        assertEquals(40f, topLeft.top.value, 1f)
+        assertInside()
+    }
+
     @Test fun draggingAndWindowResizeKeepTheWholePanelInside() {
         val height = mutableStateOf(800.dp)
         compose.setContent {

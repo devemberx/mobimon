@@ -4,10 +4,16 @@ import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.view.View
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.height
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotEnabled
@@ -18,6 +24,9 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.unit.Density
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
 import androidx.test.core.app.ApplicationProvider
 import com.monsters.mobimon.core.domain.CosmeticInventory
 import com.monsters.mobimon.core.domain.CosmeticSlot
@@ -27,6 +36,7 @@ import com.monsters.mobimon.core.navigation.AppRoute
 import com.monsters.mobimon.core.navigation.VehicleRoute
 import com.monsters.mobimon.core.presentation.CompanionAppearanceState
 import com.monsters.mobimon.core.presentation.PointBalanceState
+import com.monsters.mobimon.core.ui.MobiMonColors
 import com.monsters.mobimon.core.ui.MobiMonTheme
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -45,6 +55,96 @@ class QuestScreenTest {
     @get:Rule val compose = createComposeRule()
     private val context = ApplicationProvider.getApplicationContext<Context>()
     private val catalog = QuestCatalog(DefaultPointQuestCatalog())
+
+    @Test
+    @Config(qualifiers = "ko-rKR-w2560dp-h1332dp-mdpi")
+    @GraphicsMode(GraphicsMode.Mode.NATIVE)
+    fun panelsFollowAvailableContentHeight() = checkPanelHeights(listOf(1184.dp, 1268.dp, 1184.dp), 1f)
+
+    @Test
+    @Config(qualifiers = "ko-rKR-w1792dp-h952dp-mdpi")
+    @GraphicsMode(GraphicsMode.Mode.NATIVE)
+    fun compatibilityPanelsFollowAvailableContentHeight() = checkPanelHeights(listOf(829.dp, 888.dp, 829.dp), 0.7f)
+
+    @Test
+    @Config(qualifiers = "ko-rKR-w1792dp-h893dp-mdpi")
+    @GraphicsMode(GraphicsMode.Mode.NATIVE)
+    fun enlargedTextKeepsCompactQuestActionsReachable() {
+        lateinit var view: View
+        val state = presentation()
+        compose.setContent {
+            val currentView = LocalView.current
+            SideEffect { view = currentView }
+            CompositionLocalProvider(LocalDensity provides Density(LocalDensity.current.density, 1.5f)) {
+                MobiMonTheme { QuestScreen(state, {}, {}, {}, {}, {}, {}, {}) }
+            }
+        }
+        compose.onNodeWithTag("quest-reference").assertDoesNotExist()
+        capture({ view }, "quest-list-enlarged")
+        compose.onNodeWithTag("quest-btn-detail-${DrivingQuestIds.BATTERY_CARE}").performScrollTo().performClick()
+        compose.onNodeWithTag("quest-btn-detail-execute").performScrollTo().assertIsDisplayed()
+        capture({ view }, "quest-detail-enlarged")
+    }
+
+    private fun checkPanelHeights(
+        heights: List<Dp>,
+        scale: Float,
+    ) {
+        var height by mutableStateOf(heights.first())
+        lateinit var view: View
+        val state = presentation()
+        compose.setContent {
+            val currentView = LocalView.current
+            SideEffect { view = currentView }
+            MobiMonTheme {
+                Box(Modifier.height(height)) {
+                    QuestScreen(state, {}, {}, {}, {}, {}, {}, {})
+                }
+            }
+        }
+
+        fun checkPanels(detail: Boolean) {
+            compose.runOnIdle {
+                val bitmap = Bitmap.createBitmap(view.width, view.height, Bitmap.Config.ARGB_8888)
+                view.draw(Canvas(bitmap))
+                val y = (height.value - 40 * scale).toInt()
+                assertEquals(
+                    "Companion panel must reach the bottom gutter",
+                    MobiMonColors.panel.toArgb(),
+                    bitmap.getPixel(
+                        (
+                            400 *
+                                scale
+                        ).toInt(),
+                        y,
+                    ),
+                )
+                if (detail) {
+                    assertEquals(
+                        "Detail panel must reach the bottom gutter",
+                        MobiMonColors.panel.toArgb(),
+                        bitmap.getPixel(
+                            (
+                                2000 *
+                                    scale
+                            ).toInt(),
+                            y,
+                        ),
+                    )
+                }
+                bitmap.recycle()
+            }
+        }
+        for (contentHeight in heights) {
+            compose.runOnIdle { height = contentHeight }
+            capture({ view }, "quest-list-height-${contentHeight.value.toInt()}")
+            checkPanels(detail = false)
+            compose.onNodeWithTag("quest-btn-detail-${DrivingQuestIds.BATTERY_CARE}").performScrollTo().performClick()
+            capture({ view }, "quest-detail-height-${contentHeight.value.toInt()}")
+            checkPanels(detail = true)
+            compose.onNodeWithTag("quest-detail-back-button").performClick()
+        }
+    }
 
     @Test
     fun claimDoesNotInventCompletionOrSuccessBeforeCommittedResult() {
