@@ -54,6 +54,20 @@ internal object MobiCollapsedTimeline {
     }
 }
 
+internal object MobiDizzyStarsTimeline {
+    const val COLUMNS = 6
+    const val ROWS = 2
+    const val FRAME_COUNT = COLUMNS * ROWS
+    const val CYCLE_MS = 2_000L
+
+    fun frameAt(elapsedNanos: Long): Int {
+        val cycleNanos = CYCLE_MS * 1_000_000L
+        val phase = elapsedNanos.coerceAtLeast(0L) % cycleNanos
+        val progress = phase.toDouble() / cycleNanos
+        return (progress * FRAME_COUNT).toInt().coerceIn(0, FRAME_COUNT - 1)
+    }
+}
+
 /** Opacity only: toggling warning during a fade continues from the current opacity. */
 internal class MobiWarningBlend {
     val opacity = Animatable(0f)
@@ -98,6 +112,36 @@ internal object MobiCollapsedSpriteCache {
     }
 }
 
+internal object MobiDizzyStarsSpriteCache {
+    const val CELL = 362
+    const val ASSET_PATH = "characters/mobi/unhealthy/mobi_dizzy_stars_sprite.png"
+
+    @Volatile private var cached: ImageBitmap? = null
+
+    fun peek(): ImageBitmap? = cached
+
+    fun getOrLoad(context: Context): ImageBitmap? {
+        cached?.let { return it }
+        return synchronized(this) {
+            cached?.let { return it }
+            val assets = context.applicationContext.assets
+            val options = BitmapFactory.Options().apply { inScaled = false }
+            try {
+                assets.open(ASSET_PATH).use { stream ->
+                    val bitmap = requireNotNull(BitmapFactory.decodeStream(stream, null, options))
+                    require(
+                        bitmap.width == CELL * MobiDizzyStarsTimeline.COLUMNS &&
+                            bitmap.height == CELL * MobiDizzyStarsTimeline.ROWS,
+                    )
+                    bitmap.asImageBitmap().also { cached = it }
+                }
+            } catch (_: java.io.IOException) {
+                null
+            }
+        }
+    }
+}
+
 /** Normal and collapsed idle share one fixed layout slot and crossfade only. */
 @Composable
 fun MobiIdleBreathAnimation(
@@ -113,6 +157,9 @@ fun MobiIdleBreathAnimation(
     val enabled = motionEnabled && LocalMobiMonMotionEnabled.current
     val sprite by produceState<ImageBitmap?>(initialValue = MobiCollapsedSpriteCache.peek(), context, vehicleWarning) {
         if (vehicleWarning && value == null) value = withContext(Dispatchers.IO) { MobiCollapsedSpriteCache.getOrLoad(context) }
+    }
+    val starsSprite by produceState<ImageBitmap?>(initialValue = MobiDizzyStarsSpriteCache.peek(), context, vehicleWarning) {
+        if (vehicleWarning && value == null) value = withContext(Dispatchers.IO) { MobiDizzyStarsSpriteCache.getOrLoad(context) }
     }
     LaunchedEffect(vehicleWarning, enabled, sprite) {
         if (sprite != null) blend.target(vehicleWarning, enabled)
@@ -161,6 +208,29 @@ fun MobiIdleBreathAnimation(
                         }
                     },
             )
+            val stars = starsSprite
+            if (stars != null) {
+                val starsExtent = extent * 0.45f
+                Box(
+                    Modifier
+                        .requiredSize(starsExtent)
+                        .graphicsLayer {
+                            alpha = blend.opacity.value
+                            translationX = size.width * 0.08f
+                            translationY = -size.height * 0.18f
+                            compositingStrategy = CompositingStrategy.Offscreen
+                            clip = false
+                        }
+                        .mobiSpriteFrames(stars, MobiDizzyStarsTimeline.COLUMNS, MobiDizzyStarsTimeline.ROWS, blendFrames = false) {
+                            if (enabled) {
+                                val time = elapsed.longValue
+                                MobiDizzyStarsTimeline.frameAt(time).toFloat()
+                            } else {
+                                0f
+                            }
+                        },
+                )
+            }
         }
     }
 }
