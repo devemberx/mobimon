@@ -19,15 +19,20 @@ import com.monsters.mobimon.core.domain.QuestEvaluator
 import com.monsters.mobimon.core.domain.QuestRepository
 import com.monsters.mobimon.core.domain.RewardRepository
 import com.monsters.mobimon.core.domain.SettingsRepository
+import com.monsters.mobimon.core.domain.SignalSourceProvider
 import com.monsters.mobimon.core.domain.UtcClock
 import com.monsters.mobimon.core.domain.VehicleFreshnessPolicy
 import com.monsters.mobimon.core.domain.VehicleRepository
 import com.monsters.mobimon.runtime.AppUseStateSource
 import com.monsters.mobimon.runtime.CompanionRuntime
+import com.monsters.mobimon.runtime.DebugAwareSignalSourceProvider
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import java.util.UUID
 import javax.inject.Singleton
 
@@ -45,6 +50,18 @@ object AppModule {
 
     @Provides
     fun identity(environment: AppEnvironment): ProgressionIdentity = environment.identity
+
+    @Provides
+    @Singleton
+    fun appScope(): CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+
+    @Provides
+    @Singleton
+    fun signalSource(
+        identity: ProgressionIdentity,
+        settings: SettingsRepository,
+        scope: CoroutineScope,
+    ): SignalSourceProvider = DebugAwareSignalSourceProvider(identity.source, settings, scope)
 
     @Provides
     @Singleton
@@ -75,8 +92,18 @@ object AppModule {
         evaluator: QuestEvaluator,
         currentVehicle: CurrentVehicleEvidence,
         currentAppUse: CurrentAppUse,
+        sourceProvider: SignalSourceProvider,
     ): RoomCompanionRepository =
-        RoomCompanionRepository(database, identity, clock, ids, evaluator, currentVehicle, currentAppUse)
+        RoomCompanionRepository(
+            database,
+            identity,
+            clock,
+            ids,
+            evaluator,
+            currentVehicle,
+            currentAppUse,
+            sourceProvider,
+        )
 
     @Provides
     fun pets(repository: RoomCompanionRepository): PetRepository = repository
@@ -99,6 +126,7 @@ object AppModule {
         clock: Clock,
         evaluator: QuestEvaluator,
         catalog: PointQuestCatalog,
+        sourceProvider: SignalSourceProvider,
     ): PointEconomy =
         PointEconomyRepository(
             database,
@@ -111,6 +139,7 @@ object AppModule {
             clock,
             evaluator,
             catalog,
+            sourceProvider = sourceProvider,
         )
 
     @Provides

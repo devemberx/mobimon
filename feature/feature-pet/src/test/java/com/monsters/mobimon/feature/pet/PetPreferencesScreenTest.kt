@@ -158,6 +158,32 @@ class PetPreferencesScreenTest {
     }
 
     @Test
+    fun debugModeCanToggleWhenHiddenReleaseDebuggerIsAvailableWithoutParkingEvidence() {
+        var requested: Boolean? = null
+        compose.setContent {
+            MobiMonTheme {
+                SettingsScreen(
+                    settings = CompanionSettings(debugModeEnabled = false),
+                    onReducedMotionChange = {},
+                    onDebugModeChange = { requested = it },
+                    debugModeAvailable = true,
+                    debugModeInteractionAllowed = true,
+                    parkedVerified = false,
+                )
+            }
+        }
+
+        compose.onNodeWithText("주차 확인 불가").assertExists()
+        compose
+            .onNodeWithText("Debugger")
+            .performScrollTo()
+            .assertIsEnabled()
+            .performClick()
+
+        assertEquals(true, requested)
+    }
+
+    @Test
     fun failedLoadOffersRetryAndNavigationRemainsAvailable() {
         var retries = 0
         var backs = 0

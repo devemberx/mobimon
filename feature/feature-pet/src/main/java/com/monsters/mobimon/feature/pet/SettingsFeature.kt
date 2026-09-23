@@ -20,6 +20,7 @@ import com.monsters.mobimon.core.navigation.AppRoute
 import com.monsters.mobimon.core.navigation.CompanionRoute
 import com.monsters.mobimon.core.navigation.FeatureEntry
 import com.monsters.mobimon.core.navigation.FeatureNavigator
+import com.monsters.mobimon.core.navigation.LocalDebugSettingsAvailable
 import com.monsters.mobimon.core.presentation.VehiclePresentation
 import com.monsters.mobimon.core.presentation.parkedVerified
 
@@ -42,12 +43,15 @@ class SettingsFeature(
         val state by model.state.collectAsStateWithLifecycle()
         val snapshot = vehicle.snapshot()
         val context = LocalContext.current
+        val hiddenDebugSettingsAvailable = LocalDebugSettingsAvailable.current
+        val debugModeInteractionAllowed = snapshot.parkedVerified || hiddenDebugSettingsAvailable
         SettingsScreen(
             settings = state.settings,
             onReducedMotionChange = { if (snapshot.parkedVerified) model.setReducedMotion(it) },
             modifier = modifier,
-            onDebugModeChange = { if (snapshot.parkedVerified) model.setDebugMode(it) },
-            debugModeAvailable = debugSettingsAvailable,
+            onDebugModeChange = { if (debugModeInteractionAllowed) model.setDebugMode(it) },
+            debugModeAvailable = debugSettingsAvailable || hiddenDebugSettingsAvailable,
+            debugModeInteractionAllowed = debugModeInteractionAllowed,
             onLauncherCharacterChange = { enabled ->
                 if (snapshot.parkedVerified) {
                     if (enabled && !Settings.canDrawOverlays(context)) {

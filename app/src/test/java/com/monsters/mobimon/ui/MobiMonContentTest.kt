@@ -28,6 +28,7 @@ import com.monsters.mobimon.core.navigation.AppRoute
 import com.monsters.mobimon.core.navigation.CompanionRoute
 import com.monsters.mobimon.core.navigation.FeatureEntry
 import com.monsters.mobimon.core.navigation.FeatureNavigator
+import com.monsters.mobimon.core.navigation.LocalDebugSettingsAvailable
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -202,6 +203,91 @@ class MobiMonContentTest {
     }
 
     @Test
+    fun releaseMenuVersionTapsUnlockDebuggerSettings() {
+        show(debugSettingsAvailableByDefault = false)
+        compose.onNodeWithText("Open menu").performClick()
+        clickMenuItem("설정")
+        compose.onNodeWithText("Debugger").assertDoesNotExist()
+
+        compose.onNodeWithText("Open menu").performClick()
+        repeat(10) {
+            compose.onNodeWithTag("menu-version").performScrollTo().performClick()
+        }
+        clickMenuItem("설정")
+
+        compose.onNodeWithText("Route SETTINGS").assertExists()
+        compose.onNodeWithText("Debugger").assertExists()
+    }
+
+    @Test
+    fun releaseMenuVersionUnlockResetsDebuggerModeToDisabled() {
+        var resetRequests = 0
+        show(
+            debugSettingsAvailableByDefault = false,
+            onReleaseDebuggerUnlocked = { resetRequests++ },
+        )
+        compose.onNodeWithText("Open menu").performClick()
+
+        repeat(9) {
+            compose.onNodeWithTag("menu-version").performScrollTo().performClick()
+        }
+        compose.runOnIdle { assertTrue(resetRequests == 0) }
+
+        compose.onNodeWithTag("menu-version").performScrollTo().performClick()
+        compose.runOnIdle { assertTrue(resetRequests == 1) }
+
+        compose.onNodeWithTag("menu-version").performScrollTo().performClick()
+        compose.runOnIdle { assertTrue(resetRequests == 1) }
+    }
+
+    @Test
+    fun releaseMenuVersionTapsShowUnlockToastCountdown() {
+        show(debugSettingsAvailableByDefault = false)
+        compose.onNodeWithText("Open menu").performClick()
+
+        repeat(4) {
+            compose.onNodeWithTag("menu-version").performScrollTo().performClick()
+        }
+        compose.onNodeWithText("debugger 버튼 활성화까지 5회 남았습니다").assertDoesNotExist()
+
+        listOf(
+            "debugger 버튼 활성화까지 5회 남았습니다",
+            "debugger 버튼 활성화까지 4회 남았습니다",
+            "debugger 버튼 활성화까지 3회 남았습니다",
+            "debugger 버튼 활성화까지 2회 남았습니다",
+            "debugger 버튼 활성화까지 1회 남았습니다",
+            "debugger 버튼이 활성화 되었습니다",
+        ).forEach { message ->
+            compose.onNodeWithTag("menu-version").performScrollTo().performClick()
+            compose.onNodeWithText(message).assertExists()
+        }
+    }
+
+    @Test
+    fun releaseMenuVersionTapCountResetsAfterThreeSeconds() {
+        show(debugSettingsAvailableByDefault = false, reducedMotion = true)
+        compose.onNodeWithText("Open menu").performClick()
+        compose.waitForIdle()
+        compose.onNodeWithTag("menu-version").assertExists()
+
+        repeat(5) {
+            compose.onNodeWithTag("menu-version").performScrollTo().performClick()
+        }
+        compose.onNodeWithText("debugger 버튼 활성화까지 5회 남았습니다").assertExists()
+
+        compose.mainClock.advanceTimeBy(3_100)
+        compose.waitForIdle()
+
+        repeat(5) {
+            compose.onNodeWithTag("menu-version").performScrollTo().performClick()
+        }
+        compose.onNodeWithText("debugger 버튼 활성화까지 5회 남았습니다").assertExists()
+
+        clickMenuItem("설정")
+        compose.onNodeWithText("Debugger").assertDoesNotExist()
+    }
+
+    @Test
     @Config(qualifiers = "ko-rKR-w1792dp-h888dp")
     fun menuFitsItsWindowAndKeepsAccessibleTargets() {
         show()
@@ -217,8 +303,20 @@ class MobiMonContentTest {
         compose.onNodeWithText("홈").assertIsFocused()
     }
 
-    private fun show() {
-        compose.setContent { MobiMonContent(entries, appUseState = AppUseState.ALLOWED) }
+    private fun show(
+        debugSettingsAvailableByDefault: Boolean = true,
+        reducedMotion: Boolean = false,
+        onReleaseDebuggerUnlocked: () -> Unit = {},
+    ) {
+        compose.setContent {
+            MobiMonContent(
+                entries,
+                appUseState = AppUseState.ALLOWED,
+                reducedMotion = reducedMotion,
+                debugSettingsAvailableByDefault = debugSettingsAvailableByDefault,
+                onReleaseDebuggerUnlocked = onReleaseDebuggerUnlocked,
+            )
+        }
     }
 
     private val entries =
@@ -238,6 +336,9 @@ class MobiMonContentTest {
                     }
                     Column(modifier) {
                         Text("Route ${route.name}")
+                        if (route == CompanionRoute.SETTINGS && LocalDebugSettingsAvailable.current) {
+                            Text("Debugger")
+                        }
                         TextButton(onClick = navigator.openMenu) { Text("Open menu") }
                         TextButton(onClick = { navigator.navigate(AiRoute.COPILOT) }) { Text("Connect") }
                         TextButton(onClick = { navigator.navigate(AiRoute.CONVERSATION) }) { Text("Chat") }

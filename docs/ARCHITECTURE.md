@@ -142,9 +142,10 @@ AAOS restrictions remove the screen.
 ### Vehicle interaction authorization
 
 Debug uses `.demo`, `mobimon-demo.db` and `demo-profile`; Release uses `mobimon.db`,
-`local-profile` and the REAL unavailable adapter unless a closed-network
-`VssRawVehicleSource` adapter is present. Debug freshness is 15 seconds. Only
-nonmoving Park is parked; motion is moving and stationary D/R/N is unknown.
+`local-profile` and a closed-network `VssRawVehicleSource` adapter when present.
+Local Release validation falls back to the default parked VSS source so the hidden
+Debugger flow can be checked without vehicle hardware. Debug freshness is 15 seconds.
+Only nonmoving Park is parked; motion is moving and stationary D/R/N is unknown.
 
 Commands require fresh parked evidence and the current display's AAOS allowance.
 `CarAppUseMonitor` fails closed on unknown state, service loss and reconnection.
