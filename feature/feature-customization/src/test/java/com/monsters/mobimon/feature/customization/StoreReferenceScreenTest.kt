@@ -3,11 +3,14 @@ package com.monsters.mobimon.feature.customization
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.view.View
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.height
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsEnabled
@@ -19,6 +22,7 @@ import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.unit.dp
 import com.monsters.mobimon.core.domain.CosmeticInventory
 import com.monsters.mobimon.core.domain.CosmeticItem
 import com.monsters.mobimon.core.domain.CosmeticSlot
@@ -35,7 +39,7 @@ import org.robolectric.annotation.GraphicsMode
 import java.io.File
 
 @RunWith(RobolectricTestRunner::class)
-@Config(sdk = [34], qualifiers = "ko-rKR-w2560dp-h1332dp-mdpi")
+@Config(sdk = [34], qualifiers = "ko-rKR-w2560dp-h1248dp-mdpi")
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 class StoreReferenceScreenTest {
     @get:Rule val compose = createComposeRule()
@@ -87,6 +91,51 @@ class StoreReferenceScreenTest {
         compose.onNodeWithTag("store-tab-BACKGROUND").performClick().assertIsSelected()
         compose.onNodeWithTag("store-tab-ACCESSORY").assertIsNotSelected()
         capture(view, "P22-backgrounds")
+    }
+
+    @Test fun runtimeHeightChangesReflowActionsWithoutShrinkingTheReferenceWidth() {
+        val height = mutableStateOf(1184.dp)
+        val catalog =
+            listOf(
+                CosmeticItem("friend:mobi", CosmeticSlot.FRIEND, 0),
+                CosmeticItem("accessory:mobi_headphones", CosmeticSlot.ACCESSORY, 300, "friend:mobi"),
+            )
+        compose.setContent {
+            MobiMonTheme {
+                Box(Modifier.height(height.value)) {
+                    CustomizationScreen(
+                        CosmeticInventory(setOf("friend:mobi"), emptyMap()),
+                        catalog,
+                        "friend:mobi",
+                        false,
+                        false,
+                        {},
+                        { _, _ -> },
+                        {},
+                        {},
+                        1200,
+                        false,
+                    )
+                }
+            }
+        }
+
+        fun check(bottom: Float) {
+            val reference = compose.onNodeWithTag("store-reference").getUnclippedBoundsInRoot()
+            val action = compose.onNodeWithText("모비와 함께하기").getUnclippedBoundsInRoot()
+            assertEquals(2560f, (reference.right - reference.left).value, 1f)
+            assertEquals(bottom - 24f, action.bottom.value, 1f)
+            assertEquals(112f, (action.bottom - action.top).value, 1f)
+        }
+        check(1184f)
+        compose.runOnIdle { height.value = 1144.dp }
+        check(1144f)
+        compose.onNodeWithTag("store-tab-ACCESSORY").performClick()
+        val catalogBounds = compose.onNodeWithTag("shop-items").getUnclippedBoundsInRoot()
+        val hint = compose.onNodeWithText("아이템을 선택하면 친구에게 먼저 입혀 볼 수 있어요.").getUnclippedBoundsInRoot()
+        assertTrue("Catalog stays above the hint after height changes", catalogBounds.bottom <= hint.top)
+        compose.runOnIdle { height.value = 540.dp }
+        compose.onNodeWithTag("store-reference").assertDoesNotExist()
     }
 
     @Test fun previewDescriptionMatchesItemTypes() {

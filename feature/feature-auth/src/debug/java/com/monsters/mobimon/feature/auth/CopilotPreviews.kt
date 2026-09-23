@@ -29,35 +29,35 @@ private fun Sample(state: CopilotUiState) {
     }
 }
 
-@Preview(name = "P51 · Introduction", group = "Copilot UI samples", widthDp = 1792, heightDp = 888)
+@Preview(name = "P51 · Introduction", group = "Copilot UI samples", widthDp = 1792, heightDp = 829)
 @Composable
 private fun IntroductionPreview() = Sample(copilotPreviewStates.getValue("P51-introduction"))
 
-@Preview(name = "P52 · Approval", group = "Copilot UI samples", widthDp = 1792, heightDp = 888)
+@Preview(name = "P52 · Approval", group = "Copilot UI samples", widthDp = 1792, heightDp = 829)
 @Composable
 private fun WaitingPreview() = Sample(copilotPreviewStates.getValue("P52-waiting"))
 
-@Preview(name = "P52C · Address help", group = "Copilot UI samples", widthDp = 1792, heightDp = 888)
+@Preview(name = "P52C · Address help", group = "Copilot UI samples", widthDp = 1792, heightDp = 829)
 @Composable
 private fun AddressPreview() = Sample(copilotPreviewStates.getValue("P52C-address"))
 
-@Preview(name = "P52B · Expired", group = "Copilot UI samples", widthDp = 1792, heightDp = 888)
+@Preview(name = "P52B · Expired", group = "Copilot UI samples", widthDp = 1792, heightDp = 829)
 @Composable
 private fun ExpiredPreview() = Sample(CopilotUiState.Expired)
 
-@Preview(name = "P53 · Connected", group = "Copilot UI samples", widthDp = 1792, heightDp = 888)
+@Preview(name = "P53 · Connected", group = "Copilot UI samples", widthDp = 1792, heightDp = 829)
 @Composable
 private fun ConnectedPreview() = Sample(copilotPreviewStates.getValue("P53-connected"))
 
-@Preview(name = "P54 · Reconnect", group = "Copilot UI samples", widthDp = 1792, heightDp = 888)
+@Preview(name = "P54 · Reconnect", group = "Copilot UI samples", widthDp = 1792, heightDp = 829)
 @Composable
 private fun ReconnectPreview() = Sample(copilotPreviewStates.getValue("P54-reconnect"))
 
-@Preview(name = "P56 · Check access", group = "Copilot UI samples", widthDp = 1792, heightDp = 888)
+@Preview(name = "P56 · Check access", group = "Copilot UI samples", widthDp = 1792, heightDp = 829)
 @Composable
 private fun AccessPreview() = Sample(copilotPreviewStates.getValue("P56-access"))
 
-@Preview(name = "P55 · Disconnect", group = "Copilot UI samples", widthDp = 1792, heightDp = 888)
+@Preview(name = "P55 · Disconnect", group = "Copilot UI samples", widthDp = 1792, heightDp = 829)
 @Composable
 private fun DisconnectPreview() = Sample(copilotPreviewStates.getValue("P55-disconnect"))
 
@@ -65,7 +65,7 @@ private fun DisconnectPreview() = Sample(copilotPreviewStates.getValue("P55-disc
     name = "Head unit · Large text",
     group = "Copilot UI samples",
     widthDp = 1792,
-    heightDp = 888,
+    heightDp = 829,
     fontScale = 1.5f,
 )
 @Composable

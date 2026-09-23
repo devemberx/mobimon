@@ -190,10 +190,10 @@ private fun MenuPanel(
     backgroundId: String?,
     first: FocusRequester,
 ) {
-    val referenceScale = minOf(windowWidth / 2560f, windowHeight / 1268f)
+    val referenceScale = windowWidth / 2560f
     val reference =
         windowWidth >= 1400 &&
-            windowHeight >= 800 &&
+            windowHeight >= 1184 * referenceScale &&
             LocalDensity.current.fontScale <= 1f &&
             referenceScale >= MIN_REFERENCE_MENU_SCALE
     val scale = if (reference) referenceScale else 1f
@@ -292,21 +292,21 @@ private fun MenuPanel(
         }
         if (reference) {
             Box(Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).heightIn(min = windowHeight.dp)) {
-                MobiMonReferenceText("MobiMon", 62f, 106f, 48f, scale = scale, bold = true, color = Color(0xFFF7FAFF))
+                MobiMonReferenceText("MobiMon", 62f, 70f, 48f, scale = scale, bold = true, color = Color(0xFFF7FAFF))
                 MobiMonReferenceText(
                     stringResource(R.string.drawer_tagline),
                     62f,
-                    155f,
+                    119f,
                     26f,
                     scale = scale,
                     color = Color(0xFFB9C9E1),
                 )
-                close(Modifier.offset((586 * scale).dp - 38.dp, (94 * scale).dp - 38.dp))
-                portrait(Modifier.offset((63 * scale).dp, (225 * scale).dp))
+                close(Modifier.offset((586 * scale).dp - 38.dp, (58 * scale).dp - 38.dp))
+                portrait(Modifier.offset((63 * scale).dp, (153 * scale).dp))
                 MobiMonReferenceText(
                     stringResource(drawerProfileName(friendId)),
                     244f,
-                    294f,
+                    222f,
                     34f,
                     Modifier.semantics { heading() },
                     scale,
@@ -316,13 +316,13 @@ private fun MenuPanel(
                 MobiMonReferenceText(
                     stringResource(R.string.drawer_profile_subtitle),
                     244f,
-                    335f,
+                    263f,
                     22f,
                     scale = scale,
                     color = Color(0xFF9FB2CE),
                 )
                 destinations.forEachIndexed { index, item ->
-                    val top = if (index == 0) 400f else 404f + 112f * index
+                    val top = if (index == 0) 332f else 336f + 112f * index
                     MenuDestination(
                         item,
                         item.route == currentRoute,
@@ -344,7 +344,7 @@ private fun MenuPanel(
                         reference = true,
                     )
                 }
-                MenuFooter(Modifier.align(Alignment.BottomStart).fillMaxWidth().height((194 * scale).dp), scale, true)
+                MenuFooter(Modifier.align(Alignment.BottomStart).fillMaxWidth().height((181 * scale).dp), scale, true)
             }
         } else {
             Column(

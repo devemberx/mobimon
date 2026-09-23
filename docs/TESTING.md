@@ -10,11 +10,13 @@ Review images exist; golden comparisons and system-UI automation are not configu
 Screen tests and previews follow the fixed-display scope in
 [DESIGN.md](DESIGN.md#visual-language), not a multiple-resolution device matrix.
 Retain reference content, AAOS compatibility density, enlarged text and IME resizing.
-The 2560 × 1268 reference content and approximately 1792 × 888 compatibility-dp
-content represent the same 2560 × 1440px target after bars and scaling.
-Robolectric qualifiers describe the test host, not necessarily the content bounds:
-the 2560 × 1332dp review host leaves 1268dp after its 64dp decor inset;
-1792 × 952dp similarly leaves 888dp. Decor-free shell tests use content sizes directly.
+Review fixtures use the current [Figma content bounds](ui/README.md): 2560 × 1184,
+1792 × 829 at compatibility density, and 2560 × 940 with the reference IME.
+Robolectric qualifiers describe the host, not necessarily the content bounds:
+a 2560 × 1248dp host leaves 1184dp after its 64dp decor inset; 1792 × 893dp
+leaves 829dp. Decor-free shell tests use content sizes directly. The shell inset
+test dispatches 76/96px, then 96/160px system bars and restores them in one run;
+this does not replace OEM window/Popup and native IME verification.
 Isolated component and synthetic motion tests may use smaller fixtures; these do
 not imply support for additional display sizes. CI's physical display is defined
 in [cstd.ini](../.github/avd/cstd.ini).
@@ -96,6 +98,8 @@ Related suites share the linked module/package.
 | Home/Settings, vehicle, store and quest layouts, focus and recovery | Owning feature `src/test` suites, including `CompanionReviewTest`, `VehicleReviewTest` and `StoreReferenceScreenTest` |
 | Menu reference/AAOS-density/enlarged-text bounds, focus, authenticated chat routing, connection origin after authentication loss, recreation and restricted/outgoing input | [Shell suites](../app/src/test/java/com/monsters/mobimon/ui), [CopilotConnectionJourneyTest](../app/src/journeyTest/java/com/monsters/mobimon/CopilotConnectionJourneyTest.kt) |
 | Conversation reveal/return, stationary Home, visible touch bounds, interruption, reduced motion and scrolled action bounds | [ConversationRevealTest](../app/src/test/java/com/monsters/mobimon/ui/ConversationRevealTest.kt), [PetHomeScreenTest](../feature/feature-pet/src/test/java/com/monsters/mobimon/feature/pet/PetHomeScreenTest.kt); native Robolectric frames and pointer input |
+| Live system-inset changes, destination/menu bounds and restoration | [MobiMonContentTest](../app/src/test/java/com/monsters/mobimon/ui/MobiMonContentTest.kt); platform inset dispatch in Robolectric |
+| Floating companion bounds use current bars/cutouts and measured size; Debug dragging and resize remain inside safe content | [OverlayMovementBoundsTest](../app/src/test/java/com/monsters/mobimon/service/OverlayMovementBoundsTest.kt), [DebugOverlayPlacementTest](../app/src/testDebug/java/com/monsters/mobimon/ui/DebugOverlayPlacementTest.kt); OEM overlay placement still requires a device |
 | Chat draft/composition lifetime, ownership clearing, input guards/actions and target-display/IME layouts | [Conversation and feature suites](../feature/feature-auth/src/test/java/com/monsters/mobimon/feature/auth); native review images |
 | Native keyboard resizing and Back/draft retention | [ConversationKeyboardDeviceTest](../app/src/androidTest/java/com/monsters/mobimon/preview/ConversationKeyboardDeviceTest.kt); AAOS device |
 | Isolated Debug rehearsal and branding | [CopilotPreviewJourneyTest](../app/src/journeyTest/java/com/monsters/mobimon/preview/CopilotPreviewJourneyTest.kt), [BrandingTest](../app/src/testDebug/java/com/monsters/mobimon/BrandingTest.kt) |

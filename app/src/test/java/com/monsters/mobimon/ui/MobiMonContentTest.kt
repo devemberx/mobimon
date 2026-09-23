@@ -1,15 +1,22 @@
 package com.monsters.mobimon.ui
 
 import android.app.Application
+import android.graphics.Insets
+import android.view.View
+import android.view.WindowInsets
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.test.assertHeightIsAtLeast
 import androidx.compose.ui.test.assertIsFocused
 import androidx.compose.ui.test.assertWidthIsAtLeast
@@ -28,6 +35,7 @@ import com.monsters.mobimon.core.navigation.AppRoute
 import com.monsters.mobimon.core.navigation.CompanionRoute
 import com.monsters.mobimon.core.navigation.FeatureEntry
 import com.monsters.mobimon.core.navigation.FeatureNavigator
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -36,9 +44,10 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
 @RunWith(RobolectricTestRunner::class)
-@Config(sdk = [34], application = Application::class, qualifiers = "ko-rKR-w2560dp-h1268dp-mdpi")
+@Config(sdk = [34], application = Application::class, qualifiers = "ko-rKR-w2560dp-h1184dp-mdpi")
 class MobiMonContentTest {
     @get:Rule val compose = createComposeRule()
+    private lateinit var rootView: View
     private val mountedRoutes = mutableStateListOf<AppRoute>()
 
     private fun clickMenuItem(text: String) {
@@ -202,7 +211,7 @@ class MobiMonContentTest {
     }
 
     @Test
-    @Config(qualifiers = "ko-rKR-w1792dp-h888dp")
+    @Config(qualifiers = "ko-rKR-w1792dp-h829dp")
     fun menuFitsItsWindowAndKeepsAccessibleTargets() {
         show()
         compose.onNodeWithText("Open menu").performClick()
@@ -215,6 +224,44 @@ class MobiMonContentTest {
             compose.onNodeWithText(label).assertHeightIsAtLeast(76.dp).assertWidthIsAtLeast(76.dp)
         }
         compose.onNodeWithText("홈").assertIsFocused()
+    }
+
+    @Test
+    @Config(qualifiers = "ko-rKR-w2560dp-h1440dp-mdpi")
+    fun liveSystemBarInsetsResizeTheDestinationAndMenu() {
+        show()
+
+        fun bars(
+            top: Int,
+            bottom: Int,
+        ) {
+            compose.runOnIdle {
+                rootView.dispatchApplyWindowInsets(
+                    WindowInsets
+                        .Builder()
+                        .setInsets(WindowInsets.Type.statusBars(), Insets.of(0, top, 0, 0))
+                        .setInsets(WindowInsets.Type.navigationBars(), Insets.of(0, 0, 0, bottom))
+                        .setVisible(WindowInsets.Type.systemBars(), true)
+                        .build(),
+                )
+            }
+            compose.waitForIdle()
+        }
+        bars(76, 96)
+        val before = compose.onNodeWithTag("test-destination").fetchSemanticsNode().boundsInRoot
+        assertEquals(1268f, before.height, 1f)
+        bars(96, 160)
+        val after = compose.onNodeWithTag("test-destination").fetchSemanticsNode().boundsInRoot
+        assertEquals(96f, after.top, 1f)
+        assertEquals(1184f, after.height, 1f)
+        compose.onNodeWithText("Open menu").performClick()
+        val host = compose.onNodeWithTag("menu-host").fetchSemanticsNode().boundsInRoot
+        val panel = compose.onNodeWithTag("companion-menu").fetchSemanticsNode().boundsInRoot
+        assertEquals(1184f, host.height, 1f)
+        assertEquals(host.height, panel.height, 1f)
+        compose.onNodeWithContentDescription("닫기").performClick()
+        bars(76, 96)
+        assertEquals(before, compose.onNodeWithTag("test-destination").fetchSemanticsNode().boundsInRoot)
     }
 
     private fun show() {
@@ -236,7 +283,9 @@ class MobiMonContentTest {
                         mountedRoutes.add(route)
                         onDispose { mountedRoutes.remove(route) }
                     }
-                    Column(modifier) {
+                    val view = LocalView.current
+                    SideEffect { rootView = view.parent as View }
+                    Column(modifier.fillMaxSize().testTag("test-destination")) {
                         Text("Route ${route.name}")
                         TextButton(onClick = navigator.openMenu) { Text("Open menu") }
                         TextButton(onClick = { navigator.navigate(AiRoute.COPILOT) }) { Text("Connect") }

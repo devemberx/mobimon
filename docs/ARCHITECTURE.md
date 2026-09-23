@@ -104,6 +104,21 @@ Failed/unknown motion preferences pause other decoration; retries follow shell s
 The floating companion overlay applies the same preference: reduced, unknown or failed motion stops autonomous
 wandering; dragging stays available.
 
+### Window geometry
+
+The shell owns runtime safe-drawing insets; the sibling menu handles its own
+safe window. Features use the available content constraints and width-based
+reference scaling, with scrolling or compact layouts for enlarged text. System
+bar pixels from the SVG are reference coordinates, never fixed runtime padding.
+Conversation additionally handles IME insets and resize without changing width scale.
+
+The floating companion uses full-window coordinates with explicit system-bar and
+cutout bounds from its overlay window context and current window metrics. Initial
+placement, dragging and each wander step clamp its measured size. Inset/layout
+changes reclamp an idle companion.
+Debug panels measure and clamp inside the shell's safe content independently.
+The [overlay verification boundary](#shared-vehicle-condition-and-overlay) still applies.
+
 ### Copilot connection UI
 
 `app` binds the domain `GitHubAuthentication` contract to `core-auth`.

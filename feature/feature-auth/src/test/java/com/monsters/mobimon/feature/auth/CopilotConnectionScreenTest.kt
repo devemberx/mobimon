@@ -44,11 +44,26 @@ import org.robolectric.annotation.GraphicsMode
 import java.io.File
 
 @RunWith(RobolectricTestRunner::class)
-@Config(sdk = [34], qualifiers = "ko-rKR-w2560dp-h1332dp-mdpi")
+@Config(sdk = [34], qualifiers = "ko-rKR-w2560dp-h1248dp-mdpi")
 @OptIn(ExperimentalTestApi::class)
 class CopilotConnectionScreenTest {
     @get:Rule val compose = createComposeRule()
     private lateinit var reviewView: View
+
+    @Test
+    @Config(qualifiers = "ko-rKR-w2560dp-h1164dp-mdpi")
+    fun shorterWideWindowKeepsConnectionActionsReachable() {
+        compose.setContent {
+            MobiMonTheme { CopilotConnectionScreen(CopilotUiState.Introduction(), {}, interactionAllowed = true) }
+        }
+        compose.onNodeWithTag("copilot-reference").assertDoesNotExist()
+        compose
+            .onNodeWithText("QR로 연결하기")
+            .performScrollTo()
+            .assertIsDisplayed()
+            .assertIsEnabled()
+        compose.onNodeWithText("나중에").performScrollTo().assertIsDisplayed()
+    }
 
     @Test
     @GraphicsMode(GraphicsMode.Mode.NATIVE)
@@ -341,7 +356,7 @@ class CopilotConnectionScreenTest {
             val reference = compose.onNodeWithTag("copilot-reference").fetchSemanticsNode().boundsInRoot
             val companion = compose.onNodeWithTag("copilot-companion").fetchSemanticsNode().boundsInRoot
             val panel = compose.onNodeWithTag("copilot-panel").fetchSemanticsNode().boundsInRoot
-            assertEquals(2560f / 1268f, reference.width / reference.height, 0.01f)
+            assertEquals(2560f / 1184f, reference.width / reference.height, 0.01f)
             assertEquals(884f / 2560f, companion.width / reference.width, 0.01f)
             assertTrue(panel.right <= reference.right)
             assertTrue(panel.bottom <= reference.bottom)
@@ -420,7 +435,7 @@ class CopilotConnectionScreenTest {
                     val reference = compose.onNodeWithTag("copilot-reference").fetchSemanticsNode().boundsInRoot
                     val bounds = chat.fetchSemanticsNode().boundsInRoot
                     assertEquals(reference.left + 1064f, bounds.left, 1f)
-                    assertEquals(reference.top + 1012f, bounds.top, 1f)
+                    assertEquals(reference.top + 992f, bounds.top, 1f)
                     assertEquals(816f, bounds.width, 1f)
                     assertEquals(112f, bounds.height, 1f)
                 }

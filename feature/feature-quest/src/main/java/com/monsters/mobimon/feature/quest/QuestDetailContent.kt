@@ -110,7 +110,7 @@ internal fun QuestDetailContent(
                 modifier =
                     Modifier
                         .width(824.dp * scale)
-                        .heightIn(min = 994.dp * scale)
+                        .heightIn(min = 964.dp * scale)
                         .clip(RoundedCornerShape(32.dp * scale))
                         .background(Colors.panel)
                         .padding(32.dp * scale),
@@ -156,7 +156,7 @@ internal fun QuestDetailContent(
                 modifier =
                     Modifier
                         .weight(1f)
-                        .heightIn(min = 994.dp * scale),
+                        .heightIn(min = 964.dp * scale),
             )
         }
     }
