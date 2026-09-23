@@ -122,7 +122,7 @@ fun MobiIdleBreathAnimation(
     ) {
         if (showNormal) {
             Box(Modifier.matchParentSize().graphicsLayer { alpha = 1f - blend.opacity.value }) {
-                if (animateNormal && enabled) {
+                if (animateNormal) {
                     NormalMobiIdleAnimation(Modifier.matchParentSize(), null, fallbackAsset)
                 } else {
                     CharacterAssetImage(fallbackAsset, Modifier.matchParentSize(), null)
@@ -132,12 +132,10 @@ fun MobiIdleBreathAnimation(
         val loaded = sheets
         if (showCollapsed && loaded != null) {
             val elapsed = remember { mutableLongStateOf(0L) }
-            LaunchedEffect(enabled) {
+            LaunchedEffect(Unit) {
                 elapsed.longValue = 0L
-                if (enabled) {
-                    val origin = withInfiniteAnimationFrameNanos { it }
-                    while (isActive) elapsed.longValue = withInfiniteAnimationFrameNanos { it } - origin
-                }
+                val origin = withInfiniteAnimationFrameNanos { it }
+                while (isActive) elapsed.longValue = withInfiniteAnimationFrameNanos { it } - origin
             }
             // Same source coordinate system and destination for every breathing pose.
             val extent = minOf(maxWidth, maxHeight) * MobiWarningCache.CELL / MobiWarningCache.LOGICAL_CELL

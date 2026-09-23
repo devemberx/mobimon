@@ -150,7 +150,7 @@ fun PetAvatar(
                     modifier = Modifier.fillMaxSize(),
                     fallbackAsset = CharacterArtwork.preview(friendId, accessoryId ?: outfitId),
                     vehicleWarning = vehicleWarning,
-                    animateNormal = motionEnabled && equippedLook == null,
+                    animateNormal = isAnimated && equippedLook == null,
                     motionEnabled = motionEnabled,
                 )
             } else if (isAnimated && (friendId == "friend:luna") && (equippedLook == null)) {
