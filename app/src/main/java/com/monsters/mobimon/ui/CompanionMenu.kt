@@ -116,6 +116,7 @@ fun CompanionMenu(
     currentRoute: AppRoute,
     onClose: () -> Unit,
     onNavigate: (AppRoute) -> Unit,
+    onVersionClick: () -> Unit = {},
     activeFriendId: String? = null,
     accessoryId: String? = null,
     outfitId: String? = null,
@@ -161,6 +162,7 @@ fun CompanionMenu(
                         currentRoute,
                         onClose,
                         onNavigate,
+                        onVersionClick,
                         activeFriendId,
                         accessoryId,
                         outfitId,
@@ -184,6 +186,7 @@ private fun MenuPanel(
     currentRoute: AppRoute,
     onClose: () -> Unit,
     onNavigate: (AppRoute) -> Unit,
+    onVersionClick: () -> Unit,
     friendId: String?,
     accessoryId: String?,
     outfitId: String?,
@@ -344,7 +347,12 @@ private fun MenuPanel(
                         reference = true,
                     )
                 }
-                MenuFooter(Modifier.align(Alignment.BottomStart).fillMaxWidth().height((181 * scale).dp), scale, true)
+                MenuFooter(
+                    Modifier.align(Alignment.BottomStart).fillMaxWidth().height((181 * scale).dp),
+                    scale,
+                    true,
+                    onVersionClick,
+                )
             }
         } else {
             Column(
@@ -386,7 +394,7 @@ private fun MenuPanel(
                         reference = false,
                     )
                 }
-                MenuFooter(Modifier.fillMaxWidth(), scale, false)
+                MenuFooter(Modifier.fillMaxWidth(), scale, false, onVersionClick)
             }
         }
     }
@@ -462,9 +470,10 @@ private fun MenuFooter(
     modifier: Modifier,
     scale: Float,
     reference: Boolean,
+    onVersionClick: () -> Unit,
 ) {
     if (reference) {
-        Box(modifier) {
+        Box(modifier.clickable(role = Role.Button, onClick = onVersionClick).testTag("menu-version")) {
             Box(
                 Modifier
                     .offset(
@@ -498,7 +507,10 @@ private fun MenuFooter(
             )
         }
     } else {
-        Column(modifier, verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Column(
+            modifier.clickable(role = Role.Button, onClick = onVersionClick).testTag("menu-version"),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
             Box(Modifier.fillMaxWidth().height(2.dp).background(Color(0x4787A6CB)))
             Text("MobiMon", style = MaterialTheme.typography.headlineMedium, color = Color(0xFF7287A8))
             Text(stringResource(R.string.drawer_tagline), color = Color(0xFF9FB2CE))

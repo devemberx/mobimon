@@ -81,6 +81,7 @@ fun SettingsScreen(
     onBack: () -> Unit = {},
     onDone: () -> Unit = {},
     parkedVerified: Boolean = false,
+    debugModeInteractionAllowed: Boolean = parkedVerified,
     simulatedVehicle: Boolean = false,
     onOpenCopilot: (() -> Unit)? = null,
 ) {
@@ -187,7 +188,7 @@ fun SettingsScreen(
                             reference,
                             scale,
                             checked = settings.debugModeEnabled,
-                            enabled = parkedVerified && !debugSaving,
+                            enabled = debugModeInteractionAllowed && !debugSaving,
                             onCheckedChange = onDebugModeChange,
                             feedback = debugError ?: if (debugSaving) stringResource(R.string.pet_saving) else null,
                             isError = debugError != null,

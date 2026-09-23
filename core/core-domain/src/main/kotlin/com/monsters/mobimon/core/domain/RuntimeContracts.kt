@@ -12,3 +12,7 @@ data class ProgressionIdentity(
     val profileId: String,
     val source: SignalSource,
 )
+
+fun interface SignalSourceProvider {
+    fun source(): SignalSource
+}

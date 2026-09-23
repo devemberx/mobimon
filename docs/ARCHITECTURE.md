@@ -116,7 +116,8 @@ The floating companion uses full-window coordinates with explicit system-bar and
 cutout bounds from its overlay window context and current window metrics. Initial
 placement, dragging and each wander step clamp its measured size. Inset/layout
 changes reclamp an idle companion.
-Debug panels measure and clamp inside the shell's safe content independently.
+Debug panels and unlock notices apply safe-drawing insets independently in both build variants.
+Panels measure and clamp inside that safe content.
 The [overlay verification boundary](#shared-vehicle-condition-and-overlay) still applies.
 
 ### Copilot connection UI
@@ -157,9 +158,10 @@ AAOS restrictions remove the screen.
 ### Vehicle interaction authorization
 
 Debug uses `.demo`, `mobimon-demo.db` and `demo-profile`; Release uses `mobimon.db`,
-`local-profile` and the REAL unavailable adapter unless a closed-network
-`VssRawVehicleSource` adapter is present. Debug freshness is 15 seconds. Only
-nonmoving Park is parked; motion is moving and stationary D/R/N is unknown.
+`local-profile` and a closed-network `VssRawVehicleSource` adapter when present.
+Local Release validation falls back to the default parked VSS source so the hidden
+Debugger flow can be checked without vehicle hardware. Debug freshness is 15 seconds.
+Only nonmoving Park is parked; motion is moving and stationary D/R/N is unknown.
 
 Commands require fresh parked evidence and the current display's AAOS allowance.
 `CarAppUseMonitor` fails closed on unknown state, service loss and reconnection.

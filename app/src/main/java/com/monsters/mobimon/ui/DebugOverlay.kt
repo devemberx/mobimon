@@ -50,6 +50,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.monsters.mobimon.BuildConfig
 import com.monsters.mobimon.core.database.DebugPointRepository
 import com.monsters.mobimon.core.domain.DriveEvaluationData
 import com.monsters.mobimon.core.domain.DrivingQuestEvaluator
@@ -60,6 +61,7 @@ import com.monsters.mobimon.core.domain.PointEconomy
 import com.monsters.mobimon.core.domain.SettingsRepository
 import com.monsters.mobimon.core.domain.VehicleRepository
 import com.monsters.mobimon.core.domain.WeatherCondition
+import com.monsters.mobimon.core.navigation.LocalDebugSettingsAvailable
 import com.monsters.mobimon.debug.DebugInterpretationOverrides
 import com.monsters.mobimon.debug.DebugRawVssState
 import com.monsters.mobimon.debug.DebugVssState
@@ -88,6 +90,7 @@ interface DebugOverlayEntryPoint {
 
 @Composable
 fun DebugOverlay() {
+    val debugSettingsAvailable = BuildConfig.DEBUG || LocalDebugSettingsAvailable.current
     val context = LocalContext.current
     val entryPoint =
         remember(context) {
@@ -116,7 +119,7 @@ fun DebugOverlay() {
         debugStore.updateState(reducer)
     }
 
-    if (isDebugEnabled) {
+    if (shouldShowDebugOverlay(isDebugEnabled, debugSettingsAvailable)) {
         val scope = rememberCoroutineScope()
         var pointUnitText by remember { mutableStateOf("100") }
         val pointUnit = pointUnitText.toIntOrNull() ?: 0
@@ -702,6 +705,11 @@ fun DebugOverlay() {
         }
     }
 }
+
+internal fun shouldShowDebugOverlay(
+    debugModeEnabled: Boolean,
+    debugSettingsAvailable: Boolean,
+): Boolean = debugModeEnabled && debugSettingsAvailable
 
 @Composable
 fun DebugOverlayFrame(
