@@ -4,11 +4,14 @@ import android.content.Context
 import com.monsters.mobimon.core.domain.Clock
 import com.monsters.mobimon.core.domain.IdGenerator
 import com.monsters.mobimon.core.domain.ProgressionIdentity
+import com.monsters.mobimon.core.domain.SettingsRepository
 import com.monsters.mobimon.core.domain.SignalSource
 import com.monsters.mobimon.core.domain.VehicleRepository
-import com.monsters.mobimon.core.vss.UnavailableVehicleRepository
+import com.monsters.mobimon.core.vss.DefaultParkedVssRawVehicleSource
 import com.monsters.mobimon.core.vss.VssAdapterLocator
-import com.monsters.mobimon.core.vss.VssSourceVehicleRepository
+import com.monsters.mobimon.core.vss.VssRawVehicleSource
+import com.monsters.mobimon.debug.DebugStore
+import com.monsters.mobimon.vehicle.DemoVehicleRepository
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -28,17 +31,25 @@ object VehicleProviderModule {
 
     @Provides
     @Singleton
-    fun vehicle(
+    fun vssRawVehicleSource(
         @ApplicationContext context: Context,
+    ): VssRawVehicleSource = VssAdapterLocator.createOrNull(context) ?: DefaultParkedVssRawVehicleSource()
+
+    @Provides
+    @Singleton
+    fun vehicle(
         clock: Clock,
         ids: IdGenerator,
-    ): VehicleRepository {
-        val source = VssAdapterLocator.createOrNull(context) ?: return UnavailableVehicleRepository()
-        return VssSourceVehicleRepository(
+        settingsRepository: SettingsRepository,
+        debugStore: DebugStore,
+        vssRawSource: VssRawVehicleSource,
+    ): VehicleRepository =
+        DemoVehicleRepository(
             clock,
             ids,
-            source,
+            settingsRepository,
+            debugStore,
+            vssRawSource,
             CoroutineScope(SupervisorJob() + Dispatchers.Default),
         )
-    }
 }
