@@ -156,10 +156,22 @@ fun MobiIdleBreathAnimation(
     val blend = remember { MobiWarningBlend() }
     val enabled = motionEnabled && LocalMobiMonMotionEnabled.current
     val sprite by produceState<ImageBitmap?>(initialValue = MobiCollapsedSpriteCache.peek(), context, vehicleWarning) {
-        if (vehicleWarning && value == null) value = withContext(Dispatchers.IO) { MobiCollapsedSpriteCache.getOrLoad(context) }
+        if (vehicleWarning &&
+            value == null
+        ) {
+            value = withContext(Dispatchers.IO) { MobiCollapsedSpriteCache.getOrLoad(context) }
+        }
     }
-    val starsSprite by produceState<ImageBitmap?>(initialValue = MobiDizzyStarsSpriteCache.peek(), context, vehicleWarning) {
-        if (vehicleWarning && value == null) value = withContext(Dispatchers.IO) { MobiDizzyStarsSpriteCache.getOrLoad(context) }
+    val starsSprite by produceState<ImageBitmap?>(
+        initialValue = MobiDizzyStarsSpriteCache.peek(),
+        context,
+        vehicleWarning,
+    ) {
+        if (vehicleWarning &&
+            value == null
+        ) {
+            value = withContext(Dispatchers.IO) { MobiDizzyStarsSpriteCache.getOrLoad(context) }
+        }
     }
     LaunchedEffect(vehicleWarning, enabled, sprite) {
         if (sprite != null) blend.target(vehicleWarning, enabled)
@@ -187,18 +199,24 @@ fun MobiIdleBreathAnimation(
                 val origin = withInfiniteAnimationFrameNanos { it }
                 while (isActive) elapsed.longValue = withInfiniteAnimationFrameNanos { it } - origin
             }
-            val extent = minOf(maxWidth, maxHeight) * MobiCollapsedSpriteCache.CELL / MobiCollapsedSpriteCache.LOGICAL_CELL
+            val extent =
+                minOf(maxWidth, maxHeight) * MobiCollapsedSpriteCache.CELL / MobiCollapsedSpriteCache.LOGICAL_CELL
             Box(
                 Modifier
                     .requiredSize(extent)
                     .graphicsLayer {
                         alpha = blend.opacity.value
-                        translationY = size.minDimension * MobiCollapsedSpriteCache.LOGICAL_CELL / MobiCollapsedSpriteCache.CELL *
+                        translationY =
+                            size.minDimension * MobiCollapsedSpriteCache.LOGICAL_CELL / MobiCollapsedSpriteCache.CELL *
                             fallbackAsset.translationYFraction + size.minDimension * 0.04f
                         compositingStrategy = CompositingStrategy.Offscreen
                         clip = false
-                    }
-                    .mobiSpriteFrames(sheet, MobiCollapsedTimeline.COLUMNS, MobiCollapsedTimeline.ROWS, blendFrames = false) {
+                    }.mobiSpriteFrames(
+                        sheet,
+                        MobiCollapsedTimeline.COLUMNS,
+                        MobiCollapsedTimeline.ROWS,
+                        blendFrames = false,
+                    ) {
                         if (enabled) {
                             val time = elapsed.longValue
                             val frame = MobiCollapsedTimeline.frameAt(time)
@@ -220,8 +238,12 @@ fun MobiIdleBreathAnimation(
                             translationY = -size.height * 0.25f
                             compositingStrategy = CompositingStrategy.Offscreen
                             clip = false
-                        }
-                        .mobiSpriteFrames(stars, MobiDizzyStarsTimeline.COLUMNS, MobiDizzyStarsTimeline.ROWS, blendFrames = false) {
+                        }.mobiSpriteFrames(
+                            stars,
+                            MobiDizzyStarsTimeline.COLUMNS,
+                            MobiDizzyStarsTimeline.ROWS,
+                            blendFrames = false,
+                        ) {
                             if (enabled) {
                                 val time = elapsed.longValue
                                 MobiDizzyStarsTimeline.frameAt(time).toFloat()
