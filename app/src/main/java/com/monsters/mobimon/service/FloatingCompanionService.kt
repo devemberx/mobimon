@@ -14,6 +14,7 @@ import android.os.SystemClock
 import android.provider.Settings
 import android.view.Gravity
 import android.view.MotionEvent
+import android.view.WindowInsets
 import android.view.WindowManager
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -156,8 +157,6 @@ class FloatingCompanionService : Service() {
                 stopSelf()
                 return
             }
-        windowManager = wm
-
         val layoutFlag =
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
@@ -166,6 +165,13 @@ class FloatingCompanionService : Service() {
                 WindowManager.LayoutParams.TYPE_PHONE
             }
 
+        // Preserve the display already assigned to this user/service, but obtain the
+        // overlay area's own configuration, density and inset token.
+        @Suppress("DEPRECATION")
+        val windowContext = createWindowContext(wm.defaultDisplay, layoutFlag, null)
+        val overlayWindowManager = windowContext.getSystemService(WindowManager::class.java)
+        windowManager = overlayWindowManager
+
         val params =
             WindowManager
                 .LayoutParams(
@@ -173,10 +179,12 @@ class FloatingCompanionService : Service() {
                     WindowManager.LayoutParams.WRAP_CONTENT,
                     layoutFlag,
                     WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
-                        WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS,
+                        WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN,
                     PixelFormat.TRANSLUCENT,
                 ).apply {
-                    gravity = Gravity.TOP or Gravity.START
+                    gravity = Gravity.TOP or Gravity.LEFT
+                    // Use one full-window coordinate space for insets, dragging and wandering.
+                    setFitInsetsTypes(0)
                     x = DEFAULT_OVERLAY_X
                     y = DEFAULT_OVERLAY_Y
                 }
@@ -185,7 +193,7 @@ class FloatingCompanionService : Service() {
         lifecycleOwner = owner
 
         val view =
-            ComposeView(this).apply {
+            ComposeView(windowContext).apply {
                 setViewTreeLifecycleOwner(owner)
                 setViewTreeSavedStateRegistryOwner(owner)
                 setViewTreeViewModelStoreOwner(owner)
@@ -221,14 +229,23 @@ class FloatingCompanionService : Service() {
                 }
             }
 
-        setupDragAndTap(view, params, wm)
+        view.setOnApplyWindowInsetsListener { _, insets ->
+            if (isViewAttached) constrainPosition(view, params, overlayWindowManager)
+            insets
+        }
+        view.addOnLayoutChangeListener { _, _, _, _, _, _, _, _, _ ->
+            if (isViewAttached) constrainPosition(view, params, overlayWindowManager)
+        }
+        setupDragAndTap(view, params, overlayWindowManager)
 
         try {
-            wm.addView(view, params)
+            overlayWindowManager.addView(view, params)
             isViewAttached = true
             composeView = view
             overlayParams = params
-            startWandering(view, params, wm)
+            view.requestApplyInsets()
+            constrainPosition(view, params, overlayWindowManager)
+            startWandering(view, params, overlayWindowManager)
         } catch (_: Exception) {
             stopSelf()
         }
@@ -264,9 +281,9 @@ class FloatingCompanionService : Service() {
                     if (abs(dx) > 10 || abs(dy) > 10) {
                         isDragging = true
                     }
-                    val displayMetrics = resources.displayMetrics
-                    params.x = (initialX + dx).coerceIn(50, (displayMetrics.widthPixels - 200).coerceAtLeast(50))
-                    params.y = (initialY + dy).coerceIn(50, (displayMetrics.heightPixels - 200).coerceAtLeast(50))
+                    val (x, y) = movementBounds(view, wm).clamp(initialX + dx, initialY + dy)
+                    params.x = x
+                    params.y = y
                     try {
                         wm.updateViewLayout(view, params)
                     } catch (_: Exception) {
@@ -315,11 +332,12 @@ class FloatingCompanionService : Service() {
                     delay(idleDuration)
                     if (!isActive) break
 
-                    val displayMetrics = resources.displayMetrics
-                    val minX = 100
-                    val maxX = (displayMetrics.widthPixels - 300).coerceAtLeast(minX + 200)
-                    val minY = 150
-                    val maxY = (displayMetrics.heightPixels - 300).coerceAtLeast(minY + 200)
+                    constrainPosition(view, params, wm)
+                    val bounds = movementBounds(view, wm)
+                    val minX = bounds.minX
+                    val maxX = bounds.maxX
+                    val minY = bounds.minY
+                    val maxY = bounds.maxY
 
                     val currentX = params.x
                     val currentY = params.y
@@ -361,8 +379,14 @@ class FloatingCompanionService : Service() {
                     while (isActive) {
                         val elapsed = SystemClock.uptimeMillis() - startTime
                         val fraction = (elapsed.toFloat() / moveDurationMs).coerceIn(0f, 1f)
-                        params.x = (startX + (targetX - startX) * fraction).toInt()
-                        params.y = (startY + (targetY - startY) * fraction).toInt()
+                        // Insets can change while a wander animation is in progress.
+                        val (x, y) =
+                            movementBounds(view, wm).clamp(
+                                (startX + (targetX - startX) * fraction).toInt(),
+                                (startY + (targetY - startY) * fraction).toInt(),
+                            )
+                        params.x = x
+                        params.y = y
                         try {
                             wm.updateViewLayout(view, params)
                         } catch (_: Exception) {
@@ -375,6 +399,44 @@ class FloatingCompanionService : Service() {
                     isMoving = false
                 }
             }
+    }
+
+    private fun movementBounds(
+        view: ComposeView,
+        wm: WindowManager,
+    ): OverlayMovementBounds {
+        val metrics = wm.currentWindowMetrics
+        val insets =
+            metrics.windowInsets.getInsetsIgnoringVisibility(
+                WindowInsets.Type.systemBars() or WindowInsets.Type.displayCutout(),
+            )
+        val fallbackSize = (140 * view.resources.displayMetrics.density).toInt()
+        return overlayMovementBounds(
+            metrics.bounds.width(),
+            metrics.bounds.height(),
+            insets.left,
+            insets.top,
+            insets.right,
+            insets.bottom,
+            view.width.takeIf { it > 0 } ?: fallbackSize,
+            view.height.takeIf { it > 0 } ?: fallbackSize,
+        )
+    }
+
+    private fun constrainPosition(
+        view: ComposeView,
+        params: WindowManager.LayoutParams,
+        wm: WindowManager,
+    ) {
+        val (x, y) = movementBounds(view, wm).clamp(params.x, params.y)
+        if (x == params.x && y == params.y) return
+        params.x = x
+        params.y = y
+        try {
+            wm.updateViewLayout(view, params)
+        } catch (_: Exception) {
+            stopSelf()
+        }
     }
 
     private fun observeSettings() {

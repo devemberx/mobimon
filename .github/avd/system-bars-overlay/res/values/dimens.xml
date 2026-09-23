@@ -1,0 +1,4 @@
+<resources>
+    <dimen name="mobimon_status_bar_height">96dp</dimen>
+    <dimen name="mobimon_navigation_bar_height">160dp</dimen>
+</resources>

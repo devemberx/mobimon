@@ -380,7 +380,7 @@ fun MobiMonContent(
                     }
                     DebuggerUnlockToast(
                         message = debuggerUnlockNotice,
-                        modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 32.dp),
+                        modifier = Modifier.align(Alignment.BottomCenter).safeDrawingPadding().padding(bottom = 32.dp),
                     )
                 }
             }

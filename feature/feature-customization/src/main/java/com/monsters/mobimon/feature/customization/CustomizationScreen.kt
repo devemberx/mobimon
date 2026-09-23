@@ -86,8 +86,9 @@ fun CustomizationScreen(
 ) {
     var tab by rememberSaveable { mutableStateOf(CosmeticSlot.FRIEND) }
     BoxWithConstraints(modifier.fillMaxSize().background(MobiMonColors.background)) {
-        val scale = minOf(maxWidth.value / 2560f, maxHeight.value / 1268f)
-        val reference = maxWidth >= 1000.dp && maxHeight >= 540.dp && LocalDensity.current.fontScale <= 1.2f
+        val scale = maxWidth.value / 2560f
+        val contentHeight = maxHeight
+        val reference = maxWidth >= 1000.dp && maxHeight >= 1100.dp * scale && LocalDensity.current.fontScale <= 1.2f
         if (!reference || inventory == null) {
             Column(Modifier.fillMaxSize()) {
                 StoreHeader(pointBalance, pointLoadFailed, onBack, 0.6f, Modifier.fillMaxWidth().padding(16.dp))
@@ -116,13 +117,13 @@ fun CustomizationScreen(
                 )
             }
         } else {
-            Box(Modifier.size(2560.dp * scale, 1268.dp * scale).align(Alignment.Center).testTag("store-reference")) {
+            Box(Modifier.fillMaxSize().testTag("store-reference")) {
                 StoreHeader(
                     pointBalance,
                     pointLoadFailed,
                     onBack,
                     scale,
-                    Modifier.offset(72.dp * scale, 56.dp * scale).size(2416.dp * scale, 104.dp * scale),
+                    Modifier.offset(72.dp * scale, 36.dp * scale).size(2416.dp * scale, 104.dp * scale),
                 )
                 val presentation = customizationCatalog(inventory, catalog, tab, selectedItemId)
                 val items = presentation.items
@@ -136,12 +137,20 @@ fun CustomizationScreen(
                 val observationFailed = loadFailed || catalogLoadFailed
                 val recoveryNeeded = observationFailed || pointLoadFailed
                 val recoveryHeight = maxOf(76.dp, 112.dp * scale)
-                val recoveryTop = 1098.dp * scale - recoveryHeight - 16.dp * scale
-                val catalogHeight = if (recoveryNeeded) recoveryTop - 538.dp * scale else 492.dp * scale
+                val actionTop = contentHeight - 136.dp * scale
+                val recoveryTop = actionTop - recoveryHeight - 16.dp * scale
+                val catalogBottom =
+                    when {
+                        recoveryNeeded -> recoveryTop
+                        purchaseFailed || saveFailed -> actionTop - 68.dp * scale
+                        tab == CosmeticSlot.ACCESSORY -> actionTop - 88.dp * scale
+                        else -> actionTop
+                    }
+                val catalogHeight = minOf(492.dp * scale, catalogBottom - 518.dp * scale).coerceAtLeast(0.dp)
                 Column(
                     Modifier
-                        .offset(72.dp * scale, 216.dp * scale)
-                        .size(916.dp * scale, 994.dp * scale)
+                        .offset(72.dp * scale, 196.dp * scale)
+                        .size(916.dp * scale, contentHeight - 220.dp * scale)
                         .background(MobiMonColors.panel, RoundedCornerShape(48.dp * scale))
                         .padding(32.dp * scale),
                 ) {
@@ -264,7 +273,7 @@ fun CustomizationScreen(
                     Modifier
                         .offset(
                             1040.dp * scale,
-                            216.dp * scale,
+                            196.dp * scale,
                         ).size(1448.dp * scale, 100.dp * scale)
                         .selectableGroup(),
                     horizontalArrangement = Arrangement.spacedBy(24.dp * scale),
@@ -315,7 +324,7 @@ fun CustomizationScreen(
                         }
                     }
                 }
-                Column(Modifier.offset(1040.dp * scale, 358.dp * scale).width(1448.dp * scale)) {
+                Column(Modifier.offset(1040.dp * scale, 338.dp * scale).width(1448.dp * scale)) {
                     Text(
                         if (tab == CosmeticSlot.FRIEND) "함께할 친구" else "작은 소품으로, 새로운 기분",
                         color = MobiMonColors.text,
@@ -335,7 +344,7 @@ fun CustomizationScreen(
                         Modifier
                             .offset(
                                 1040.dp * scale,
-                                514.dp * scale,
+                                494.dp * scale,
                             ).size(
                                 1448.dp * scale,
                                 catalogHeight,
@@ -475,13 +484,13 @@ fun CustomizationScreen(
                         stringResource(R.string.pet_catalog_pending),
                         color = MobiMonColors.muted,
                         fontSize = (32f * scale).sp,
-                        modifier = Modifier.offset(1080.dp * scale, 620.dp * scale).width(1300.dp * scale),
+                        modifier = Modifier.offset(1080.dp * scale, 600.dp * scale).width(1300.dp * scale),
                     )
                 }
                 if (tab == CosmeticSlot.ACCESSORY && !purchaseFailed && !saveFailed && !recoveryNeeded) {
                     Box(
                         Modifier
-                            .offset(1040.dp * scale, 996.dp * scale)
+                            .offset(1040.dp * scale, actionTop - 88.dp * scale)
                             .size(1448.dp * scale, 64.dp * scale)
                             .background(MobiMonColors.raised, RoundedCornerShape(24.dp * scale))
                             .padding(horizontal = 40.dp * scale),
@@ -520,7 +529,7 @@ fun CustomizationScreen(
                         ),
                         isError = true,
                         modifier =
-                            Modifier.offset(1040.dp * scale, 1016.dp * scale).width(
+                            Modifier.offset(1040.dp * scale, actionTop - 68.dp * scale).width(
                                 1448.dp * scale,
                             ),
                     )
@@ -557,7 +566,7 @@ fun CustomizationScreen(
                             !saving &&
                             !purchasing &&
                             (owned || (!pointLoadFailed && pointBalance != null && pointBalance >= selected.price)),
-                    modifier = Modifier.offset(1040.dp * scale, 1098.dp * scale).size(1448.dp * scale, 112.dp * scale),
+                    modifier = Modifier.offset(1040.dp * scale, actionTop).size(1448.dp * scale, 112.dp * scale),
                 ) {
                     if (owned && !equipped && !saving) {
                         Icon(painterResource(R.drawable.store_check), null, Modifier.size(40.dp * scale))

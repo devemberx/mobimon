@@ -54,6 +54,9 @@ import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.IntSize
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.monsters.mobimon.core.domain.PetProfile
@@ -70,6 +73,7 @@ import com.monsters.mobimon.core.ui.MobiMonPointSummary
 import com.monsters.mobimon.core.ui.ParticleType
 import com.monsters.mobimon.core.ui.PetAvatar
 import com.monsters.mobimon.core.ui.companionBackgroundRes
+import kotlin.math.roundToInt
 import com.monsters.mobimon.core.ui.R as CoreUiR
 
 /** Displays the in-app Home from committed state; navigation belongs to the shell. */
@@ -99,7 +103,7 @@ fun PetHomeScreen(
         BoxWithConstraints(Modifier.fillMaxSize()) {
             val windowHeight = maxHeight
             val fontScale = LocalDensity.current.fontScale
-            val scale = minOf(maxWidth.value / 2560f, maxHeight.value / 1268f)
+            val scale = maxWidth.value / 2560f
             val textShadow =
                 if (companionBackgroundRes(backgroundTimeOfDay) == CoreUiR.drawable.pet_home_background_night) {
                     null
@@ -109,7 +113,7 @@ fun PetHomeScreen(
                     }
                 }
             val bubbleLeft = (maxWidth - (2560 * scale).dp) / 2 + (1576 * scale).dp
-            val referenceLayout = maxWidth / fontScale >= 1200.dp && maxHeight / fontScale >= 700.dp
+            val referenceLayout = maxWidth >= 1200.dp && maxHeight >= 700.dp && fontScale <= 1f
             HomeBackground(backgroundTimeOfDay, backgroundId)
             val companion: @Composable (Modifier) -> Unit = { companionModifier ->
                 HomeCompanion(
@@ -138,31 +142,38 @@ fun PetHomeScreen(
                 if (inventoryLoadFailed) HomeFailure(stringResource(R.string.pet_inventory_failed), onRetryProfile)
             }
             val action: @Composable (Modifier, Float) -> Unit = { actionModifier, actionScale ->
-                HomeConversationAction(connectionAvailable, interactionAllowed, onPetClick, actionModifier, actionScale)
+                HomeConversationAction(
+                    connectionAvailable,
+                    interactionAllowed,
+                    onPetClick,
+                    actionModifier,
+                    actionScale,
+                    referenceLayout,
+                )
             }
             if (referenceLayout) {
-                // Coordinates exclude the SVG's 76-unit top and 96-unit bottom system bars.
+                // Coordinates are relative to the current SVG's 96-unit top system bar.
                 // Artwork scales uniformly; native text and controls retain their minimum sizes.
                 Column(
                     Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).heightIn(min = windowHeight),
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
-                    Box(Modifier.fillMaxWidth().height((1068 * scale).dp)) {
-                        header(Modifier.padding(horizontal = (72 * scale).dp).offset(y = (56 * scale).dp), scale)
+                    Box(Modifier.fillMaxWidth().height((1048 * scale).dp)) {
+                        header(Modifier.padding(horizontal = (72 * scale).dp).offset(y = (36 * scale).dp), scale)
                         HomeGreeting(
                             backgroundTimeOfDay,
-                            Modifier.align(Alignment.TopCenter).offset(y = (194 * scale).dp),
+                            Modifier.align(Alignment.TopCenter).offset(y = (174 * scale).dp),
                             scale,
                             textShadow,
                         )
                         companion(
-                            Modifier.align(Alignment.TopCenter).offset(y = (392 * scale).dp).size((600 * scale).dp),
+                            Modifier.align(Alignment.TopCenter).offset(y = (372 * scale).dp).size((600 * scale).dp),
                         )
                         if (friendId != null) {
                             HomeSpeechBubble(
                                 Modifier.align(Alignment.TopStart).offset(
                                     x = bubbleLeft,
-                                    y = (520 * scale).dp,
+                                    y = (500 * scale).dp,
                                 ),
                                 scale,
                                 triggerKey = bubbleTrigger,
@@ -236,6 +247,7 @@ private fun HomeBackground(
                 }
             },
             contentScale = ContentScale.Crop,
+            alignment = HomeBackgroundAlignment,
         )
     }
     if (backgroundId != null) {
@@ -249,6 +261,20 @@ private fun HomeBackground(
             particleType = particleType,
             modifier = Modifier.fillMaxSize().testTag("home-background-particles"),
         )
+    }
+}
+
+// Figma preserves its 1268-high artwork at y=76 under the larger bars. Anchor
+// that crop to y=96 content rather than recentering the horizon on each resize.
+internal object HomeBackgroundAlignment : Alignment {
+    override fun align(
+        size: IntSize,
+        space: IntSize,
+        layoutDirection: LayoutDirection,
+    ): IntOffset {
+        val scale = space.width / 2560f
+        val top = ((1268 * scale - size.height) / 2 - 20 * scale).roundToInt()
+        return IntOffset((space.width - size.width) / 2, top.coerceIn(minOf(0, space.height - size.height), 0))
     }
 }
 
@@ -339,13 +365,10 @@ private fun HomeConversationAction(
     onPetClick: (Rect) -> Unit,
     modifier: Modifier = Modifier,
     scale: Float = 1f,
+    noticesAbove: Boolean = false,
 ) {
     var actionCoordinates by remember { mutableStateOf<LayoutCoordinates?>(null) }
-    Column(
-        modifier.widthIn(max = 1320.dp).fillMaxWidth(),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(12.dp),
-    ) {
+    val button: @Composable () -> Unit = {
         MobiMonButton(
             onClick = {
                 onPetClick(actionCoordinates?.takeIf { it.isAttached }?.boundsInRoot() ?: Rect.Zero)
@@ -371,15 +394,25 @@ private fun HomeConversationAction(
                     ),
             )
         }
-        // Reserve notice space so a restriction never moves the companion or action.
-        Column(Modifier.fillMaxWidth().heightIn(min = 80.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-            if (!connectionAvailable) Text(stringResource(R.string.pet_ai_unavailable), textAlign = TextAlign.Center)
-            if (!interactionAllowed) {
-                Text(
-                    stringResource(R.string.pet_interaction_restricted),
-                    textAlign = TextAlign.Center,
-                )
-            }
+    }
+    val notice: @Composable () -> Unit = {
+        if (!connectionAvailable) Text(stringResource(R.string.pet_ai_unavailable), textAlign = TextAlign.Center)
+        if (!interactionAllowed) Text(stringResource(R.string.pet_interaction_restricted), textAlign = TextAlign.Center)
+    }
+    if (noticesAbove) {
+        Box(modifier.widthIn(max = 1320.dp).fillMaxWidth(), contentAlignment = Alignment.TopCenter) {
+            button()
+            // The fixed gap above the action keeps restrictions visible without moving the scene.
+            Row(Modifier.offset(y = (-56 * scale).dp), horizontalArrangement = Arrangement.spacedBy(24.dp)) { notice() }
+        }
+    } else {
+        Column(
+            modifier.widthIn(max = 1320.dp).fillMaxWidth(),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            button()
+            Column(horizontalAlignment = Alignment.CenterHorizontally) { notice() }
         }
     }
 }

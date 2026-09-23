@@ -87,7 +87,7 @@ fun SettingsScreen(
 ) {
     BoxWithConstraints(modifier.fillMaxSize().background(MobiMonColors.background)) {
         val reference = maxWidth >= 1400.dp && maxHeight >= 800.dp && LocalDensity.current.fontScale <= 1f
-        val scale = if (reference) minOf(maxWidth.value / 2560f, maxHeight.value / 1268f) else 1f
+        val scale = if (reference) maxWidth.value / 2560f else 1f
         Column(Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally) {
             SettingsHeader(reference, scale, parkedVerified, simulatedVehicle, onBack)
             Column(
@@ -236,12 +236,12 @@ private fun SettingsHeader(
     }
     val parking: @Composable () -> Unit = { SettingsParking(parkedVerified, scale) }
     if (reference) {
-        Box(Modifier.fillMaxWidth().height((216 * scale).dp)) {
-            Box(Modifier.offset((72 * scale).dp, (56 * scale).dp)) { back() }
+        Box(Modifier.fillMaxWidth().height((196 * scale).dp)) {
+            Box(Modifier.offset((72 * scale).dp, (36 * scale).dp)) { back() }
             MobiMonReferenceText(
                 stringResource(R.string.pet_settings_title),
                 208f,
-                100f,
+                80f,
                 46f,
                 Modifier.semantics { heading() },
                 scale,
@@ -250,13 +250,13 @@ private fun SettingsHeader(
             MobiMonReferenceText(
                 stringResource(R.string.pet_settings_subtitle),
                 208f,
-                144f,
+                124f,
                 28f,
                 scale = scale,
                 color = MobiMonColors.muted,
             )
             Box(
-                Modifier.align(Alignment.TopEnd).padding(end = (72 * scale).dp).offset(y = (56 * scale).dp),
+                Modifier.align(Alignment.TopEnd).padding(end = (72 * scale).dp).offset(y = (36 * scale).dp),
             ) { parking() }
         }
     } else {
@@ -307,7 +307,7 @@ private fun SettingsFooter(
     Column(
         Modifier.fillMaxWidth().then(
             if (reference) {
-                Modifier.height((226 * scale).dp).padding(top = (35 * scale).dp)
+                Modifier.height((188 * scale).dp)
             } else {
                 Modifier.padding(24.dp)
             },
@@ -418,11 +418,11 @@ private fun SettingsItem(
         trailing = { SettingsStatus(stringResource(status), checked, onClick != null, scale, reference) },
     ) {
         if (reference) {
-            Box(Modifier.fillMaxWidth().height((146 * scale).dp)) {
+            Box(Modifier.fillMaxWidth().height((136 * scale).dp)) {
                 MobiMonReferenceText(
                     stringResource(title),
                     0f,
-                    if (supportingText == null) 80f else 58f,
+                    if (supportingText == null) 75f else 53f,
                     38f,
                     scale = scale,
                     bold = true,
@@ -431,7 +431,7 @@ private fun SettingsItem(
                     MobiMonReferenceText(
                         supportingText,
                         0f,
-                        108f,
+                        103f,
                         28f,
                         Modifier.semantics { if (feedback != null) liveRegion = LiveRegionMode.Polite },
                         scale,

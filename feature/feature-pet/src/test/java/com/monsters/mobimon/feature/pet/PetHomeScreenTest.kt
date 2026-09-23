@@ -37,13 +37,13 @@ import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 
 @RunWith(RobolectricTestRunner::class)
-@Config(sdk = [34], qualifiers = "ko-rKR-w2560dp-h1332dp-mdpi")
+@Config(sdk = [34], qualifiers = "ko-rKR-w2560dp-h1248dp-mdpi")
 class PetHomeScreenTest {
     @get:Rule
     val compose = createComposeRule()
 
     @Test
-    @Config(qualifiers = "ko-rKR-w1792dp-h952dp-mdpi")
+    @Config(qualifiers = "ko-rKR-w1792dp-h893dp-mdpi")
     fun conversationActionReportsItsBoundsAfterEnlargedTextScrolling() {
         var origin: Rect? = null
         compose.setContent {
@@ -100,7 +100,7 @@ class PetHomeScreenTest {
     }
 
     @Test
-    @Config(qualifiers = "ko-rKR-w1792dp-h952dp-mdpi")
+    @Config(qualifiers = "ko-rKR-w1792dp-h893dp-mdpi")
     fun headUnitWindowKeepsActionsReachable() {
         assertLandscapeComposition()
     }
@@ -165,7 +165,7 @@ class PetHomeScreenTest {
     }
 
     @Test
-    @Config(qualifiers = "ko-rKR-w1792dp-h952dp-mdpi")
+    @Config(qualifiers = "ko-rKR-w1792dp-h893dp-mdpi")
     fun losingAndRecoveringVehicleDataKeepsCommittedCompanionAndTruthfulParking() {
         val snapshot = mutableStateOf(parkedSnapshot())
         render(pointBalance = 0, snapshotSource = { snapshot.value })
@@ -204,7 +204,7 @@ class PetHomeScreenTest {
     }
 
     @Test
-    @Config(qualifiers = "ko-rKR-w1792dp-h952dp-mdpi")
+    @Config(qualifiers = "ko-rKR-w1792dp-h893dp-mdpi")
     fun interactionRestrictedNoticeDisplaysDuringDrivingWithoutShiftingUi() {
         val allowed = mutableStateOf(true)
         compose.setContent {

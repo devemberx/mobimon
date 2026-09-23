@@ -92,20 +92,24 @@ fun CopilotConnectionScreen(
     Box(modifier.fillMaxSize().background(Colors.background).semantics { paneTitle = title }) {
         BoxWithConstraints(Modifier.fillMaxSize()) {
             val fontScale = LocalDensity.current.fontScale
-            val reference = maxWidth >= 1400.dp && maxHeight >= 800.dp && fontScale <= 1f
-            val scale = if (reference) minOf(maxWidth.value / 2560f, maxHeight.value / 1268f) else 0.75f
+            val reference = maxWidth >= 1400.dp && maxHeight >= maxWidth * (1184f / 2560f) && fontScale <= 1f
+            val scale = if (reference) maxWidth.value / 2560f else 0.75f
+            val contentHeight = maxHeight
             if (reference) {
                 Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Box(Modifier.size(2560.dp * scale, 1268.dp * scale).testTag("copilot-reference")) {
+                    Box(Modifier.fillMaxSize().testTag("copilot-reference")) {
                         CopilotReferenceHeader(
                             onAction,
                             interactionAllowed,
                             simulatedVehicle,
                             scale,
-                            Modifier.offset(72.dp * scale, 56.dp * scale).width(2416.dp * scale),
+                            Modifier.offset(72.dp * scale, 36.dp * scale).width(2416.dp * scale),
                         )
                         Row(
-                            Modifier.offset(72.dp * scale, 216.dp * scale).size(2416.dp * scale, 994.dp * scale),
+                            Modifier.offset(72.dp * scale, 196.dp * scale).size(
+                                2416.dp * scale,
+                                contentHeight - 220.dp * scale,
+                            ),
                             horizontalArrangement = Arrangement.spacedBy(44.dp * scale),
                         ) {
                             CompanionPanel(
@@ -358,7 +362,7 @@ private fun CompanionPanel(
             textAlign = TextAlign.Center,
         )
         PetAvatar(
-            Modifier.offset(114.dp * scale, 188.dp * scale).size(656.dp * scale),
+            Modifier.offset(114.dp * scale, 188.dp * scale).size(636.dp * scale),
             appearanceKey,
             friendId = friendId,
             accessoryId = accessoryId,
