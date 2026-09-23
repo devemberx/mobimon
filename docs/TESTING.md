@@ -148,8 +148,15 @@ For a separate local API 34 automotive AVD named `mobimon_system_bars_*` at
 with `AAOS_OVERLAY_AVD_NAME` set to that AVD's name.
 The installer disables verity, restarts the AVD twice and writes the APK to that
 AVD's `/product/overlay`. Do not use the existing development AVD for this test.
-After installation, launch this AVD with `-writable-system` each time; a plain
-launch shows the image's default 76px top and 96px bottom bars.
+After installation, launch this AVD with `-writable-system` each time. On macOS:
+
+```bash
+~/Library/Android/sdk/emulator/emulator -avd mobimon_system_bars_34 -writable-system
+```
+
+A plain launch shows the image's default 76px top and 96px bottom bars. The
+separate [CSTDe import scripts](../scripts/avd/setup_avd.sh) require a supplied
+`setting/cstd` image bundle and are not part of this overlay setup.
 
 CI uses a fresh, headless AVD with software rendering and disabled animations.
 Local CSTD images are separate inputs; matching metadata does not establish
