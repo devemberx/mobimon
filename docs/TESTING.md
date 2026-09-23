@@ -10,11 +10,13 @@ Review images exist; golden comparisons and system-UI automation are not configu
 Screen tests and previews follow the fixed-display scope in
 [DESIGN.md](DESIGN.md#visual-language), not a multiple-resolution device matrix.
 Retain reference content, AAOS compatibility density, enlarged text and IME resizing.
-The 2560 × 1268 reference content and approximately 1792 × 888 compatibility-dp
-content represent the same 2560 × 1440px target after bars and scaling.
-Robolectric qualifiers describe the test host, not necessarily the content bounds:
-the 2560 × 1332dp review host leaves 1268dp after its 64dp decor inset;
-1792 × 952dp similarly leaves 888dp. Decor-free shell tests use content sizes directly.
+Review fixtures use the current [Figma content bounds](ui/README.md): 2560 × 1184,
+1792 × 829 at compatibility density, and 2560 × 940 with the reference IME.
+Robolectric qualifiers describe the host, not necessarily the content bounds:
+a 2560 × 1248dp host leaves 1184dp after its 64dp decor inset; 1792 × 893dp
+leaves 829dp. Decor-free shell tests use content sizes directly. The shell inset
+test dispatches 76/96px, then 96/160px system bars and restores them in one run;
+this does not replace OEM window/Popup and native IME verification.
 Isolated component and synthetic motion tests may use smaller fixtures; these do
 not imply support for additional display sizes. CI's physical display is defined
 in [cstd.ini](../.github/avd/cstd.ini).
@@ -93,9 +95,12 @@ Related suites share the linked module/package.
 | Mobi sprite cell identity, cache, blend continuity/opacity, delayed frames, independent transforms and fixed layout | `scripts/build_mobi_idle_sprite.py` verifies RGBA round-trip; `MobiIdleAnimationTest`, `PetAvatarTest`, `DecorativeMotionTest` in [core-ui tests](../core/core-ui/src/test/java/com/monsters/mobimon/core/ui) |
 | Shared warning classification, interruptible 200ms crossfade, 24-frame collapsed sprite loop, fixed ground anchor, reduced motion and unchanged bounds | `build_mobi_unhealthy_sprites.py` verifies aligned atlas generation; `VehicleConditionTest`, `MobiWarningAnimationTest`, `DecorativeMotionTest`, and `CompanionReviewTest` cover state, rendering and Home wiring |
 | Artwork, background periods/dimensions, reduced motion and shared control bounds | [Core UI suites](../core/core-ui/src/test/java/com/monsters/mobimon/core/ui); native Robolectric images |
-| Home/Settings, vehicle, store and quest layouts, focus and recovery | Owning feature `src/test` suites, including `CompanionReviewTest`, `VehicleReviewTest` and `StoreReferenceScreenTest` |
+| Home/Settings, vehicle, store and quest layouts, focus, recovery and quest panel resizing | Owning feature `src/test` suites, including `CompanionReviewTest`, `VehicleReviewTest`, `StoreReferenceScreenTest` and `QuestScreenTest` |
 | Menu reference/AAOS-density/enlarged-text bounds, focus, authenticated chat routing, connection origin after authentication loss, recreation and restricted/outgoing input | [Shell suites](../app/src/test/java/com/monsters/mobimon/ui), [CopilotConnectionJourneyTest](../app/src/journeyTest/java/com/monsters/mobimon/CopilotConnectionJourneyTest.kt) |
+| AAOS 96px status bar and 160px navigation bar | [System bar frame check](../scripts/check-aaos-system-bars.sh) in CI; local disposable AVD |
 | Conversation reveal/return, stationary Home, visible touch bounds, interruption, reduced motion and scrolled action bounds | [ConversationRevealTest](../app/src/test/java/com/monsters/mobimon/ui/ConversationRevealTest.kt), [PetHomeScreenTest](../feature/feature-pet/src/test/java/com/monsters/mobimon/feature/pet/PetHomeScreenTest.kt); native Robolectric frames and pointer input |
+| Live system-inset changes, destination/menu bounds, debugger unlock notice clearance and restoration | [MobiMonContentTest](../app/src/test/java/com/monsters/mobimon/ui/MobiMonContentTest.kt); platform inset dispatch in Robolectric |
+| Floating companion bounds use current bars/cutouts and measured size; Debug dragging, edge reversal and resize remain inside safe content | [OverlayMovementBoundsTest](../app/src/test/java/com/monsters/mobimon/service/OverlayMovementBoundsTest.kt), [DebugOverlayPlacementTest](../app/src/testDebug/java/com/monsters/mobimon/ui/DebugOverlayPlacementTest.kt); OEM overlay placement still requires a device |
 | Chat draft/composition lifetime, ownership clearing, input guards/actions and target-display/IME layouts | [Conversation and feature suites](../feature/feature-auth/src/test/java/com/monsters/mobimon/feature/auth); native review images |
 | Native keyboard resizing and Back/draft retention | [ConversationKeyboardDeviceTest](../app/src/androidTest/java/com/monsters/mobimon/preview/ConversationKeyboardDeviceTest.kt); AAOS device |
 | Isolated Debug rehearsal and branding | [CopilotPreviewJourneyTest](../app/src/journeyTest/java/com/monsters/mobimon/preview/CopilotPreviewJourneyTest.kt), [BrandingTest](../app/src/testDebug/java/com/monsters/mobimon/BrandingTest.kt) |
@@ -130,9 +135,28 @@ Kover: `./gradlew :app:koverHtmlReportDebug :app:koverXmlReportDebug` (local JVM
 ### CI AAOS environment
 
 The [workflow](../.github/workflows/android-ci.yml) and [cstd.ini](../.github/avd/cstd.ini)
-define the image, extension, ABI and display. Run the required
-[host check](../scripts/check-aaos-environment.sh) with only the intended emulator
-connected, then canonical device tests. Use emulator 35.1.9 or newer.
+define the image, extension, ABI and display. The workflow builds and installs the
+[system bars overlay](../.github/avd/system-bars-overlay/AndroidManifest.xml) on its
+disposable writable AVD, then checks the 96px top and 160px bottom bars with
+[check-aaos-system-bars.sh](../scripts/check-aaos-system-bars.sh). Run the required
+[host check](../scripts/check-aaos-environment.sh) and canonical device tests after
+the overlay check. Use emulator 35.1.9 or newer.
+
+For a separate local API 34 automotive AVD named `mobimon_system_bars_*` at
+2560x1440 / 160 dpi, launch the emulator with `-writable-system`. Run
+[install-aaos-system-bars-overlay.sh](../scripts/install-aaos-system-bars-overlay.sh)
+with `AAOS_OVERLAY_AVD_NAME` set to that AVD's name.
+The installer disables verity, restarts the AVD twice and writes the APK to that
+AVD's `/product/overlay`. Do not use the existing development AVD for this test.
+After installation, launch this AVD with `-writable-system` each time. On macOS:
+
+```bash
+~/Library/Android/sdk/emulator/emulator -avd mobimon_system_bars_34 -writable-system
+```
+
+A plain launch shows the image's default 76px top and 96px bottom bars. The
+separate [CSTDe import scripts](../scripts/avd/setup_avd.sh) require a supplied
+`setting/cstd` image bundle and are not part of this overlay setup.
 
 CI uses a fresh, headless AVD with software rendering and disabled animations.
 Local CSTD images are separate inputs; matching metadata does not establish

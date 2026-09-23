@@ -20,9 +20,14 @@ echo ""
 
 # 1. 소스 디렉터리 확인
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+PROJECT_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)"
 SETTING_DIR=""
 
-if [ -d "$SCRIPT_DIR/setting/cstd" ]; then
+if [ -d "$PROJECT_DIR/setting/cstd" ]; then
+    SETTING_DIR="$PROJECT_DIR/setting"
+elif [ -d "$PROJECT_DIR/cstd" ]; then
+    SETTING_DIR="$PROJECT_DIR"
+elif [ -d "$SCRIPT_DIR/setting/cstd" ]; then
     SETTING_DIR="$SCRIPT_DIR/setting"
 elif [ -d "$SCRIPT_DIR/cstd" ]; then
     SETTING_DIR="$SCRIPT_DIR"

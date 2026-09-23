@@ -29,14 +29,14 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
 @RunWith(RobolectricTestRunner::class)
-@Config(sdk = [34], qualifiers = "ko-rKR-w2560dp-h1332dp-mdpi")
+@Config(sdk = [34], qualifiers = "ko-rKR-w2560dp-h1248dp-mdpi")
 @OptIn(androidx.compose.ui.test.ExperimentalTestApi::class)
 class PetPreferencesScreenTest {
     @get:Rule
     val compose = createComposeRule()
 
     @Test
-    @Config(qualifiers = "ko-rKR-w1792dp-h952dp-mdpi")
+    @Config(qualifiers = "ko-rKR-w1792dp-h893dp-mdpi")
     fun headUnitKeepsSharedRowsReachableAndDoneVisible() {
         compose.setContent {
             MobiMonTheme {

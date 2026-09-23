@@ -18,7 +18,13 @@ never diagnose a vehicle or replace warnings.
   aspect ratios and arbitrary compact windows are outside the product scope.
   App content excludes system bars; AAOS compatibility density changes its dp
   dimensions. Preserve the target layout with those insets, enlarged text and
-  the system keyboard's reduced content height.
+  the system keyboard's reduced content height. Use the current
+  [export content bounds](ui/README.md), including the larger system bars.
+- Fit panel surfaces and bottom action groups to the available height. Reflow
+  Menu, Settings, store hints/actions and conversation input together; keep
+  footers, retry controls and pending indicators clear of adjacent controls and
+  system UI. Preserve font sizes and artwork proportions instead of scaling the
+  whole screen to fit.
 - Use `MobiMonTheme`, Twilight colors and bundled Noto Sans KR. Follow export
   positions, typography, proportions and icons; use actual runtime insets.
 - Reflow or scroll when enlarged text or the keyboard requires it. Controls are at least
@@ -80,7 +86,10 @@ Use the replaceable [PetAvatar](ARCHITECTURE.md#state-and-lifecycle) renderer.
 
 Home and store preview share five 2560 × 1440 WebP backgrounds. Local hours select
 Morning 06–11, Day 12–15, Afternoon 16–17, Sunset 18–19 and Night 20–05. Supplied
-time overrides the clock. Home center-crops them with cool tint/daylight shadows;
+time overrides the clock. Home keeps the SVG artwork framing: a centered crop in
+the original 2560 × 1268 rectangle at y=76, clipped by the current safe content
+starting at design y=96. Changing available height does not recenter the horizon.
+Store previews crop within their own cards. Home adds cool tint/daylight shadows;
 artwork and tint crossfade for one second unless reduced motion is enabled.
 Controls remain untinted.
 

@@ -10,39 +10,39 @@ import com.monsters.mobimon.core.domain.VehicleSnapshot
 import com.monsters.mobimon.core.ui.MobiMonTheme
 
 // Include the head unit's smaller content window after system bars and AAOS app scaling.
-@Preview(name = "Head unit content - simulated ready", widthDp = 1792, heightDp = 888, locale = "ko")
-@Preview(name = "AAOS content excluding OS bars", widthDp = 2560, heightDp = 1268, locale = "ko")
-@Preview(name = "Head unit - enlarged text", widthDp = 1792, heightDp = 888, fontScale = 1.5f, locale = "ko")
+@Preview(name = "Head unit content - simulated ready", widthDp = 1792, heightDp = 829, locale = "ko")
+@Preview(name = "AAOS content excluding OS bars", widthDp = 2560, heightDp = 1184, locale = "ko")
+@Preview(name = "Head unit - enlarged text", widthDp = 1792, heightDp = 829, fontScale = 1.5f, locale = "ko")
 @Composable
 private fun HomeReadyPreview() {
     HomePreview()
 }
 
-@Preview(name = "Profile loading", widthDp = 2560, heightDp = 1268, locale = "ko")
+@Preview(name = "Profile loading", widthDp = 2560, heightDp = 1184, locale = "ko")
 @Composable
 private fun HomeLoadingPreview() {
     MobiMonTheme { PetHomeLoadingScreen(failed = false, onRetry = {}) }
 }
 
-@Preview(name = "Profile failure", widthDp = 2560, heightDp = 1268, locale = "ko")
+@Preview(name = "Profile failure", widthDp = 2560, heightDp = 1184, locale = "ko")
 @Composable
 private fun HomeFailurePreview() {
     MobiMonTheme { PetHomeLoadingScreen(failed = true, onRetry = {}) }
 }
 
-@Preview(name = "Empty selection - unavailable vehicle", widthDp = 1792, heightDp = 888, locale = "ko")
+@Preview(name = "Empty selection - unavailable vehicle", widthDp = 1792, heightDp = 829, locale = "ko")
 @Composable
 private fun HomeEmptyPreview() {
     HomePreview(empty = true)
 }
 
-@Preview(name = "Stale parking - fresh battery", widthDp = 1792, heightDp = 888, locale = "ko")
+@Preview(name = "Stale parking - fresh battery", widthDp = 1792, heightDp = 829, locale = "ko")
 @Composable
 private fun HomeStalePreview() {
     HomePreview(stale = true)
 }
 
-@Preview(name = "Head unit - unavailable vehicle", widthDp = 1792, heightDp = 888, locale = "ko")
+@Preview(name = "Head unit - unavailable vehicle", widthDp = 1792, heightDp = 829, locale = "ko")
 @Composable
 private fun HomeUnavailablePreview() {
     HomePreview(unavailable = true)

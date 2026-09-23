@@ -7,10 +7,15 @@ Write-Host ""
 
 $baseDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 if (-not $baseDir) { $baseDir = (Get-Location).Path }
+$projectDir = (Resolve-Path (Join-Path $baseDir "../..")).Path
 
 # 1. 소스 디렉터리 확인
 $settingDir = $null
-if (Test-Path (Join-Path $baseDir "setting\cstd")) {
+if (Test-Path (Join-Path $projectDir "setting\cstd")) {
+    $settingDir = Join-Path $projectDir "setting"
+} elseif (Test-Path (Join-Path $projectDir "cstd")) {
+    $settingDir = $projectDir
+} elseif (Test-Path (Join-Path $baseDir "setting\cstd")) {
     $settingDir = Join-Path $baseDir "setting"
 } elseif (Test-Path (Join-Path $baseDir "cstd")) {
     $settingDir = $baseDir
