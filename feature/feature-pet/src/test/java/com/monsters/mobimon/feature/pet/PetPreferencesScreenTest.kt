@@ -174,7 +174,11 @@ class PetPreferencesScreenTest {
         }
 
         compose.onNodeWithText("주차 확인 불가").assertExists()
-        compose.onNodeWithText("Debugger").performScrollTo().assertIsEnabled().performClick()
+        compose
+            .onNodeWithText("Debugger")
+            .performScrollTo()
+            .assertIsEnabled()
+            .performClick()
 
         assertEquals(true, requested)
     }
