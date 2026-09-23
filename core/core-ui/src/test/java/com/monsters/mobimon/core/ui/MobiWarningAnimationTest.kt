@@ -35,7 +35,7 @@ class MobiWarningAnimationTest {
     }
 
     @Test
-    fun dizzyStarsTimelineCyclesThrough12FramesOverTwoSeconds() {
+    fun dizzyStarsTimelineCyclesThrough12Frames() {
         val cycleNanos = MobiDizzyStarsTimeline.CYCLE_MS * 1_000_000L
         assertEquals(0, MobiDizzyStarsTimeline.frameAt(0L))
         assertEquals(6, MobiDizzyStarsTimeline.frameAt(cycleNanos / 2))

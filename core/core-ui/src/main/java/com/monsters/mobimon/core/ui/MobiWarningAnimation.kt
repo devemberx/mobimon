@@ -58,7 +58,7 @@ internal object MobiDizzyStarsTimeline {
     const val COLUMNS = 6
     const val ROWS = 2
     const val FRAME_COUNT = COLUMNS * ROWS
-    const val CYCLE_MS = 2_000L
+    const val CYCLE_MS = 1_538L
 
     fun frameAt(elapsedNanos: Long): Int {
         val cycleNanos = CYCLE_MS * 1_000_000L
@@ -113,7 +113,7 @@ internal object MobiCollapsedSpriteCache {
 }
 
 internal object MobiDizzyStarsSpriteCache {
-    const val CELL = 362
+    const val CELL = 408
     const val ASSET_PATH = "characters/mobi/unhealthy/mobi_dizzy_stars_sprite.png"
 
     @Volatile private var cached: ImageBitmap? = null
@@ -216,8 +216,8 @@ fun MobiIdleBreathAnimation(
                         .requiredSize(starsExtent)
                         .graphicsLayer {
                             alpha = blend.opacity.value
-                            translationX = size.width * 0.08f
-                            translationY = -size.height * 0.18f
+                            translationX = size.width * 0.05f
+                            translationY = -size.height * 0.25f
                             compositingStrategy = CompositingStrategy.Offscreen
                             clip = false
                         }
