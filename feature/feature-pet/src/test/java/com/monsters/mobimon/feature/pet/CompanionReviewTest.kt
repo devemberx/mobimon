@@ -77,6 +77,36 @@ class CompanionReviewTest {
         assertEquals(100.8f, action.height, 1f)
     }
 
+    @Test
+    fun sharedVehicleWarningChangesHomeArtworkWithoutMovingItsSlot() {
+        val warning = mutableStateOf(false)
+        val view = render("home-warning-before") { ReviewHome("Night", warning.value) }
+        val bounds = compose.onNodeWithContentDescription("Mobi 강아지").fetchSemanticsNode().boundsInRoot
+
+        fun avatarPixels(): Int {
+            var hash = 0
+            compose.runOnIdle {
+                val bitmap = Bitmap.createBitmap(view.width, view.height, Bitmap.Config.ARGB_8888)
+                view.draw(Canvas(bitmap))
+                for (y in 480 until 960 step 24) {
+                    for (x in 1040 until 1520 step 24) {
+                        hash = hash * 31 + bitmap.getPixel(x, y)
+                    }
+                }
+                bitmap.recycle()
+            }
+            return hash
+        }
+        val normal = avatarPixels()
+        compose.runOnIdle { warning.value = true }
+        compose.waitUntil(5000) { avatarPixels() != normal }
+        assertEquals(bounds, compose.onNodeWithContentDescription("Mobi 강아지").fetchSemanticsNode().boundsInRoot)
+        capture(view, "home-warning-collapsed")
+        compose.runOnIdle { warning.value = false }
+        compose.waitUntil(5000) { avatarPixels() == normal }
+        assertEquals(bounds, compose.onNodeWithContentDescription("Mobi 강아지").fetchSemanticsNode().boundsInRoot)
+    }
+
     @Test fun morningHomeReferenceRender() = homeRender("Morning")
 
     @Test fun dayHomeReferenceRender() = homeRender("Day")
@@ -158,7 +188,10 @@ class CompanionReviewTest {
     }
 
     @Composable
-    private fun ReviewHome(period: String) {
+    private fun ReviewHome(
+        period: String,
+        warning: Boolean = false,
+    ) {
         PetHomeScreen(
             profile = PetProfile("review"),
             snapshot =
@@ -172,6 +205,7 @@ class CompanionReviewTest {
                     SignalQuality.VALID,
                     72,
                     timeOfDay = "Night",
+                    isDrowsy = warning,
                 ),
             onOpenMenu = {},
             onPetClick = {},

@@ -91,10 +91,18 @@ alpha in an isolated reusable layer (two atlas draws, no bitmap crops). Continuo
 breath, sway and bob use separate periods; hands and wheel transform together.
 The 7524 x 5016 asset retains every source pixel; runtime keeps the prior 2x decode
 sampling (627px cells, about 36MiB) to fit a 4096px texture without a 144MiB bitmap.
+Home and Vehicle Info share `core-presentation`'s `vehicleCondition()` classification of the freshness-filtered snapshot.
+Only `WARNING` selects Mobi's collapsed idle. A 200ms opacity crossfade switches between normal and collapsed idle;
+there are no falling/recovery states or transition frames. Interruptions continue from the current opacity.
+Two canonical collapsed bitmaps load once off thread. A cached bitmap mesh deforms only the torso inside a fixed
+destination rectangle over four seconds. All ground-contact vertices remain unchanged. A 6.5-second tired blink
+blends identical-body closed/open-eye bitmaps; no whole-pose frame registration occurs at runtime.
+Non-warning conditions restore existing normal idle without changing vehicle evidence.
 Leaving composition cancels playback. Idle breathing ignores the motion preference; reduced motion replaces
-Luna's run cycle with the idle breath. Failed/unknown motion preferences pause other decoration; retries follow
-shell subscription. The floating companion overlay applies the same preference: reduced, unknown or failed motion
-stops autonomous wandering; dragging stays available.
+Luna's run cycle with the idle breath and selects a static normal/collapsed endpoint for Mobi warnings.
+Failed/unknown motion preferences pause other decoration; retries follow shell subscription.
+The floating companion overlay applies the same preference: reduced, unknown or failed motion stops autonomous
+wandering; dragging stays available.
 
 ### Copilot connection UI
 

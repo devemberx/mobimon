@@ -14,6 +14,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshots.Snapshot
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.test.junit4.createComposeRule
@@ -209,6 +210,87 @@ class DecorativeMotionTest {
             // The original body is near-opaque (alpha 253), not 255. Allow two levels of raster rounding.
             assertTrue("Blending preserves source body opacity", (sample[130 * 240 + 120] ushr 24) >= 251)
             compose.mainClock.advanceTimeBy(32)
+        }
+    }
+
+    @Test
+    fun warningCrossfadesToBreathingAndReturnsWithoutChangingBounds() {
+        val context =
+            androidx.test.core.app.ApplicationProvider
+                .getApplicationContext<android.content.Context>()
+        assertTrue(context.assets.list("characters/mobi/unhealthy")!!.none { "transition" in it })
+        val sheets = requireNotNull(MobiWarningCache.load(context))
+        assertTrue(sheets === MobiWarningCache.load(context))
+        assertTrue(
+            sheets.closed.width == MobiWarningCache.CELL &&
+                sheets.tiredEyes.height == MobiWarningCache.CELL,
+        )
+        var warning by mutableStateOf(false)
+        show {
+            MobiIdleBreathAnimation(
+                Modifier.size(240.dp).testTag("mobi"),
+                vehicleWarning = warning,
+                animateNormal = false,
+            )
+        }
+        val bounds = compose.onNodeWithTag("mobi").fetchSemanticsNode().boundsInRoot
+        val normal = pixels("mobi")
+        updateStateAndDraw { warning = true }
+        compose.mainClock.advanceTimeBy(800)
+        val falling = pixels("mobi")
+        assertTrue(normal != falling)
+        updateStateAndDraw { warning = false }
+        compose.mainClock.advanceTimeBy(200)
+        assertTrue(falling != pixels("mobi"))
+        updateStateAndDraw { warning = true }
+        compose.mainClock.advanceTimeBy(2600)
+        val collapsed = pixels("mobi")
+        compose.mainClock.advanceTimeBy(700)
+        assertTrue("Collapsed sprite breathing remains alive", collapsed != pixels("mobi"))
+        compose.mainClock.advanceTimeBy(12_000)
+        assertTrue("Collapsed sprite keeps breathing across repeated cycles", collapsed != pixels("mobi"))
+        assertTrue(bounds == compose.onNodeWithTag("mobi").fetchSemanticsNode().boundsInRoot)
+        updateStateAndDraw { warning = false }
+        compose.mainClock.advanceTimeBy(2600)
+        assertTrue("Recovery returns to existing normal renderer", normal == pixels("mobi"))
+        assertTrue(bounds == compose.onNodeWithTag("mobi").fetchSemanticsNode().boundsInRoot)
+    }
+
+    @Test
+    fun collapsedTorsoAndBlinkNeverChangeGroundOrSurroundingFacePixels() {
+        val context =
+            androidx.test.core.app.ApplicationProvider
+                .getApplicationContext<android.content.Context>()
+        val sheets = requireNotNull(MobiWarningCache.load(context))
+        var time by mutableStateOf(0L)
+        show {
+            androidx.compose.foundation.layout.Box(
+                Modifier
+                    .size(320.dp)
+                    .testTag("locked")
+                    .graphicsLayer { compositingStrategy = androidx.compose.ui.graphics.CompositingStrategy.Offscreen }
+                    .mobiCollapsedDrawing(sheets) { time },
+            )
+        }
+        val rest = pixels("locked")
+        updateStateAndDraw { time = 2_000_000_000L }
+        val inhale = pixels("locked")
+        assertTrue("Local torso breathing is visible", rest != inhale)
+        for (i in rest.indices) {
+            val x = i % 320 * 408f / 320
+            val y = i / 320 * 408f / 320
+            if (x >= 150f || y >= 294f || y < 215f) {
+                assertTrue("Breath moved a protected pixel at $x,$y", rest[i] == inhale[i])
+            }
+        }
+        updateStateAndDraw { time = 6_000_000_000L }
+        val eyes = pixels("locked")
+        assertTrue("Tired eyes visibly open", eyes != inhale)
+        for (i in eyes.indices) {
+            val x = i % 320 * 408f / 320
+            val y = i / 320 * 408f / 320
+            val eye = (x in 187f..210f && y in 210f..229f) || (x in 232f..255f && y in 239f..260f)
+            if (!eye) assertTrue("Blink changed skin/body outside eyes at $x,$y", eyes[i] == inhale[i])
         }
     }
 

@@ -68,6 +68,17 @@ remain strongest at 08-to-09, 13-to-14 and 14-to-15; alpha-correct adjacent-cell
 Breathing adds up to 1.2% width/2.4% height; a separate 6.6-second bob adds tiny
 settle and lift. All transforms share the seated pivot and preserve layout.
 
+Mobi's collapsed idle uses two 408px RGBA images under `core/core-ui/src/main/assets/characters/mobi/unhealthy/`:
+`mobi_collapsed_closed.png` and `mobi_collapsed_tired_eyes.png`. Both use the same canonical lying pose.
+The eye variant differs only inside the existing dark eyelids; skin, bandage, silhouette and body pixels are identical.
+`scripts/build_mobi_unhealthy_sprites.py` builds them from the accepted source and one local eye edit.
+The 200ms normal/warning crossfade is unchanged. Collapsed breathing deforms only the side torso inside the
+fixed sprite canvas over four seconds (maximum 1.4 native pixels). Ground contact, wheel, face and sprout remain fixed.
+A slow slight eye opening/closing occurs every 6.5 seconds. Neither effect translates, rotates or scales the whole sprite.
+Reduced motion snaps to closed-eye endpoints and disables breathing/blinking. Original native body detail remains 256px;
+transparent padding adds no detail. Older independently drawn idle/transition sheets remain archived, never loaded.
+Equipped Mobi uses base collapsed artwork during warnings and restores its equipped normal look afterward.
+
 Use the replaceable [PetAvatar](ARCHITECTURE.md#state-and-lifecycle) renderer.
 
 ### Home scene

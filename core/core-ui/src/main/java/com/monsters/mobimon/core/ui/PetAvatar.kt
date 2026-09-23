@@ -121,9 +121,11 @@ fun PetAvatar(
     emotion: PetEmotion = PetEmotion.IDLE,
     isMoving: Boolean = false,
     movingLeft: Boolean = true,
+    vehicleWarning: Boolean = false,
 ) {
     val cat = friendId == "friend:luna"
     val cream = appearanceKey == "CREAM"
+    val motionEnabled = isAnimated && LocalMobiMonMotionEnabled.current
     // Reduced motion keeps the gentle idle breath and drops travel animation only.
     val runEnabled = isAnimated && isMoving && LocalMobiMonMotionEnabled.current
     val description = stringResource(if (cat) R.string.mobimon_luna_description else R.string.mobimon_mobi_description)
@@ -143,10 +145,13 @@ fun PetAvatar(
                 CharacterAssetImage(it, Modifier.fillMaxSize())
             }
             val equippedLook = CharacterArtwork.equippedLooks[accessoryId ?: outfitId]
-            if (isAnimated && (friendId == "friend:mobi") && (equippedLook == null)) {
+            if (friendId == "friend:mobi") {
                 MobiIdleBreathAnimation(
                     modifier = Modifier.fillMaxSize(),
                     fallbackAsset = CharacterArtwork.preview(friendId, accessoryId ?: outfitId),
+                    vehicleWarning = vehicleWarning,
+                    animateNormal = isAnimated && equippedLook == null,
+                    motionEnabled = motionEnabled,
                 )
             } else if (isAnimated && (friendId == "friend:luna") && (equippedLook == null)) {
                 if (runEnabled) {
