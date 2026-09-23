@@ -14,7 +14,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshots.Snapshot
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.test.junit4.createComposeRule
@@ -214,16 +213,16 @@ class DecorativeMotionTest {
     }
 
     @Test
-    fun warningCrossfadesToBreathingAndReturnsWithoutChangingBounds() {
+    fun warningCrossfadesToCollapsedSpriteAndReturnsWithoutChangingBounds() {
         val context =
             androidx.test.core.app.ApplicationProvider
                 .getApplicationContext<android.content.Context>()
         assertTrue(context.assets.list("characters/mobi/unhealthy")!!.none { "transition" in it })
-        val sheets = requireNotNull(MobiWarningCache.load(context))
-        assertTrue(sheets === MobiWarningCache.load(context))
+        val sprite = requireNotNull(MobiCollapsedSpriteCache.getOrLoad(context))
+        assertTrue(sprite === MobiCollapsedSpriteCache.getOrLoad(context))
         assertTrue(
-            sheets.closed.width == MobiWarningCache.CELL &&
-                sheets.tiredEyes.height == MobiWarningCache.CELL,
+            sprite.width == MobiCollapsedSpriteCache.CELL * MobiCollapsedTimeline.COLUMNS &&
+                sprite.height == MobiCollapsedSpriteCache.CELL * MobiCollapsedTimeline.ROWS,
         )
         var warning by mutableStateOf(false)
         show {
@@ -246,9 +245,9 @@ class DecorativeMotionTest {
         compose.mainClock.advanceTimeBy(2600)
         val collapsed = pixels("mobi")
         compose.mainClock.advanceTimeBy(700)
-        assertTrue("Collapsed sprite breathing remains alive", collapsed != pixels("mobi"))
+        assertTrue("Collapsed sprite animation remains alive", collapsed != pixels("mobi"))
         compose.mainClock.advanceTimeBy(12_000)
-        assertTrue("Collapsed sprite keeps breathing across repeated cycles", collapsed != pixels("mobi"))
+        assertTrue("Collapsed sprite keeps animating across repeated cycles", collapsed != pixels("mobi"))
         assertTrue(bounds == compose.onNodeWithTag("mobi").fetchSemanticsNode().boundsInRoot)
         updateStateAndDraw { warning = false }
         compose.mainClock.advanceTimeBy(2600)
@@ -257,41 +256,27 @@ class DecorativeMotionTest {
     }
 
     @Test
-    fun collapsedTorsoAndBlinkNeverChangeGroundOrSurroundingFacePixels() {
+    fun collapsedSpriteAtlasLoadsAndAnimatesOverTime() {
         val context =
             androidx.test.core.app.ApplicationProvider
                 .getApplicationContext<android.content.Context>()
-        val sheets = requireNotNull(MobiWarningCache.load(context))
-        var time by mutableStateOf(0L)
+        val sprite = requireNotNull(MobiCollapsedSpriteCache.getOrLoad(context))
+        assertTrue(
+            sprite.width == MobiCollapsedSpriteCache.CELL * MobiCollapsedTimeline.COLUMNS &&
+                sprite.height == MobiCollapsedSpriteCache.CELL * MobiCollapsedTimeline.ROWS,
+        )
         show {
-            androidx.compose.foundation.layout.Box(
-                Modifier
-                    .size(320.dp)
-                    .testTag("locked")
-                    .graphicsLayer { compositingStrategy = androidx.compose.ui.graphics.CompositingStrategy.Offscreen }
-                    .mobiCollapsedDrawing(sheets) { time },
+            MobiIdleBreathAnimation(
+                Modifier.size(240.dp).testTag("collapsed"),
+                vehicleWarning = true,
+                animateNormal = false,
             )
         }
-        val rest = pixels("locked")
-        updateStateAndDraw { time = 2_000_000_000L }
-        val inhale = pixels("locked")
-        assertTrue("Local torso breathing is visible", rest != inhale)
-        for (i in rest.indices) {
-            val x = i % 320 * 408f / 320
-            val y = i / 320 * 408f / 320
-            if (x >= 150f || y >= 294f || y < 215f) {
-                assertTrue("Breath moved a protected pixel at $x,$y", rest[i] == inhale[i])
-            }
-        }
-        updateStateAndDraw { time = 6_000_000_000L }
-        val eyes = pixels("locked")
-        assertTrue("Tired eyes visibly open", eyes != inhale)
-        for (i in eyes.indices) {
-            val x = i % 320 * 408f / 320
-            val y = i / 320 * 408f / 320
-            val eye = (x in 187f..210f && y in 210f..229f) || (x in 232f..255f && y in 239f..260f)
-            if (!eye) assertTrue("Blink changed skin/body outside eyes at $x,$y", eyes[i] == inhale[i])
-        }
+        compose.mainClock.advanceTimeBy(400)
+        val frameA = pixels("collapsed")
+        compose.mainClock.advanceTimeBy(500)
+        val frameB = pixels("collapsed")
+        assertTrue("Collapsed sprite sheet animates frames over time", frameA != frameB)
     }
 
     private fun show(content: @Composable () -> Unit) {

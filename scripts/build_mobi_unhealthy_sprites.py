@@ -96,28 +96,6 @@ def align_idle(sheet, cell):
     return {'canonicalWheelXGroundY': canonical, 'integerTranslations': offsets, 'resampled': False}
 
 
-def save_locked_poses(sheet, cell, source, target):
-    base = Image.fromarray(sheet[:cell, :cell].copy())
-    opened = np.array(base)
-    eye_art = Image.open(source/'tired-eyes-source.png').convert('RGBA')
-    regions = [((190,213,207,226), (577,647,630,688)), ((235,242,252,257), (714,737,768,784))]
-    allowed = np.zeros((cell,cell), dtype=bool)
-    for (x0,y0,x1,y1), origin in regions:
-        patch = np.array(eye_art.crop(origin).resize((x1-x0,y1-y0), Image.Resampling.LANCZOS))
-        original = opened[y0:y1,x0:x1]
-        # Replace only existing dark eyelid pixels; original skin, outline and alpha cannot change.
-        mask = (original[:,:,:3].max(axis=2) < 140) & (original[:,:,3] > 200)
-        original[:,:,:3][mask] = patch[:,:,:3][mask]
-        allowed[y0:y1,x0:x1] = mask
-    raw = np.array(base)
-    assert np.array_equal(opened[~allowed], raw[~allowed])
-    assert np.array_equal(opened[:,:,3], raw[:,:,3])
-    assert np.any(opened != raw)
-    base.save(target/'mobi_collapsed_closed.png')
-    Image.fromarray(opened).save(target/'mobi_collapsed_tired_eyes.png')
-    return {'canonicalFrame':0, 'eyeRegions':[r[0] for r in regions], 'unchangedOutsideEyes':True}
-
-
 def build():
     source = ROOT/'docs/art/characters/mobi/unhealthy'
     target = ROOT/'core/core-ui/src/main/assets/characters/mobi/unhealthy'
@@ -152,12 +130,12 @@ def build():
         output = source/f'{name}-packed-archive.png'
         Image.fromarray(sheet).save(output)
         assert np.array_equal(np.array(Image.open(output)), sheet)
-        locked = save_locked_poses(sheet, cell, source, target) if name == 'idle' else None
-        report[name]={'lockedPoses':locked, 'sourceBounds':bounds,'minimumTransparentMargin':minimum,'visiblePixelsPreserved':True, 'alignment':alignment}
+        if name == 'idle':
+            Image.fromarray(sheet).save(target / 'mobi_collapsed_sprite.png')
+        report[name]={'sourceBounds':bounds,'minimumTransparentMargin':minimum,'visiblePixelsPreserved':True, 'alignment':alignment}
     (source/'packing.json').write_text(json.dumps(report,indent=2)+'\n')
     print(json.dumps({k:v for k,v in report.items() if k not in data}))
-    print('PASS: all 48 frames preserved; idle ground anchors aligned without resampling; transition archived only')
+    print('PASS: all 48 frames preserved; idle ground anchors aligned; mobi_collapsed_sprite.png written')
 
 if __name__ == '__main__':
     build()
-

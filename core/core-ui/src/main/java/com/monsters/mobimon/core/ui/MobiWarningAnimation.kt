@@ -19,6 +19,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.CompositingStrategy
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.contentDescription
@@ -28,24 +30,41 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.withContext
 
 internal object MobiCollapsedTimeline {
-    const val PERIOD_NANOS = 4_000_000_000L
-    const val BLINK_PERIOD_NANOS = 6_500_000_000L
+    const val COLUMNS = 6
+    const val ROWS = 4
+    const val FRAME_COUNT = COLUMNS * ROWS
+    const val CYCLE_MS = 4_050L
 
-    fun breathAt(elapsedNanos: Long): Float {
-        val phase = elapsedNanos.coerceAtLeast(0L) % PERIOD_NANOS
-        return ((1.0 - kotlin.math.cos(2.0 * kotlin.math.PI * phase / PERIOD_NANOS)) * 0.5).toFloat()
+    fun frameAt(elapsedNanos: Long): Int {
+        val cycleNanos = CYCLE_MS * 1_000_000L
+        val phase = elapsedNanos.coerceAtLeast(0L) % cycleNanos
+        val progress = phase.toDouble() / cycleNanos
+        return (progress * FRAME_COUNT).toInt().coerceIn(0, FRAME_COUNT - 1)
     }
 
-    fun eyeOpenAt(elapsedNanos: Long): Float {
-        val phase = (elapsedNanos.coerceAtLeast(0L) % BLINK_PERIOD_NANOS) / 1_000_000f
-        val value =
-            when {
-                phase < 5500f -> 0f
-                phase < 5900f -> (phase - 5500f) / 400f
-                phase < 6100f -> 1f
-                else -> (6500f - phase) / 400f
-            }
-        return value * value * (3f - 2f * value)
+    fun blendAt(
+        elapsedNanos: Long,
+        frame: Int = frameAt(elapsedNanos),
+    ): Float {
+        val cycleNanos = CYCLE_MS * 1_000_000L
+        val phase = elapsedNanos.coerceAtLeast(0L) % cycleNanos
+        val progress = phase.toDouble() / cycleNanos
+        val frameProgress = (progress * FRAME_COUNT) - frame
+        return frameProgress.toFloat().coerceIn(0f, 1f)
+    }
+}
+
+internal object MobiDizzyStarsTimeline {
+    const val COLUMNS = 6
+    const val ROWS = 2
+    const val FRAME_COUNT = COLUMNS * ROWS
+    const val CYCLE_MS = 1_538L
+
+    fun frameAt(elapsedNanos: Long): Int {
+        val cycleNanos = CYCLE_MS * 1_000_000L
+        val phase = elapsedNanos.coerceAtLeast(0L) % cycleNanos
+        val progress = phase.toDouble() / cycleNanos
+        return (progress * FRAME_COUNT).toInt().coerceIn(0, FRAME_COUNT - 1)
     }
 }
 
@@ -62,37 +81,65 @@ internal class MobiWarningBlend {
     }
 }
 
-internal data class MobiWarningSheets(
-    val closed: android.graphics.Bitmap,
-    val tiredEyes: android.graphics.Bitmap,
-)
-
-internal object MobiWarningCache {
+internal object MobiCollapsedSpriteCache {
     const val CELL = 408
     const val LOGICAL_CELL = 256
-    private const val DIRECTORY = "characters/mobi/unhealthy/"
+    const val ASSET_PATH = "characters/mobi/unhealthy/mobi_collapsed_sprite.png"
 
-    @Volatile private var cached: MobiWarningSheets? = null
+    @Volatile private var cached: ImageBitmap? = null
 
-    fun peek(): MobiWarningSheets? = cached
+    fun peek(): ImageBitmap? = cached
 
-    fun load(context: Context): MobiWarningSheets? =
-        cached ?: synchronized(this) {
-            cached ?: try {
-                fun decode(name: String): android.graphics.Bitmap =
-                    context.applicationContext.assets
-                        .open("${DIRECTORY}mobi_collapsed_$name.png")
-                        .use {
-                            val options = BitmapFactory.Options().apply { inScaled = false }
-                            val bitmap = requireNotNull(BitmapFactory.decodeStream(it, null, options))
-                            require(bitmap.width == CELL && bitmap.height == CELL)
-                            bitmap
-                        }
-                MobiWarningSheets(decode("closed"), decode("tired_eyes")).also { cached = it }
+    fun getOrLoad(context: Context): ImageBitmap? {
+        cached?.let { return it }
+        return synchronized(this) {
+            cached?.let { return it }
+            val assets = context.applicationContext.assets
+            val options = BitmapFactory.Options().apply { inScaled = false }
+            try {
+                assets.open(ASSET_PATH).use { stream ->
+                    val bitmap = requireNotNull(BitmapFactory.decodeStream(stream, null, options))
+                    require(
+                        bitmap.width == CELL * MobiCollapsedTimeline.COLUMNS &&
+                            bitmap.height == CELL * MobiCollapsedTimeline.ROWS,
+                    )
+                    bitmap.asImageBitmap().also { cached = it }
+                }
             } catch (_: java.io.IOException) {
                 null
             }
         }
+    }
+}
+
+internal object MobiDizzyStarsSpriteCache {
+    const val CELL = 408
+    const val ASSET_PATH = "characters/mobi/unhealthy/mobi_dizzy_stars_sprite.png"
+
+    @Volatile private var cached: ImageBitmap? = null
+
+    fun peek(): ImageBitmap? = cached
+
+    fun getOrLoad(context: Context): ImageBitmap? {
+        cached?.let { return it }
+        return synchronized(this) {
+            cached?.let { return it }
+            val assets = context.applicationContext.assets
+            val options = BitmapFactory.Options().apply { inScaled = false }
+            try {
+                assets.open(ASSET_PATH).use { stream ->
+                    val bitmap = requireNotNull(BitmapFactory.decodeStream(stream, null, options))
+                    require(
+                        bitmap.width == CELL * MobiDizzyStarsTimeline.COLUMNS &&
+                            bitmap.height == CELL * MobiDizzyStarsTimeline.ROWS,
+                    )
+                    bitmap.asImageBitmap().also { cached = it }
+                }
+            } catch (_: java.io.IOException) {
+                null
+            }
+        }
+    }
 }
 
 /** Normal and collapsed idle share one fixed layout slot and crossfade only. */
@@ -108,11 +155,26 @@ fun MobiIdleBreathAnimation(
     val context = LocalContext.current.applicationContext
     val blend = remember { MobiWarningBlend() }
     val enabled = motionEnabled && LocalMobiMonMotionEnabled.current
-    val sheets by produceState(initialValue = MobiWarningCache.peek(), context, vehicleWarning) {
-        if (vehicleWarning && value == null) value = withContext(Dispatchers.IO) { MobiWarningCache.load(context) }
+    val sprite by produceState<ImageBitmap?>(initialValue = MobiCollapsedSpriteCache.peek(), context, vehicleWarning) {
+        if (vehicleWarning &&
+            value == null
+        ) {
+            value = withContext(Dispatchers.IO) { MobiCollapsedSpriteCache.getOrLoad(context) }
+        }
     }
-    LaunchedEffect(vehicleWarning, enabled, sheets) {
-        if (sheets != null) blend.target(vehicleWarning, enabled)
+    val starsSprite by produceState<ImageBitmap?>(
+        initialValue = MobiDizzyStarsSpriteCache.peek(),
+        context,
+        vehicleWarning,
+    ) {
+        if (vehicleWarning &&
+            value == null
+        ) {
+            value = withContext(Dispatchers.IO) { MobiDizzyStarsSpriteCache.getOrLoad(context) }
+        }
+    }
+    LaunchedEffect(vehicleWarning, enabled, sprite) {
+        if (sprite != null) blend.target(vehicleWarning, enabled)
     }
     val showNormal by remember { derivedStateOf { blend.opacity.value < 1f } }
     val showCollapsed by remember { derivedStateOf { blend.opacity.value > 0f } }
@@ -129,27 +191,68 @@ fun MobiIdleBreathAnimation(
                 }
             }
         }
-        val loaded = sheets
-        if (showCollapsed && loaded != null) {
+        val sheet = sprite
+        if (showCollapsed && sheet != null) {
             val elapsed = remember { mutableLongStateOf(0L) }
             LaunchedEffect(Unit) {
                 elapsed.longValue = 0L
                 val origin = withInfiniteAnimationFrameNanos { it }
                 while (isActive) elapsed.longValue = withInfiniteAnimationFrameNanos { it } - origin
             }
-            // Same source coordinate system and destination for every breathing pose.
-            val extent = minOf(maxWidth, maxHeight) * MobiWarningCache.CELL / MobiWarningCache.LOGICAL_CELL
+            val extent =
+                minOf(maxWidth, maxHeight) * MobiCollapsedSpriteCache.CELL / MobiCollapsedSpriteCache.LOGICAL_CELL
             Box(
                 Modifier
                     .requiredSize(extent)
                     .graphicsLayer {
                         alpha = blend.opacity.value
-                        translationY = size.minDimension * MobiWarningCache.LOGICAL_CELL / MobiWarningCache.CELL *
-                            fallbackAsset.translationYFraction
+                        translationY =
+                            size.minDimension * MobiCollapsedSpriteCache.LOGICAL_CELL / MobiCollapsedSpriteCache.CELL *
+                            fallbackAsset.translationYFraction + size.minDimension * 0.04f
                         compositingStrategy = CompositingStrategy.Offscreen
                         clip = false
-                    }.mobiCollapsedDrawing(loaded) { elapsed.longValue },
+                    }.mobiSpriteFrames(
+                        sheet,
+                        MobiCollapsedTimeline.COLUMNS,
+                        MobiCollapsedTimeline.ROWS,
+                        blendFrames = false,
+                    ) {
+                        if (enabled) {
+                            val time = elapsed.longValue
+                            val frame = MobiCollapsedTimeline.frameAt(time)
+                            frame + MobiCollapsedTimeline.blendAt(time, frame)
+                        } else {
+                            0f
+                        }
+                    },
             )
+            val stars = starsSprite
+            if (stars != null) {
+                val starsExtent = extent * 0.45f
+                Box(
+                    Modifier
+                        .requiredSize(starsExtent)
+                        .graphicsLayer {
+                            alpha = blend.opacity.value
+                            translationX = size.width * 0.05f
+                            translationY = -size.height * 0.25f
+                            compositingStrategy = CompositingStrategy.Offscreen
+                            clip = false
+                        }.mobiSpriteFrames(
+                            stars,
+                            MobiDizzyStarsTimeline.COLUMNS,
+                            MobiDizzyStarsTimeline.ROWS,
+                            blendFrames = false,
+                        ) {
+                            if (enabled) {
+                                val time = elapsed.longValue
+                                MobiDizzyStarsTimeline.frameAt(time).toFloat()
+                            } else {
+                                0f
+                            }
+                        },
+                )
+            }
         }
     }
 }
