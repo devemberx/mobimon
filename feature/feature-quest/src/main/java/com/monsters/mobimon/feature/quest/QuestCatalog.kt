@@ -1,8 +1,11 @@
 package com.monsters.mobimon.feature.quest
 
+import com.monsters.mobimon.core.domain.DriveEvaluationData
+import com.monsters.mobimon.core.domain.DrivingQuestEvaluator
 import com.monsters.mobimon.core.domain.DrivingQuestIds
 import com.monsters.mobimon.core.domain.PointQuestCatalog
 import com.monsters.mobimon.core.domain.PointQuestSchedule
+import com.monsters.mobimon.core.domain.VehicleSnapshot
 import com.monsters.mobimon.core.navigation.VehicleRoute
 import com.monsters.mobimon.core.presentation.CompanionAppearanceState
 import com.monsters.mobimon.core.presentation.PointBalanceState
@@ -15,6 +18,15 @@ internal class QuestCatalog(
         appearance: CompanionAppearanceState,
         pointBalance: PointBalanceState,
         parkedVerified: Boolean,
+        text: (Int) -> String,
+    ): QuestScreenState = present(state, appearance, pointBalance, parkedVerified, null, text)
+
+    fun present(
+        state: QuestUiState,
+        appearance: CompanionAppearanceState,
+        pointBalance: PointBalanceState,
+        parkedVerified: Boolean,
+        snapshot: VehicleSnapshot?,
         text: (Int) -> String,
     ): QuestScreenState {
         val quests =
@@ -44,6 +56,7 @@ internal class QuestCatalog(
                                 QuestItemStatus.IN_PROGRESS -> QuestActionType.VIEW_DETAIL
                             },
                         targetRoute = VehicleRoute.VEHICLE_INFO,
+                        progressDetail = buildProgressDetail(content.id, state.driveEvaluation, snapshot),
                     )
                 }.sortedBy { it.status.sortPriority }
         val hiddenQuests =
@@ -226,4 +239,86 @@ private fun PointQuestSchedule.textResource(): Int =
         is PointQuestSchedule.Weekly -> R.string.quest_schedule_weekly_short
         is PointQuestSchedule.PerDrive -> R.string.quest_schedule_per_drive_short
         is PointQuestSchedule.CappedDaily -> R.string.quest_schedule_per_count_short
+    }
+
+private fun buildProgressDetail(
+    questId: String,
+    data: DriveEvaluationData,
+    snapshot: VehicleSnapshot?,
+): QuestProgressDetail? =
+    when (questId) {
+        DrivingQuestIds.SEATBELT ->
+            QuestProgressDetail.Seatbelt(
+                currentDistanceKm = data.distanceKm,
+                remainingDistanceKm = (DrivingQuestEvaluator.MIN_DRIVE_DISTANCE_KM - data.distanceKm).coerceAtLeast(0f),
+            )
+        DrivingQuestIds.SAFE_DRIVE ->
+            QuestProgressDetail.SafeDrive(
+                safeScore = data.safeDriveScore,
+                currentDistanceKm = data.distanceKm,
+                remainingDistanceKm = (DrivingQuestEvaluator.MIN_DRIVE_DISTANCE_KM - data.distanceKm).coerceAtLeast(0f),
+            )
+        DrivingQuestIds.DISTANCE_100KM ->
+            QuestProgressDetail.TotalDistance(
+                totalDistanceKm = data.totalDistanceKm,
+            )
+        DrivingQuestIds.CLEAN_DRIVE ->
+            QuestProgressDetail.CleanDrive(
+                hardAccelCount = data.hardAccelCount,
+                hardBrakeCount = data.hardBrakeCount,
+                overspeedCount = data.overspeedCount,
+                currentDistanceKm = data.distanceKm,
+                remainingDistanceKm = (DrivingQuestEvaluator.MIN_DRIVE_DISTANCE_KM - data.distanceKm).coerceAtLeast(0f),
+            )
+        DrivingQuestIds.FIRST_DRIVE ->
+            QuestProgressDetail.FirstDrive
+        DrivingQuestIds.FOCUS_DRIVE ->
+            QuestProgressDetail.FocusDrive(
+                currentDistanceKm = data.continuousDistanceKm,
+                remainingDistanceKm =
+                    (DrivingQuestEvaluator.CONTINUOUS_DISTANCE_KM - data.continuousDistanceKm)
+                        .coerceAtLeast(
+                            0f,
+                        ),
+                distractionLevel = snapshot?.attentionLevel?.let { (100 - it).coerceIn(0, 100) },
+            )
+        DrivingQuestIds.LANE_KEEP ->
+            QuestProgressDetail.LaneKeep(
+                currentDistanceKm = data.continuousDistanceKm,
+                remainingDistanceKm =
+                    (DrivingQuestEvaluator.CONTINUOUS_DISTANCE_KM - data.continuousDistanceKm)
+                        .coerceAtLeast(
+                            0f,
+                        ),
+                laneDepartureCount = data.laneDepartureCount,
+            )
+        DrivingQuestIds.MAINTENANCE ->
+            QuestProgressDetail.Maintenance
+        DrivingQuestIds.TURN_SIGNAL ->
+            QuestProgressDetail.TurnSignal(
+                turnSignalCount = data.turnSignalOnCount,
+            )
+        DrivingQuestIds.SAFE_5DAYS ->
+            QuestProgressDetail.SafeDriveStreak(
+                safeDriveCount = data.safeDriveCount,
+            )
+        DrivingQuestIds.BATTERY_CARE ->
+            QuestProgressDetail.BatteryCare(
+                batteryPercent = snapshot?.batteryPercent,
+            )
+        DrivingQuestIds.LONG_TRIP_REST ->
+            QuestProgressDetail.LongTripRest(
+                currentDistanceKm = data.continuousDistanceKm,
+                remainingDistanceKm =
+                    (DrivingQuestEvaluator.CONTINUOUS_DISTANCE_KM - data.continuousDistanceKm)
+                        .coerceAtLeast(0f),
+                drivingMinutes = null,
+            )
+        DrivingQuestIds.WASHER_FLUID ->
+            QuestProgressDetail.WasherFluid(
+                washerFluidLevel = snapshot?.washerFluidLevel,
+            )
+        DrivingQuestIds.TIRE_CHECK ->
+            QuestProgressDetail.TireCheck
+        else -> null
     }

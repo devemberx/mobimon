@@ -3,9 +3,14 @@ package com.monsters.mobimon.feature.quest
 import com.monsters.mobimon.core.domain.CosmeticInventory
 import com.monsters.mobimon.core.domain.CosmeticSlot
 import com.monsters.mobimon.core.domain.DefaultPointQuestCatalog
+import com.monsters.mobimon.core.domain.DriveEvaluationData
 import com.monsters.mobimon.core.domain.DrivingQuestIds
+import com.monsters.mobimon.core.domain.DrivingState
 import com.monsters.mobimon.core.domain.PointQuestCatalog
 import com.monsters.mobimon.core.domain.PointQuestSchedule
+import com.monsters.mobimon.core.domain.SignalQuality
+import com.monsters.mobimon.core.domain.SignalSource
+import com.monsters.mobimon.core.domain.VehicleSnapshot
 import com.monsters.mobimon.core.presentation.CompanionAppearanceState
 import com.monsters.mobimon.core.presentation.PointBalanceState
 import org.junit.Assert.assertEquals
@@ -157,6 +162,130 @@ class QuestCatalogTest {
         // Completed quests come last
         assertEquals(DrivingQuestIds.SEATBELT, quests.last().id)
         assertEquals(QuestItemStatus.COMPLETED, quests.last().status)
+    }
+
+    @Test
+    fun allFourteenQuestsBuildExpectedProgressDetailAndButtonVisibility() {
+        val evaluation =
+            DriveEvaluationData(
+                distanceKm = 3.5f,
+                continuousDistanceKm = 15.0f,
+                totalDistanceKm = 80.0f,
+                safeDriveScore = 88,
+                hardAccelCount = 1,
+                hardBrakeCount = 2,
+                overspeedCount = 0,
+                turnSignalOnCount = 4,
+                laneDepartureCount = 2,
+                safeDriveCount = 3,
+            )
+        val snapshot =
+            VehicleSnapshot(
+                id = "snap-1",
+                epoch = "epoch-1",
+                sequence = 1,
+                receivedAtMillis = 1000L,
+                source = SignalSource.SIMULATED,
+                drivingState = DrivingState.PARKED,
+                quality = SignalQuality.VALID,
+                batteryPercent = 75,
+                washerFluidLevel = 50,
+                attentionLevel = 80,
+            )
+        val state =
+            catalog.present(
+                state = ready().copy(driveEvaluation = evaluation),
+                appearance = CompanionAppearanceState(),
+                pointBalance = PointBalanceState.Ready(0),
+                parkedVerified = true,
+                snapshot = snapshot,
+                text = Int::toString,
+            )
+        val byId = state.quests.associateBy { it.id }
+
+        // 1. SEATBELT
+        val seatbelt = byId.getValue(DrivingQuestIds.SEATBELT)
+        assertFalse(seatbelt.showVehicleStep)
+        assertFalse(seatbelt.showExecuteButton)
+        assertEquals(QuestProgressDetail.Seatbelt(3.5f, 1.5f), seatbelt.progressDetail)
+
+        // 2. SAFE_DRIVE
+        val safeDrive = byId.getValue(DrivingQuestIds.SAFE_DRIVE)
+        assertFalse(safeDrive.showVehicleStep)
+        assertFalse(safeDrive.showExecuteButton)
+        assertEquals(QuestProgressDetail.SafeDrive(88, 3.5f, 1.5f), safeDrive.progressDetail)
+
+        // 3. DISTANCE_100KM
+        val dist100 = byId.getValue(DrivingQuestIds.DISTANCE_100KM)
+        assertFalse(dist100.showVehicleStep)
+        assertFalse(dist100.showExecuteButton)
+        assertEquals(QuestProgressDetail.TotalDistance(80.0f), dist100.progressDetail)
+
+        // 4. CLEAN_DRIVE
+        val cleanDrive = byId.getValue(DrivingQuestIds.CLEAN_DRIVE)
+        assertFalse(cleanDrive.showVehicleStep)
+        assertFalse(cleanDrive.showExecuteButton)
+        assertEquals(QuestProgressDetail.CleanDrive(1, 2, 0, 3.5f, 1.5f), cleanDrive.progressDetail)
+
+        // 5. FIRST_DRIVE
+        val firstDrive = byId.getValue(DrivingQuestIds.FIRST_DRIVE)
+        assertFalse(firstDrive.showVehicleStep)
+        assertFalse(firstDrive.showExecuteButton)
+        assertEquals(QuestProgressDetail.FirstDrive, firstDrive.progressDetail)
+
+        // 6. FOCUS_DRIVE
+        val focusDrive = byId.getValue(DrivingQuestIds.FOCUS_DRIVE)
+        assertFalse(focusDrive.showVehicleStep)
+        assertFalse(focusDrive.showExecuteButton)
+        assertEquals(QuestProgressDetail.FocusDrive(15.0f, 15.0f, 20), focusDrive.progressDetail)
+
+        // 7. LANE_KEEP
+        val laneKeep = byId.getValue(DrivingQuestIds.LANE_KEEP)
+        assertFalse(laneKeep.showVehicleStep)
+        assertFalse(laneKeep.showExecuteButton)
+        assertEquals(QuestProgressDetail.LaneKeep(15.0f, 15.0f, 2), laneKeep.progressDetail)
+
+        // 8. MAINTENANCE
+        val maintenance = byId.getValue(DrivingQuestIds.MAINTENANCE)
+        assertFalse(maintenance.showVehicleStep)
+        assertFalse(maintenance.showExecuteButton)
+        assertEquals(QuestProgressDetail.Maintenance, maintenance.progressDetail)
+
+        // 9. TURN_SIGNAL
+        val turnSignal = byId.getValue(DrivingQuestIds.TURN_SIGNAL)
+        assertFalse(turnSignal.showVehicleStep)
+        assertFalse(turnSignal.showExecuteButton)
+        assertEquals(QuestProgressDetail.TurnSignal(4), turnSignal.progressDetail)
+
+        // 10. SAFE_5DAYS
+        val safe5 = byId.getValue(DrivingQuestIds.SAFE_5DAYS)
+        assertFalse(safe5.showVehicleStep)
+        assertFalse(safe5.showExecuteButton)
+        assertEquals(QuestProgressDetail.SafeDriveStreak(3), safe5.progressDetail)
+
+        // 11. BATTERY_CARE
+        val batteryCare = byId.getValue(DrivingQuestIds.BATTERY_CARE)
+        assertTrue(batteryCare.showVehicleStep)
+        assertTrue(batteryCare.showExecuteButton)
+        assertEquals(QuestProgressDetail.BatteryCare(75), batteryCare.progressDetail)
+
+        // 12. LONG_TRIP_REST
+        val longTrip = byId.getValue(DrivingQuestIds.LONG_TRIP_REST)
+        assertFalse(longTrip.showVehicleStep)
+        assertFalse(longTrip.showExecuteButton)
+        assertEquals(QuestProgressDetail.LongTripRest(15.0f, 15.0f, null), longTrip.progressDetail)
+
+        // 13. WASHER_FLUID
+        val washer = byId.getValue(DrivingQuestIds.WASHER_FLUID)
+        assertFalse(washer.showVehicleStep)
+        assertFalse(washer.showExecuteButton)
+        assertEquals(QuestProgressDetail.WasherFluid(50), washer.progressDetail)
+
+        // 14. TIRE_CHECK
+        val tireCheck = byId.getValue(DrivingQuestIds.TIRE_CHECK)
+        assertTrue(tireCheck.showVehicleStep)
+        assertTrue(tireCheck.showExecuteButton)
+        assertEquals(QuestProgressDetail.TireCheck, tireCheck.progressDetail)
     }
 
     private fun ready() = QuestUiState(isLoading = false)

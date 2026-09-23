@@ -29,6 +29,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.monsters.mobimon.core.ui.PetAvatar
+import java.util.Locale
 import com.monsters.mobimon.core.ui.MobiMonColors as Colors
 
 @Composable
@@ -257,26 +258,36 @@ internal fun QuestDetailCard(
 
         Spacer(Modifier.height(44.dp * scale))
 
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(16.dp * scale),
-        ) {
-            if (isClaimable || isCompleted) {
-                Image(
-                    painter = painterResource(R.drawable.quest_icon_check),
-                    contentDescription = null,
-                    modifier = Modifier.size(32.dp * scale),
-                    colorFilter = ColorFilter.tint(Colors.success),
-                )
-                Text(
-                    text = stringResource(R.string.quest_detail_vehicle_done),
-                    style = questTextStyle(38f, scale, bold = true, color = Colors.text),
-                )
-            } else {
-                Text(
-                    text = stringResource(R.string.quest_detail_vehicle_step),
-                    style = questTextStyle(38f, scale, bold = true, color = Colors.text),
-                )
+        QuestProgressDetailSection(
+            detail = quest.progressDetail,
+            scale = scale,
+        )
+
+        if (quest.showVehicleStep) {
+            if (quest.progressDetail != null && quest.progressDetail !is QuestProgressDetail.TireCheck) {
+                Spacer(Modifier.height(24.dp * scale))
+            }
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(16.dp * scale),
+            ) {
+                if (isClaimable || isCompleted) {
+                    Image(
+                        painter = painterResource(R.drawable.quest_icon_check),
+                        contentDescription = null,
+                        modifier = Modifier.size(32.dp * scale),
+                        colorFilter = ColorFilter.tint(Colors.success),
+                    )
+                    Text(
+                        text = stringResource(R.string.quest_detail_vehicle_done),
+                        style = questTextStyle(38f, scale, bold = true, color = Colors.text),
+                    )
+                } else {
+                    Text(
+                        text = stringResource(R.string.quest_detail_vehicle_step),
+                        style = questTextStyle(38f, scale, bold = true, color = Colors.text),
+                    )
+                }
             }
         }
 
@@ -356,7 +367,7 @@ internal fun QuestDetailCard(
                 }
             }
 
-            else -> {
+            quest.showExecuteButton -> {
                 Row(
                     modifier =
                         Modifier
@@ -383,6 +394,273 @@ internal fun QuestDetailCard(
                     )
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun QuestMetricItem(
+    label: String,
+    value: String,
+    scale: Float,
+    modifier: Modifier = Modifier,
+) {
+    Box(
+        modifier =
+            modifier
+                .clip(RoundedCornerShape(16.dp * scale))
+                .background(Colors.raised)
+                .padding(horizontal = 24.dp * scale, vertical = 14.dp * scale),
+        contentAlignment = Alignment.CenterStart,
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp * scale),
+        ) {
+            Text(
+                text = label,
+                style = questTextStyle(28f, scale, bold = false, color = Colors.muted),
+            )
+            Text(
+                text = value,
+                style = questTextStyle(32f, scale, bold = true, color = Colors.accent),
+            )
+        }
+    }
+}
+
+@Composable
+private fun QuestProgressDetailSection(
+    detail: QuestProgressDetail?,
+    scale: Float,
+) {
+    if (detail == null) return
+
+    when (detail) {
+        is QuestProgressDetail.Seatbelt -> {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(16.dp * scale),
+            ) {
+                QuestMetricItem(
+                    label = stringResource(R.string.quest_detail_metric_current_distance),
+                    value = String.format(Locale.getDefault(), "%.1f km", detail.currentDistanceKm),
+                    scale = scale,
+                )
+                QuestMetricItem(
+                    label = stringResource(R.string.quest_detail_metric_remaining_distance),
+                    value = String.format(Locale.getDefault(), "%.1f km", detail.remainingDistanceKm),
+                    scale = scale,
+                )
+            }
+        }
+
+        is QuestProgressDetail.SafeDrive -> {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(16.dp * scale),
+            ) {
+                QuestMetricItem(
+                    label = stringResource(R.string.quest_detail_metric_safe_score),
+                    value = stringResource(R.string.quest_detail_score_format, detail.safeScore),
+                    scale = scale,
+                )
+                QuestMetricItem(
+                    label = stringResource(R.string.quest_detail_metric_current_distance),
+                    value = String.format(Locale.getDefault(), "%.1f km", detail.currentDistanceKm),
+                    scale = scale,
+                )
+                QuestMetricItem(
+                    label = stringResource(R.string.quest_detail_metric_remaining_distance),
+                    value = String.format(Locale.getDefault(), "%.1f km", detail.remainingDistanceKm),
+                    scale = scale,
+                )
+            }
+        }
+
+        is QuestProgressDetail.TotalDistance -> {
+            QuestMetricItem(
+                label = stringResource(R.string.quest_detail_metric_total_distance),
+                value = String.format(Locale.getDefault(), "%.1f km", detail.totalDistanceKm),
+                scale = scale,
+            )
+        }
+
+        is QuestProgressDetail.CleanDrive -> {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp * scale)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(16.dp * scale),
+                ) {
+                    QuestMetricItem(
+                        label = stringResource(R.string.quest_detail_metric_hard_accel),
+                        value = stringResource(R.string.quest_detail_count_format, detail.hardAccelCount),
+                        scale = scale,
+                    )
+                    QuestMetricItem(
+                        label = stringResource(R.string.quest_detail_metric_hard_brake),
+                        value = stringResource(R.string.quest_detail_count_format, detail.hardBrakeCount),
+                        scale = scale,
+                    )
+                    QuestMetricItem(
+                        label = stringResource(R.string.quest_detail_metric_overspeed),
+                        value = stringResource(R.string.quest_detail_count_format, detail.overspeedCount),
+                        scale = scale,
+                    )
+                }
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(16.dp * scale),
+                ) {
+                    QuestMetricItem(
+                        label = stringResource(R.string.quest_detail_metric_current_distance),
+                        value = String.format(Locale.getDefault(), "%.1f km", detail.currentDistanceKm),
+                        scale = scale,
+                    )
+                    QuestMetricItem(
+                        label = stringResource(R.string.quest_detail_metric_remaining_distance),
+                        value = String.format(Locale.getDefault(), "%.1f km", detail.remainingDistanceKm),
+                        scale = scale,
+                    )
+                }
+            }
+        }
+
+        QuestProgressDetail.FirstDrive -> {
+            Text(
+                text = stringResource(R.string.quest_detail_msg_first_drive),
+                style = questTextStyle(34f, scale, bold = true, color = Colors.text),
+            )
+        }
+
+        is QuestProgressDetail.FocusDrive -> {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(16.dp * scale),
+            ) {
+                QuestMetricItem(
+                    label = stringResource(R.string.quest_detail_metric_current_distance),
+                    value = String.format(Locale.getDefault(), "%.1f km", detail.currentDistanceKm),
+                    scale = scale,
+                )
+                QuestMetricItem(
+                    label = stringResource(R.string.quest_detail_metric_remaining_distance),
+                    value = String.format(Locale.getDefault(), "%.1f km", detail.remainingDistanceKm),
+                    scale = scale,
+                )
+                QuestMetricItem(
+                    label = stringResource(R.string.quest_detail_metric_distraction_level),
+                    value =
+                        detail.distractionLevel?.let { stringResource(R.string.quest_detail_percent_format, it) }
+                            ?: stringResource(R.string.quest_detail_unknown),
+                    scale = scale,
+                )
+            }
+        }
+
+        is QuestProgressDetail.LaneKeep -> {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(16.dp * scale),
+            ) {
+                QuestMetricItem(
+                    label = stringResource(R.string.quest_detail_metric_current_distance),
+                    value = String.format(Locale.getDefault(), "%.1f km", detail.currentDistanceKm),
+                    scale = scale,
+                )
+                QuestMetricItem(
+                    label = stringResource(R.string.quest_detail_metric_remaining_distance),
+                    value = String.format(Locale.getDefault(), "%.1f km", detail.remainingDistanceKm),
+                    scale = scale,
+                )
+                QuestMetricItem(
+                    label = stringResource(R.string.quest_detail_metric_lane_departure),
+                    value = stringResource(R.string.quest_detail_count_format, detail.laneDepartureCount),
+                    scale = scale,
+                )
+            }
+        }
+
+        QuestProgressDetail.Maintenance -> {
+            Text(
+                text = stringResource(R.string.quest_detail_msg_maintenance),
+                style = questTextStyle(34f, scale, bold = true, color = Colors.text),
+            )
+        }
+
+        is QuestProgressDetail.TurnSignal -> {
+            QuestMetricItem(
+                label = stringResource(R.string.quest_detail_metric_turn_signal),
+                value = stringResource(R.string.quest_detail_count_format, detail.turnSignalCount),
+                scale = scale,
+            )
+        }
+
+        is QuestProgressDetail.SafeDriveStreak -> {
+            QuestMetricItem(
+                label = stringResource(R.string.quest_detail_metric_safe_drive_count),
+                value = stringResource(R.string.quest_detail_count_format, detail.safeDriveCount),
+                scale = scale,
+            )
+        }
+
+        is QuestProgressDetail.BatteryCare -> {
+            QuestMetricItem(
+                label = stringResource(R.string.quest_detail_metric_battery_charge),
+                value =
+                    detail.batteryPercent?.let { stringResource(R.string.quest_detail_percent_format, it) }
+                        ?: stringResource(R.string.quest_detail_unknown),
+                scale = scale,
+            )
+        }
+
+        is QuestProgressDetail.LongTripRest -> {
+            val formattedTime =
+                detail.drivingMinutes?.let { minutes ->
+                    if (minutes >= 60) {
+                        stringResource(
+                            R.string.quest_detail_time_hours_minutes_format,
+                            minutes / 60,
+                            minutes % 60,
+                        )
+                    } else {
+                        stringResource(R.string.quest_detail_time_minutes_format, minutes)
+                    }
+                } ?: stringResource(R.string.quest_detail_unknown)
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(16.dp * scale),
+            ) {
+                QuestMetricItem(
+                    label = stringResource(R.string.quest_detail_metric_current_distance),
+                    value = String.format(Locale.getDefault(), "%.1f km", detail.currentDistanceKm),
+                    scale = scale,
+                )
+                QuestMetricItem(
+                    label = stringResource(R.string.quest_detail_metric_remaining_distance),
+                    value = String.format(Locale.getDefault(), "%.1f km", detail.remainingDistanceKm),
+                    scale = scale,
+                )
+                QuestMetricItem(
+                    label = stringResource(R.string.quest_detail_metric_driving_time),
+                    value = formattedTime,
+                    scale = scale,
+                )
+            }
+        }
+
+        is QuestProgressDetail.WasherFluid -> {
+            QuestMetricItem(
+                label = stringResource(R.string.quest_detail_metric_washer_level),
+                value =
+                    detail.washerFluidLevel?.let { stringResource(R.string.quest_detail_percent_format, it) }
+                        ?: stringResource(R.string.quest_detail_unknown),
+                scale = scale,
+            )
+        }
+
+        QuestProgressDetail.TireCheck -> {
+            // Keep as is
         }
     }
 }

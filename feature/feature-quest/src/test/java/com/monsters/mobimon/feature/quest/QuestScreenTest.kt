@@ -110,9 +110,60 @@ class QuestScreenTest {
     fun drivingDetailExecutesRealNavigationCallback() {
         var route: AppRoute? = null
         render(presentation(), onNavigate = { route = it })
-        compose.onNodeWithTag("quest-btn-detail-${DrivingQuestIds.SEATBELT}").performScrollTo().performClick()
+        compose.onNodeWithTag("quest-btn-detail-${DrivingQuestIds.BATTERY_CARE}").performScrollTo().performClick()
         compose.onNodeWithTag("quest-btn-detail-execute").assertIsDisplayed().performClick()
         assertEquals(VehicleRoute.VEHICLE_INFO, route)
+    }
+
+    @Test
+    fun seatbeltDetailShowsDistanceMetricsAndNoExecuteButtonOrVehicleStep() {
+        render(presentation())
+        compose.onNodeWithTag("quest-btn-detail-${DrivingQuestIds.SEATBELT}").performScrollTo().performClick()
+        compose.onNodeWithTag("quest-btn-detail-execute").assertDoesNotExist()
+        compose.onNodeWithText("차량 정보 확인 하기").assertDoesNotExist()
+        compose.onNodeWithText("현재 주행 거리").assertIsDisplayed()
+        compose.onNodeWithText("남은 거리").assertIsDisplayed()
+    }
+
+    @Test
+    fun firstDriveDetailShowsGuideMessageAndNoExecuteButton() {
+        render(presentation())
+        compose.onNodeWithTag("quest-btn-detail-${DrivingQuestIds.FIRST_DRIVE}").performScrollTo().performClick()
+        compose.onNodeWithTag("quest-btn-detail-execute").assertDoesNotExist()
+        compose.onNodeWithText("차량 정보 확인 하기").assertDoesNotExist()
+        compose.onNodeWithText("오늘의 첫 주행을 시작해보세요!").assertIsDisplayed()
+    }
+
+    @Test
+    fun batteryCareDetailShowsChargeAndVehicleStep() {
+        render(presentation())
+        compose.onNodeWithTag("quest-btn-detail-${DrivingQuestIds.BATTERY_CARE}").performScrollTo().performClick()
+        compose.onNodeWithText("차량 정보 확인 하기").assertIsDisplayed()
+        compose.onNodeWithTag("quest-btn-detail-execute").assertIsDisplayed()
+        compose.onNodeWithText("배터리 충전량").assertIsDisplayed()
+    }
+
+    @Test
+    fun focusDriveDetailShowsMetricsAndCustomDescription() {
+        render(presentation())
+        compose.onNodeWithTag("quest-btn-detail-${DrivingQuestIds.FOCUS_DRIVE}").performScrollTo().performClick()
+        compose.onNodeWithTag("quest-btn-detail-execute").assertDoesNotExist()
+        compose.onNodeWithText("차량 정보 확인 하기").assertDoesNotExist()
+        compose.onNodeWithText("전방 주시와 주의력(부주의 레벨 70% 이상)유지하며").assertIsDisplayed()
+        compose.onNodeWithText("현재 주행 거리").assertIsDisplayed()
+        compose.onNodeWithText("남은 거리").assertIsDisplayed()
+        compose.onNodeWithText("부주의 레벨").assertIsDisplayed()
+    }
+
+    @Test
+    fun longTripRestDetailShowsMetricsAndNoExecuteButton() {
+        render(presentation())
+        compose.onNodeWithTag("quest-btn-detail-${DrivingQuestIds.LONG_TRIP_REST}").performScrollTo().performClick()
+        compose.onNodeWithTag("quest-btn-detail-execute").assertDoesNotExist()
+        compose.onNodeWithText("차량 정보 확인 하기").assertDoesNotExist()
+        compose.onNodeWithText("현재 주행 거리").assertIsDisplayed()
+        compose.onNodeWithText("남은 거리").assertIsDisplayed()
+        compose.onNodeWithText("주행 시간").assertIsDisplayed()
     }
 
     @Test
@@ -169,7 +220,7 @@ class QuestScreenTest {
         }
         compose.onNodeWithText("8포인트를 획득했어요!!").assertIsDisplayed()
         compose.onNodeWithText("퀘스트 완료 · 날씨 보너스").assertIsDisplayed()
-        compose.onNodeWithText("날씨 가중치 적용으로 3포인트를 더 받았어요!").assertIsDisplayed()
+        compose.onNodeWithText("날씨 보너스로 3포인트를 더 받았어요!").assertIsDisplayed()
         compose.onNodeWithText("보상 · 8 Point (날씨 보너스 +3)").assertIsDisplayed()
     }
 

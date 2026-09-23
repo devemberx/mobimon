@@ -312,6 +312,19 @@ class QuestViewModelTest {
             runCurrent()
             assertTrue(DrivingQuestIds.SEATBELT in vm.state.value.satisfiedDrivingQuestIds)
             assertTrue(DrivingQuestIds.SAFE_DRIVE in vm.state.value.satisfiedDrivingQuestIds)
+            assertEquals(10f, vm.state.value.driveEvaluation.distanceKm)
+        }
+
+    @Test
+    fun drivingEvaluationUpdatesDriveEvaluationInState() =
+        runModelTest {
+            val vm = subject()
+            runCurrent()
+            assertEquals(0f, vm.state.value.driveEvaluation.distanceKm)
+            economy.evaluation.value = DriveEvaluationData(distanceKm = 12.5f, safeDriveScore = 95)
+            runCurrent()
+            assertEquals(12.5f, vm.state.value.driveEvaluation.distanceKm)
+            assertEquals(95, vm.state.value.driveEvaluation.safeDriveScore)
         }
 
     private class TestEconomy : PointEconomy {

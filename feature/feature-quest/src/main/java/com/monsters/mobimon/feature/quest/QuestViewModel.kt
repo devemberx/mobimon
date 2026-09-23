@@ -2,6 +2,7 @@ package com.monsters.mobimon.feature.quest
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.monsters.mobimon.core.domain.DriveEvaluationData
 import com.monsters.mobimon.core.domain.DrivingQuestEvaluator
 import com.monsters.mobimon.core.domain.PointAwardResult
 import com.monsters.mobimon.core.domain.PointEconomy
@@ -35,6 +36,7 @@ data class QuestUiState(
     val completedPointQuestIds: Set<String> = emptySet(),
     val satisfiedDrivingQuestIds: Set<String> = emptySet(),
     val dismissedHiddenQuestIds: Set<String> = emptySet(),
+    val driveEvaluation: DriveEvaluationData = DriveEvaluationData(),
     val pendingQuestId: String? = null,
     val isLoading: Boolean = true,
     val observationFailed: Boolean = false,
@@ -66,14 +68,17 @@ class QuestViewModel(
             viewModelScope.launch {
                 try {
                     combine(economy.completedQuestIds, economy.driveEvaluation) { completedIds, evaluation ->
-                        completedIds to
+                        Triple(
+                            completedIds,
                             drivingEvaluator
                                 .evaluateAll(
                                     evaluation,
                                 ).filter { it.isSatisfied }
                                 .map { it.questId }
-                                .toSet()
-                    }.collect { (completedIds, satisfiedIds) ->
+                                .toSet(),
+                            evaluation,
+                        )
+                    }.collect { (completedIds, satisfiedIds, evaluation) ->
                         observedQuestIds = completedIds
                         unobservedConfirmedQuestIds.removeAll(completedIds)
                         val pendingQuestId = state.value.pendingQuestId
@@ -82,6 +87,7 @@ class QuestViewModel(
                             it.copy(
                                 completedPointQuestIds = completedIds + unobservedConfirmedQuestIds,
                                 satisfiedDrivingQuestIds = satisfiedIds,
+                                driveEvaluation = evaluation,
                                 isLoading = false,
                                 observationFailed = false,
                             )
