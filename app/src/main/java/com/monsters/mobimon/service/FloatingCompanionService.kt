@@ -36,6 +36,7 @@ import androidx.savedstate.setViewTreeSavedStateRegistryOwner
 import com.monsters.mobimon.R
 import com.monsters.mobimon.core.domain.SettingsRepository
 import com.monsters.mobimon.core.presentation.CompanionAppearancePresentation
+import com.monsters.mobimon.core.ui.LocalMobiMonMotionEnabled
 import com.monsters.mobimon.core.ui.MobiMonTheme
 import com.monsters.mobimon.core.ui.PetAvatar
 import dagger.hilt.android.AndroidEntryPoint
@@ -45,6 +46,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -70,11 +72,15 @@ class FloatingCompanionService : Service() {
 
     private var windowManager: WindowManager? = null
     private var composeView: ComposeView? = null
+    private var overlayParams: WindowManager.LayoutParams? = null
     private var lifecycleOwner: OverlayLifecycleOwner? = null
     private var isViewAttached = false
 
     private var isMoving by mutableStateOf(false)
     private var movingLeft by mutableStateOf(true)
+
+    // Unknown until the first preference read, so stay in place like the in-app shell.
+    private var reducedMotion by mutableStateOf(true)
     private var wanderJob: Job? = null
 
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
@@ -187,6 +193,7 @@ class FloatingCompanionService : Service() {
                 setContent {
                     CompositionLocalProvider(
                         LocalViewModelStoreOwner provides owner,
+                        LocalMobiMonMotionEnabled provides !reducedMotion,
                     ) {
                         MobiMonTheme {
                             val appearanceState = companionAppearance.state()
@@ -220,6 +227,7 @@ class FloatingCompanionService : Service() {
             wm.addView(view, params)
             isViewAttached = true
             composeView = view
+            overlayParams = params
             startWandering(view, params, wm)
         } catch (_: Exception) {
             stopSelf()
@@ -294,6 +302,10 @@ class FloatingCompanionService : Service() {
         initialDelayMs: Long = 4000L,
     ) {
         wanderJob?.cancel()
+        wanderJob = null
+        isMoving = false
+        // Dragging stays available; only autonomous wandering stops.
+        if (reducedMotion) return
         wanderJob =
             serviceScope.launch {
                 delay(initialDelayMs)
@@ -367,12 +379,30 @@ class FloatingCompanionService : Service() {
 
     private fun observeSettings() {
         serviceScope.launch {
-            settingsRepository.settings.collect { settings ->
-                if (!settings.launcherCharacterEnabled || !Settings.canDrawOverlays(this@FloatingCompanionService)) {
-                    stopSelf()
+            settingsRepository.settings
+                .catch {
+                    reducedMotion = true
+                    restartWandering()
+                }.collect { settings ->
+                    if (!settings.launcherCharacterEnabled ||
+                        !Settings.canDrawOverlays(this@FloatingCompanionService)
+                    ) {
+                        stopSelf()
+                        return@collect
+                    }
+                    if (reducedMotion != settings.reducedMotion) {
+                        reducedMotion = settings.reducedMotion
+                        restartWandering()
+                    }
                 }
-            }
         }
+    }
+
+    private fun restartWandering() {
+        val view = composeView ?: return
+        val params = overlayParams ?: return
+        val wm = windowManager ?: return
+        startWandering(view, params, wm)
     }
 
     override fun onDestroy() {
@@ -388,6 +418,7 @@ class FloatingCompanionService : Service() {
             isViewAttached = false
         }
         composeView = null
+        overlayParams = null
         lifecycleOwner?.destroy()
         lifecycleOwner = null
         windowManager = null

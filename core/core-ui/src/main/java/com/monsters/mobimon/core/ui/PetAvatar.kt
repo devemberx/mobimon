@@ -124,7 +124,8 @@ fun PetAvatar(
 ) {
     val cat = friendId == "friend:luna"
     val cream = appearanceKey == "CREAM"
-    val motionEnabled = isAnimated && LocalMobiMonMotionEnabled.current
+    // Reduced motion keeps the gentle idle breath and drops travel animation only.
+    val runEnabled = isAnimated && isMoving && LocalMobiMonMotionEnabled.current
     val description = stringResource(if (cat) R.string.mobimon_luna_description else R.string.mobimon_mobi_description)
     if (emotion == PetEmotion.HAPPY) {
         val happyAsset = CharacterArtwork.happy(friendId, accessoryId ?: outfitId)
@@ -142,13 +143,13 @@ fun PetAvatar(
                 CharacterAssetImage(it, Modifier.fillMaxSize())
             }
             val equippedLook = CharacterArtwork.equippedLooks[accessoryId ?: outfitId]
-            if (motionEnabled && (friendId == "friend:mobi") && (equippedLook == null)) {
+            if (isAnimated && (friendId == "friend:mobi") && (equippedLook == null)) {
                 MobiIdleBreathAnimation(
                     modifier = Modifier.fillMaxSize(),
                     fallbackAsset = CharacterArtwork.preview(friendId, accessoryId ?: outfitId),
                 )
-            } else if (motionEnabled && (friendId == "friend:luna") && (equippedLook == null)) {
-                if (isMoving) {
+            } else if (isAnimated && (friendId == "friend:luna") && (equippedLook == null)) {
+                if (runEnabled) {
                     LunaRunAnimation(
                         modifier = Modifier.fillMaxSize(),
                         movingLeft = movingLeft,
@@ -253,10 +254,6 @@ private fun IdleBreathAnimation(
     contentDescription: String?,
     fallbackAsset: CharacterAsset,
 ) {
-    if (!LocalMobiMonMotionEnabled.current) {
-        CharacterAssetImage(fallbackAsset, modifier, contentDescription)
-        return
-    }
     val context = LocalContext.current
     val frames = remember(context, loadFrames) { loadFrames(context) }
 

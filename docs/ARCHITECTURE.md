@@ -91,8 +91,10 @@ alpha in an isolated reusable layer (two atlas draws, no bitmap crops). Continuo
 breath, sway and bob use separate periods; hands and wheel transform together.
 The 7524 x 5016 asset retains every source pixel; runtime keeps the prior 2x decode
 sampling (627px cells, about 36MiB) to fit a 4096px texture without a 144MiB bitmap.
-Leaving composition cancels playback; reduced motion renders the static fallback. Failed/unknown motion preferences
-pause decoration; retries follow shell subscription.
+Leaving composition cancels playback. Idle breathing ignores the motion preference; reduced motion replaces
+Luna's run cycle with the idle breath. Failed/unknown motion preferences pause other decoration; retries follow
+shell subscription. The floating companion overlay applies the same preference: reduced, unknown or failed motion
+stops autonomous wandering; dragging stays available.
 
 ### Copilot connection UI
 

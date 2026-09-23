@@ -188,8 +188,8 @@ Loading and failure states have no v5 export; reuse panel typography and control
 
 Motion preserves context and focus; outgoing/restricted controls lose input
 immediately. Animation never authorizes or commits a command. Reduced motion shows
-settled states and pauses character/particle loops. Unknown or failed motion
-preference reads keep decoration static.
+settled states, keeps the idle breath in place and pauses running, wandering and
+particle loops. Unknown or failed motion preference reads keep decoration static.
 
 Home's conversation action reveals the destination from the activated button's
 rounded bounds over 300ms, with Home stationary underneath. Back closes it toward
