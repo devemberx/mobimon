@@ -67,6 +67,10 @@ fun SettingsScreen(
     modifier: Modifier = Modifier,
     onDebugModeChange: (Boolean) -> Unit = {},
     debugModeAvailable: Boolean = false,
+    onLauncherCharacterChange: ((Boolean) -> Unit)? = null,
+    hasOverlayPermission: Boolean = true,
+    launcherSaving: Boolean = false,
+    launcherError: String? = null,
     motionSaving: Boolean = false,
     motionError: String? = null,
     debugSaving: Boolean = false,
@@ -120,13 +124,42 @@ fun SettingsScreen(
                         enabled = parkedVerified,
                         onClick = onOpenCopilot,
                     )
-                    SettingsItem(
-                        R.string.pet_settings_launcher_title,
-                        R.string.pet_settings_launcher_unavailable,
-                        R.string.pet_settings_preparing,
-                        reference,
-                        scale,
-                    )
+                    if (onLauncherCharacterChange != null) {
+                        val overlayMissing = settings.launcherCharacterEnabled && !hasOverlayPermission
+                        val feedback =
+                            launcherError ?: if (launcherSaving) {
+                                stringResource(R.string.pet_saving)
+                            } else if (overlayMissing) {
+                                stringResource(R.string.pet_settings_overlay_permission_required)
+                            } else {
+                                null
+                            }
+                        SettingsItem(
+                            title = R.string.pet_settings_launcher_title,
+                            description = if (reference) null else R.string.pet_settings_launcher_description,
+                            status =
+                                if (settings.launcherCharacterEnabled) {
+                                    R.string.pet_settings_on
+                                } else {
+                                    R.string.pet_settings_off
+                                },
+                            reference = reference,
+                            scale = scale,
+                            checked = settings.launcherCharacterEnabled,
+                            enabled = parkedVerified && !launcherSaving,
+                            onCheckedChange = onLauncherCharacterChange,
+                            feedback = feedback,
+                            isError = launcherError != null || overlayMissing,
+                        )
+                    } else {
+                        SettingsItem(
+                            R.string.pet_settings_launcher_title,
+                            R.string.pet_settings_launcher_unavailable,
+                            R.string.pet_settings_preparing,
+                            reference,
+                            scale,
+                        )
+                    }
                     SettingsItem(
                         R.string.pet_settings_voice_title,
                         R.string.pet_settings_voice_unavailable,

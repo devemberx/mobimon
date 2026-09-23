@@ -46,7 +46,11 @@ android {
         debug { applicationIdSuffix = ".demo" }
     }
 
-    testOptions { unitTests.isIncludeAndroidResources = true }
+    testOptions {
+        unitTests.isIncludeAndroidResources = true
+        // Robolectric decodes character PNGs at full size (the Mobi atlas alone is ~150MB); 512MB default OOMs.
+        unitTests.all { it.maxHeapSize = "2g" }
+    }
 
     sourceSets {
         getByName("testDebug").java.srcDir("src/journeyTest/java")

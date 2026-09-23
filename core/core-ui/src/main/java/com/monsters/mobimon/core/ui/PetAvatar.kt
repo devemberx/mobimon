@@ -33,6 +33,9 @@ import java.util.Locale
 private val IDLE_BREATH_FRAME_DURATIONS_MS =
     IntArray(24) { if (it == 23) 130 else 90 }
 
+private val RUN_FRAME_DURATIONS_MS =
+    IntArray(24) { 50 }
+
 internal object LunaAnimationCache {
     @Volatile
     private var cachedFrames: List<ImageBitmap>? = null
@@ -50,6 +53,38 @@ internal object LunaAnimationCache {
                             String.format(
                                 Locale.US,
                                 "characters/luna/idle_breath/luna_idle_breath_%02d.png",
+                                i,
+                            )
+                        assetManager.open(path).use { stream ->
+                            BitmapFactory.decodeStream(stream, null, decodeOptions)!!.asImageBitmap()
+                        }
+                    }
+                cachedFrames = frames
+                frames
+            } catch (_: Exception) {
+                emptyList()
+            }
+        }
+    }
+}
+
+internal object LunaRunAnimationCache {
+    @Volatile
+    private var cachedFrames: List<ImageBitmap>? = null
+
+    fun getOrLoadFrames(context: Context): List<ImageBitmap> {
+        cachedFrames?.let { return it }
+        return synchronized(this) {
+            cachedFrames?.let { return it }
+            try {
+                val assetManager = context.applicationContext?.assets ?: context.assets
+                val decodeOptions = BitmapFactory.Options().apply { inSampleSize = 2 }
+                val frames =
+                    (1..24).map { i ->
+                        val path =
+                            String.format(
+                                Locale.US,
+                                "characters/luna/run/luna_run_left_%02d.png",
                                 i,
                             )
                         assetManager.open(path).use { stream ->
@@ -84,10 +119,13 @@ fun PetAvatar(
     backgroundId: String? = null,
     isAnimated: Boolean = true,
     emotion: PetEmotion = PetEmotion.IDLE,
+    isMoving: Boolean = false,
+    movingLeft: Boolean = true,
 ) {
     val cat = friendId == "friend:luna"
     val cream = appearanceKey == "CREAM"
-    val motionEnabled = isAnimated && LocalMobiMonMotionEnabled.current
+    // Reduced motion keeps the gentle idle breath and drops travel animation only.
+    val runEnabled = isAnimated && isMoving && LocalMobiMonMotionEnabled.current
     val description = stringResource(if (cat) R.string.mobimon_luna_description else R.string.mobimon_mobi_description)
     if (emotion == PetEmotion.HAPPY) {
         val happyAsset = CharacterArtwork.happy(friendId, accessoryId ?: outfitId)
@@ -105,16 +143,24 @@ fun PetAvatar(
                 CharacterAssetImage(it, Modifier.fillMaxSize())
             }
             val equippedLook = CharacterArtwork.equippedLooks[accessoryId ?: outfitId]
-            if (motionEnabled && (friendId == "friend:mobi") && (equippedLook == null)) {
+            if (isAnimated && (friendId == "friend:mobi") && (equippedLook == null)) {
                 MobiIdleBreathAnimation(
                     modifier = Modifier.fillMaxSize(),
                     fallbackAsset = CharacterArtwork.preview(friendId, accessoryId ?: outfitId),
                 )
-            } else if (motionEnabled && (friendId == "friend:luna") && (equippedLook == null)) {
-                LunaIdleBreathAnimation(
-                    modifier = Modifier.fillMaxSize(),
-                    fallbackAsset = CharacterArtwork.preview(friendId, accessoryId ?: outfitId),
-                )
+            } else if (isAnimated && (friendId == "friend:luna") && (equippedLook == null)) {
+                if (runEnabled) {
+                    LunaRunAnimation(
+                        modifier = Modifier.fillMaxSize(),
+                        movingLeft = movingLeft,
+                        fallbackAsset = CharacterArtwork.preview(friendId, accessoryId ?: outfitId),
+                    )
+                } else {
+                    LunaIdleBreathAnimation(
+                        modifier = Modifier.fillMaxSize(),
+                        fallbackAsset = CharacterArtwork.preview(friendId, accessoryId ?: outfitId),
+                    )
+                }
             } else {
                 CharacterAssetImage(CharacterArtwork.preview(friendId, accessoryId ?: outfitId), Modifier.fillMaxSize())
             }
@@ -130,6 +176,64 @@ fun PetAvatar(
         drawCircle(ear, radius * 0.48f, center + Offset(radius * 0.85f, -radius * 0.4f))
         drawCircle(fur, radius, center)
         drawCircle(Color(0xFF51402C), radius * 0.1f, center + Offset(0f, radius * 0.25f))
+    }
+}
+
+@Composable
+fun LunaRunAnimation(
+    modifier: Modifier = Modifier,
+    movingLeft: Boolean = true,
+    contentDescription: String? = null,
+    fallbackAsset: CharacterAsset = CharacterArtwork.characters.getValue("friend:luna"),
+) {
+    if (!LocalMobiMonMotionEnabled.current) {
+        CharacterAssetImage(fallbackAsset, modifier, contentDescription)
+        return
+    }
+    val context = LocalContext.current
+    val frames = remember(context) { LunaRunAnimationCache.getOrLoadFrames(context) }
+
+    if (frames.isEmpty()) {
+        CharacterAssetImage(
+            asset = fallbackAsset,
+            modifier = modifier,
+            contentDescription = contentDescription,
+        )
+    } else {
+        var currentFrameIndex by remember(frames) { mutableIntStateOf(0) }
+        LaunchedEffect(frames) {
+            var previousTime = withInfiniteAnimationFrameNanos { it }
+            var elapsedNanos = 0L
+            while (isActive) {
+                val time = withInfiniteAnimationFrameNanos { it }
+                elapsedNanos += (time - previousTime).coerceAtMost(100_000_000L)
+                previousTime = time
+                var nextFrame = currentFrameIndex
+                while (elapsedNanos >= RUN_FRAME_DURATIONS_MS[nextFrame] * 1_000_000L) {
+                    elapsedNanos -= RUN_FRAME_DURATIONS_MS[nextFrame] * 1_000_000L
+                    nextFrame = (nextFrame + 1) % frames.size
+                }
+                currentFrameIndex = nextFrame
+            }
+        }
+        Box(
+            modifier =
+                modifier.graphicsLayer {
+                    val flip = if (movingLeft) 1f else -1f
+                    scaleX = fallbackAsset.visualScale * flip
+                    scaleY = fallbackAsset.visualScale
+                    translationX = size.width * fallbackAsset.translationXFraction * flip
+                    translationY = size.height * fallbackAsset.translationYFraction
+                },
+            contentAlignment = Alignment.Center,
+        ) {
+            Image(
+                bitmap = frames[currentFrameIndex],
+                contentDescription = contentDescription,
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.Fit,
+            )
+        }
     }
 }
 
@@ -150,10 +254,6 @@ private fun IdleBreathAnimation(
     contentDescription: String?,
     fallbackAsset: CharacterAsset,
 ) {
-    if (!LocalMobiMonMotionEnabled.current) {
-        CharacterAssetImage(fallbackAsset, modifier, contentDescription)
-        return
-    }
     val context = LocalContext.current
     val frames = remember(context, loadFrames) { loadFrames(context) }
 

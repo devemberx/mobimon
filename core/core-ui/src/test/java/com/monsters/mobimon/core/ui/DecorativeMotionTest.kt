@@ -36,7 +36,7 @@ class DecorativeMotionTest {
     private lateinit var view: View
 
     @Test
-    fun petAvatarsStopWhenMotionPreferenceChanges() {
+    fun petAvatarsKeepBreathingWithReducedMotion() {
         var motionEnabled by mutableStateOf(true)
         show {
             CompositionLocalProvider(LocalMobiMonMotionEnabled provides motionEnabled) {
@@ -49,34 +49,42 @@ class DecorativeMotionTest {
         val firstMobi = pixels("mobi")
         val firstLuna = pixels("luna")
         compose.mainClock.advanceTimeBy(320)
-        assertTrue("Mobi advances with decorative motion enabled", firstMobi != pixels("mobi"))
-        assertTrue("Luna advances with decorative motion enabled", firstLuna != pixels("luna"))
+        assertTrue("Mobi breathes with motion enabled", firstMobi != pixels("mobi"))
+        assertTrue("Luna breathes with motion enabled", firstLuna != pixels("luna"))
 
         updateStateAndDraw { motionEnabled = false }
-        val staticMobi = pixels("mobi")
-        val staticLuna = pixels("luna")
-        compose.mainClock.advanceTimeBy(480)
+        val reducedMobi = pixels("mobi")
+        val reducedLuna = pixels("luna")
+        compose.mainClock.advanceTimeBy(320)
 
-        assertTrue("Mobi remains static after the preference changes", staticMobi == pixels("mobi"))
-        assertTrue("Luna remains static after the preference changes", staticLuna == pixels("luna"))
+        assertTrue("Mobi keeps breathing with reduced motion", reducedMobi != pixels("mobi"))
+        assertTrue("Luna keeps breathing with reduced motion", reducedLuna != pixels("luna"))
     }
 
     @Test
-    fun directBreathingRenderersHonorDisabledMotion() {
+    fun movingLunaBreathesInPlaceWithReducedMotion() {
         show {
             CompositionLocalProvider(LocalMobiMonMotionEnabled provides false) {
                 Row {
-                    MobiIdleBreathAnimation(Modifier.size(180.dp).testTag("mobi"))
-                    LunaIdleBreathAnimation(Modifier.size(180.dp).testTag("luna"))
+                    PetAvatar(Modifier.size(180.dp).testTag("moving"), friendId = "friend:luna", isMoving = true)
+                    PetAvatar(Modifier.size(180.dp).testTag("idle"), friendId = "friend:luna")
+                    CompositionLocalProvider(LocalMobiMonMotionEnabled provides true) {
+                        PetAvatar(Modifier.size(180.dp).testTag("running"), friendId = "friend:luna", isMoving = true)
+                    }
                 }
             }
         }
-        val mobi = pixels("mobi")
-        val luna = pixels("luna")
-        compose.mainClock.advanceTimeBy(480)
+        val first = pixels("moving")
+        compose.mainClock.advanceTimeBy(320)
+        val moving = pixels("moving")
+        val idle = pixels("idle")
+        val running = pixels("running")
 
-        assertTrue("Direct Mobi renderer obeys the preference", mobi == pixels("mobi"))
-        assertTrue("Direct Luna renderer obeys the preference", luna == pixels("luna"))
+        assertTrue("Reduced motion still breathes", first != moving)
+        // Neighbouring cells rasterize slightly differently, so compare against the run cycle's distance.
+        val idleDistance = moving.indices.count { moving[it] != idle[it] }
+        val runDistance = moving.indices.count { moving[it] != running[it] }
+        assertTrue("Reduced motion swaps running for the idle breath", idleDistance * 4 < runDistance)
     }
 
     @Test

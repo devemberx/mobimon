@@ -119,6 +119,15 @@ class PetAvatarTest {
     }
 
     @Test
+    fun lunaRunAnimationCacheLoadsTwentyFourFramesFromAssets() {
+        val context =
+            androidx.test.core.app.ApplicationProvider
+                .getApplicationContext<android.content.Context>()
+        val frames = LunaRunAnimationCache.getOrLoadFrames(context)
+        assertEquals(24, frames.size)
+    }
+
+    @Test
     fun itemIconsCropBoundsMatchItemSpans() {
         val headphonesCrop = CharacterArtwork.itemIcons.getValue("accessory:mobi_headphones").crop
         assertNotNull(headphonesCrop)

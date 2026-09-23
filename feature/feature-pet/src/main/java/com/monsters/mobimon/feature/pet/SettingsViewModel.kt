@@ -20,7 +20,11 @@ data class SettingsUiState(
     val reducedMotionSaveFailed: Boolean = false,
     val debugModeSaving: Boolean = false,
     val debugModeSaveFailed: Boolean = false,
+    val launcherSaving: Boolean = false,
+    val launcherSaveFailed: Boolean = false,
 )
+
+private enum class PreferenceKey { MOTION, DEBUG, LAUNCHER }
 
 /** Each preference saves independently and renders only committed repository values. */
 class SettingsViewModel(
@@ -51,41 +55,64 @@ class SettingsViewModel(
             }
     }
 
-    fun setReducedMotion(enabled: Boolean) = save(motion = true) { preferences.setReducedMotion(enabled) }
+    fun setReducedMotion(enabled: Boolean) = save(PreferenceKey.MOTION) { preferences.setReducedMotion(enabled) }
 
-    fun setDebugMode(enabled: Boolean) = save(motion = false) { preferences.setDebugModeEnabled(enabled) }
+    fun setDebugMode(enabled: Boolean) = save(PreferenceKey.DEBUG) { preferences.setDebugModeEnabled(enabled) }
+
+    fun setLauncherCharacter(enabled: Boolean) =
+        save(PreferenceKey.LAUNCHER) {
+            preferences.setLauncherCharacterEnabled(enabled)
+        }
 
     private fun save(
-        motion: Boolean,
+        key: PreferenceKey,
         write: suspend () -> WriteResult,
     ) {
         val current = state.value
         if (!current.loaded || current.loadFailed) return
-        if (if (motion) current.reducedMotionSaving else current.debugModeSaving) return
-        updateSave(motion, saving = true, failed = false)
+        val isSaving =
+            when (key) {
+                PreferenceKey.MOTION -> current.reducedMotionSaving
+                PreferenceKey.DEBUG -> current.debugModeSaving
+                PreferenceKey.LAUNCHER -> current.launcherSaving
+            }
+        if (isSaving) return
+        updateSave(key, saving = true, failed = false)
         viewModelScope.launch {
             try {
-                updateSave(motion, saving = true, failed = write() == WriteResult.Failure)
+                updateSave(key, saving = true, failed = write() == WriteResult.Failure)
             } catch (cancelled: CancellationException) {
                 throw cancelled
             } catch (_: Exception) {
-                updateSave(motion, saving = true, failed = true)
+                updateSave(key, saving = true, failed = true)
             } finally {
-                updateSave(motion, saving = false)
+                updateSave(key, saving = false)
             }
         }
     }
 
     private fun updateSave(
-        motion: Boolean,
+        key: PreferenceKey,
         saving: Boolean,
         failed: Boolean? = null,
     ) {
         mutableState.update {
-            if (motion) {
-                it.copy(reducedMotionSaving = saving, reducedMotionSaveFailed = failed ?: it.reducedMotionSaveFailed)
-            } else {
-                it.copy(debugModeSaving = saving, debugModeSaveFailed = failed ?: it.debugModeSaveFailed)
+            when (key) {
+                PreferenceKey.MOTION ->
+                    it.copy(
+                        reducedMotionSaving = saving,
+                        reducedMotionSaveFailed = failed ?: it.reducedMotionSaveFailed,
+                    )
+                PreferenceKey.DEBUG ->
+                    it.copy(
+                        debugModeSaving = saving,
+                        debugModeSaveFailed = failed ?: it.debugModeSaveFailed,
+                    )
+                PreferenceKey.LAUNCHER ->
+                    it.copy(
+                        launcherSaving = saving,
+                        launcherSaveFailed = failed ?: it.launcherSaveFailed,
+                    )
             }
         }
     }

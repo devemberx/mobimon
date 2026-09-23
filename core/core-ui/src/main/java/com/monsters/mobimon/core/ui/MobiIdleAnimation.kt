@@ -154,10 +154,6 @@ fun MobiIdleBreathAnimation(
     contentDescription: String? = null,
     fallbackAsset: CharacterAsset = CharacterArtwork.characters.getValue("friend:mobi"),
 ) {
-    if (!LocalMobiMonMotionEnabled.current) {
-        CharacterAssetImage(fallbackAsset, modifier, contentDescription)
-        return
-    }
     val context = LocalContext.current.applicationContext
     val sprite by produceState<ImageBitmap?>(initialValue = MobiSpriteCache.peek(), context) {
         value = withContext(Dispatchers.IO) { MobiSpriteCache.getOrLoad(context) }
