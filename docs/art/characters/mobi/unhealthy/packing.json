@@ -7,7 +7,6 @@
   "padding": 76,
   "resampled": false,
   "transition": {
-    "lockedPoses": null,
     "sourceBounds": [
       [
         0,
@@ -159,24 +158,6 @@
     "alignment": null
   },
   "idle": {
-    "lockedPoses": {
-      "canonicalFrame": 0,
-      "eyeRegions": [
-        [
-          190,
-          213,
-          207,
-          226
-        ],
-        [
-          235,
-          242,
-          252,
-          257
-        ]
-      ],
-      "unchangedOutsideEyes": true
-    },
     "sourceBounds": [
       [
         0,

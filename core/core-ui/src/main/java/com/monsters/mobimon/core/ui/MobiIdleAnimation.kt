@@ -198,6 +198,7 @@ internal fun Modifier.mobiSpriteFrames(
     columns: Int,
     rows: Int,
     loop: Boolean = true,
+    blendFrames: Boolean = true,
     position: () -> Float,
 ): Modifier =
     drawWithCache {
@@ -210,7 +211,7 @@ internal fun Modifier.mobiSpriteFrames(
         onDrawBehind {
             val value = position().coerceIn(0f, count.toFloat())
             val frame = value.toInt().coerceAtMost(count - 1)
-            val blend = (value - frame).coerceIn(0f, 1f)
+            val blend = if (blendFrames) (value - frame).coerceIn(0f, 1f) else 0f
             drawImage(
                 sheet,
                 sources[frame],

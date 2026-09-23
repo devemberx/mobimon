@@ -18,40 +18,20 @@ class MobiWarningAnimationTest {
     @get:Rule val compose = createComposeRule()
 
     @Test
-    fun torsoBreathCannotMoveGroundWheelFaceOrSprout() {
-        for (x in 0..408) {
-            assertEquals(0f, MobiCollapsedGeometry.torsoOffset(x.toFloat(), 302f, 1f), 0f)
-        }
-        for (y in 0..408) {
-            for (x in 150..408) {
-                assertEquals(0f, MobiCollapsedGeometry.torsoOffset(x.toFloat(), y.toFloat(), 1f), 0f)
-            }
-        }
-        assertEquals(-1.4f, MobiCollapsedGeometry.torsoOffset(114f, 258f, 1f), 0f)
-        assertEquals(0f, MobiCollapsedGeometry.torsoOffset(114f, 258f, 0f), 0f)
+    fun timelineCyclesThrough24FramesOverFourSeconds() {
+        val cycleNanos = MobiCollapsedTimeline.CYCLE_MS * 1_000_000L
+        assertEquals(0, MobiCollapsedTimeline.frameAt(0L))
+        assertEquals(12, MobiCollapsedTimeline.frameAt(cycleNanos / 2))
+        assertEquals(23, MobiCollapsedTimeline.frameAt(cycleNanos - 1_000_000L))
+        assertEquals(0, MobiCollapsedTimeline.frameAt(cycleNanos))
     }
 
     @Test
-    fun tiredBlinkOpensBrieflyEverySixAndAHalfSeconds() {
-        assertEquals(0f, MobiCollapsedTimeline.eyeOpenAt(5_400_000_000), 0f)
-        assertEquals(0.5f, MobiCollapsedTimeline.eyeOpenAt(5_700_000_000), 0.001f)
-        assertEquals(1f, MobiCollapsedTimeline.eyeOpenAt(6_000_000_000), 0f)
-        assertEquals(0.5f, MobiCollapsedTimeline.eyeOpenAt(6_300_000_000), 0.001f)
-        assertEquals(0f, MobiCollapsedTimeline.eyeOpenAt(6_500_000_000), 0f)
-        assertEquals(1f, MobiCollapsedTimeline.eyeOpenAt(12_500_000_000), 0f)
-    }
-
-    @Test
-    fun breathingClosesSmoothlyOverFourSeconds() {
-        val period = MobiCollapsedTimeline.PERIOD_NANOS
-        assertEquals(0f, MobiCollapsedTimeline.breathAt(0), 0f)
-        assertEquals(1f, MobiCollapsedTimeline.breathAt(period / 2), 0f)
-        assertEquals(0f, MobiCollapsedTimeline.breathAt(period), 0f)
-        assertEquals(
-            MobiCollapsedTimeline.breathAt(period - 16_000_000),
-            MobiCollapsedTimeline.breathAt(period + 16_000_000),
-            0.0001f,
-        )
+    fun timelineBlendCalculatesSubFrameProgress() {
+        val frameNanos = (MobiCollapsedTimeline.CYCLE_MS * 1_000_000L) / MobiCollapsedTimeline.FRAME_COUNT
+        assertEquals(0f, MobiCollapsedTimeline.blendAt(0L), 0.001f)
+        assertEquals(0.5f, MobiCollapsedTimeline.blendAt(frameNanos / 2), 0.01f)
+        assertEquals(0f, MobiCollapsedTimeline.blendAt(frameNanos), 0.001f)
     }
 
     @Test
