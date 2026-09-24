@@ -19,6 +19,7 @@ import androidx.compose.ui.test.assertIsNotSelected
 import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.getUnclippedBoundsInRoot
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -43,6 +44,65 @@ import java.io.File
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 class StoreReferenceScreenTest {
     @get:Rule val compose = createComposeRule()
+
+    @Test fun firstInventoryLoadKeepsReferenceFrameThroughFailureAndRecovery() {
+        var inventory by mutableStateOf<CosmeticInventory?>(null)
+        var failed by mutableStateOf(false)
+        var retries = 0
+        var backs = 0
+        lateinit var view: View
+        val catalog = listOf(CosmeticItem("friend:mobi", CosmeticSlot.FRIEND, 0))
+        compose.setContent {
+            val currentView = LocalView.current
+            SideEffect { view = currentView }
+            MobiMonTheme {
+                CustomizationScreen(
+                    inventory = inventory,
+                    catalog = catalog,
+                    selectedItemId = null,
+                    purchasing = false,
+                    purchaseFailed = false,
+                    onSelectItem = {},
+                    onPurchaseItem = { _, _ -> },
+                    onEquipItem = {},
+                    onEquipFriend = {},
+                    pointBalance = 1200,
+                    pointLoadFailed = false,
+                    loadFailed = failed,
+                    onRetry = {
+                        retries++
+                        failed = false
+                    },
+                    onBack = { backs++ },
+                )
+            }
+        }
+
+        val initialFrame = compose.onNodeWithTag("store-reference").getUnclippedBoundsInRoot()
+        val initialHeader = compose.onNodeWithText("꾸미기").getUnclippedBoundsInRoot()
+        val initialPreview = compose.onNodeWithTag("store-preview-panel").getUnclippedBoundsInRoot()
+        compose.onNodeWithText("소유한 아이템을 확인하고 있어요.").assertIsDisplayed()
+        compose.onNodeWithTag("shop-items").assertDoesNotExist()
+        compose.onNodeWithContentDescription("뒤로").performClick()
+        assertEquals(1, backs)
+        capture(view, "inventory-loading")
+
+        compose.runOnIdle { failed = true }
+        compose.onNodeWithText("소유한 아이템을 확인할 수 없어요.").assertIsDisplayed()
+        compose.onNodeWithText("다시 시도").assertIsDisplayed().performClick()
+        assertEquals(1, retries)
+        compose.onNodeWithText("소유한 아이템을 확인하고 있어요.").assertIsDisplayed()
+        assertEquals(initialPreview, compose.onNodeWithTag("store-preview-panel").getUnclippedBoundsInRoot())
+
+        compose.runOnIdle {
+            inventory = CosmeticInventory(setOf("friend:mobi"), mapOf(CosmeticSlot.FRIEND to "friend:mobi"))
+        }
+        assertEquals(initialFrame, compose.onNodeWithTag("store-reference").getUnclippedBoundsInRoot())
+        assertEquals(initialHeader, compose.onNodeWithText("꾸미기").getUnclippedBoundsInRoot())
+        assertEquals(initialPreview, compose.onNodeWithTag("store-preview-panel").getUnclippedBoundsInRoot())
+        compose.onNodeWithTag("shop-items").assertExists()
+        compose.onNodeWithText("소유한 아이템을 확인하고 있어요.").assertDoesNotExist()
+    }
 
     @Test fun categoriesSelectIndependentlyAndPreviewOnlyAppliesOnConfirmation() {
         var applied: String? = null
