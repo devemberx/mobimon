@@ -43,6 +43,7 @@ import androidx.compose.ui.semantics.paneTitle
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.monsters.mobimon.core.domain.DrivingState
@@ -107,9 +108,11 @@ fun VehicleInfoScreen(
                                 .verticalScroll(rememberScrollState()),
                         verticalArrangement = Arrangement.spacedBy(28.dp * scale),
                     ) {
+                        val metricsPanelHeight =
+                            (contentHeight - 314.dp * scale - VehicleBottomClearance).coerceAtLeast(VehiclePanelHeight)
                         VehicleStatusBanner(snapshot, mood, friendId)
                         Row(
-                            modifier = Modifier.fillMaxWidth(),
+                            modifier = Modifier.fillMaxWidth().height(metricsPanelHeight),
                             horizontalArrangement = Arrangement.spacedBy(28.dp * scale),
                             verticalAlignment = Alignment.Top,
                         ) {
@@ -119,13 +122,15 @@ fun VehicleInfoScreen(
                                 accessoryId = accessoryId,
                                 outfitId = outfitId,
                                 backgroundId = backgroundId,
-                                modifier = Modifier.weight(0.34f),
+                                modifier = Modifier.weight(0.34f).fillMaxHeight(),
+                                panelHeight = metricsPanelHeight,
                             )
                             VehicleCardGrid(
                                 snapshot = snapshot,
                                 readings = readings,
                                 parkingScale = scale,
                                 modifier = Modifier.weight(1f),
+                                targetHeight = metricsPanelHeight,
                             )
                         }
                         if (snapshot.warnings.isNotEmpty()) WarningList(snapshot.warnings)
@@ -175,7 +180,7 @@ fun VehicleInfoScreen(
                             VehicleCardGrid(
                                 snapshot = snapshot,
                                 readings = readings,
-                                parkingScale = scale,
+                                parkingScale = compactScale,
                                 modifier = Modifier.weight(1f),
                             )
                         }
@@ -191,7 +196,7 @@ fun VehicleInfoScreen(
                         VehicleCardGrid(
                             snapshot = snapshot,
                             readings = readings,
-                            parkingScale = scale,
+                            parkingScale = compactScale,
                             modifier = Modifier.fillMaxWidth(),
                         )
                     }
@@ -338,11 +343,12 @@ private fun CompanionStatusPanel(
     outfitId: String?,
     backgroundId: String?,
     modifier: Modifier = Modifier,
+    panelHeight: Dp = VehiclePanelHeight,
 ) {
     StatusSurface(
         background = VehiclePanelBackground,
         border = VehicleBorder,
-        modifier = modifier.height(VehiclePanelHeight),
+        modifier = modifier.height(panelHeight),
         contentPadding = PaddingValues(horizontal = 28.dp, vertical = 32.dp),
         corner = 24.dp,
     ) {
@@ -381,8 +387,10 @@ private fun VehicleCardGrid(
     readings: VehicleInfoUiState,
     modifier: Modifier = Modifier,
     parkingScale: Float = 1f,
+    targetHeight: Dp? = null,
 ) {
-    val minimumCardWidth = 360.dp * LocalDensity.current.fontScale.coerceAtLeast(1f)
+    val fontScale = LocalDensity.current.fontScale
+    val minimumCardWidth = 360.dp * fontScale.coerceAtLeast(1f)
     val cards =
         listOf<@Composable (Modifier) -> Unit>(
             { BatteryCard(snapshot, readings.batteryPercent, it) },
@@ -402,9 +410,23 @@ private fun VehicleCardGrid(
         Column(
             verticalArrangement = Arrangement.spacedBy(24.dp),
         ) {
-            cards.chunked(columns).forEach { row ->
+            val rows = cards.chunked(columns)
+            val rowHeight =
+                targetHeight?.let {
+                    ((it - 24.dp * (rows.size - 1)) / rows.size).coerceAtLeast(VehicleCardHeight)
+                } ?: VehicleCardHeight.takeIf { columns > 1 && fontScale <= 1.2f }
+            rows.forEach { row ->
                 Row(
-                    modifier = Modifier.fillMaxWidth().height(IntrinsicSize.Min),
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .then(
+                                if (rowHeight != null) {
+                                    Modifier.height(rowHeight)
+                                } else {
+                                    Modifier.height(IntrinsicSize.Min)
+                                },
+                            ),
                     horizontalArrangement = Arrangement.spacedBy(24.dp),
                 ) {
                     row.forEach { card -> card(Modifier.weight(1f).fillMaxHeight()) }
@@ -428,6 +450,7 @@ private fun BatteryCard(
         value = battery?.let { "$it%" } ?: stringResource(R.string.vehicle_unknown_short),
         supporting = battery?.let { stringResource(R.string.vehicle_battery, it) } ?: statusText,
         modifier = modifier,
+        testTag = "vehicle-card-battery",
         badge = if (battery != null) batteryBadgeText(battery) else null,
         badgeTone = if (warning) VehicleTone.WARNING else VehicleTone.SUCCESS,
     ) {
@@ -462,6 +485,7 @@ private fun DrivingCard(
     MetricCard(
         title = stringResource(R.string.vehicle_driving_card_title),
         value = drivingText,
+        testTag = "vehicle-card-driving",
         valueContent = {
             MobiMonParkingBadge(
                 status = drivingText,
@@ -508,6 +532,7 @@ private fun TireCard(
                 if (readings.tireStatus == null) R.string.vehicle_tire_unavailable else R.string.vehicle_tire_checked,
             ),
         modifier = modifier,
+        testTag = "vehicle-card-tire",
         badge =
             when {
                 warning != null -> stringResource(R.string.vehicle_warning_caution)
@@ -535,6 +560,7 @@ private fun EnvironmentCard(
         value = temperature ?: stringResource(R.string.vehicle_unknown_short),
         supporting = rainText,
         modifier = modifier,
+        testTag = "vehicle-card-environment",
     )
 }
 
@@ -565,6 +591,7 @@ private fun DriverAssistCard(
         value = readings.attentionLevel?.let { "$it" } ?: stringResource(R.string.vehicle_unknown_short),
         supporting = issue,
         modifier = modifier,
+        testTag = "vehicle-card-assist",
         badge =
             when {
                 readings.assistWarning != null -> stringResource(R.string.vehicle_attention_needed)
@@ -602,6 +629,7 @@ private fun ConnectionCard(
                 stringResource(R.string.vehicle_source_real)
             },
         modifier = modifier,
+        testTag = "vehicle-card-connection",
         badge =
             if (snapshot.source == SignalSource.SIMULATED) {
                 stringResource(R.string.vehicle_source_simulated_badge)
@@ -675,6 +703,7 @@ private fun MetricCard(
     value: String,
     supporting: String,
     modifier: Modifier = Modifier,
+    testTag: String? = null,
     badge: String? = null,
     badgeTone: VehicleTone = VehicleTone.NEUTRAL,
     valueContent: (@Composable () -> Unit)? = null,
@@ -683,7 +712,10 @@ private fun MetricCard(
     StatusSurface(
         background = VehiclePanelBackground,
         border = VehicleBorder,
-        modifier = modifier.heightIn(min = VehicleCardHeight),
+        modifier =
+            modifier
+                .heightIn(min = VehicleCardHeight)
+                .then(if (testTag != null) Modifier.testTag(testTag) else Modifier),
         contentPadding = PaddingValues(24.dp),
         corner = 24.dp,
     ) {
@@ -948,6 +980,7 @@ private val VehicleBorder = Color(0xFF2A4968)
 private val VehicleBorderWidth = 2.dp
 private val VehicleCardHeight = 260.dp
 private val VehiclePanelHeight = 544.dp
+private val VehicleBottomClearance = 64.dp
 
 @Composable
 private fun lastCheckedText(ageMillis: Long): String {
