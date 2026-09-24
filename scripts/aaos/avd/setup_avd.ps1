@@ -1,6 +1,6 @@
 $baseDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 if (-not $baseDir) { $baseDir = (Get-Location).Path }
-$projectDir = (Resolve-Path (Join-Path $baseDir "../..")).Path
+$projectDir = (Resolve-Path (Join-Path $baseDir "../../..")).Path
 
 # Find the supplied CSTDe bundle beside the repository or this script.
 $settingDir = $null
