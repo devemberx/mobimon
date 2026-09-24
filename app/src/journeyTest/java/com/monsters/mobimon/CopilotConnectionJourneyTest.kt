@@ -17,6 +17,9 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.performTextInput
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
 import androidx.test.core.app.ActivityScenario
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
@@ -84,13 +87,43 @@ class CopilotConnectionJourneyTest {
         ActivityScenario.launch(MainActivity::class.java).use {
             waitFor(hasText(text(PetR.string.pet_talk_action)) and isEnabled())
             compose.onNodeWithText(text(PetR.string.pet_talk_action)).ensureDisplayed().performClick()
-            waitFor(hasText(text(AuthR.string.chat_provider_note)))
+            waitFor(hasTestTag("chat-input"))
             compose.onNodeWithTag("chat-input").assertIsEnabled()
             vehicle.publish(DrivingState.UNKNOWN, SignalQuality.UNAVAILABLE)
             waitFor(hasTestTag("chat-input") and !isEnabled())
             compose.onNodeWithTag("chat-input").assertIsNotEnabled()
             compose.onNodeWithContentDescription(text(AuthR.string.copilot_back)).ensureDisplayed().performClick()
             waitFor(hasContentDescription(text(PetR.string.pet_open_menu)))
+        }
+    }
+
+    @Test
+    fun conversationSendsDirectlyAndKeepsRepliesAcrossRecreationUntilNewConversation() {
+        authentication.approve()
+        ActivityScenario.launch(MainActivity::class.java).use { scenario ->
+            waitFor(hasText(text(PetR.string.pet_talk_action)) and isEnabled())
+            compose.onNodeWithText(text(PetR.string.pet_talk_action)).ensureDisplayed().performClick()
+            waitFor(hasTestTag("chat-input"))
+            compose.onNodeWithTag("chat-input").performTextInput("오늘도 반가워")
+            waitFor(hasTestTag("chat-send") and isEnabled())
+            compose.onNodeWithTag("chat-send").performClick()
+            waitFor(hasText("이야기를 들려줘서 고마워요."))
+            compose.onNodeWithText("오늘도 반가워").assertExists()
+            scenario.recreate()
+            waitFor(hasText("이야기를 들려줘서 고마워요."))
+            var keyboardVisible = false
+            scenario.onActivity { activity ->
+                keyboardVisible = ViewCompat
+                    .getRootWindowInsets(activity.window.decorView)
+                    ?.isVisible(WindowInsetsCompat.Type.ime()) == true
+            }
+            if (keyboardVisible) {
+                compose.onNodeWithContentDescription(text(AuthR.string.copilot_back)).ensureDisplayed().performClick()
+            }
+            waitFor(hasText(text(AuthR.string.chat_new)))
+            compose.onNodeWithText(text(AuthR.string.chat_new)).ensureDisplayed().performClick()
+            compose.onNodeWithText("이야기를 들려줘서 고마워요.").assertDoesNotExist()
+            compose.onNodeWithTag("chat-send").assertIsNotEnabled()
         }
     }
 
@@ -143,7 +176,7 @@ class CopilotConnectionJourneyTest {
                 .onNode(hasText(text(R.string.drawer_menu_chat)) and hasAnyAncestor(hasTestTag("companion-menu")))
                 .ensureDisplayed()
                 .performClick()
-            waitFor(hasText(text(AuthR.string.chat_provider_note)))
+            waitFor(hasTestTag("chat-input"))
             compose.onNodeWithTag("chat-input").assertIsEnabled()
             compose.onNodeWithTag("chat-send").assertIsNotEnabled()
         }

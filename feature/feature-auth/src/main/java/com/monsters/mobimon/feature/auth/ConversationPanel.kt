@@ -64,6 +64,7 @@ import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.monsters.mobimon.core.domain.ConversationLimits
 import com.monsters.mobimon.core.ui.mobiMonReferenceTextStyle
 import com.monsters.mobimon.core.ui.MobiMonColors as Colors
 
@@ -81,6 +82,7 @@ internal fun ConversationPanel(
     scale: Float,
     wide: Boolean,
     modifier: Modifier = Modifier,
+    onNewConversation: (() -> Unit)? = null,
 ) {
     val focusRequester = remember { FocusRequester() }
     val keyboard = LocalSoftwareKeyboardController.current
@@ -149,7 +151,20 @@ internal fun ConversationPanel(
                     } else {
                         listOf(R.string.chat_suggestion_followup)
                     }
-                if (state.messages.isNotEmpty() && wide) Spacer(Modifier.weight(1f))
+                if (state.messages.isNotEmpty()) {
+                    if (onNewConversation != null) {
+                        ConversationAction(
+                            stringResource(R.string.chat_new),
+                            onNewConversation,
+                            allowed,
+                            scale,
+                            Modifier.weight(1f),
+                            referenceGeometry = wide,
+                        )
+                    } else if (wide) {
+                        Spacer(Modifier.weight(1f))
+                    }
+                }
                 suggestions.forEach { resource ->
                     val text = stringResource(resource)
                     ConversationAction(
@@ -176,30 +191,29 @@ internal fun ConversationPanel(
             wide,
             focusRequester,
         )
+        if (draft.text.length > ConversationLimits.INPUT_CHARACTERS) {
+            Text(
+                stringResource(R.string.chat_input_limit),
+                Modifier.semantics { liveRegion = LiveRegionMode.Polite },
+                style = mobiMonReferenceTextStyle(24f, scale),
+                color = Colors.muted,
+            )
+        }
         if (!shortened) {
-            if (state.connection == ConversationConnection.READY) {
-                Text(
-                    stringResource(R.string.chat_disclaimer),
-                    Modifier.padding(top = 12.dp * scale),
-                    style = mobiMonReferenceTextStyle(24f, scale).copy(lineHeight = (32f * scale).sp),
-                    color = Colors.muted,
-                )
-            } else {
-                Text(
-                    stringResource(
-                        if (state.connection ==
-                            ConversationConnection.SIGNED_OUT
-                        ) {
-                            R.string.chat_sign_in_note
-                        } else {
-                            R.string.chat_provider_note
-                        },
-                    ),
-                    Modifier.padding(top = 12.dp * scale),
-                    style = mobiMonReferenceTextStyle(24f, scale).copy(lineHeight = (32f * scale).sp),
-                    color = Colors.muted,
-                )
-            }
+            Text(
+                stringResource(
+                    if (state.connection ==
+                        ConversationConnection.SIGNED_OUT
+                    ) {
+                        R.string.chat_sign_in_note
+                    } else {
+                        R.string.chat_disclaimer
+                    },
+                ),
+                Modifier.padding(top = 12.dp * scale),
+                style = mobiMonReferenceTextStyle(24f, scale).copy(lineHeight = (32f * scale).sp),
+                color = Colors.muted,
+            )
         }
         if (state.connection == ConversationConnection.SIGNED_OUT && !shortened) {
             ConversationAction(
@@ -367,8 +381,9 @@ private fun ConversationComposer(
 ) {
     val canSend =
         allowed &&
-            state.connection == ConversationConnection.READY &&
+            state.connection != ConversationConnection.SIGNED_OUT &&
             !state.replyPending &&
+            draft.text.length <= ConversationLimits.INPUT_CHARACTERS &&
             draft.text.isNotBlank()
     val submit = {
         if (canSend) {

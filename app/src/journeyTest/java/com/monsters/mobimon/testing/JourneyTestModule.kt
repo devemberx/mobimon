@@ -8,6 +8,9 @@ import androidx.room.Room
 import com.monsters.mobimon.core.database.AppDatabase
 import com.monsters.mobimon.core.domain.AppUseState
 import com.monsters.mobimon.core.domain.Clock
+import com.monsters.mobimon.core.domain.ConversationProvider
+import com.monsters.mobimon.core.domain.ConversationResult
+import com.monsters.mobimon.core.domain.ConversationTurn
 import com.monsters.mobimon.core.domain.DrivingState
 import com.monsters.mobimon.core.domain.GitHubAccount
 import com.monsters.mobimon.core.domain.GitHubAuthentication
@@ -53,6 +56,19 @@ object JourneyTestModule {
     @Provides
     @Singleton
     fun authentication(authentication: JourneyAuthentication): GitHubAuthentication = authentication
+
+    @Provides
+    fun conversation(): ConversationProvider =
+        object : ConversationProvider {
+            override suspend fun connect(accountId: Long) = ConversationResult.Success("journey-model")
+
+            override suspend fun reply(
+                accountId: Long,
+                conversationId: String,
+                friendId: String,
+                messages: List<ConversationTurn>,
+            ) = ConversationResult.Success("이야기를 들려줘서 고마워요.")
+        }
 
     @Provides
     fun clock(): Clock = Clock { 10_000L }

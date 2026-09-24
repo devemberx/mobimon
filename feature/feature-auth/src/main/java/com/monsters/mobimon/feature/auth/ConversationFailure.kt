@@ -35,6 +35,7 @@ import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
+import com.monsters.mobimon.core.domain.ConversationProblem
 import com.monsters.mobimon.core.ui.MobiMonReferenceText
 import com.monsters.mobimon.core.ui.mobiMonReferenceTextStyle
 import com.monsters.mobimon.core.ui.MobiMonColors as Colors
@@ -46,7 +47,28 @@ internal fun ConversationFailure(
     allowed: Boolean,
     scale: Float,
     modifier: Modifier = Modifier,
+    problem: ConversationProblem? = null,
 ) {
+    val note =
+        when (problem) {
+            ConversationProblem.NETWORK -> R.string.chat_network_error
+            ConversationProblem.SERVICE -> R.string.chat_service_error
+            ConversationProblem.AUTO_UNAVAILABLE -> R.string.chat_auto_error
+            ConversationProblem.TIMEOUT -> R.string.chat_timeout_error
+            ConversationProblem.ACCESS -> R.string.chat_access_error
+            ConversationProblem.ACCOUNT -> R.string.chat_account_error
+            ConversationProblem.USAGE -> R.string.chat_usage_error
+            ConversationProblem.PROVIDER -> R.string.chat_provider_error
+            ConversationProblem.RESTRICTED -> R.string.chat_restricted_error
+            ConversationProblem.LIMIT -> R.string.chat_limit_error
+            null -> R.string.chat_failure_note
+        }
+    val retryLabel =
+        when (problem) {
+            ConversationProblem.ACCOUNT -> R.string.conversation_connect
+            ConversationProblem.LIMIT -> R.string.chat_new
+            else -> R.string.chat_retry
+        }
     BoxWithConstraints(modifier.fillMaxSize().semantics { liveRegion = LiveRegionMode.Polite }) {
         if (maxWidth >= 1200.dp && maxHeight >= 900.dp * scale && LocalDensity.current.fontScale <= 1.1f) {
             Box(
@@ -72,7 +94,7 @@ internal fun ConversationFailure(
                     modifier = Modifier.semantics { heading() },
                 )
                 MobiMonReferenceText(
-                    stringResource(R.string.chat_failure_note),
+                    stringResource(note),
                     96f,
                     426f,
                     36f,
@@ -94,7 +116,7 @@ internal fun ConversationFailure(
                     )
                 }
                 CopilotButton(
-                    stringResource(R.string.chat_retry),
+                    stringResource(retryLabel),
                     onRetry,
                     scale,
                     Modifier.offset(96.dp * scale, 756.dp * scale).width(960.dp * scale),
@@ -143,7 +165,7 @@ internal fun ConversationFailure(
                     color = Colors.text,
                 )
                 Text(
-                    stringResource(R.string.chat_failure_note),
+                    stringResource(note),
                     style = mobiMonReferenceTextStyle(34f, scale),
                     color = Colors.muted,
                 )
@@ -153,7 +175,7 @@ internal fun ConversationFailure(
                     color = Colors.muted,
                 )
                 ConversationAction(
-                    stringResource(R.string.chat_retry),
+                    stringResource(retryLabel),
                     onRetry,
                     allowed,
                     scale,

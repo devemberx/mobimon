@@ -3,6 +3,7 @@ package com.monsters.mobimon.core.auth
 import android.content.Context
 import android.os.SystemClock
 import com.monsters.mobimon.core.domain.AuthenticationProblem
+import com.monsters.mobimon.core.domain.ConversationProvider
 import com.monsters.mobimon.core.domain.GitHubAuthentication
 import com.monsters.mobimon.core.domain.GitHubSession
 import com.monsters.mobimon.core.domain.GitHubSignIn
@@ -18,6 +19,7 @@ import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withTimeoutOrNull
 import okhttp3.OkHttpClient
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicLong
 
 class PersistentGitHubAuthentication internal constructor(
     private val clientId: String,
@@ -28,12 +30,15 @@ class PersistentGitHubAuthentication internal constructor(
     private val interactionAllowed: () -> Boolean,
 ) : GitHubAuthentication {
     private val mutex = Mutex()
+    private val credentialRevision = AtomicLong()
+    private var validatedAccessToken: String? = null
     private val mutableSession = MutableStateFlow<GitHubSession>(GitHubSession.Restoring)
     override val session = mutableSession.asStateFlow()
     override val configured = clientId.isNotBlank()
 
     override suspend fun restore() =
         mutex.withLock {
+            invalidateCredential()
             if (!configured) {
                 mutableSession.value = GitHubSession.SignedOut
                 return@withLock
@@ -67,6 +72,7 @@ class PersistentGitHubAuthentication internal constructor(
                         }
                     }
                 currentCoroutineContext().ensureActive()
+                validatedAccessToken = tokens.accessToken
                 mutableSession.value = GitHubSession.Authenticated(account)
             } catch (error: AuthenticationException) {
                 if (error.problem == AuthenticationProblem.REAUTHENTICATION) {
@@ -123,10 +129,12 @@ class PersistentGitHubAuthentication internal constructor(
                                     if (elapsedMillis() >= deadline) break
                                     currentCoroutineContext().ensureActive()
                                     emit(GitHubSignIn.Requesting)
+                                    invalidateCredential()
                                     storage { store.write(StoredCredential(clientId, result.tokens)) }
                                     val account = api.account(result.tokens.accessToken)
                                     requireInteraction()
                                     currentCoroutineContext().ensureActive()
+                                    validatedAccessToken = result.tokens.accessToken
                                     mutableSession.value = GitHubSession.Authenticated(account)
                                     emit(GitHubSignIn.Complete)
                                     return@withLock
@@ -150,6 +158,7 @@ class PersistentGitHubAuthentication internal constructor(
 
     override suspend fun disconnect() =
         mutex.withLock {
+            invalidateCredential()
             try {
                 storage { store.clear() }
                 mutableSession.value = GitHubSession.SignedOut
@@ -158,7 +167,62 @@ class PersistentGitHubAuthentication internal constructor(
             }
         }
 
+    fun conversationProvider(): ConversationProvider = CopilotConversationProvider.create(this, interactionAllowed)
+
+    internal suspend fun conversationCredential(accountId: Long): ConversationCredential =
+        mutex.withLock {
+            requireInteraction()
+            if ((session.value as? GitHubSession.Authenticated)?.account?.id != accountId) {
+                throw AuthenticationException(AuthenticationProblem.REAUTHENTICATION)
+            }
+            val stored = storage { store.read() }
+            if (stored == null || stored.clientId != clientId) {
+                throw AuthenticationException(AuthenticationProblem.REAUTHENTICATION)
+            }
+            var tokens = stored.tokens
+            try {
+                if (tokens.expiresAtMillis?.let { it <= nowMillis() + 60_000 } == true) {
+                    tokens = refresh(tokens)
+                }
+                // A rotated token may have been persisted before identity validation failed or was cancelled.
+                if (tokens.accessToken != validatedAccessToken) {
+                    val account = api.account(tokens.accessToken)
+                    if (account.id != accountId) throw AuthenticationException(AuthenticationProblem.REAUTHENTICATION)
+                    currentCoroutineContext().ensureActive()
+                    requireInteraction()
+                    validatedAccessToken = tokens.accessToken
+                }
+            } catch (error: AuthenticationException) {
+                if (error.problem == AuthenticationProblem.REAUTHENTICATION) {
+                    invalidateCredential()
+                    storage { store.clear() }
+                    mutableSession.value = GitHubSession.Failure(error.problem)
+                }
+                throw error
+            }
+            requireInteraction()
+            ConversationCredential(accountId, credentialRevision.get(), tokens.accessToken)
+        }
+
+    internal fun isCurrent(credential: ConversationCredential): Boolean =
+        credential.revision == credentialRevision.get() &&
+            (session.value as? GitHubSession.Authenticated)?.account?.id == credential.accountId
+
+    internal suspend fun rejectConversationCredential(credential: ConversationCredential) =
+        mutex.withLock {
+            if (!isCurrent(credential)) return@withLock
+            invalidateCredential()
+            // Copilot's rejection does not prove GitHub revocation. Keep storage for explicit restore/refresh.
+            mutableSession.value = GitHubSession.Failure(AuthenticationProblem.PROVIDER)
+        }
+
+    private fun invalidateCredential() {
+        credentialRevision.incrementAndGet()
+        validatedAccessToken = null
+    }
+
     private suspend fun refresh(tokens: GitHubTokens): GitHubTokens {
+        invalidateCredential()
         val refresh = tokens.refreshToken ?: throw AuthenticationException(AuthenticationProblem.REAUTHENTICATION)
         if (tokens.refreshExpiresAtMillis?.let { it <= nowMillis() } == true) {
             throw AuthenticationException(AuthenticationProblem.REAUTHENTICATION)
@@ -187,7 +251,7 @@ class PersistentGitHubAuthentication internal constructor(
             context: Context,
             clientId: String,
             interactionAllowed: () -> Boolean,
-        ): GitHubAuthentication {
+        ): PersistentGitHubAuthentication {
             val client =
                 OkHttpClient
                     .Builder()

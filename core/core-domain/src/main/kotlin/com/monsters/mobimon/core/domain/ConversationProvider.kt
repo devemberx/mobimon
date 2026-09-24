@@ -1,0 +1,52 @@
+package com.monsters.mobimon.core.domain
+
+/** Credentials stay inside the provider implementation. Dialogue is never persisted. */
+interface ConversationProvider {
+    /** Checks account access and returns the selected model ID. */
+    suspend fun connect(accountId: Long): ConversationResult<String>
+
+    /** A fresh, memory-only conversation ID identifies the local dialogue. */
+    suspend fun reply(
+        accountId: Long,
+        conversationId: String,
+        friendId: String,
+        messages: List<ConversationTurn>,
+    ): ConversationResult<String>
+}
+
+class ConversationTurn(
+    val text: String,
+    val fromUser: Boolean,
+) {
+    override fun toString() = "ConversationTurn(REDACTED)"
+}
+
+sealed interface ConversationResult<out T> {
+    data class Success<T>(
+        val value: T,
+    ) : ConversationResult<T>
+
+    data class Failure(
+        val problem: ConversationProblem,
+    ) : ConversationResult<Nothing>
+}
+
+enum class ConversationProblem {
+    NETWORK,
+    SERVICE,
+    AUTO_UNAVAILABLE,
+    TIMEOUT,
+    ACCESS,
+    ACCOUNT,
+    USAGE,
+    PROVIDER,
+    RESTRICTED,
+    LIMIT,
+}
+
+object ConversationLimits {
+    const val INPUT_CHARACTERS = 4_000
+    const val REPLY_CHARACTERS = 12_000
+    const val HISTORY_CHARACTERS = 48_000
+    const val EXCHANGES = 16
+}

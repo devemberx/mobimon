@@ -11,6 +11,7 @@ import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.assertHeightIsAtLeast
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsFocused
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.junit4.createComposeRule
@@ -25,6 +26,10 @@ import androidx.compose.ui.test.pressKey
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import com.monsters.mobimon.core.domain.Clock
+import com.monsters.mobimon.core.domain.ConversationProblem
+import com.monsters.mobimon.core.domain.ConversationProvider
+import com.monsters.mobimon.core.domain.ConversationResult
+import com.monsters.mobimon.core.domain.ConversationTurn
 import com.monsters.mobimon.core.domain.CosmeticInventory
 import com.monsters.mobimon.core.domain.CosmeticItem
 import com.monsters.mobimon.core.domain.CosmeticSlot
@@ -92,17 +97,17 @@ class AiFeatureTest {
     }
 
     @Test
-    fun authenticatedAccountCanDraftButCannotSendWithoutProvider() {
+    fun authenticatedAccountCanAttemptSendWithoutClaimingProviderReadiness() {
         route = AiRoute.CONVERSATION
         show(parked = true, authenticated = true)
         compose.onNodeWithTag("chat-input").performTextInput("오늘의 이야기")
-        compose.onNodeWithTag("chat-send").assertIsNotEnabled()
+        compose.onNodeWithTag("chat-send").assertIsEnabled()
         compose.onNodeWithText("Copilot 연결됨").assertDoesNotExist()
         compose.runOnIdle { route = AiRoute.COPILOT }
         compose.onNodeWithText("GitHub 계정 인증이 완료됐어요.").assertIsDisplayed()
         compose.onNodeWithText("모비와 대화하기").assertIsDisplayed().performClick()
         compose.onNodeWithText("오늘의 이야기").assertIsDisplayed()
-        compose.onNodeWithTag("chat-send").assertIsNotEnabled()
+        compose.onNodeWithTag("chat-send").assertIsEnabled()
     }
 
     @Test
@@ -243,6 +248,17 @@ class AiFeatureTest {
                     override suspend fun disconnect() = Unit
 
                     override fun signIn() = flowOf<GitHubSignIn>()
+                },
+                object : ConversationProvider {
+                    override suspend fun connect(accountId: Long) =
+                        ConversationResult.Failure(ConversationProblem.ACCESS)
+
+                    override suspend fun reply(
+                        accountId: Long,
+                        conversationId: String,
+                        friendId: String,
+                        messages: List<ConversationTurn>,
+                    ) = ConversationResult.Failure(ConversationProblem.ACCESS)
                 },
             )
         val navigator = FeatureNavigator({ route = it as AiRoute }, {}, {}, {})

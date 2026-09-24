@@ -1,5 +1,7 @@
 package com.monsters.mobimon.feature.auth
 
+import com.monsters.mobimon.core.domain.ConversationProblem
+
 /** Presentation only. Authentication does not establish [ConversationConnection.READY]. */
 enum class ConversationConnection { SIGNED_OUT, UNAVAILABLE, READY }
 
@@ -14,4 +16,5 @@ data class ConversationUiState(
     val messages: List<ConversationMessage> = emptyList(),
     val replyPending: Boolean = false,
     val failed: Boolean = false,
+    val problem: ConversationProblem? = null,
 )

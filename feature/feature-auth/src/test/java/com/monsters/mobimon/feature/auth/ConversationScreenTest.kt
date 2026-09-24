@@ -17,6 +17,7 @@ import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.assertHeightIsAtLeast
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsFocused
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.junit4.createComposeRule
@@ -33,6 +34,7 @@ import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
+import com.monsters.mobimon.core.domain.ConversationProblem
 import com.monsters.mobimon.core.ui.LocalMobiMonMotionEnabled
 import com.monsters.mobimon.core.ui.MobiMonTheme
 import org.junit.Assert.assertEquals
@@ -84,12 +86,14 @@ class ConversationScreenTest {
     }
 
     @Test
-    fun unavailableAndRestrictedStatesKeepDraftWithoutSending() {
+    fun unverifiedConnectionAllowsSendButSignedOutAndRestrictedStatesBlockIt() {
         state = ConversationUiState(ConversationConnection.UNAVAILABLE)
         show()
         compose.onNodeWithTag("chat-input").performTextInput("작성 중")
-        compose.onNodeWithTag("chat-send").assertIsNotEnabled()
+        compose.onNodeWithTag("chat-send").assertIsEnabled()
         compose.onNodeWithText("Copilot 연결됨").assertDoesNotExist()
+        compose.runOnIdle { state = state.copy(connection = ConversationConnection.SIGNED_OUT) }
+        compose.onNodeWithTag("chat-send").assertIsNotEnabled()
         compose.runOnIdle { allowed = false }
         compose.onNodeWithTag("chat-input").assertIsNotEnabled()
         compose.runOnIdle {
@@ -109,6 +113,61 @@ class ConversationScreenTest {
             .assertIsFocused()
             .performKeyInput { pressKey(Key.Enter) }
         compose.runOnIdle { assertEquals(1, sends) }
+    }
+
+    @Test
+    fun lostProviderAccessKeepsCompletedRepliesVisibleWithRecovery() {
+        state = ConversationUiState(ConversationConnection.UNAVAILABLE, messages = messages)
+        show()
+        compose.onNodeWithText(messages.last().text).assertIsDisplayed()
+        compose.onNodeWithText("Copilot 연결 확인").assertDoesNotExist()
+        compose.onNodeWithTag("chat-send").assertIsNotEnabled()
+    }
+
+    @Test
+    @GraphicsMode(GraphicsMode.Mode.NATIVE)
+    fun cleanInitialScreenAndRecoveryRemainAccessibleAtAaosDensity() {
+        state = ConversationUiState(ConversationConnection.UNAVAILABLE)
+        draft = TextFieldValue("보내기 전 초안")
+        show(density = 10f / 7f)
+        capture("initial-aaos")
+        compose.onNodeWithTag("chat-send").assertIsEnabled()
+        compose.onNodeWithText("확인하고 Copilot 연결").assertDoesNotExist()
+        compose.onNodeWithText("Copilot 연결 확인").assertDoesNotExist()
+        compose.onNodeWithText("GitHub 개인정보 처리방침").assertDoesNotExist()
+        state = state.copy(connection = ConversationConnection.READY, messages = messages)
+        capture("session-actions-aaos")
+        compose
+            .onNodeWithText("새 대화")
+            .assertIsDisplayed()
+            .assertHeightIsAtLeast(76.dp)
+            .performClick()
+        compose.runOnIdle { assertTrue(state.messages.isEmpty()) }
+        compose.runOnIdle { state = state.copy(failed = true, problem = ConversationProblem.ACCESS) }
+        capture("access-error-aaos")
+        compose.onNodeWithText("다시 보내기").assertIsDisplayed()
+        compose.runOnIdle { state = state.copy(problem = ConversationProblem.SERVICE) }
+        compose.onNodeWithText("Copilot 서비스가 응답하지 못했어요.", substring = true).assertIsDisplayed()
+        capture("service-error-aaos")
+        compose.runOnIdle { state = state.copy(problem = ConversationProblem.AUTO_UNAVAILABLE) }
+        compose.onNodeWithText("이 앱에서 Copilot 자동 선택을 이용할 수 없어요.", substring = true).assertIsDisplayed()
+        capture("auto-error-aaos")
+    }
+
+    @Test
+    @GraphicsMode(GraphicsMode.Mode.NATIVE)
+    fun initialComposerAndLengthFeedbackWorkWithEnlargedTextAndKeyboard() {
+        state = ConversationUiState(ConversationConnection.UNAVAILABLE)
+        height = 940.dp
+        show(fontScale = 1.6f)
+        compose.onNodeWithTag("chat-input").assertIsDisplayed()
+        capture("initial-enlarged-keyboard")
+        compose.runOnIdle {
+            state = state.copy(connection = ConversationConnection.READY)
+            draft = TextFieldValue("x".repeat(4001))
+        }
+        compose.onNodeWithTag("chat-send").assertIsNotEnabled()
+        compose.onNodeWithText("메시지를 4,000자 이하로 줄여 주세요.").assertIsDisplayed()
     }
 
     @Test
@@ -231,6 +290,7 @@ class ConversationScreenTest {
                         Modifier.height(height / density),
                         interactionAllowed = allowed,
                         onDismissFailure = { state = state.copy(failed = false) },
+                        onNewConversation = { state = state.copy(messages = emptyList()) },
                     )
                 }
             }

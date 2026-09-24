@@ -5,6 +5,7 @@ import com.monsters.mobimon.BuildConfig
 import com.monsters.mobimon.core.auth.PersistentGitHubAuthentication
 import com.monsters.mobimon.core.domain.AppUseState
 import com.monsters.mobimon.core.domain.Clock
+import com.monsters.mobimon.core.domain.ConversationProvider
 import com.monsters.mobimon.core.domain.CurrentAppUse
 import com.monsters.mobimon.core.domain.CurrentVehicleEvidence
 import com.monsters.mobimon.core.domain.DrivingState
@@ -33,11 +34,19 @@ object AuthenticationModule {
         sourceProvider: SignalSourceProvider,
         clock: Clock,
         freshness: VehicleFreshnessPolicy,
-    ): GitHubAuthentication =
+    ): PersistentGitHubAuthentication =
         PersistentGitHubAuthentication.create(context, BuildConfig.GITHUB_CLIENT_ID) {
             val snapshot = freshness.displaySnapshot(vehicle.snapshot(), sourceProvider.source(), clock.nowMillis())
             appUse.state() == AppUseState.ALLOWED &&
                 snapshot.quality == SignalQuality.VALID &&
                 snapshot.drivingState == DrivingState.PARKED
         }
+
+    @Provides
+    fun githubAuthentication(authentication: PersistentGitHubAuthentication): GitHubAuthentication = authentication
+
+    @Provides
+    @Singleton
+    fun conversation(authentication: PersistentGitHubAuthentication): ConversationProvider =
+        authentication.conversationProvider()
 }

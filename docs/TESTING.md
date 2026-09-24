@@ -60,8 +60,8 @@ establish visual parity. SVG-only renames require XML/render and byte-preservati
 ## Current requirement map
 
 These are existing suites, not execution results. Update critical mappings when
-behavior changes. [Architecture](ARCHITECTURE.md#planned-features) owns remaining gaps.
-Related suites share the linked module/package.
+behavior changes; keep implementation gaps in [Architecture](ARCHITECTURE.md#planned-features).
+Related suites share the linked module/package; test names define individual cases.
 
 ### Boundaries, vehicle evidence and persistence
 
@@ -73,14 +73,16 @@ Related suites share the linked module/package.
 | Legacy ownership/revision, later evidence, atomic completion and reopening | [QuestEvaluatorTest](../core/core-domain/src/test/kotlin/com/monsters/mobimon/core/domain/QuestEvaluatorTest.kt), [RoomCompanionRepositoryTest](../core/core-database/src/test/java/com/monsters/mobimon/core/database/RoomCompanionRepositoryTest.kt) and its device counterpart |
 | Point uniqueness, concurrent purchase/equip, rollback and authorization recheck | [PointEconomyRepositoryTest](../core/core-database/src/test/java/com/monsters/mobimon/core/database/PointEconomyRepositoryTest.kt), [Q01JourneyTest](../app/src/test/java/com/monsters/mobimon/Q01JourneyTest.kt), [DebugPointRepositoryTest](../core/core-database/src/testDebug/java/com/monsters/mobimon/core/database/DebugPointRepositoryTest.kt) |
 | V1→V4 and both V3 shapes preserve records/identity | [PointEconomyMigrationTest](../core/core-database/src/test/java/com/monsters/mobimon/core/database/PointEconomyMigrationTest.kt), [LevelingMigrationContract](../core/core-database/src/migrationTest/java/com/monsters/mobimon/core/database/LevelingMigrationContract.kt) with local/device wrappers |
-| Supplied driving conditions, weather and catalog rules | [DrivingQuestEvaluatorTest](../core/core-domain/src/test/kotlin/com/monsters/mobimon/core/domain/DrivingQuestEvaluatorTest.kt); no trusted driving-evidence claim |
+| Supplied driving conditions, weather and catalog rules | [DrivingQuestEvaluatorTest](../core/core-domain/src/test/kotlin/com/monsters/mobimon/core/domain/DrivingQuestEvaluatorTest.kt) |
 
 ### Authentication
 
 | Contract | Coverage |
 | --- | --- |
 | OAuth request/response validation, HTTP errors and redirects | [OkHttpGitHubApiTest](../core/core-auth/src/test/java/com/monsters/mobimon/core/auth/OkHttpGitHubApiTest.kt); MockWebServer |
-| Poll intervals, slowdown, expiry, cancellation, persistence, refresh and revocation | [PersistentGitHubAuthenticationTest](../core/core-auth/src/test/java/com/monsters/mobimon/core/auth/PersistentGitHubAuthenticationTest.kt); fake provider/store |
+| Copilot host validation, fixed `gpt-4o` direct request, text protocols, bounded rejection categories and no replay even with `503 Retry-After: 0` | [OkHttpCopilotApiTest](../core/core-auth/src/test/java/com/monsters/mobimon/core/auth/OkHttpCopilotApiTest.kt); MockWebServer |
+| Copilot credential/model cache, model absence, expiry, parking checks and request bounds | [CopilotConversationProviderTest](../core/core-auth/src/test/java/com/monsters/mobimon/core/auth/CopilotConversationProviderTest.kt); fake provider |
+| Poll intervals, slowdown, expiry, cancellation, persistence, refresh, identity retry after failure/cancellation, revision-scoped Copilot 401 recovery without replay and revocation | [PersistentGitHubAuthenticationTest](../core/core-auth/src/test/java/com/monsters/mobimon/core/auth/PersistentGitHubAuthenticationTest.kt); fake provider/store |
 | Keystore encryption, reopening, tamper rejection and deletion | [EncryptedCredentialStoreTest](../core/core-auth/src/androidTest/java/com/monsters/mobimon/core/auth/EncryptedCredentialStoreTest.kt); device |
 | Authentication guards/recovery, reference-layout parking guard, readiness separation, QR decoding and success/disconnect actions | [Authentication feature suites](../feature/feature-auth/src/test/java/com/monsters/mobimon/feature/auth); ViewModel and Robolectric |
 
@@ -102,6 +104,7 @@ Related suites share the linked module/package.
 | Live system-inset changes, destination/menu bounds, debugger unlock notice clearance and restoration | [MobiMonContentTest](../app/src/test/java/com/monsters/mobimon/ui/MobiMonContentTest.kt); platform inset dispatch in Robolectric |
 | Floating companion bounds use current bars/cutouts and measured size; Debug dragging, edge reversal and resize remain inside safe content | [OverlayMovementBoundsTest](../app/src/test/java/com/monsters/mobimon/service/OverlayMovementBoundsTest.kt), [DebugOverlayPlacementTest](../app/src/testDebug/java/com/monsters/mobimon/ui/DebugOverlayPlacementTest.kt); OEM overlay placement still requires a device |
 | Chat draft/composition lifetime, ownership clearing, input guards/actions and target-display/IME layouts | [Conversation and feature suites](../feature/feature-auth/src/test/java/com/monsters/mobimon/feature/auth); native review images |
+| Explicit-send readiness, duplicate/retry guards, draft/history lifetime, cancellation and limits | [ConversationViewModelTest](../feature/feature-auth/src/test/java/com/monsters/mobimon/feature/auth/ConversationViewModelTest.kt); fake transport |
 | Native keyboard resizing and Back/draft retention | [ConversationKeyboardDeviceTest](../app/src/androidTest/java/com/monsters/mobimon/preview/ConversationKeyboardDeviceTest.kt); AAOS device |
 | Isolated Debug rehearsal and branding | [CopilotPreviewJourneyTest](../app/src/journeyTest/java/com/monsters/mobimon/preview/CopilotPreviewJourneyTest.kt), [BrandingTest](../app/src/testDebug/java/com/monsters/mobimon/BrandingTest.kt) |
 
@@ -110,20 +113,22 @@ Related suites share the linked module/package.
 - Room migration fixtures cover populated V1 and original/expanded V3 upgrades and
   reopening, not a separately populated V2 fixture or `MigrationTestHelper`.
 - [JourneyTestModule](../app/src/journeyTest/java/com/monsters/mobimon/testing/JourneyTestModule.kt)
-  keeps MainActivity, feature ViewModels and Room repositories real, with in-memory
-  Room, isolated DataStore and fake platform/vehicle/AAOS/authentication providers.
-  It never contacts GitHub or accesses user credentials. Debug preview journeys
-  use sample data and establish no authentication or vehicle verification.
+  uses real MainActivity, ViewModels and repositories, in-memory Room, isolated
+  DataStore and fake external providers. It never contacts GitHub or accesses user credentials;
+  Debug previews also establish no provider or vehicle verification.
 - Recreation, file reopening and process restart are distinct. Local tests, APK
   assembly and `NO-SOURCE` tasks do not prove device execution, live providers,
   Release behavior or launcher support. Real OAuth approval/restart/revocation and
   AAOS restriction/reconnection behavior need separate target-device verification.
+  Copilot wire fixtures do not establish live account entitlement, OAuth-app access,
+  model availability or compatibility with the experimental private endpoints.
 - Driving tests cover supplied formulas and transaction invariants, not trusted
   driving evidence, real occurrence identity or evaluator-to-award agreement.
   Hungry/sick rendering and on-device decorative lifecycle still lack acceptance.
 
-Record revision, executed checks, skipped layers/reasons and device image/signal
-source in the issue/PR. Keep credentials and private logs out of reports.
+Record revision and device image/signal source with the
+[required check report](../.github/CONTRIBUTING.md#verification).
+Keep credentials and private logs out of reports.
 
 ## Focused commands and reports
 
