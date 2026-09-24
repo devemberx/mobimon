@@ -6,12 +6,12 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 \"$(git rev-parse --show-toplevel)/scripts/github/validate_merge.py\"",
+            "command": "python3 \"$(git rev-parse --show-toplevel)/scripts/hooks/validate_merge.py\"",
             "timeout": 30
           },
           {
             "type": "command",
-            "command": "python3 \"$(git rev-parse --show-toplevel)/.agents/hooks/validate_pr_command.py\"",
+            "command": "python3 \"$(git rev-parse --show-toplevel)/scripts/hooks/validate_pr_command.py\"",
             "timeout": 30
           }
         ]

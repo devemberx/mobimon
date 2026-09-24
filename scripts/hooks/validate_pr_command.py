@@ -9,8 +9,12 @@ import sys
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "scripts/github"))
 
-import validate_merge
 import validate_pr
+
+try:
+    from . import validate_merge
+except ImportError:  # Executed directly as a hook script.
+    import validate_merge
 
 
 CONTENT = {
