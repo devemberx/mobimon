@@ -89,7 +89,7 @@ fun CustomizationScreen(
         val scale = maxWidth.value / 2560f
         val contentHeight = maxHeight
         val reference = maxWidth >= 1000.dp && maxHeight >= 1100.dp * scale && LocalDensity.current.fontScale <= 1.2f
-        if (!reference || inventory == null) {
+        if (!reference) {
             Column(Modifier.fillMaxSize()) {
                 StoreHeader(pointBalance, pointLoadFailed, onBack, 0.6f, Modifier.fillMaxWidth().padding(16.dp))
                 CompactCustomizationScreen(
@@ -115,6 +115,51 @@ fun CustomizationScreen(
                     catalogLoadFailed = catalogLoadFailed,
                     interactionAllowed = interactionAllowed,
                 )
+            }
+        } else if (inventory == null) {
+            Box(Modifier.fillMaxSize().testTag("store-reference")) {
+                StoreHeader(
+                    pointBalance,
+                    pointLoadFailed,
+                    onBack,
+                    scale,
+                    Modifier.offset(72.dp * scale, 36.dp * scale).size(2416.dp * scale, 104.dp * scale),
+                )
+                Box(
+                    Modifier
+                        .offset(72.dp * scale, 196.dp * scale)
+                        .size(916.dp * scale, contentHeight - 220.dp * scale)
+                        .testTag("store-preview-panel")
+                        .background(MobiMonColors.panel, RoundedCornerShape(48.dp * scale))
+                        .padding(32.dp * scale)
+                        .clip(RoundedCornerShape(36.dp * scale))
+                        .background(MobiMonColors.raised),
+                )
+                val recoveryNeeded = loadFailed || catalogLoadFailed || pointLoadFailed
+                Column(
+                    Modifier.offset(1040.dp * scale, 196.dp * scale).size(
+                        1448.dp * scale,
+                        contentHeight - 220.dp * scale,
+                    ),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center,
+                ) {
+                    MobiMonMessage(
+                        stringResource(
+                            when {
+                                catalogLoadFailed -> R.string.customization_catalog_failed
+                                loadFailed -> R.string.customization_inventory_failed
+                                pointLoadFailed -> com.monsters.mobimon.core.ui.R.string.mobimon_points_failed
+                                else -> R.string.customization_inventory_loading
+                            },
+                        ),
+                        isError = recoveryNeeded,
+                    )
+                    if (recoveryNeeded) {
+                        Spacer(Modifier.height(24.dp * scale))
+                        MobiMonButton(onRetry) { Text(stringResource(R.string.customization_retry)) }
+                    }
+                }
             }
         } else {
             Box(Modifier.fillMaxSize().testTag("store-reference")) {
@@ -151,6 +196,7 @@ fun CustomizationScreen(
                     Modifier
                         .offset(72.dp * scale, 196.dp * scale)
                         .size(916.dp * scale, contentHeight - 220.dp * scale)
+                        .testTag("store-preview-panel")
                         .background(MobiMonColors.panel, RoundedCornerShape(48.dp * scale))
                         .padding(32.dp * scale),
                 ) {
