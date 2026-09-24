@@ -136,6 +136,24 @@ class QuestViewModelTest {
         }
 
     @Test
+    fun observedCompletionDateDisappearsWhenCompletionResets() =
+        runModelTest {
+            val vm = subject()
+            runCurrent()
+            economy.completions.value = setOf(DrivingQuestIds.SEATBELT)
+            economy.completionDates.value = mapOf(DrivingQuestIds.SEATBELT to 1_800_000_000_000L)
+            runCurrent()
+            assertEquals(1_800_000_000_000L, vm.state.value.completedPointQuestDates[DrivingQuestIds.SEATBELT])
+
+            economy.completions.value = emptySet()
+            runCurrent()
+            assertTrue(
+                vm.state.value.completedPointQuestDates
+                    .isEmpty(),
+            )
+        }
+
+    @Test
     fun completionResetClearsClaimObservedBeforeItsResultReturns() =
         runModelTest {
             val result = CompletableDeferred<PointAwardResult>()
@@ -336,6 +354,7 @@ class QuestViewModelTest {
         var observationStarts = 0
         var activeObservations = 0
         val completions = MutableStateFlow<Set<String>>(emptySet())
+        val completionDates = MutableStateFlow<Map<String, Long>>(emptyMap())
         val evaluation = MutableStateFlow(DriveEvaluationData())
         val failObservation = MutableStateFlow(false)
         override val wallet = emptyFlow<PointWallet>()
@@ -356,6 +375,7 @@ class QuestViewModelTest {
                     activeObservations--
                 }
             }
+        override val completedQuestDates = completionDates
         override val driveEvaluation = evaluation
 
         override suspend fun purchase(

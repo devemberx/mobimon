@@ -10,11 +10,15 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -29,6 +33,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.monsters.mobimon.core.ui.PetAvatar
+import java.text.SimpleDateFormat
+import java.util.Date
 import java.util.Locale
 import com.monsters.mobimon.core.ui.MobiMonColors as Colors
 
@@ -99,6 +105,7 @@ internal fun QuestDetailContent(
                 onExecute = onExecute,
                 onClaimReward = onClaimReward,
                 modifier = Modifier.fillMaxWidth(),
+                isCompact = true,
             )
         }
     } else {
@@ -106,31 +113,28 @@ internal fun QuestDetailContent(
             modifier = modifier,
             horizontalArrangement = Arrangement.spacedBy(48.dp * scale),
         ) {
-            Column(
+            Box(
                 modifier =
                     Modifier
                         .width(824.dp * scale)
                         .fillMaxHeight()
-                        .clip(RoundedCornerShape(32.dp * scale))
+                        .clip(RoundedCornerShape(48.dp * scale))
                         .background(Colors.panel)
-                        .padding(32.dp * scale),
-                horizontalAlignment = Alignment.CenterHorizontally,
+                        .testTag("quest-companion-panel"),
             ) {
-                Spacer(Modifier.height(40.dp * scale))
                 PetAvatar(
-                    modifier = Modifier.size(520.dp * scale),
+                    modifier = Modifier.offset(86.dp * scale, 110.dp * scale).size(652.dp * scale),
                     friendId = friendId,
                     accessoryId = accessoryId,
                     outfitId = outfitId,
                     backgroundId = backgroundId,
                 )
-                Spacer(Modifier.height(32.dp * scale))
                 Text(
                     text = stringResource(R.string.quest_companion_quote),
                     style = questTextStyle(42f, scale, bold = true, color = Colors.text),
                     textAlign = TextAlign.Center,
+                    modifier = Modifier.align(Alignment.BottomCenter).offset(y = -(127.dp * scale)),
                 )
-                Spacer(Modifier.height(16.dp * scale))
                 Text(
                     text =
                         stringResource(
@@ -142,22 +146,32 @@ internal fun QuestDetailContent(
                         ),
                     style = questTextStyle(30f, scale, bold = false, color = Colors.muted),
                     textAlign = TextAlign.Center,
+                    modifier = Modifier.align(Alignment.BottomCenter).offset(y = -(67.dp * scale)),
                 )
-                Spacer(Modifier.height(24.dp * scale))
             }
 
-            QuestDetailCard(
-                quest = quest,
-                canClaim = canClaim,
-                scale = scale,
-                onBackToList = onBackToList,
-                onExecute = onExecute,
-                onClaimReward = onClaimReward,
-                modifier =
-                    Modifier
-                        .weight(1f)
-                        .fillMaxHeight(),
-            )
+            Box(modifier = Modifier.weight(1f).fillMaxHeight()) {
+                QuestDetailCard(
+                    quest = quest,
+                    canClaim = canClaim,
+                    scale = scale,
+                    onBackToList = onBackToList,
+                    onExecute = onExecute,
+                    onClaimReward = onClaimReward,
+                    modifier = Modifier.fillMaxSize(),
+                )
+                if (quest.status == QuestItemStatus.IN_PROGRESS) {
+                    QuestScrollIndicator(
+                        scrollState = rememberScrollState(),
+                        scale = scale,
+                        modifier =
+                            Modifier
+                                .align(Alignment.TopEnd)
+                                .offset(x = 24.dp * scale, y = 242.dp * scale)
+                                .height(722.dp * scale),
+                    )
+                }
+            }
         }
     }
 }
@@ -171,9 +185,15 @@ internal fun QuestDetailCard(
     onExecute: () -> Unit,
     onClaimReward: () -> Unit,
     modifier: Modifier = Modifier,
+    isCompact: Boolean = false,
 ) {
     val isCompleted = quest.status == QuestItemStatus.COMPLETED
     val isClaimable = quest.status == QuestItemStatus.CLAIMABLE
+
+    if (!isCompact) {
+        QuestReferenceDetailCard(quest, scale, canClaim, onExecute, onClaimReward, modifier)
+        return
+    }
 
     Column(
         modifier =
@@ -295,6 +315,11 @@ internal fun QuestDetailCard(
 
         if (isCompleted) {
             Text(
+                text = completionReceiptLabel(quest),
+                style = questTextStyle(38f, scale, bold = true, color = Colors.accent),
+            )
+            Spacer(Modifier.height(16.dp * scale))
+            Text(
                 text = stringResource(R.string.quest_detail_received_note, quest.rewardPoints),
                 style = questTextStyle(30f, scale, bold = false, color = Color(0xFF8496AC)),
             )
@@ -397,6 +422,197 @@ internal fun QuestDetailCard(
         }
     }
 }
+
+@Composable
+private fun QuestReferenceDetailCard(
+    quest: QuestItemUiModel,
+    scale: Float,
+    canClaim: Boolean,
+    onExecute: () -> Unit,
+    onClaimReward: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val isCompleted = quest.status == QuestItemStatus.COMPLETED
+    val isClaimable = quest.status == QuestItemStatus.CLAIMABLE
+    val corner = RoundedCornerShape(56.dp * scale)
+    val actionColor =
+        if (isCompleted) {
+            Color(0xFF33465B)
+        } else if (isClaimable) {
+            Colors.button
+        } else {
+            Colors.panel
+        }
+    val actionTextColor =
+        if (isCompleted) {
+            Colors.muted
+        } else if (isClaimable) {
+            Colors.onButton
+        } else {
+            Colors.text
+        }
+    val actionIcon =
+        when {
+            isCompleted -> R.drawable.quest_icon_check
+            isClaimable -> R.drawable.quest_icon_gift
+            else -> R.drawable.quest_icon_send
+        }
+    val actionLabel =
+        when {
+            isCompleted -> R.string.quest_action_already_claimed
+            isClaimable -> R.string.quest_action_claim
+            else -> R.string.quest_action_execute
+        }
+    Box(
+        modifier =
+            modifier
+                .clip(RoundedCornerShape(48.dp * scale))
+                .background(Colors.panel)
+                .testTag("quest-detail-card"),
+    ) {
+        Box(
+            modifier =
+                Modifier
+                    .offset(64.dp * scale, 64.dp * scale)
+                    .width(236.dp * scale)
+                    .height(60.dp * scale)
+                    .clip(RoundedCornerShape(30.dp * scale))
+                    .background(Colors.raised),
+            contentAlignment = Alignment.Center,
+        ) {
+            Text(quest.scheduleFullText, style = questTextStyle(26f, scale, color = Colors.accent))
+        }
+        Text(
+            text = quest.title,
+            style = questTextStyle(60f, scale, bold = true, color = Colors.text),
+            modifier = Modifier.offset(64.dp * scale, 180.dp * scale),
+        )
+        Text(
+            text = quest.detailLine1,
+            style = questTextStyle(36f, scale, color = Colors.muted),
+            modifier = Modifier.offset(64.dp * scale, 276.dp * scale),
+        )
+        Text(
+            text = quest.detailLine2,
+            style = questTextStyle(36f, scale, color = Colors.muted),
+            modifier = Modifier.offset(64.dp * scale, 338.dp * scale),
+        )
+        Box(
+            Modifier
+                .offset(64.dp * scale, 454.dp * scale)
+                .width(1416.dp * scale)
+                .height(2.dp * scale)
+                .background(Colors.raised),
+        )
+        Column(
+            modifier = Modifier.offset(64.dp * scale, 501.dp * scale).width(1416.dp * scale),
+        ) {
+            Box(Modifier.fillMaxWidth().heightIn(min = 124.dp * scale)) {
+                Column(verticalArrangement = Arrangement.spacedBy(14.dp * scale)) {
+                    QuestProgressDetailSection(quest.progressDetail, scale)
+                    if (quest.showVehicleStep) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            if (isClaimable || isCompleted) {
+                                Image(
+                                    painterResource(R.drawable.quest_icon_check),
+                                    contentDescription = null,
+                                    modifier = Modifier.size(32.dp * scale),
+                                    colorFilter = ColorFilter.tint(Colors.success),
+                                )
+                                Spacer(Modifier.width(16.dp * scale))
+                            }
+                            Text(
+                                text =
+                                    stringResource(
+                                        if (isClaimable || isCompleted) {
+                                            R.string.quest_detail_vehicle_done
+                                        } else {
+                                            R.string.quest_detail_vehicle_step
+                                        },
+                                    ),
+                                style = questTextStyle(38f, scale, bold = true, color = Colors.text),
+                            )
+                        }
+                    }
+                }
+            }
+            if (isCompleted) {
+                Text(
+                    text = completionReceiptLabel(quest),
+                    style = questTextStyle(38f, scale, bold = true, color = Colors.accent),
+                )
+                Spacer(Modifier.height(24.dp * scale))
+                Text(
+                    text = stringResource(R.string.quest_detail_received_note, quest.rewardPoints),
+                    style = questTextStyle(30f, scale, color = Color(0xFF8496AC)),
+                )
+            } else {
+                Text(
+                    text = stringResource(R.string.quest_detail_reward_label, quest.rewardPoints),
+                    style = questTextStyle(38f, scale, bold = true, color = Colors.accent),
+                )
+                Spacer(Modifier.height(24.dp * scale))
+                Text(
+                    text = stringResource(R.string.quest_detail_notice),
+                    style = questTextStyle(30f, scale, color = Colors.muted),
+                )
+            }
+        }
+        if (isCompleted || isClaimable || quest.showExecuteButton) {
+            Row(
+                modifier =
+                    Modifier
+                        .align(Alignment.BottomCenter)
+                        .offset(y = -(26.dp * scale))
+                        .width(1416.dp * scale)
+                        .height(112.dp * scale)
+                        .clip(corner)
+                        .background(actionColor)
+                        .then(
+                            if (isCompleted ||
+                                isClaimable
+                            ) {
+                                Modifier
+                            } else {
+                                Modifier.border(2.dp * scale, Colors.border, corner)
+                            },
+                        ).clickable(
+                            enabled = !isCompleted && (!isClaimable || canClaim),
+                            onClick = if (isClaimable) onClaimReward else onExecute,
+                        ).testTag(
+                            when {
+                                isCompleted -> "quest-btn-detail-completed"
+                                isClaimable -> "quest-btn-detail-claim"
+                                else -> "quest-btn-detail-execute"
+                            },
+                        ),
+                horizontalArrangement = Arrangement.Center,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Image(
+                    painter = painterResource(actionIcon),
+                    contentDescription = null,
+                    modifier = Modifier.size(34.dp * scale),
+                    colorFilter = ColorFilter.tint(actionTextColor),
+                )
+                Spacer(Modifier.width(16.dp * scale))
+                Text(
+                    text = stringResource(actionLabel),
+                    style = questTextStyle(38f, scale, bold = true, color = actionTextColor),
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun completionReceiptLabel(quest: QuestItemUiModel): String =
+    quest.completedAtUtcMillis?.let { completedAt ->
+        stringResource(
+            R.string.quest_detail_received_label_with_date,
+            SimpleDateFormat("yyyy.MM.dd", Locale.KOREA).format(Date(completedAt)),
+        )
+    } ?: stringResource(R.string.quest_detail_received_label)
 
 @Composable
 private fun QuestMetricItem(

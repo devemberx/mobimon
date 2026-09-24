@@ -8,7 +8,7 @@
 
     <!-- Quest presentation -->
     <string name="quest_header_title">퀘스트</string>
-    <string name="quest_header_subtitle">작은 도전으로 모비와 함께 성장해요.</string>
+    <string name="quest_header_subtitle">작은 도전으로 포인트를 모아요.</string>
     <string name="quest_companion_heading">작은 도전, 큰 여정</string>
     <string name="quest_companion_quote">오늘도 함께 한 걸음.</string>
     <string name="quest_companion_sub_ready">준비가 끝나면 보상을 받아요.</string>
@@ -21,6 +21,7 @@
     <string name="quest_status_ongoing">진행 중</string>
     <string name="quest_status_completed">완료</string>
     <string name="quest_schedule_once_short">1회</string>
+    <string name="quest_schedule_once_full">한 번만 완료</string>
     <string name="quest_schedule_daily_short">매일</string>
     <string name="quest_reward_points_format">%1$s · %2$d P</string>
     <string name="quest_reward_points_received_format">%1$s · %2$d P 받음</string>
@@ -32,14 +33,17 @@
     <string name="quest_action_confirm">확인</string>
     <string name="quest_back_to_list">목록으로</string>
     <string name="quest_empty_ongoing_title">진행 중인 퀘스트가 없어요</string>
-    <string name="quest_empty_ongoing_subtitle">다음 드라이브에서 만나요!</string>
+    <string name="quest_empty_ongoing_subtitle">전체 탭에서 시작할 퀘스트를 확인해요.</string>
     <string name="quest_empty_completed_title">아직 완료한 퀘스트가 없어요</string>
-    <string name="quest_empty_completed_subtitle">드라이브를 시작하고 첫 퀘스트를 완료해 보세요!</string>
+    <string name="quest_empty_completed_subtitle">주차 중 전체 탭에서 첫 퀘스트를 시작해요.</string>
+    <string name="quest_empty_show_all">전체 퀘스트 보기</string>
     <string name="quest_detail_vehicle_step">차량 정보 확인 하기</string>
     <string name="quest_detail_vehicle_done">차량 정보 확인 완료</string>
     <string name="quest_detail_reward_label">보상 · %1$d Point</string>
     <string name="quest_detail_notice">보상은 완료 기록이 저장된 뒤 지급돼요.</string>
     <string name="quest_detail_received_note">%1$d Point를 획득했어요.</string>
+    <string name="quest_detail_received_label">보상 수령 완료</string>
+    <string name="quest_detail_received_label_with_date">보상 수령 완료 (%1$s)</string>
     <string name="quest_detail_metric_current_distance">현재 주행 거리</string>
     <string name="quest_detail_metric_remaining_distance">남은 거리</string>
     <string name="quest_detail_metric_safe_score">현재 안전점수</string>

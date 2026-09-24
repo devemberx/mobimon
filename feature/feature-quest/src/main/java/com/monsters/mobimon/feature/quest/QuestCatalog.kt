@@ -46,7 +46,14 @@ internal class QuestCatalog(
                         detailLine1 = text(content.detailLine1),
                         detailLine2 = text(content.detailLine2),
                         scheduleText = text(definition.schedule.textResource()),
-                        scheduleFullText = text(definition.schedule.textResource()),
+                        scheduleFullText =
+                            text(
+                                if (definition.schedule == PointQuestSchedule.OneTime) {
+                                    R.string.quest_schedule_once_full
+                                } else {
+                                    definition.schedule.textResource()
+                                },
+                            ),
                         rewardPoints = definition.rewardPoints,
                         status = status,
                         actionType =
@@ -57,6 +64,7 @@ internal class QuestCatalog(
                             },
                         targetRoute = VehicleRoute.VEHICLE_INFO,
                         progressDetail = buildProgressDetail(content.id, state.driveEvaluation, snapshot),
+                        completedAtUtcMillis = state.completedPointQuestDates[content.id],
                     )
                 }.sortedBy { it.status.sortPriority }
         val hiddenQuests =

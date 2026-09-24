@@ -1,16 +1,21 @@
 package com.monsters.mobimon.feature.quest
 
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -24,6 +29,7 @@ import androidx.compose.runtime.key
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
@@ -111,42 +117,40 @@ internal fun QuestListContent(
             modifier = modifier,
             horizontalArrangement = Arrangement.spacedBy(56.dp * scale),
         ) {
-            Column(
+            Box(
                 modifier =
                     Modifier
                         .width(680.dp * scale)
                         .fillMaxHeight()
-                        .clip(RoundedCornerShape(32.dp * scale))
+                        .clip(RoundedCornerShape(48.dp * scale))
                         .background(Colors.panel)
-                        .padding(32.dp * scale),
-                horizontalAlignment = Alignment.CenterHorizontally,
+                        .testTag("quest-companion-panel"),
             ) {
                 Text(
                     text = stringResource(R.string.quest_companion_heading),
                     style = questTextStyle(48f, scale, bold = true, color = Colors.text),
                     textAlign = TextAlign.Center,
+                    modifier = Modifier.align(Alignment.TopCenter).offset(y = 55.dp * scale),
                 )
-                Spacer(Modifier.height(16.dp * scale))
                 PetAvatar(
-                    modifier = Modifier.size(460.dp * scale),
+                    modifier = Modifier.offset(28.dp * scale, 140.dp * scale).size(624.dp * scale),
                     friendId = friendId,
                     accessoryId = accessoryId,
                     outfitId = outfitId,
                     backgroundId = backgroundId,
                 )
-                Spacer(Modifier.height(32.dp * scale))
                 Text(
                     text = stringResource(R.string.quest_companion_quote),
                     style = questTextStyle(42f, scale, bold = true, color = Colors.text),
                     textAlign = TextAlign.Center,
+                    modifier = Modifier.align(Alignment.BottomCenter).offset(y = -(127.dp * scale)),
                 )
-                Spacer(Modifier.height(12.dp * scale))
                 Text(
                     text = stringResource(R.string.quest_companion_sub_ready),
                     style = questTextStyle(30f, scale, bold = false, color = Colors.muted),
                     textAlign = TextAlign.Center,
+                    modifier = Modifier.align(Alignment.BottomCenter).offset(y = -(67.dp * scale)),
                 )
-                Spacer(Modifier.height(16.dp * scale))
             }
 
             QuestRightPanel(
@@ -189,19 +193,24 @@ internal fun QuestRightPanel(
         }
 
     Column(modifier = modifier) {
-        MobiMonPointSummary(
-            balance = (pointBalance as? PointBalanceState.Ready)?.balance,
-            failed = pointBalance == PointBalanceState.Failed,
-            textStyle = questTextStyle(34f, scale, bold = false, color = Colors.muted),
-        )
-        Spacer(Modifier.height(20.dp * scale))
+        Row(
+            modifier = Modifier.fillMaxWidth().height((if (isCompact) 72 else 80).dp * scale),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                text = stringResource(R.string.quest_section_title),
+                style = questTextStyle(48f, scale, bold = true, color = Colors.text),
+            )
+            MobiMonPointSummary(
+                balance = (pointBalance as? PointBalanceState.Ready)?.balance,
+                modifier = Modifier.offset(y = 8.dp * scale),
+                failed = pointBalance == PointBalanceState.Failed,
+                textStyle = questTextStyle(36f, scale, color = Colors.text),
+            )
+        }
 
-        Text(
-            text = stringResource(R.string.quest_section_title),
-            style = questTextStyle(48f, scale, bold = true, color = Colors.text),
-        )
-
-        Spacer(Modifier.height(24.dp * scale))
+        Spacer(Modifier.height((if (isCompact) 24 else 38).dp * scale))
 
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -251,7 +260,7 @@ internal fun QuestRightPanel(
             )
         }
 
-        Spacer(Modifier.height(24.dp * scale))
+        Spacer(Modifier.height((if (isCompact) 24 else 36).dp * scale))
 
         if (displayedQuests.isEmpty()) {
             val emptyModifier =
@@ -265,37 +274,77 @@ internal fun QuestRightPanel(
             QuestEmptyStateCard(
                 selectedTab = selectedTab,
                 scale = scale,
+                onShowAll = { onSelectTab(QuestFilterTab.ALL) },
                 modifier = emptyModifier,
+                isCompact = isCompact,
             )
         } else {
+            val scrollState = rememberScrollState()
             val listModifier =
                 if (isCompact) {
                     Modifier.fillMaxWidth()
                 } else {
-                    Modifier
-                        .fillMaxWidth()
-                        .weight(1f)
-                        .verticalScroll(rememberScrollState())
+                    Modifier.fillMaxSize().verticalScroll(scrollState)
                 }
-            Column(
-                modifier = listModifier,
-                verticalArrangement = Arrangement.spacedBy(26.dp * scale),
-            ) {
-                displayedQuests.forEach { quest ->
-                    key(quest.id) {
-                        QuestCardItem(
-                            quest = quest,
-                            canClaim = canClaim,
-                            scale = scale,
-                            isCompact = isCompact,
-                            onClick = { onSelectQuest(quest.id) },
-                            onClaimReward = { onClaimReward(quest.id) },
-                        )
+            Box(modifier = if (isCompact) Modifier.fillMaxWidth() else Modifier.weight(1f).fillMaxWidth()) {
+                Column(
+                    modifier = listModifier,
+                    verticalArrangement = Arrangement.spacedBy(26.dp * scale),
+                ) {
+                    displayedQuests.forEach { quest ->
+                        key(quest.id) {
+                            QuestCardItem(
+                                quest = quest,
+                                canClaim = canClaim,
+                                scale = scale,
+                                isCompact = isCompact,
+                                onClick = { onSelectQuest(quest.id) },
+                                onClaimReward = { onClaimReward(quest.id) },
+                            )
+                        }
                     }
+                    Spacer(Modifier.height(80.dp * scale))
                 }
-                Spacer(Modifier.height(80.dp * scale))
+                if (!isCompact) {
+                    QuestScrollIndicator(
+                        scrollState = scrollState,
+                        scale = scale,
+                        modifier = Modifier.align(Alignment.TopEnd).offset(x = 24.dp * scale),
+                    )
+                }
             }
         }
+    }
+}
+
+@Composable
+internal fun QuestScrollIndicator(
+    scrollState: ScrollState,
+    scale: Float,
+    modifier: Modifier = Modifier,
+) {
+    Canvas(modifier.width(8.dp * scale).fillMaxHeight().padding(bottom = 10.dp * scale)) {
+        val thumbHeight = 180.dp.toPx() * scale
+        val travel = (size.height - thumbHeight - 12.dp.toPx() * scale).coerceAtLeast(0f)
+        val progress = if (scrollState.maxValue == 0) 0f else scrollState.value.toFloat() / scrollState.maxValue
+        drawRoundRect(
+            Color(0xFF142A42),
+            cornerRadius =
+                androidx.compose.ui.geometry
+                    .CornerRadius(size.width / 2),
+        )
+        drawRoundRect(
+            Color(0xFF64839F),
+            topLeft =
+                androidx.compose.ui.geometry
+                    .Offset(0f, 6.dp.toPx() * scale + travel * progress),
+            size =
+                androidx.compose.ui.geometry
+                    .Size(size.width, thumbHeight.coerceAtMost(size.height)),
+            cornerRadius =
+                androidx.compose.ui.geometry
+                    .CornerRadius(size.width / 2),
+        )
     }
 }
 
@@ -318,18 +367,16 @@ internal fun QuestFilterTabButton(
             Modifier.border(
                 2.dp * scale,
                 Colors.border,
-                RoundedCornerShape(
-                    24.dp * scale,
-                ),
+                RoundedCornerShape(44.dp * scale),
             )
         }
 
     Row(
         modifier =
             modifier
-                .then(if (isCompact) Modifier else Modifier.width(300.dp * scale))
-                .height(72.dp * scale)
-                .clip(RoundedCornerShape(24.dp * scale))
+                .then(if (isCompact) Modifier else Modifier.width(336.dp * scale))
+                .height((if (isCompact) 72 else 88).dp * scale)
+                .clip(RoundedCornerShape(44.dp * scale))
                 .background(bg)
                 .then(borderMod)
                 .selectable(selected = selected, role = Role.Tab, onClick = onClick)
