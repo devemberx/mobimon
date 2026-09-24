@@ -86,10 +86,12 @@ Use the replaceable [PetAvatar](ARCHITECTURE.md#state-and-lifecycle) renderer.
 Home and store preview share seven 2560 × 1440 backgrounds (five WebP and two PNG).
 Local hours select Midnight 00–04, Sunrise 05–06, Morning 07–11, Day 12–15,
 Afternoon 16–17, Sunset 18–19 and Night 20–23. A vehicle location timestamp does
-not change the scene; an explicit enabled Debug time override does. Sunrise keeps
-the morning sun's horizontal position and disk size near the horizon. Midnight's
-moon matches the night moon's disk size. It keeps the buildings and road fixed,
-turns off city windows and their reflections, and leaves road lights on. Home
+not change the scene; the separate Debug background preview override does when
+Debug mode is enabled. Vehicle interpretation controls do not change the scene.
+Sunrise keeps the morning sun's horizontal position and disk size near the
+horizon. Midnight's moon matches the night moon's disk size. It keeps the
+buildings and road fixed, turns off city windows and their reflections, and
+leaves road lights on. Home
 keeps the SVG artwork framing: a centered crop in
 the original 2560 × 1268 rectangle at y=76, clipped by the current safe content
 starting at design y=96. Changing available height does not recenter the horizon.

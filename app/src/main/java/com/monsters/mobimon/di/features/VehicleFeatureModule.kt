@@ -10,7 +10,7 @@ import com.monsters.mobimon.core.domain.VehicleRepository
 import com.monsters.mobimon.core.navigation.FeatureEntry
 import com.monsters.mobimon.core.presentation.CompanionAppearancePresentation
 import com.monsters.mobimon.core.presentation.VehiclePresentation
-import com.monsters.mobimon.debug.DebugVssProvider
+import com.monsters.mobimon.debug.DebugBackgroundTimeProvider
 import com.monsters.mobimon.feature.vehicle.VehicleFeature
 import dagger.Module
 import dagger.Provides
@@ -30,11 +30,11 @@ object VehicleFeatureModule {
     @Provides @Singleton
     fun backgroundTimeOverride(
         settings: SettingsRepository,
-        debug: DebugVssProvider,
+        debug: DebugBackgroundTimeProvider,
         scope: CoroutineScope,
     ): StateFlow<String?> =
-        combine(settings.settings, debug.state) { preferences, state ->
-            if (preferences.debugModeEnabled) state.overrides.timeOfDay?.takeIf { it.isNotBlank() } else null
+        combine(settings.settings, debug.backgroundTimeOverride) { preferences, override ->
+            if (preferences.debugModeEnabled) override else null
         }.stateIn(scope, SharingStarted.Eagerly, null)
 
     @Provides @Singleton
