@@ -159,6 +159,16 @@ class OkHttpCopilotApiTest {
             }
         }
 
+    @Test fun immediateServiceRetryDoesNotReplayCompletion() =
+        runBlocking {
+            server.enqueue(MockResponse().setResponseCode(503).setHeader("Retry-After", "0"))
+            enqueue("""{"choices":[{"finish_reason":"stop","message":{"role":"assistant","content":"replayed"}}]}""")
+            assertProblem(ConversationProblem.SERVICE) {
+                api.complete(access, model, "friend:mobi", listOf(ConversationTurn("hello", true)))
+            }
+            assertEquals(1, server.requestCount)
+        }
+
     @Test fun providerRejectionsAreClassifiedWithoutExposingProviderText() {
         for (body in listOf(
             """{"error":"no_eligible_models"}""",

@@ -137,7 +137,9 @@ Credentials use atomic AES-256-GCM storage in `noBackupFilesDir` with an Android
 Keystore key; package identity separates Debug and Release. Tokens never enter
 UI/domain state, saved state, Room, preferences, logs or backups. App foreground
 startup restores/validates credentials and refreshes expiring tokens, persisting
-rotated tokens before identity validation. Network errors preserve credentials;
+rotated tokens before identity validation. Failed or cancelled identity checks must
+complete successfully before the replacement can authorize conversation requests.
+Rotation invalidates outstanding credential revisions. Network errors preserve credentials;
 revocation/expired refresh tokens require approval again. Unreadable storage fails
 closed. Disconnect removes the local credential/key, not the GitHub grant or subscription.
 
@@ -174,7 +176,11 @@ reasoning is excluded from display and history.
 Tokens stay inside `core-auth`; the credential owner handles OAuth refresh. Recheck
 credential ownership and parked/AAOS authorization before each network stage and
 reply acceptance. Copilot credentials go only to allowlisted HTTPS hosts; redirects
-and automatic HTTP retries are disabled. Errors expose recovery categories, never
+are disabled and completion bodies are single-use, including HTTP 503 follow-ups.
+A Copilot 401 invalidates only the matching credential revision and opens the existing
+account recheck flow. Recheck validates/refreshes through GitHub; confirmed revocation
+clears credentials and offers approval again. Recheck never resends dialogue.
+Errors expose recovery categories, never
 provider bodies; bounded JSON/plain-text errors become fixed categories only.
 Debug diagnostics contain only stage, HTTP status, catalog counts
 and fixed rejection categories; Release logging is disabled. Cancellation cannot

@@ -69,6 +69,7 @@ internal class CopilotConversationProvider(
     private val interactionAllowed: () -> Boolean,
     private val api: CopilotApi,
     private val nowMillis: () -> Long,
+    private val rejectCredential: suspend (ConversationCredential) -> Unit,
 ) : ConversationProvider {
     private val mutex = Mutex()
     private var cachedCredential: ConversationCredential? = null
@@ -156,7 +157,13 @@ internal class CopilotConversationProvider(
                 if (!interactionAllowed()) throw ConversationException(ConversationProblem.RESTRICTED)
                 val lease = credential(accountId)
                 guard(lease)
-                val result = block(lease)
+                val result =
+                    try {
+                        block(lease)
+                    } catch (error: ConversationException) {
+                        if (error.problem == ConversationProblem.ACCOUNT) rejectCredential(lease)
+                        throw error
+                    }
                 guard(lease)
                 ConversationResult.Success(result)
             } catch (cancelled: CancellationException) {
@@ -203,6 +210,7 @@ internal class CopilotConversationProvider(
                 interactionAllowed,
                 OkHttpCopilotApi(client, System::currentTimeMillis),
                 System::currentTimeMillis,
+                authentication::rejectConversationCredential,
             )
         }
     }

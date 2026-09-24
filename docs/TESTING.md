@@ -80,9 +80,9 @@ Related suites share the linked module/package; test names define individual cas
 | Contract | Coverage |
 | --- | --- |
 | OAuth request/response validation, HTTP errors and redirects | [OkHttpGitHubApiTest](../core/core-auth/src/test/java/com/monsters/mobimon/core/auth/OkHttpGitHubApiTest.kt); MockWebServer |
-| Copilot host validation, fixed `gpt-4o` direct request, text protocols, bounded rejection categories and no replay | [OkHttpCopilotApiTest](../core/core-auth/src/test/java/com/monsters/mobimon/core/auth/OkHttpCopilotApiTest.kt); MockWebServer |
+| Copilot host validation, fixed `gpt-4o` direct request, text protocols, bounded rejection categories and no replay even with `503 Retry-After: 0` | [OkHttpCopilotApiTest](../core/core-auth/src/test/java/com/monsters/mobimon/core/auth/OkHttpCopilotApiTest.kt); MockWebServer |
 | Copilot credential/model cache, model absence, expiry, parking checks and request bounds | [CopilotConversationProviderTest](../core/core-auth/src/test/java/com/monsters/mobimon/core/auth/CopilotConversationProviderTest.kt); fake provider |
-| Poll intervals, slowdown, expiry, cancellation, persistence, refresh and revocation | [PersistentGitHubAuthenticationTest](../core/core-auth/src/test/java/com/monsters/mobimon/core/auth/PersistentGitHubAuthenticationTest.kt); fake provider/store |
+| Poll intervals, slowdown, expiry, cancellation, persistence, refresh, identity retry after failure/cancellation, revision-scoped Copilot 401 recovery without replay and revocation | [PersistentGitHubAuthenticationTest](../core/core-auth/src/test/java/com/monsters/mobimon/core/auth/PersistentGitHubAuthenticationTest.kt); fake provider/store |
 | Keystore encryption, reopening, tamper rejection and deletion | [EncryptedCredentialStoreTest](../core/core-auth/src/androidTest/java/com/monsters/mobimon/core/auth/EncryptedCredentialStoreTest.kt); device |
 | Authentication guards/recovery, reference-layout parking guard, readiness separation, QR decoding and success/disconnect actions | [Authentication feature suites](../feature/feature-auth/src/test/java/com/monsters/mobimon/feature/auth); ViewModel and Robolectric |
 

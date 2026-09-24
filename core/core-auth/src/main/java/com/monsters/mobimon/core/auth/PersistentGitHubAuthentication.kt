@@ -31,12 +31,14 @@ class PersistentGitHubAuthentication internal constructor(
 ) : GitHubAuthentication {
     private val mutex = Mutex()
     private val credentialRevision = AtomicLong()
+    private var validatedAccessToken: String? = null
     private val mutableSession = MutableStateFlow<GitHubSession>(GitHubSession.Restoring)
     override val session = mutableSession.asStateFlow()
     override val configured = clientId.isNotBlank()
 
     override suspend fun restore() =
         mutex.withLock {
+            invalidateCredential()
             if (!configured) {
                 mutableSession.value = GitHubSession.SignedOut
                 return@withLock
@@ -70,6 +72,7 @@ class PersistentGitHubAuthentication internal constructor(
                         }
                     }
                 currentCoroutineContext().ensureActive()
+                validatedAccessToken = tokens.accessToken
                 mutableSession.value = GitHubSession.Authenticated(account)
             } catch (error: AuthenticationException) {
                 if (error.problem == AuthenticationProblem.REAUTHENTICATION) {
@@ -126,10 +129,12 @@ class PersistentGitHubAuthentication internal constructor(
                                     if (elapsedMillis() >= deadline) break
                                     currentCoroutineContext().ensureActive()
                                     emit(GitHubSignIn.Requesting)
+                                    invalidateCredential()
                                     storage { store.write(StoredCredential(clientId, result.tokens)) }
                                     val account = api.account(result.tokens.accessToken)
                                     requireInteraction()
                                     currentCoroutineContext().ensureActive()
+                                    validatedAccessToken = result.tokens.accessToken
                                     mutableSession.value = GitHubSession.Authenticated(account)
                                     emit(GitHubSignIn.Complete)
                                     return@withLock
@@ -153,7 +158,7 @@ class PersistentGitHubAuthentication internal constructor(
 
     override suspend fun disconnect() =
         mutex.withLock {
-            credentialRevision.incrementAndGet()
+            invalidateCredential()
             try {
                 storage { store.clear() }
                 mutableSession.value = GitHubSession.SignedOut
@@ -175,19 +180,25 @@ class PersistentGitHubAuthentication internal constructor(
                 throw AuthenticationException(AuthenticationProblem.REAUTHENTICATION)
             }
             var tokens = stored.tokens
-            if (tokens.expiresAtMillis?.let { it <= nowMillis() + 60_000 } == true) {
-                try {
+            try {
+                if (tokens.expiresAtMillis?.let { it <= nowMillis() + 60_000 } == true) {
                     tokens = refresh(tokens)
+                }
+                // A rotated token may have been persisted before identity validation failed or was cancelled.
+                if (tokens.accessToken != validatedAccessToken) {
                     val account = api.account(tokens.accessToken)
                     if (account.id != accountId) throw AuthenticationException(AuthenticationProblem.REAUTHENTICATION)
-                } catch (error: AuthenticationException) {
-                    if (error.problem == AuthenticationProblem.REAUTHENTICATION) {
-                        credentialRevision.incrementAndGet()
-                        storage { store.clear() }
-                        mutableSession.value = GitHubSession.Failure(error.problem)
-                    }
-                    throw error
+                    currentCoroutineContext().ensureActive()
+                    requireInteraction()
+                    validatedAccessToken = tokens.accessToken
                 }
+            } catch (error: AuthenticationException) {
+                if (error.problem == AuthenticationProblem.REAUTHENTICATION) {
+                    invalidateCredential()
+                    storage { store.clear() }
+                    mutableSession.value = GitHubSession.Failure(error.problem)
+                }
+                throw error
             }
             requireInteraction()
             ConversationCredential(accountId, credentialRevision.get(), tokens.accessToken)
@@ -197,7 +208,21 @@ class PersistentGitHubAuthentication internal constructor(
         credential.revision == credentialRevision.get() &&
             (session.value as? GitHubSession.Authenticated)?.account?.id == credential.accountId
 
+    internal suspend fun rejectConversationCredential(credential: ConversationCredential) =
+        mutex.withLock {
+            if (!isCurrent(credential)) return@withLock
+            invalidateCredential()
+            // Copilot's rejection does not prove GitHub revocation. Keep storage for explicit restore/refresh.
+            mutableSession.value = GitHubSession.Failure(AuthenticationProblem.PROVIDER)
+        }
+
+    private fun invalidateCredential() {
+        credentialRevision.incrementAndGet()
+        validatedAccessToken = null
+    }
+
     private suspend fun refresh(tokens: GitHubTokens): GitHubTokens {
+        invalidateCredential()
         val refresh = tokens.refreshToken ?: throw AuthenticationException(AuthenticationProblem.REAUTHENTICATION)
         if (tokens.refreshExpiresAtMillis?.let { it <= nowMillis() } == true) {
             throw AuthenticationException(AuthenticationProblem.REAUTHENTICATION)

@@ -11,8 +11,10 @@ import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import okhttp3.RequestBody
 import okhttp3.RequestBody.Companion.toRequestBody
 import okhttp3.Response
+import okio.BufferedSink
 import org.json.JSONObject
 import java.io.IOException
 import java.io.InterruptedIOException
@@ -88,13 +90,24 @@ internal class OkHttpCopilotApi(
         messages: List<ConversationTurn>,
     ): String {
         val endpoint = model.api ?: fail(ConversationProblem.PROVIDER)
-        val body = CopilotMessageCodec.request(model, friendId, messages)
+        val body = CopilotMessageCodec.request(model, friendId, messages).toString().toRequestBody(JSON_MEDIA_TYPE)
+        // OkHttp can follow a 503 Retry-After: 0 even with connection retries disabled.
+        val singleUseBody =
+            object : RequestBody() {
+                override fun contentType() = body.contentType()
+
+                override fun contentLength() = body.contentLength()
+
+                override fun isOneShot() = true
+
+                override fun writeTo(sink: BufferedSink) = body.writeTo(sink)
+            }
         val json =
             request(
                 CopilotRequestStage.COMPLETION,
                 builder(access, endpoint.path)
                     .header("X-Initiator", "user")
-                    .post(body.toString().toRequestBody(JSON_MEDIA_TYPE)),
+                    .post(singleUseBody),
             )
         return CopilotMessageCodec.reply(endpoint, json)
     }

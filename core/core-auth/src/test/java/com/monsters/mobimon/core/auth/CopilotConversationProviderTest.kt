@@ -22,6 +22,7 @@ class CopilotConversationProviderTest {
             { allowed },
             api,
             { now },
+            { current = false },
         )
 
     @Test fun readinessRequiresExchangeAndModelAndRefreshesBeforeExpiryOrAccountRevisionChange() =
