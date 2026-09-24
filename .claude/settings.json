@@ -6,7 +6,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 \"$(git rev-parse --show-toplevel)/scripts/validate_merge.py\"",
+            "command": "python3 \"$(git rev-parse --show-toplevel)/scripts/github/validate_merge.py\"",
             "timeout": 30
           },
           {

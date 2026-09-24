@@ -33,7 +33,7 @@ jobs:
           ref: ${{ github.event.repository.default_branch }}
           persist-credentials: false
       - name: Validate current issue and update feedback
-        run: python3 scripts/issue_feedback.py --repository "$ISSUE_REPOSITORY" --issue-number "$ISSUE_NUMBER"
+        run: python3 scripts/github/issue_feedback.py --repository "$ISSUE_REPOSITORY" --issue-number "$ISSUE_NUMBER"
         env:
           GH_TOKEN: ${{ github.token }}
           ISSUE_REPOSITORY: ${{ github.repository }}
