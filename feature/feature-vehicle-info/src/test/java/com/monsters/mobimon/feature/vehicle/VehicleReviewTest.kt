@@ -22,6 +22,7 @@ import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.unit.Density
+import androidx.compose.ui.unit.dp
 import com.monsters.mobimon.core.domain.DrivingState
 import com.monsters.mobimon.core.domain.SignalQuality
 import com.monsters.mobimon.core.domain.SignalSource
@@ -82,6 +83,57 @@ class VehicleReviewTest {
 
         assertTextFullyVisible("마지막 확인: 1분 전")
         assertTextFullyVisible("마지막 확인: 19초 전")
+    }
+
+    @Test
+    fun referenceMetricCardsUseAvailableVerticalSpace() {
+        show({ samples().first().second }, fontScale = 1f)
+
+        val reference = compose.onNodeWithTag("vehicle-reference").getUnclippedBoundsInRoot()
+        val finalCardText = compose.onNodeWithText("Debug 패널에서 받은 예시 데이터").getUnclippedBoundsInRoot()
+
+        assertTrue(
+            "Final metric row should settle near the lower content area",
+            finalCardText.bottom > reference.bottom - 260.dp,
+        )
+    }
+
+    @Test
+    fun referenceMetricCardsKeepNavigationBarClearance() {
+        show({ samples().first().second }, fontScale = 1f)
+
+        compose.runOnIdle {
+            val bitmap = Bitmap.createBitmap(view.width, view.height, Bitmap.Config.ARGB_8888)
+            view.draw(Canvas(bitmap))
+            val panelRgb = 0x142A42
+            val bottomClearanceStart = (bitmap.height - 48).coerceAtLeast(0)
+            var panelPixels = 0
+            for (y in bottomClearanceStart until bitmap.height) {
+                for (x in 0 until bitmap.width) {
+                    if (bitmap.getPixel(x, y) and 0xFFFFFF == panelRgb) {
+                        panelPixels += 1
+                    }
+                }
+            }
+            bitmap.recycle()
+            assertEquals("Metric cards must clear the bottom navigation bar area", 0, panelPixels)
+        }
+    }
+
+    @Test
+    @Config(qualifiers = "ko-rKR-w1125dp-h1200dp-mdpi")
+    fun compactWideMetricRowsUseEqualCardHeights() {
+        show({ samples().first().second }, fontScale = 1f)
+
+        val topRowCard = compose.onNodeWithTag("vehicle-card-battery").getUnclippedBoundsInRoot()
+        val bottomRowCard = compose.onNodeWithTag("vehicle-card-environment").getUnclippedBoundsInRoot()
+
+        assertEquals(
+            "Metric card rows should use matching heights",
+            (topRowCard.bottom - topRowCard.top).value,
+            (bottomRowCard.bottom - bottomRowCard.top).value,
+            1f,
+        )
     }
 
     @Test
