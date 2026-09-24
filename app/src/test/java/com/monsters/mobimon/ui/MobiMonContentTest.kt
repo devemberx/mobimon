@@ -170,14 +170,14 @@ class MobiMonContentTest {
     }
 
     @Test
-    fun restrictionGatePreservesDestinationAcrossRecovery() {
+    fun restrictedAppUseKeepsDestinationVisibleAcrossRecovery() {
         val appUse = mutableStateOf(AppUseState.ALLOWED)
         compose.setContent { MobiMonContent(entries, appUseState = appUse.value) }
         compose.onNodeWithText("Open menu").performClick()
         clickMenuItem("퀘스트")
         compose.runOnIdle { appUse.value = AppUseState.RESTRICTED }
-        compose.onNodeWithText("Route QUESTS").assertDoesNotExist()
-        compose.onNodeWithText("지금은 MobiMon 사용이 제한돼요").assertExists()
+        compose.onNodeWithText("Route QUESTS").assertExists()
+        compose.onNodeWithText("지금은 MobiMon 사용이 제한돼요").assertDoesNotExist()
         compose.runOnIdle { appUse.value = AppUseState.ALLOWED }
         compose.onNodeWithText("Route QUESTS").assertExists()
     }
@@ -205,10 +205,20 @@ class MobiMonContentTest {
     }
 
     @Test
-    fun missingAppUseEvidenceFailsClosed() {
+    fun missingAppUseEvidenceKeepsReadOnlyShellVisible() {
         compose.setContent { MobiMonContent(entries) }
-        compose.onNodeWithText("Route HOME").assertDoesNotExist()
-        compose.onNodeWithText("지금은 MobiMon 사용이 제한돼요").assertExists()
+        compose.onNodeWithText("Route HOME").assertExists()
+        compose.onNodeWithText("지금은 MobiMon 사용이 제한돼요").assertDoesNotExist()
+    }
+
+    @Test
+    fun restrictedAppUseKeepsNavigationAvailable() {
+        compose.setContent { MobiMonContent(entries, appUseState = AppUseState.RESTRICTED) }
+        compose.onNodeWithText("Route HOME").assertExists()
+        compose.onNodeWithText("Open menu").performClick()
+        clickMenuItem("퀘스트")
+        compose.onNodeWithText("Route QUESTS").assertExists()
+        compose.onNodeWithText("지금은 MobiMon 사용이 제한돼요").assertDoesNotExist()
     }
 
     @Test
@@ -247,6 +257,28 @@ class MobiMonContentTest {
 
         compose.onNodeWithTag("menu-version").performScrollTo().performClick()
         compose.runOnIdle { assertTrue(resetRequests == 1) }
+    }
+
+    @Test
+    fun restrictedAppUseDoesNotUnlockDebuggerFromVersionTaps() {
+        var resetRequests = 0
+        show(
+            appUseState = AppUseState.RESTRICTED,
+            debugSettingsAvailableByDefault = false,
+            onReleaseDebuggerUnlocked = { resetRequests++ },
+        )
+        compose.onNodeWithText("Open menu").performClick()
+
+        repeat(10) {
+            compose.onNodeWithTag("menu-version").performScrollTo().performClick()
+        }
+        compose.runOnIdle { assertTrue(resetRequests == 0) }
+        compose.onNodeWithText("debugger 버튼이 활성화 되었습니다").assertDoesNotExist()
+        compose.onNodeWithContentDescription("닫기").performClick()
+        compose.onNodeWithText("Open menu").performClick()
+        clickMenuItem("설정")
+
+        compose.onNodeWithText("Debugger").assertDoesNotExist()
     }
 
     @Test
@@ -356,6 +388,7 @@ class MobiMonContentTest {
     }
 
     private fun show(
+        appUseState: AppUseState = AppUseState.ALLOWED,
         debugSettingsAvailableByDefault: Boolean = true,
         reducedMotion: Boolean = false,
         onReleaseDebuggerUnlocked: () -> Unit = {},
@@ -363,7 +396,7 @@ class MobiMonContentTest {
         compose.setContent {
             MobiMonContent(
                 entries,
-                appUseState = AppUseState.ALLOWED,
+                appUseState = appUseState,
                 reducedMotion = reducedMotion,
                 debugSettingsAvailableByDefault = debugSettingsAvailableByDefault,
                 onReleaseDebuggerUnlocked = onReleaseDebuggerUnlocked,

@@ -42,7 +42,6 @@ import androidx.compose.ui.layout.LayoutCoordinates
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
@@ -66,8 +65,6 @@ import com.monsters.mobimon.core.navigation.FeatureRegistry
 import com.monsters.mobimon.core.navigation.LocalDebugSettingsAvailable
 import com.monsters.mobimon.core.presentation.CompanionAppearancePresentation
 import com.monsters.mobimon.core.ui.LocalMobiMonMotionEnabled
-import com.monsters.mobimon.core.ui.MobiMonContentColumn
-import com.monsters.mobimon.core.ui.MobiMonMessage
 import com.monsters.mobimon.core.ui.MobiMonTheme
 import com.monsters.mobimon.runtime.AppUseStateSource
 import kotlinx.coroutines.delay
@@ -235,146 +232,138 @@ fun MobiMonContent(
             Surface(modifier = modifier.fillMaxSize()) {
                 Box(Modifier.fillMaxSize()) {
                     Box(Modifier.fillMaxSize().safeDrawingPadding().onGloballyPositioned { contentCoordinates = it }) {
-                        if (appUseState != AppUseState.ALLOWED) {
-                            MobiMonContentColumn {
-                                Text(
-                                    stringResource(R.string.app_use_paused),
-                                    style = MaterialTheme.typography.headlineMedium,
-                                )
-                                MobiMonMessage(stringResource(R.string.app_use_restricted))
-                            }
-                        } else {
-                            BackHandler(enabled = shell.menuOpen || shell.route != CompanionRoute.HOME) {
-                                navigator.back()
-                            }
-                            AnimatedContent(
-                                targetState = shell.route,
-                                modifier = Modifier.fillMaxSize(),
-                                contentKey = { it.name },
-                                transitionSpec = {
-                                    val anchored = reveal
-                                    if (
-                                        anchored != null &&
-                                        setOf(initialState, targetState) == setOf(CompanionRoute.HOME, anchored.route)
-                                    ) {
-                                        (EnterTransition.None togetherWith ExitTransition.KeepUntilTransitionsFinished)
-                                            .using(null)
-                                            .apply {
-                                                targetContentZIndex =
-                                                    if (targetState == CompanionRoute.HOME) 0f else 1f
-                                            }
-                                    } else {
-                                        val direction = if (returning) -1 else 1
-                                        val motion =
-                                            tween<IntOffset>(
-                                                if (reducedMotion) 0 else NAVIGATION_MOTION_DURATION_MILLIS,
-                                                easing = FastOutSlowInEasing,
-                                            )
-                                        val fade =
-                                            tween<Float>(
-                                                if (reducedMotion) 0 else NAVIGATION_MOTION_DURATION_MILLIS,
-                                                easing = FastOutSlowInEasing,
-                                            )
-                                        (
-                                            (
-                                                slideInHorizontally(motion) { direction * it / 18 } + fadeIn(fade)
-                                            ) togetherWith
-                                                (slideOutHorizontally(motion) { -direction * it / 36 } + fadeOut(fade))
-                                        ).using(null).apply { targetContentZIndex = 1f }
-                                    }
-                                },
-                                label = "destination change",
-                            ) { route ->
-                                val active = route == shell.route
-                                val routeNavigator =
-                                    FeatureNavigator(
-                                        navigate = { if (active) navigator.navigate(it) },
-                                        back = { if (active) navigator.back() },
-                                        returnHome = { if (active) navigator.returnHome() },
-                                        openMenu = { if (active) navigator.openMenu() },
-                                        navigateFrom = { destination, bounds ->
-                                            if (active) navigator.navigateFrom(destination, bounds)
-                                        },
-                                    )
-                                val anchored = reveal?.takeIf { it.route == route }
-                                val revealModifier =
-                                    if (anchored != null) {
-                                        val progress =
-                                            transition.animateFloat(
-                                                transitionSpec = {
-                                                    tween(
-                                                        if (reducedMotion) {
-                                                            0
-                                                        } else if (targetState ==
-                                                            EnterExitState.Visible
-                                                        ) {
-                                                            CONVERSATION_REVEAL_DURATION_MILLIS
-                                                        } else {
-                                                            NAVIGATION_MOTION_DURATION_MILLIS
-                                                        },
-                                                        easing = FastOutSlowInEasing,
-                                                    )
-                                                },
-                                                label = "conversation reveal",
-                                            ) { state -> if (state == EnterExitState.Visible) 1f else 0f }
-                                        Modifier.revealFrom(anchored.origin) { progress.value }
-                                    } else {
-                                        Modifier
-                                    }
-                                Box(
-                                    Modifier.fillMaxSize().then(revealModifier).then(
-                                        if (active) Modifier else Modifier.clearAndSetSemantics {},
-                                    ),
+                        BackHandler(enabled = shell.menuOpen || shell.route != CompanionRoute.HOME) {
+                            navigator.back()
+                        }
+                        AnimatedContent(
+                            targetState = shell.route,
+                            modifier = Modifier.fillMaxSize(),
+                            contentKey = { it.name },
+                            transitionSpec = {
+                                val anchored = reveal
+                                if (
+                                    anchored != null &&
+                                    setOf(initialState, targetState) == setOf(CompanionRoute.HOME, anchored.route)
                                 ) {
-                                    stateHolder.SaveableStateProvider(route.name) {
-                                        registry[route].Content(route, routeNavigator, Modifier)
-                                    }
-                                    if (!active) {
-                                        Box(
-                                            Modifier
-                                                .fillMaxSize()
-                                                .clickable(
-                                                    interactionSource = remember { MutableInteractionSource() },
-                                                    indication = null,
-                                                ) {}
-                                                .clearAndSetSemantics {},
+                                    (EnterTransition.None togetherWith ExitTransition.KeepUntilTransitionsFinished)
+                                        .using(null)
+                                        .apply {
+                                            targetContentZIndex =
+                                                if (targetState == CompanionRoute.HOME) 0f else 1f
+                                        }
+                                } else {
+                                    val direction = if (returning) -1 else 1
+                                    val motion =
+                                        tween<IntOffset>(
+                                            if (reducedMotion) 0 else NAVIGATION_MOTION_DURATION_MILLIS,
+                                            easing = FastOutSlowInEasing,
                                         )
-                                    }
+                                    val fade =
+                                        tween<Float>(
+                                            if (reducedMotion) 0 else NAVIGATION_MOTION_DURATION_MILLIS,
+                                            easing = FastOutSlowInEasing,
+                                        )
+                                    (
+                                        (
+                                            slideInHorizontally(motion) { direction * it / 18 } + fadeIn(fade)
+                                        ) togetherWith
+                                            (slideOutHorizontally(motion) { -direction * it / 36 } + fadeOut(fade))
+                                    ).using(null).apply { targetContentZIndex = 1f }
+                                }
+                            },
+                            label = "destination change",
+                        ) { route ->
+                            val active = route == shell.route
+                            val routeNavigator =
+                                FeatureNavigator(
+                                    navigate = { if (active) navigator.navigate(it) },
+                                    back = { if (active) navigator.back() },
+                                    returnHome = { if (active) navigator.returnHome() },
+                                    openMenu = { if (active) navigator.openMenu() },
+                                    navigateFrom = { destination, bounds ->
+                                        if (active) navigator.navigateFrom(destination, bounds)
+                                    },
+                                )
+                            val anchored = reveal?.takeIf { it.route == route }
+                            val revealModifier =
+                                if (anchored != null) {
+                                    val progress =
+                                        transition.animateFloat(
+                                            transitionSpec = {
+                                                tween(
+                                                    if (reducedMotion) {
+                                                        0
+                                                    } else if (targetState ==
+                                                        EnterExitState.Visible
+                                                    ) {
+                                                        CONVERSATION_REVEAL_DURATION_MILLIS
+                                                    } else {
+                                                        NAVIGATION_MOTION_DURATION_MILLIS
+                                                    },
+                                                    easing = FastOutSlowInEasing,
+                                                )
+                                            },
+                                            label = "conversation reveal",
+                                        ) { state -> if (state == EnterExitState.Visible) 1f else 0f }
+                                    Modifier.revealFrom(anchored.origin) { progress.value }
+                                } else {
+                                    Modifier
+                                }
+                            Box(
+                                Modifier.fillMaxSize().then(revealModifier).then(
+                                    if (active) Modifier else Modifier.clearAndSetSemantics {},
+                                ),
+                            ) {
+                                stateHolder.SaveableStateProvider(route.name) {
+                                    registry[route].Content(route, routeNavigator, Modifier)
+                                }
+                                if (!active) {
+                                    Box(
+                                        Modifier
+                                            .fillMaxSize()
+                                            .clickable(
+                                                interactionSource = remember { MutableInteractionSource() },
+                                                indication = null,
+                                            ) {}
+                                            .clearAndSetSemantics {},
+                                    )
                                 }
                             }
                         }
                     }
-                    if (appUseState == AppUseState.ALLOWED) {
-                        CompanionMenu(
-                            visible = shell.menuOpen,
-                            currentRoute = shell.route,
-                            onClose = navigator.back,
-                            onNavigate = navigator.navigate,
-                            onVersionClick = {
-                                if (!debugSettingsAvailableByDefault && debuggerUnlockTapCount < DEBUGGER_UNLOCK_TAPS) {
-                                    debuggerUnlockTapCount += 1
-                                    debuggerUnlockTapVersion += 1
-                                    val remaining = DEBUGGER_UNLOCK_TAPS - debuggerUnlockTapCount
-                                    debuggerUnlockNotice =
-                                        if (remaining == 0) {
-                                            onReleaseDebuggerUnlocked()
-                                            context.getString(R.string.debugger_unlocked)
-                                        } else if (remaining <= DEBUGGER_UNLOCK_NOTICE_THRESHOLD) {
-                                            context.getString(R.string.debugger_unlock_remaining, remaining)
-                                        } else {
-                                            null
-                                        }
-                                    if (debuggerUnlockNotice != null) {
-                                        debuggerUnlockNoticeVersion += 1
+                    CompanionMenu(
+                        visible = shell.menuOpen,
+                        currentRoute = shell.route,
+                        onClose = navigator.back,
+                        onNavigate = navigator.navigate,
+                        onVersionClick = {
+                            if (
+                                appUseState == AppUseState.ALLOWED &&
+                                !debugSettingsAvailableByDefault &&
+                                debuggerUnlockTapCount < DEBUGGER_UNLOCK_TAPS
+                            ) {
+                                debuggerUnlockTapCount += 1
+                                debuggerUnlockTapVersion += 1
+                                val remaining = DEBUGGER_UNLOCK_TAPS - debuggerUnlockTapCount
+                                debuggerUnlockNotice =
+                                    if (remaining == 0) {
+                                        onReleaseDebuggerUnlocked()
+                                        context.getString(R.string.debugger_unlocked)
+                                    } else if (remaining <= DEBUGGER_UNLOCK_NOTICE_THRESHOLD) {
+                                        context.getString(R.string.debugger_unlock_remaining, remaining)
+                                    } else {
+                                        null
                                     }
+                                if (debuggerUnlockNotice != null) {
+                                    debuggerUnlockNoticeVersion += 1
                                 }
-                            },
-                            activeFriendId = activeFriendId,
-                            accessoryId = activeAccessoryId,
-                            outfitId = activeOutfitId,
-                            backgroundId = activeBackgroundId,
-                        )
-                    }
+                            }
+                        },
+                        activeFriendId = activeFriendId,
+                        accessoryId = activeAccessoryId,
+                        outfitId = activeOutfitId,
+                        backgroundId = activeBackgroundId,
+                    )
                     if (appUseState == AppUseState.ALLOWED) {
                         debugOverlay()
                     }
