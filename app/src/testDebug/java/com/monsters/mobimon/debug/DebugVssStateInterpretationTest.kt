@@ -100,8 +100,8 @@ class DebugVssStateInterpretationTest {
     }
 
     @Test
-    fun debugHoursAndLabelsSelectTheSameFiveBackgroundsAsTheScreens() {
-        val expected =
+    fun debugHoursKeepFiveEvidenceLabelsAndSelectSevenDecorativeBackgrounds() {
+        val evidence =
             listOf(
                 "Night",
                 "Night",
@@ -128,11 +128,38 @@ class DebugVssStateInterpretationTest {
                 "Night",
                 "Night",
             )
-        expected.forEachIndexed { hour, period ->
+        val backgrounds =
+            listOf(
+                "Midnight",
+                "Midnight",
+                "Midnight",
+                "Midnight",
+                "Midnight",
+                "Sunrise",
+                "Sunrise",
+                "Morning",
+                "Morning",
+                "Morning",
+                "Morning",
+                "Morning",
+                "Day",
+                "Day",
+                "Day",
+                "Day",
+                "Afternoon",
+                "Afternoon",
+                "Sunset",
+                "Sunset",
+                "Night",
+                "Night",
+                "Night",
+                "Night",
+            )
+        evidence.forEachIndexed { hour, period ->
             assertEquals("Hour $hour", period, interpretVssTimeOfDay(hour.toString()))
             assertEquals(
                 com.monsters.mobimon.core.ui
-                    .companionBackgroundRes(period),
+                    .companionBackgroundRes(backgrounds[hour]),
                 com.monsters.mobimon.core.ui
                     .companionBackgroundRes(hour.toString()),
             )

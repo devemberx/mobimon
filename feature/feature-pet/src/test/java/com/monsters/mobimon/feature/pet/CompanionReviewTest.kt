@@ -126,6 +126,8 @@ class CompanionReviewTest {
         assertEquals(bounds, compose.onNodeWithContentDescription("Mobi 강아지").fetchSemanticsNode().boundsInRoot)
     }
 
+    @Test fun sunriseHomeReferenceRender() = homeRender("Sunrise")
+
     @Test fun morningHomeReferenceRender() = homeRender("Morning")
 
     @Test fun dayHomeReferenceRender() = homeRender("Day")
@@ -133,6 +135,8 @@ class CompanionReviewTest {
     @Test fun afternoonHomeReferenceRender() = homeRender("Afternoon")
 
     @Test fun sunsetHomeReferenceRender() = homeRender("Sunset")
+
+    @Test fun midnightHomeReferenceRender() = homeRender("Midnight")
 
     @Test
     @Config(qualifiers = "ko-rKR-w1792dp-h893dp-mdpi")
@@ -161,7 +165,7 @@ class CompanionReviewTest {
             }
         }
         val skyColors = mutableSetOf<Int>()
-        listOf("Morning", "Day", "Afternoon", "Sunset", "Night").forEach { period ->
+        listOf("Sunrise", "Morning", "Day", "Afternoon", "Sunset", "Night", "Midnight").forEach { period ->
             compose.runOnIdle { time.value = period }
             assertLightlyTintedCrop(view, period)
             compose.runOnIdle {
@@ -175,7 +179,7 @@ class CompanionReviewTest {
                 bitmap.recycle()
             }
         }
-        assertEquals("Each period must render its own background", 5, skyColors.size)
+        assertEquals("Each period must render its own background", 7, skyColors.size)
         compose.onNodeWithTag("home-companion-message").performScrollTo().assertIsDisplayed()
         assertSpeechBubbleTextAndProportions()
         capture(view, "home-enlarged-text-bubble")

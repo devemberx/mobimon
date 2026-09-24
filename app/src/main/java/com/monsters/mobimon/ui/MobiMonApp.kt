@@ -45,10 +45,18 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.repeatOnLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.lifecycle.viewmodel.initializer
+import androidx.lifecycle.viewmodel.viewModelFactory
 import com.monsters.mobimon.BuildConfig
 import com.monsters.mobimon.R
 import com.monsters.mobimon.core.domain.AppUseState
+import com.monsters.mobimon.core.domain.AuthenticationProblem
+import com.monsters.mobimon.core.domain.ConversationProvider
 import com.monsters.mobimon.core.domain.CosmeticSlot
 import com.monsters.mobimon.core.domain.GitHubAuthentication
 import com.monsters.mobimon.core.domain.GitHubSession
@@ -61,9 +69,13 @@ import com.monsters.mobimon.core.navigation.FeatureNavigator
 import com.monsters.mobimon.core.navigation.FeatureRegistry
 import com.monsters.mobimon.core.navigation.LocalDebugSettingsAvailable
 import com.monsters.mobimon.core.presentation.CompanionAppearancePresentation
+import com.monsters.mobimon.core.presentation.VehiclePresentation
+import com.monsters.mobimon.core.presentation.parkedVerified
 import com.monsters.mobimon.core.ui.LocalMobiMonMotionEnabled
 import com.monsters.mobimon.core.ui.MobiMonTheme
+import com.monsters.mobimon.feature.auth.ConversationViewModel
 import com.monsters.mobimon.runtime.AppUseStateSource
+import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -86,10 +98,31 @@ fun MobiMonApp(
     companion: CompanionAppearancePresentation,
     settings: SettingsRepository,
     authentication: GitHubAuthentication,
+    conversation: ConversationProvider,
+    vehicle: VehiclePresentation,
 ) {
     val state by appUse.states.collectAsStateWithLifecycle()
     val session by authentication.session.collectAsStateWithLifecycle()
+    val conversationFactory =
+        remember(authentication, conversation) {
+            viewModelFactory { initializer { ConversationViewModel(authentication, conversation) } }
+        }
+    val conversationModel: ConversationViewModel = viewModel(factory = conversationFactory)
+    val parked = vehicle.snapshot().parkedVerified
+    val lifecycle = LocalLifecycleOwner.current.lifecycle
+    val canCheck = parked && state == AppUseState.ALLOWED
+    LaunchedEffect(conversationModel, lifecycle, canCheck) {
+        lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
+            conversationModel.setForegroundAllowed(canCheck, refresh = canCheck)
+            try {
+                awaitCancellation()
+            } finally {
+                conversationModel.setForegroundAllowed(false)
+            }
+        }
+    }
     val appearance = companion.state()
+    val currentSession = session
     val activeFriendId = appearance.inventory?.equippedItemIds?.get(CosmeticSlot.FRIEND)
     val debugResetScope = rememberCoroutineScope()
     MobiMonContent(
@@ -99,7 +132,12 @@ fun MobiMonApp(
         activeAccessoryId = appearance.accessoryId,
         activeOutfitId = appearance.outfitId,
         activeBackgroundId = appearance.backgroundId,
-        conversationAuthenticated = session is GitHubSession.Authenticated,
+        conversationAuthenticated =
+            currentSession is GitHubSession.Authenticated ||
+                currentSession == GitHubSession.Restoring ||
+                currentSession is GitHubSession.Failure &&
+                currentSession.problem in
+                setOf(AuthenticationProblem.NETWORK, AuthenticationProblem.PROVIDER),
         onReleaseDebuggerUnlocked = {
             debugResetScope.launch {
                 settings.setDebugModeEnabled(false)

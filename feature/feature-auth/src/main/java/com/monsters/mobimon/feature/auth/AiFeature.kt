@@ -1,6 +1,8 @@
 package com.monsters.mobimon.feature.auth
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -14,6 +16,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -21,6 +24,7 @@ import androidx.lifecycle.repeatOnLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
+import com.monsters.mobimon.core.domain.AuthenticationProblem
 import com.monsters.mobimon.core.domain.ConversationProblem
 import com.monsters.mobimon.core.domain.ConversationProvider
 import com.monsters.mobimon.core.domain.CosmeticSlot
@@ -85,20 +89,28 @@ class AiFeature(
         val companion by model.state.collectAsStateWithLifecycle()
         val profile = companion.profile
         if (profile == null) {
-            MobiMonDestination(stringResource(R.string.copilot_title), navigator.back, navigator.returnHome, modifier) {
-                MobiMonContentColumn {
-                    MobiMonMessage(
-                        stringResource(
-                            if (companion.failed) R.string.ai_context_failed else R.string.ai_context_loading,
-                        ),
-                        isError = companion.failed,
-                    )
-                    if (companion.failed) {
-                        MobiMonButton(
-                            onClick = model::retry,
-                        ) { Text(stringResource(R.string.ai_retry)) }
+            val parkingRequired = route == AiRoute.CONVERSATION && !snapshot.parkedVerified
+            BackHandler(enabled = parkingRequired) { navigator.returnHome() }
+            Box(modifier.fillMaxSize()) {
+                MobiMonDestination(
+                    stringResource(R.string.copilot_title),
+                    navigator.back,
+                    navigator.returnHome,
+                    Modifier.fillMaxSize().then(if (parkingRequired) Modifier.clearAndSetSemantics {} else Modifier),
+                ) {
+                    MobiMonContentColumn {
+                        MobiMonMessage(
+                            stringResource(
+                                if (companion.failed) R.string.ai_context_failed else R.string.ai_context_loading,
+                            ),
+                            isError = companion.failed,
+                        )
+                        if (companion.failed) {
+                            MobiMonButton(onClick = model::retry) { Text(stringResource(R.string.ai_retry)) }
+                        }
                     }
                 }
+                if (parkingRequired) ConversationParkingOverlay(navigator.returnHome)
             }
             return
         }
@@ -123,7 +135,7 @@ class AiFeature(
             }
         }
         Column(modifier.fillMaxSize()) {
-            if (companion.failed) {
+            if (companion.failed && (route != AiRoute.CONVERSATION || snapshot.parkedVerified)) {
                 Row(
                     Modifier.fillMaxWidth().padding(MobiMonDimensions.contentPadding),
                     horizontalArrangement = Arrangement.spacedBy(MobiMonDimensions.contentGap),
@@ -138,14 +150,33 @@ class AiFeature(
                 }
             }
             if (route == AiRoute.CONVERSATION) {
+                val currentSession = session
                 ConversationScreen(
                     state =
                         conversationState.copy(
                             connection =
-                                if (session is GitHubSession.Authenticated) {
-                                    conversationState.connection
-                                } else {
-                                    ConversationConnection.SIGNED_OUT
+                                when (currentSession) {
+                                    is GitHubSession.Authenticated -> conversationState.connection
+                                    GitHubSession.Restoring -> ConversationConnection.CHECKING
+                                    is GitHubSession.Failure ->
+                                        if (currentSession.problem in
+                                            setOf(AuthenticationProblem.NETWORK, AuthenticationProblem.PROVIDER)
+                                        ) {
+                                            conversationState.connection
+                                        } else {
+                                            ConversationConnection.SIGNED_OUT
+                                        }
+                                    GitHubSession.SignedOut -> ConversationConnection.SIGNED_OUT
+                                },
+                            connectionProblem =
+                                when (currentSession) {
+                                    is GitHubSession.Failure ->
+                                        when (currentSession.problem) {
+                                            AuthenticationProblem.NETWORK -> ConversationProblem.NETWORK
+                                            AuthenticationProblem.PROVIDER -> ConversationProblem.SERVICE
+                                            else -> null
+                                        }
+                                    else -> conversationState.connectionProblem
                                 },
                         ),
                     draft = conversationModel.draft,
@@ -164,12 +195,15 @@ class AiFeature(
                     onRetry = {
                         when (conversationState.problem) {
                             ConversationProblem.ACCOUNT -> navigator.navigate(AiRoute.COPILOT)
+                            ConversationProblem.ACCESS -> conversationModel.retryConnection()
                             ConversationProblem.LIMIT -> conversationModel.newConversation()
                             else -> conversationModel.retry()
                         }
                     },
                     onDismissFailure = conversationModel::dismissFailure,
                     onNewConversation = conversationModel::newConversation,
+                    onReturnHome = navigator.returnHome,
+                    onRecheckConnection = conversationModel::retryConnection,
                 )
                 return@Column
             }

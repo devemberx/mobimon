@@ -112,7 +112,7 @@ internal class OkHttpCopilotApi(
         return CopilotMessageCodec.reply(endpoint, json)
     }
 
-    private fun validModelId(id: String) = id.matches(Regex("[A-Za-z0-9._:/-]{1,128}")) && id != "auto"
+    private fun validModelId(id: String) = id.matches(Regex("[A-Za-z0-9._:/-]{1,128}"))
 
     private fun parseModel(item: JSONObject): CopilotModel? {
         val id = item.opt("id") as? String ?: return null

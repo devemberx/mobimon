@@ -43,15 +43,15 @@ class ConversationViewModelTest {
         Dispatchers.resetMain()
     }
 
-    @Test fun firstSendConnectsWithoutPreflightAndDuplicateSendIsBlocked() =
+    @Test fun modelCheckConnectsBeforeSendAndDuplicateSendIsBlocked() =
         runTest {
             Dispatchers.setMain(StandardTestDispatcher(testScheduler))
             val model = model()
             runCurrent()
             model.edit(TextFieldValue("hello"))
-            assertEquals(0, provider.connections)
+            assertEquals(1, provider.connections)
             assertEquals(0, provider.requests.size)
-            assertEquals(ConversationConnection.UNAVAILABLE, model.state.value.connection)
+            assertEquals(ConversationConnection.READY, model.state.value.connection)
             val reply = CompletableDeferred<ConversationResult<String>>()
             provider.answer = { reply.await() }
             model.send()
@@ -59,7 +59,7 @@ class ConversationViewModelTest {
             runCurrent()
             assertEquals(1, provider.requests.size)
             assertTrue(model.state.value.replyPending)
-            assertEquals(ConversationConnection.UNAVAILABLE, model.state.value.connection)
+            assertEquals(ConversationConnection.READY, model.state.value.connection)
             reply.complete(ConversationResult.Success("hi"))
             runCurrent()
             assertEquals(
@@ -75,6 +75,134 @@ class ConversationViewModelTest {
             assertEquals(listOf("hello", "hi", "more"), provider.requests.last().map { it.text })
         }
 
+    @Test fun networkFailureRechecksModelWithoutSendingDraftAndBlocksDuplicateChecks() =
+        runTest {
+            Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+            provider.connectionAnswer = { ConversationResult.Failure(ConversationProblem.NETWORK) }
+            val model = model()
+            runCurrent()
+            assertEquals(ConversationConnection.UNAVAILABLE, model.state.value.connection)
+            assertEquals(ConversationProblem.NETWORK, model.state.value.connectionProblem)
+            model.edit(TextFieldValue("keep this draft"))
+            model.send()
+            runCurrent()
+            assertTrue(provider.requests.isEmpty())
+
+            val recheck = CompletableDeferred<ConversationResult<String>>()
+            provider.connectionAnswer = { recheck.await() }
+            model.retryConnection()
+            model.retryConnection()
+            runCurrent()
+            assertEquals(2, provider.connections)
+            assertEquals(ConversationConnection.CHECKING, model.state.value.connection)
+            assertTrue(model.state.value.connectionRetrying)
+            assertTrue(provider.requests.isEmpty())
+            recheck.complete(ConversationResult.Success("gpt-4o"))
+            runCurrent()
+            assertEquals(ConversationConnection.READY, model.state.value.connection)
+            assertEquals(null, model.state.value.connectionProblem)
+            assertEquals("keep this draft", model.draft.text)
+        }
+
+    @Test fun parkingLossCancelsLateModelCheck() =
+        runTest {
+            Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+            val late = CompletableDeferred<ConversationResult<String>>()
+            provider.connectionAnswer = { withContext(NonCancellable) { late.await() } }
+            val model = model()
+            runCurrent()
+            assertEquals(ConversationConnection.CHECKING, model.state.value.connection)
+            model.activate(false)
+            late.complete(ConversationResult.Success("gpt-4o"))
+            runCurrent()
+            assertFalse(model.state.value.connection == ConversationConnection.READY)
+        }
+
+    @Test fun backgroundCancelsLateModelCheckAndForegroundRechecks() =
+        runTest {
+            Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+            val late = CompletableDeferred<ConversationResult<String>>()
+            provider.connectionAnswer = { withContext(NonCancellable) { late.await() } }
+            val model = model()
+            model.setForegroundAllowed(true)
+            runCurrent()
+            assertEquals(ConversationConnection.CHECKING, model.state.value.connection)
+            model.setForegroundAllowed(false)
+            late.complete(ConversationResult.Success("gpt-4o"))
+            runCurrent()
+            assertFalse(model.state.value.connection == ConversationConnection.READY)
+            model.edit(TextFieldValue("keep"))
+            model.send()
+            assertTrue(provider.requests.isEmpty())
+            provider.connectionAnswer = { ConversationResult.Success("gpt-4o") }
+            model.setForegroundAllowed(true)
+            runCurrent()
+            assertEquals(ConversationConnection.READY, model.state.value.connection)
+        }
+
+    @Test fun authenticationNetworkFailureCanRecheckWithoutSendingDraft() =
+        runTest {
+            Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+            val model = model()
+            runCurrent()
+            model.edit(TextFieldValue("keep this draft"))
+            authentication.session.value = GitHubSession.Failure(AuthenticationProblem.NETWORK)
+            runCurrent()
+            assertEquals(ConversationProblem.NETWORK, model.state.value.connectionProblem)
+            val priorChecks = provider.connections
+            authentication.restoreAction = {
+                authentication.session.value = GitHubSession.Authenticated(GitHubAccount(1, "first"))
+            }
+            model.retryConnection()
+            runCurrent()
+            assertEquals(1, authentication.restores)
+            assertEquals(priorChecks + 1, provider.connections)
+            assertEquals(ConversationConnection.READY, model.state.value.connection)
+            assertEquals("keep this draft", model.draft.text)
+            assertTrue(provider.requests.isEmpty())
+        }
+
+    @Test fun provisionalDraftSurvivesFirstIdentityValidationAfterRecoverableFailure() =
+        runTest {
+            Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+            authentication.session.value = GitHubSession.Restoring
+            val model = model()
+            runCurrent()
+            val draft = TextFieldValue("초안", TextRange(2), TextRange(1, 2))
+            model.edit(draft)
+            authentication.session.value = GitHubSession.Failure(AuthenticationProblem.NETWORK)
+            runCurrent()
+            authentication.restoreAction = {
+                authentication.session.value = GitHubSession.Authenticated(GitHubAccount(1, "first"))
+            }
+
+            model.retryConnection()
+            runCurrent()
+
+            assertEquals(draft, model.draft)
+            assertEquals(ConversationConnection.READY, model.state.value.connection)
+            assertTrue(
+                model.state.value.messages
+                    .isEmpty(),
+            )
+        }
+
+    @Test fun unexpectedAuthenticationRestoreFailureNeverChecksTheModel() =
+        runTest {
+            Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+            val model = model()
+            runCurrent()
+            val priorChecks = provider.connections
+            authentication.session.value = GitHubSession.Failure(AuthenticationProblem.NETWORK)
+            authentication.restoreAction = { throw IllegalStateException("restore failed") }
+            runCurrent()
+            model.retryConnection()
+            runCurrent()
+            assertEquals(ConversationConnection.UNAVAILABLE, model.state.value.connection)
+            assertEquals(ConversationProblem.SERVICE, model.state.value.connectionProblem)
+            assertEquals(priorChecks, provider.connections)
+        }
+
     @Test fun failureRetainsHistoryAndDraftAndRetryDoesNotDuplicateUserMessage() =
         runTest {
             Dispatchers.setMain(StandardTestDispatcher(testScheduler))
@@ -88,7 +216,11 @@ class ConversationViewModelTest {
             model.edit(TextFieldValue("second", TextRange(6)))
             model.send()
             runCurrent()
-            assertEquals(prior, model.state.value.messages)
+            assertEquals(
+                prior.map { it.text } + "second",
+                model.state.value.messages
+                    .map { it.text },
+            )
             assertEquals("second", model.draft.text)
             assertEquals(ConversationProblem.TIMEOUT, model.state.value.problem)
             provider.answer = { ConversationResult.Success("answer") }
@@ -100,6 +232,107 @@ class ConversationViewModelTest {
                 model.state.value.messages
                     .map { it.text },
             )
+        }
+
+    @Test fun editingFailedTurnRemovesItsUnansweredBubbleButKeepsTheDraft() =
+        runTest {
+            Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+            val model = model()
+            runCurrent()
+            provider.answer = { ConversationResult.Failure(ConversationProblem.TIMEOUT) }
+            model.edit(TextFieldValue("before"))
+            model.send()
+            runCurrent()
+            assertEquals(
+                listOf("before"),
+                model.state.value.messages
+                    .map { it.text },
+            )
+
+            model.edit(TextFieldValue("after"))
+
+            assertFalse(model.state.value.failed)
+            assertTrue(
+                model.state.value.messages
+                    .isEmpty(),
+            )
+            assertEquals("after", model.draft.text)
+        }
+
+    @Test fun failedTurnRemainsVisibleAfterLeavingAndReturningToChat() =
+        runTest {
+            Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+            val model = model()
+            runCurrent()
+            provider.answer = { ConversationResult.Failure(ConversationProblem.TIMEOUT) }
+            model.edit(TextFieldValue("keep this attempt"))
+            model.send()
+            runCurrent()
+            model.deactivate()
+            model.activate(true)
+
+            assertTrue(model.state.value.failed)
+            assertEquals(
+                listOf("keep this attempt"),
+                model.state.value.messages
+                    .map { it.text },
+            )
+            assertEquals("keep this attempt", model.draft.text)
+        }
+
+    @Test fun accessFailureRecheckDoesNotResendAndRestoresExplicitSend() =
+        runTest {
+            Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+            val model = model()
+            runCurrent()
+            provider.answer = { ConversationResult.Failure(ConversationProblem.ACCESS) }
+            model.edit(TextFieldValue("private draft"))
+            model.send()
+            runCurrent()
+            assertEquals(ConversationConnection.UNAVAILABLE, model.state.value.connection)
+            assertEquals(
+                listOf("private draft"),
+                model.state.value.messages
+                    .map { it.text },
+            )
+
+            val sentBeforeRecheck = provider.requests.size
+            model.retryConnection()
+            runCurrent()
+            assertEquals(sentBeforeRecheck, provider.requests.size)
+            assertEquals(ConversationConnection.READY, model.state.value.connection)
+            assertFalse(model.state.value.failed)
+            assertEquals("private draft", model.draft.text)
+
+            provider.answer = { ConversationResult.Success("answer") }
+            model.send()
+            runCurrent()
+            assertEquals(
+                listOf("private draft", "answer"),
+                model.state.value.messages
+                    .map { it.text },
+            )
+        }
+
+    @Test fun editingAfterAccessFailureRechecksWithoutSendingTheDraft() =
+        runTest {
+            Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+            val model = model()
+            runCurrent()
+            provider.answer = { ConversationResult.Failure(ConversationProblem.ACCESS) }
+            model.edit(TextFieldValue("before"))
+            model.send()
+            runCurrent()
+            val sentBeforeEdit = provider.requests.size
+            val checksBeforeEdit = provider.connections
+
+            model.edit(TextFieldValue("after"))
+            runCurrent()
+
+            assertEquals(checksBeforeEdit + 1, provider.connections)
+            assertEquals(sentBeforeEdit, provider.requests.size)
+            assertEquals(ConversationConnection.READY, model.state.value.connection)
+            assertEquals("after", model.draft.text)
         }
 
     @Test fun cancelLeaveParkingLossAndContextChangeRejectLateReplies() =
@@ -261,6 +494,7 @@ class ConversationViewModelTest {
             val second = provider.conversationIds.last()
             assertNotEquals(first, second)
             model.bind("other profile", "friend:mobi")
+            runCurrent()
             send()
             runCurrent()
             assertNotEquals(second, provider.conversationIds.last())
@@ -268,13 +502,14 @@ class ConversationViewModelTest {
 
     private class FakeProvider : ConversationProvider {
         var connections = 0
+        var connectionAnswer: suspend () -> ConversationResult<String> = { ConversationResult.Success("gpt-4o") }
         val conversationIds = mutableListOf<String>()
         val requests = mutableListOf<List<ConversationTurn>>()
         var answer: suspend () -> ConversationResult<String> = { ConversationResult.Success("answer") }
 
         override suspend fun connect(accountId: Long): ConversationResult<String> {
             connections++
-            return ConversationResult.Success("test-model")
+            return connectionAnswer()
         }
 
         override suspend fun reply(
@@ -292,8 +527,13 @@ class ConversationViewModelTest {
     private class FakeAuthentication : GitHubAuthentication {
         override val session = MutableStateFlow<GitHubSession>(GitHubSession.Authenticated(GitHubAccount(1, "first")))
         override val configured = true
+        var restores = 0
+        var restoreAction: suspend () -> Unit = {}
 
-        override suspend fun restore() = Unit
+        override suspend fun restore() {
+            restores++
+            restoreAction()
+        }
 
         override suspend fun disconnect() {
             session.value = GitHubSession.SignedOut

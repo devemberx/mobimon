@@ -11,6 +11,7 @@ import com.monsters.mobimon.core.domain.VehicleRepository
 import com.monsters.mobimon.core.domain.VehicleSnapshot
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flow
@@ -35,8 +36,10 @@ class VehicleStateViewModel(
     private val utcClock: UtcClock,
     private val zoneId: () -> ZoneId = ZoneId::systemDefault,
     private val sourceProvider: SignalSourceProvider = SignalSourceProvider { identity.source },
+    private val backgroundOverride: StateFlow<String?> = MutableStateFlow(null),
 ) : ViewModel() {
-    private val mutableState = MutableStateFlow(reading(vehicle.snapshots.value, clock.nowMillis()))
+    private val mutableState =
+        MutableStateFlow(reading(vehicle.snapshots.value, clock.nowMillis(), backgroundOverride.value))
     val state = mutableState.asStateFlow()
 
     init {
@@ -48,20 +51,22 @@ class VehicleStateViewModel(
                         delay(1_000)
                     }
                 }
-            combine(vehicle.snapshots, ticks) { snapshot, _ -> reading(snapshot, clock.nowMillis()) }
-                .collect { mutableState.value = it }
+            combine(vehicle.snapshots, ticks, backgroundOverride) { snapshot, _, override ->
+                reading(snapshot, clock.nowMillis(), override)
+            }.collect { mutableState.value = it }
         }
     }
 
     private fun reading(
         snapshot: VehicleSnapshot,
         nowMillis: Long,
+        override: String?,
     ): VehicleReading =
         VehicleReading(
             snapshot = freshness.displaySnapshot(snapshot, sourceProvider.source(), nowMillis),
             evidence = snapshot,
             backgroundTimeOfDay =
-                snapshot.timeOfDay?.takeIf { it.isNotBlank() }
+                override?.takeIf { it.isNotBlank() }
                     ?: Instant
                         .ofEpochMilli(utcClock.nowEpochMillis())
                         .atZone(zoneId())

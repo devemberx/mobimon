@@ -37,6 +37,8 @@ class AmbientTextTest {
         assertTrue(afternoonPhrases.contains("잠깐, 창밖을 봐도 좋아요."))
         assertTrue(sunsetPhrases.contains("오늘도 수고 많았어요."))
         assertTrue(nightPhrases.contains("이 밤도, 천천히 가요."))
+        assertEquals(morningPhrases, ambientPhrasesForPeriod("sunrise"))
+        assertEquals(nightPhrases, ambientPhrasesForPeriod("midnight"))
     }
 
     @Test
