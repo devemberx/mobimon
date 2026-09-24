@@ -2,10 +2,10 @@ package com.monsters.mobimon.core.domain
 
 /** Credentials stay inside the provider implementation. Dialogue is never persisted. */
 interface ConversationProvider {
-    /** Checks account access and returns the selection mode; Auto routes on the first prompt. */
+    /** Checks account access and returns the selected model ID. */
     suspend fun connect(accountId: Long): ConversationResult<String>
 
-    /** A fresh, memory-only conversation ID prevents routing sessions crossing local conversations. */
+    /** A fresh, memory-only conversation ID identifies the local dialogue. */
     suspend fun reply(
         accountId: Long,
         conversationId: String,

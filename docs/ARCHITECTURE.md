@@ -117,18 +117,16 @@ changes, disconnect and process restart clear them; temporary failures retain th
 New conversation clears the draft and exchanges. Leaving, backgrounding, parking loss
 or companion changes cancel pending work; request generations reject late replies.
 
-Explicit Send checks Copilot access and endpoint validity; opening chat performs no
-preflight. Only a successful reply establishes readiness. All accounts, including
-Free, use server-selected Auto routing without a fallback model. The stored OAuth
-credential authenticates requests; Auto supplies the completion model and session
-token. [OkHttpCopilotApi](../core/core-auth/src/main/java/com/monsters/mobimon/core/auth/OkHttpCopilotApi.kt)
-owns endpoints, API versions, headers and model-metadata selection.
+Explicit Send checks Copilot access and the model catalog; opening chat performs
+no preflight. The adapter selects `gpt-4o` only when the catalog advertises it as
+enabled for Chat Completions, with no fallback model. It calls Chat Completions
+directly without an Auto request or session token. Only a successful reply
+establishes readiness. [OkHttpCopilotApi](../core/core-auth/src/main/java/com/monsters/mobimon/core/auth/OkHttpCopilotApi.kt)
+owns endpoints, API versions, headers and model metadata.
 
-The memory-only Auto session is scoped to a random conversation ID, companion and
-credential owner. New conversation and profile/account/companion changes replace
-the ID; navigation preserves it. Expiry, credential refresh and errors invalidate
-the route. Access/catalog checks are cached for at most five minutes; Auto tokens
-refresh before expiry.
+The memory-only conversation ID changes on a new conversation or profile/account/
+companion change; navigation preserves it. Access and selected model are cached
+for at most five minutes per credential and rechecked after refresh or errors.
 
 [CopilotMessageCodec](../core/core-auth/src/main/java/com/monsters/mobimon/core/auth/CopilotMessageCodec.kt)
 supports Chat Completions and Responses text; other formats fail visibly. Requests
@@ -141,8 +139,7 @@ Tokens stay inside `core-auth`; the credential owner handles OAuth refresh. Rech
 credential ownership and parked/AAOS authorization before each network stage and
 reply acceptance. Copilot credentials go only to allowlisted HTTPS hosts; redirects
 and automatic HTTP retries are disabled. Errors expose recovery categories, never
-provider bodies. An Auto rejection with no eligible model is distinguished from a
-generic service outage; bounded JSON/plain-text errors become fixed categories only.
+provider bodies; bounded JSON/plain-text errors become fixed categories only.
 Debug diagnostics contain only stage, HTTP status, catalog counts
 and fixed rejection categories; Release logging is disabled. Cancellation cannot
 undo provider processing; retries may consume additional usage.

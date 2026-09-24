@@ -29,8 +29,7 @@ class OkHttpCopilotApiTest {
     private val server = MockWebServer()
     private lateinit var api: OkHttpCopilotApi
     private lateinit var access: CopilotAccess
-    private val session =
-        CopilotAutoSession(CopilotModel("current-default", CopilotChatApi.CHAT_COMPLETIONS), "auto-secret", 4_600_000)
+    private val model = CopilotModel("gpt-4o", CopilotChatApi.CHAT_COMPLETIONS)
 
     @Before fun setup() {
         server.start()
@@ -72,21 +71,20 @@ class OkHttpCopilotApiTest {
             }
         }
 
-    @Test fun modelDiscoveryRetainsAutoOnlyModelsWithoutSelectingAManualDefault() =
+    @Test fun modelDiscoveryReadsChatMetadataAndPolicy() =
         runBlocking {
             enqueue(
                 """{"data":[
           {"id":"blocked","is_chat_default":true,"policy":{"state":"disabled"},"capabilities":{"type":"chat"}},
           {"id":"responses-only","capabilities":{"type":"chat"},"supported_endpoints":["/responses"]},
-          {"id":"auto-only","model_picker_enabled":false,"capabilities":{"type":"chat"}},
-          {"id":"current-default","is_chat_default":true,"capabilities":{"type":"chat"},
-           "supported_endpoints":["/chat/completions"]}
+          {"id":"gpt-4o","model_picker_enabled":false,"capabilities":{"type":"chat"}}
         ]}""",
             )
             val models = api.models(access)
             assertFalse(models.first { it.id == "blocked" }.enabled)
             assertEquals(CopilotChatApi.RESPONSES, models.first { it.id == "responses-only" }.api)
-            assertTrue(models.first { it.id == "auto-only" }.enabled)
+            assertTrue(models.first { it.id == "gpt-4o" }.enabled)
+            assertEquals(CopilotChatApi.CHAT_COMPLETIONS, models.first { it.id == "gpt-4o" }.api)
             val request = server.takeRequest()
             assertEquals("/models", request.path)
             assertEquals("Bearer copilot-secret", request.getHeader("Authorization"))
@@ -99,14 +97,14 @@ class OkHttpCopilotApiTest {
             enqueue("""{"choices":[{"finish_reason":"stop","message":{"role":"assistant","content":"안녕하세요"}}]}""")
             assertEquals(
                 "안녕하세요",
-                api.complete(access, session, "friend:luna", listOf(ConversationTurn("안녕", true))),
+                api.complete(access, model, "friend:luna", listOf(ConversationTurn("안녕", true))),
             )
             val request = server.takeRequest()
             assertEquals("/chat/completions", request.path)
             assertEquals("user", request.getHeader("X-Initiator"))
-            assertEquals("auto-secret", request.getHeader("Copilot-Session-Token"))
+            assertEquals(null, request.getHeader("Copilot-Session-Token"))
             val body = JSONObject(request.body.readUtf8())
-            assertEquals("current-default", body.getString("model"))
+            assertEquals("gpt-4o", body.getString("model"))
             assertFalse(body.getBoolean("stream"))
             assertFalse(body.has("tools"))
             assertEquals(2, body.getJSONArray("messages").length())
@@ -119,6 +117,26 @@ class OkHttpCopilotApiTest {
             )
             assertEquals("안녕", body.getJSONArray("messages").getJSONObject(1).getString("content"))
             assertFalse(body.toString().contains("github-secret"))
+        }
+
+    @Test fun fixedGpt4oCompletionDoesNotSendAnAutoSessionToken() =
+        runBlocking {
+            enqueue("""{"choices":[{"finish_reason":"stop","message":{"role":"assistant","content":"Hello"}}]}""")
+            val fixedModel = CopilotModel("gpt-4o", CopilotChatApi.CHAT_COMPLETIONS)
+            assertEquals(
+                "Hello",
+                api.complete(
+                    access,
+                    fixedModel,
+                    "friend:mobi",
+                    listOf(ConversationTurn("ping", true)),
+                ),
+            )
+            val request = server.takeRequest()
+            assertEquals("/chat/completions", request.path)
+            assertEquals(null, request.getHeader("Copilot-Session-Token"))
+            assertEquals("gpt-4o", JSONObject(request.body.readUtf8()).getString("model"))
+            assertEquals(1, server.requestCount)
         }
 
     @Test fun statusErrorsAreRedactedAndNeverAutomaticallyRetried() =
@@ -136,7 +154,7 @@ class OkHttpCopilotApiTest {
                 server.enqueue(MockResponse().setResponseCode(status).setBody("private-provider-error"))
                 assertProblem(
                     problem,
-                ) { api.complete(access, session, "friend:mobi", listOf(ConversationTurn("hello", true))) }
+                ) { api.complete(access, model, "friend:mobi", listOf(ConversationTurn("hello", true))) }
                 assertEquals(before + 1, server.requestCount)
             }
         }
@@ -165,22 +183,19 @@ class OkHttpCopilotApiTest {
 
     @Test fun serviceRejectionsRemainBoundedRedactedAndNeverReplayed() =
         runBlocking {
-            for ((body, expected) in listOf(
-                """{"error":{"code":"no_available_models","message":"private-provider-error"}}""" to
-                    ConversationProblem.AUTO_UNAVAILABLE,
-                "No eligible models" to ConversationProblem.AUTO_UNAVAILABLE,
-                "no healthy upstream" to ConversationProblem.SERVICE,
-                "x".repeat(16_385) to ConversationProblem.SERVICE,
-                "not json" to ConversationProblem.SERVICE,
+            for (body in listOf(
+                """{"error":{"code":"no_available_models","message":"private-provider-error"}}""",
+                "No eligible models",
+                "no healthy upstream",
+                "x".repeat(16_385),
+                "not json",
             )) {
                 val before = server.requestCount
                 server.enqueue(MockResponse().setResponseCode(503).setBody(body))
-                assertProblem(expected) { api.auto(access, "hello", listOf(session.model)) }
+                assertProblem(ConversationProblem.SERVICE) {
+                    api.complete(access, model, "friend:mobi", listOf(ConversationTurn("hello", true)))
+                }
                 assertEquals(before + 1, server.requestCount)
-            }
-            server.enqueue(MockResponse().setResponseCode(503).setBody("No eligible models"))
-            assertProblem(ConversationProblem.SERVICE) {
-                api.complete(access, session, "friend:mobi", listOf(ConversationTurn("hello", true)))
             }
         }
 
@@ -197,7 +212,7 @@ class OkHttpCopilotApiTest {
             )) {
                 enqueue(body)
                 assertProblem(ConversationProblem.PROVIDER) {
-                    api.complete(access, session, "friend:mobi", listOf(ConversationTurn("hello", true)))
+                    api.complete(access, model, "friend:mobi", listOf(ConversationTurn("hello", true)))
                 }
             }
         }
@@ -205,135 +220,18 @@ class OkHttpCopilotApiTest {
     @Test fun cancellationStopsWaitingForHttpResponse() =
         runBlocking {
             server.enqueue(MockResponse().setSocketPolicy(SocketPolicy.NO_RESPONSE))
-            val pending = async(Dispatchers.Default) { api.auto(access, "hello", listOf(session.model)) }
+            val pending =
+                async(Dispatchers.Default) {
+                    api.complete(access, model, "friend:mobi", listOf(ConversationTurn("hello", true)))
+                }
             assertNotNull(server.takeRequest(5, TimeUnit.SECONDS))
             pending.cancelAndJoin()
             assertTrue(pending.isCancelled)
         }
 
-    @Test fun autoUsesServerSelectedModelAndSessionTokenInsteadOfCatalogDefault() =
-        runBlocking {
-            enqueue(
-                """{"data":[
-            {"id":"manual-default","is_chat_default":true,"capabilities":{"type":"chat"}},
-            {"id":"auto-only","model_picker_enabled":false,
-             "capabilities":{"type":"chat","limits":{"max_output_tokens":1024}}}
-        ]}""",
-            )
-            val models = api.models(access)
-            server.takeRequest()
-            enqueue(autoResponse(JSONObject().put("id", "auto-only")))
-            val routed = api.auto(access, "안녕", models)
-            assertEquals("auto-only", routed.model.id)
-            assertFalse(routed.toString().contains("auto-secret"))
-            val routing = server.takeRequest()
-            assertEquals("POST", routing.method)
-            assertEquals("/auto", routing.path)
-            assertEquals("Bearer copilot-secret", routing.getHeader("Authorization"))
-            assertEquals(null, routing.getHeader("Copilot-Session-Token"))
-            assertEquals("MobiMon/0.1", routing.getHeader("Editor-Version"))
-            val payload = JSONObject(routing.body.readUtf8())
-            assertEquals(setOf("prompt"), payload.keys().asSequence().toSet())
-            assertEquals("안녕", payload.getString("prompt"))
-            assertEquals("2026-08-01", routing.getHeader("X-GitHub-Api-Version"))
-            assertEquals("mobimon", routing.getHeader("Copilot-Integration-Id"))
-            enqueue("""{"choices":[{"finish_reason":"stop","message":{"role":"assistant","content":"안녕하세요"}}]}""")
-            api.complete(access, routed, "friend:mobi", listOf(ConversationTurn("안녕", true)))
-            val completion = server.takeRequest()
-            assertEquals("auto-secret", completion.getHeader("Copilot-Session-Token"))
-            assertEquals("Bearer copilot-secret", completion.getHeader("Authorization"))
-            val body = JSONObject(completion.body.readUtf8())
-            assertEquals("auto-only", body.getString("model"))
-            assertEquals(1024, body.getInt("max_tokens"))
-        }
-
-    @Test fun autoAcceptsEmbeddedMetadataWhenCatalogLagsAndUsesResponsesFormat() =
-        runBlocking {
-            enqueue(
-                autoResponse(
-                    JSONObject("""{"id":"routed-new","supported_endpoints":["/responses"],"capabilities":{}}"""),
-                ),
-            )
-            val routed = api.auto(access, "hello", listOf(session.model))
-            assertEquals(CopilotChatApi.RESPONSES, routed.model.api)
-            server.takeRequest()
-            enqueue(
-                """{"status":"completed","output":[
-            {"type":"reasoning","summary":[{"type":"summary_text","text":"private reasoning"}]},
-            {"type":"message","role":"assistant","content":[{"type":"output_text","text":"answer"}]}
-        ]}""",
-            )
-            val history =
-                listOf(
-                    ConversationTurn("first", true),
-                    ConversationTurn("prior reply", false),
-                    ConversationTurn("hello", true),
-                )
-            assertEquals("answer", api.complete(access, routed, "friend:luna", history))
-            val completion = server.takeRequest()
-            assertEquals("/responses", completion.path)
-            assertEquals("auto-secret", completion.getHeader("Copilot-Session-Token"))
-            val body = JSONObject(completion.body.readUtf8())
-            assertEquals("routed-new", body.getString("model"))
-            assertTrue(body.getString("instructions").contains("Luna"))
-            assertFalse(body.getBoolean("store"))
-            assertFalse(body.getBoolean("stream"))
-            assertFalse(body.has("tools"))
-            assertFalse(body.has("previous_response_id"))
-            assertEquals("disabled", body.getString("truncation"))
-            assertEquals(3, body.getJSONArray("input").length())
-            assertEquals(
-                "output_text",
-                body
-                    .getJSONArray("input")
-                    .getJSONObject(1)
-                    .getJSONArray("content")
-                    .getJSONObject(0)
-                    .getString("type"),
-            )
-        }
-
-    @Test fun invalidOrDeniedAutoResponsesNeverChooseAnUnrelatedModel() =
-        runBlocking {
-            val catalog =
-                listOf(session.model, CopilotModel("disabled", CopilotChatApi.CHAT_COMPLETIONS, enabled = false))
-            val invalid =
-                listOf(
-                    JSONObject(autoResponse(JSONObject().put("id", "current-default"))).put("session_token", ""),
-                    JSONObject(
-                        autoResponse(JSONObject().put("id", "current-default")),
-                    ).put("session_token", "bad\nheader"),
-                    JSONObject(autoResponse(JSONObject().put("id", "current-default"))).put("expires_at", 1100),
-                    JSONObject(autoResponse(JSONObject().put("id", "current-default"))).put("expires_at", 100000),
-                    JSONObject(autoResponse(JSONObject().put("id", "unknown"))),
-                    JSONObject(autoResponse(JSONObject().put("id", "bad id").put("capabilities", JSONObject()))),
-                )
-            for (body in invalid) {
-                enqueue(body.toString())
-                val before = server.requestCount
-                assertProblem(ConversationProblem.PROVIDER) { api.auto(access, "hello", catalog) }
-                assertEquals(before + 1, server.requestCount)
-            }
-            enqueue(autoResponse(JSONObject().put("id", "disabled")))
-            assertProblem(ConversationProblem.ACCESS) { api.auto(access, "hello", catalog) }
-            for (status in listOf(403, 404, 429)) {
-                server.enqueue(MockResponse().setResponseCode(status).setBody("private-provider-error"))
-                val before = server.requestCount
-                val problem =
-                    when (status) {
-                        403 -> ConversationProblem.ACCESS
-                        429 -> ConversationProblem.USAGE
-                        else -> ConversationProblem.AUTO_UNAVAILABLE
-                    }
-                assertProblem(problem) { api.auto(access, "hello", catalog) }
-                assertEquals(before + 1, server.requestCount)
-            }
-        }
-
     @Test fun responsesRejectToolsFailuresAndEmptyOrOversizedText() =
         runBlocking {
-            val routed =
-                CopilotAutoSession(CopilotModel("responses", CopilotChatApi.RESPONSES), "auto-secret", 4_600_000)
+            val routed = CopilotModel("responses", CopilotChatApi.RESPONSES)
             val message =
                 JSONObject(
                     """{"type":"message","role":"assistant","content":[{"type":"output_text","text":"answer"}]}""",
@@ -387,13 +285,6 @@ class OkHttpCopilotApiTest {
             )
             assertEquals("answer", api.complete(access, routed, "friend:mobi", listOf(ConversationTurn("hello", true))))
         }
-
-    private fun autoResponse(model: JSONObject): String =
-        JSONObject()
-            .put("session_token", "auto-secret")
-            .put("expires_at", 4600)
-            .put("selected_model", model)
-            .toString()
 
     private fun enqueue(body: String) {
         server.enqueue(MockResponse().setBody(body))

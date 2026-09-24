@@ -26,7 +26,7 @@ class CopilotConversationProviderTest {
 
     @Test fun readinessRequiresExchangeAndModelAndRefreshesBeforeExpiryOrAccountRevisionChange() =
         runTest {
-            assertEquals(ConversationResult.Success("auto"), provider.connect(1))
+            assertEquals(ConversationResult.Success("gpt-4o"), provider.connect(1))
             assertEquals(
                 ConversationResult.Success("answer"),
                 provider.reply(1, "conversation", "friend:mobi", listOf(ConversationTurn("hello", true))),
@@ -74,45 +74,35 @@ class CopilotConversationProviderTest {
             assertEquals(0, api.exchanges)
         }
 
-    @Test fun autoIsDeferredUntilSendAndSessionsStayWithinConversationCompanionAndAccount() =
+    @Test fun catalogIsCachedAcrossConversationsUntilAccountChanges() =
         runTest {
             accessLifetime = 3_600_000
             val messages = listOf(ConversationTurn("same prompt", true))
             provider.connect(1)
-            assertEquals(0, api.routes)
+            assertEquals(1, api.models)
+            assertEquals(0, api.completions)
             provider.reply(1, "first", "friend:mobi", messages)
             provider.reply(1, "first", "friend:mobi", messages)
-            assertEquals(1, api.routes)
             provider.reply(1, "new", "friend:mobi", messages)
-            assertEquals(2, api.routes)
             provider.reply(1, "new", "friend:luna", messages)
-            assertEquals(3, api.routes)
+            assertEquals(1, api.models)
+            assertEquals(4, api.completions)
             provider.reply(2, "new", "friend:luna", messages)
-            assertEquals(4, api.routes)
-            now += 310_000
-            provider.reply(2, "new", "friend:luna", messages)
-            assertEquals(5, api.routes)
             assertEquals(2, api.exchanges)
+            assertEquals(2, api.models)
         }
 
-    @Test fun failedAutoNeverFallsBackToManualSelectionAndGuardsBlockCompletionAfterRouting() =
+    @Test fun guardsBlockCompletionAfterCatalogLookup() =
         runTest {
             val messages = listOf(ConversationTurn("hello", true))
-            api.autoProblem = ConversationProblem.ACCESS
-            assertEquals(
-                ConversationResult.Failure(ConversationProblem.ACCESS),
-                provider.reply(1, "first", "friend:mobi", messages),
-            )
-            assertEquals(0, api.completions)
-            api.autoProblem = null
-            api.afterAuto = { allowed = false }
+            api.afterModels = { allowed = false }
             assertEquals(
                 ConversationResult.Failure(ConversationProblem.RESTRICTED),
                 provider.reply(1, "first", "friend:mobi", messages),
             )
             assertEquals(0, api.completions)
             allowed = true
-            api.afterAuto = { current = false }
+            api.afterModels = { current = false }
             assertEquals(
                 ConversationResult.Failure(ConversationProblem.ACCOUNT),
                 provider.reply(1, "first", "friend:mobi", messages),
@@ -120,14 +110,40 @@ class CopilotConversationProviderTest {
             assertEquals(0, api.completions)
         }
 
+    @Test fun fixedGpt4oUsesTheCatalogEntryWithoutAutoRouting() =
+        runTest {
+            api.availableModels =
+                listOf(
+                    CopilotModel("other", CopilotChatApi.CHAT_COMPLETIONS),
+                    CopilotModel("gpt-4o", CopilotChatApi.CHAT_COMPLETIONS),
+                )
+            assertEquals(ConversationResult.Success("gpt-4o"), provider.connect(1))
+            assertEquals(
+                ConversationResult.Success("answer"),
+                provider.reply(1, "conversation", "friend:mobi", listOf(ConversationTurn("hello", true))),
+            )
+            assertEquals(1, api.models)
+            assertEquals("gpt-4o", api.completedModelId)
+        }
+
+    @Test fun missingFixedModelPreventsACompletionRequest() =
+        runTest {
+            api.availableModels = listOf(CopilotModel("other", CopilotChatApi.CHAT_COMPLETIONS))
+            assertEquals(
+                ConversationResult.Failure(ConversationProblem.ACCESS),
+                provider.reply(1, "conversation", "friend:mobi", listOf(ConversationTurn("hello", true))),
+            )
+            assertEquals(0, api.completions)
+        }
+
     private inner class FakeApi : CopilotApi {
         var exchanges = 0
         var models = 0
-        var routes = 0
         var completions = 0
-        var afterAuto: () -> Unit = {}
-        var autoProblem: ConversationProblem? = null
+        var availableModels = listOf(CopilotModel("gpt-4o", CopilotChatApi.CHAT_COMPLETIONS))
+        var completedModelId: String? = null
         var afterExchange: () -> Unit = {}
+        var afterModels: () -> Unit = {}
         var afterComplete: () -> Unit = {}
 
         override suspend fun authorize(githubToken: String): CopilotAccess {
@@ -138,27 +154,18 @@ class CopilotConversationProviderTest {
 
         override suspend fun models(access: CopilotAccess): List<CopilotModel> {
             models++
-            return listOf(CopilotModel("model", CopilotChatApi.CHAT_COMPLETIONS))
-        }
-
-        override suspend fun auto(
-            access: CopilotAccess,
-            prompt: String,
-            models: List<CopilotModel>,
-        ): CopilotAutoSession {
-            routes++
-            afterAuto()
-            autoProblem?.let { throw ConversationException(it) }
-            return CopilotAutoSession(models.first(), "auto-token", now + 600_000)
+            afterModels()
+            return availableModels
         }
 
         override suspend fun complete(
             access: CopilotAccess,
-            session: CopilotAutoSession,
+            model: CopilotModel,
             friendId: String,
             messages: List<ConversationTurn>,
         ): String {
             completions++
+            completedModelId = model.id
             afterComplete()
             return "answer"
         }

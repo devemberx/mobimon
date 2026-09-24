@@ -81,48 +81,12 @@ internal class OkHttpCopilotApi(
         return models
     }
 
-    override suspend fun auto(
-        access: CopilotAccess,
-        prompt: String,
-        models: List<CopilotModel>,
-    ): CopilotAutoSession {
-        val json =
-            request(
-                CopilotRequestStage.AUTO,
-                builder(access, "auto").post(
-                    JSONObject().put("prompt", prompt).toString().toRequestBody(JSON_MEDIA_TYPE),
-                ),
-            )
-        val token = json.opt("session_token") as? String ?: fail(ConversationProblem.PROVIDER)
-        val expiry = (json.opt("expires_at") as? Number)?.toLong() ?: fail(ConversationProblem.PROVIDER)
-        if (token.isBlank() ||
-            token.length > 16_384 ||
-            token.any { it.code !in 33..126 } ||
-            expiry <= nowMillis() / 1000 + 300 ||
-            expiry > nowMillis() / 1000 + 86_700
-        ) {
-            fail(ConversationProblem.PROVIDER)
-        }
-        val selected = json.optJSONObject("selected_model") ?: fail(ConversationProblem.PROVIDER)
-        val id = selected.opt("id") as? String ?: fail(ConversationProblem.PROVIDER)
-        if (selected.optJSONObject("policy")?.optString("state")?.let { it != "enabled" } == true) {
-            fail(ConversationProblem.ACCESS)
-        }
-        val model =
-            models.firstOrNull { it.id == id } ?: parseModel(selected, embedded = true)
-                ?: fail(ConversationProblem.PROVIDER)
-        if (!model.enabled) fail(ConversationProblem.ACCESS)
-        if (model.api == null) fail(ConversationProblem.PROVIDER)
-        return CopilotAutoSession(model, token, expiry * 1000)
-    }
-
     override suspend fun complete(
         access: CopilotAccess,
-        session: CopilotAutoSession,
+        model: CopilotModel,
         friendId: String,
         messages: List<ConversationTurn>,
     ): String {
-        val model = session.model
         val endpoint = model.api ?: fail(ConversationProblem.PROVIDER)
         val body = CopilotMessageCodec.request(model, friendId, messages)
         val json =
@@ -130,7 +94,6 @@ internal class OkHttpCopilotApi(
                 CopilotRequestStage.COMPLETION,
                 builder(access, endpoint.path)
                     .header("X-Initiator", "user")
-                    .header("Copilot-Session-Token", session.token)
                     .post(body.toString().toRequestBody(JSON_MEDIA_TYPE)),
             )
         return CopilotMessageCodec.reply(endpoint, json)
@@ -138,14 +101,11 @@ internal class OkHttpCopilotApi(
 
     private fun validModelId(id: String) = id.matches(Regex("[A-Za-z0-9._:/-]{1,128}")) && id != "auto"
 
-    private fun parseModel(
-        item: JSONObject,
-        embedded: Boolean = false,
-    ): CopilotModel? {
+    private fun parseModel(item: JSONObject): CopilotModel? {
         val id = item.opt("id") as? String ?: return null
         if (!validModelId(id)) return null
         val capabilities = item.optJSONObject("capabilities") ?: return null
-        if (capabilities.optString("type", if (embedded) "chat" else "") != "chat") return null
+        if (capabilities.optString("type") != "chat") return null
         val endpoints = item.optJSONArray("supported_endpoints")
         val paths = endpoints?.let { (0 until it.length()).map(it::optString) }
         val endpoint =
@@ -155,7 +115,6 @@ internal class OkHttpCopilotApi(
                 else -> null
             }
         val limit = capabilities.optJSONObject("limits")?.optInt("max_output_tokens", 2048) ?: 2048
-        // Picker visibility controls manual selection, not eligibility for a server-issued Auto session.
         return CopilotModel(
             id,
             endpoint,
@@ -247,19 +206,7 @@ internal class OkHttpCopilotApi(
                                         }
                                         402, 429 -> fail(ConversationProblem.USAGE)
                                         408, 504 -> fail(ConversationProblem.TIMEOUT)
-                                        in 500..599 ->
-                                            fail(
-                                                if (stage == CopilotRequestStage.AUTO &&
-                                                    rejection == CopilotRejection.NO_ELIGIBLE_MODELS
-                                                ) {
-                                                    ConversationProblem.AUTO_UNAVAILABLE
-                                                } else {
-                                                    ConversationProblem.SERVICE
-                                                },
-                                            )
-                                    }
-                                    if (it.code == 404 && stage == CopilotRequestStage.AUTO) {
-                                        fail(ConversationProblem.AUTO_UNAVAILABLE)
+                                        in 500..599 -> fail(ConversationProblem.SERVICE)
                                     }
                                     if (!it.isSuccessful) fail(ConversationProblem.PROVIDER)
                                     val source = it.body?.source() ?: fail(ConversationProblem.PROVIDER)

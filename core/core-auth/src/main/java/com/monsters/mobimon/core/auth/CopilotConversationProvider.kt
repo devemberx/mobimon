@@ -49,28 +49,14 @@ internal data class CopilotModel(
     val maxOutputTokens: Int = 2048,
 )
 
-internal class CopilotAutoSession(
-    val model: CopilotModel,
-    val token: String,
-    val expiresAtMillis: Long,
-) {
-    override fun toString() = "CopilotAutoSession(REDACTED)"
-}
-
 internal interface CopilotApi {
     suspend fun authorize(githubToken: String): CopilotAccess
 
     suspend fun models(access: CopilotAccess): List<CopilotModel>
 
-    suspend fun auto(
-        access: CopilotAccess,
-        prompt: String,
-        models: List<CopilotModel>,
-    ): CopilotAutoSession
-
     suspend fun complete(
         access: CopilotAccess,
-        session: CopilotAutoSession,
+        model: CopilotModel,
         friendId: String,
         messages: List<ConversationTurn>,
     ): String
@@ -87,14 +73,12 @@ internal class CopilotConversationProvider(
     private val mutex = Mutex()
     private var cachedCredential: ConversationCredential? = null
     private var access: CopilotAccess? = null
-    private var models = emptyList<CopilotModel>()
-    private var autoSession: CopilotAutoSession? = null
-    private var conversationKey: Pair<String, String>? = null
+    private var selectedModel: CopilotModel? = null
 
     override suspend fun connect(accountId: Long): ConversationResult<String> =
         operation(accountId) { lease ->
             prepare(lease)
-            "auto"
+            selectedModel!!.id
         }
 
     override suspend fun reply(
@@ -126,22 +110,7 @@ internal class CopilotConversationProvider(
             }
             prepare(lease)
             guard(lease)
-            val key = conversationId to friendId
-            if (conversationKey != key || autoSession?.expiresAtMillis?.let { it > nowMillis() + 300_000 } != true) {
-                autoSession = null
-                conversationKey = null
-                val routed = api.auto(access!!, messages.last().text, models)
-                guard(lease)
-                if (routed.expiresAtMillis <=
-                    nowMillis() + 300_000
-                ) {
-                    throw ConversationException(ConversationProblem.PROVIDER)
-                }
-                autoSession = routed
-                conversationKey = key
-            }
-            guard(lease)
-            api.complete(access!!, autoSession!!, friendId, messages)
+            api.complete(access!!, selectedModel!!, friendId, messages)
         }
 
     private suspend fun prepare(lease: ConversationCredential) {
@@ -150,24 +119,25 @@ internal class CopilotConversationProvider(
             cached.revision == lease.revision &&
             cached.token == lease.token &&
             access?.expiresAtMillis?.let { it > nowMillis() + 60_000 } == true &&
-            models.isNotEmpty()
+            selectedModel != null
         ) {
             return
         }
         access = null
-        models = emptyList()
-        autoSession = null
-        conversationKey = null
+        selectedModel = null
         cachedCredential = null
         guard(lease)
         val next = api.authorize(lease.token)
         guard(lease)
         val available = api.models(next)
         guard(lease)
-        if (available.none { it.enabled && it.api != null }) throw ConversationException(ConversationProblem.ACCESS)
+        val fixedModel =
+            available.firstOrNull {
+                it.id == "gpt-4o" && it.enabled && it.api == CopilotChatApi.CHAT_COMPLETIONS
+            } ?: throw ConversationException(ConversationProblem.ACCESS)
         if (next.expiresAtMillis <= nowMillis() + 60_000) throw ConversationException(ConversationProblem.PROVIDER)
         access = next
-        models = available
+        selectedModel = fixedModel
         cachedCredential = lease
     }
 
@@ -194,9 +164,7 @@ internal class CopilotConversationProvider(
             } catch (error: Exception) {
                 access = null
                 cachedCredential = null
-                models = emptyList()
-                autoSession = null
-                conversationKey = null
+                selectedModel = null
                 val problem =
                     when (error) {
                         is ConversationException -> error.problem
