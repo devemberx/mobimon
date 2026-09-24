@@ -399,7 +399,7 @@ class StoreReferenceScreenTest {
             }
         }
         val colors = mutableSetOf<Int>()
-        listOf("Morning", "Day", "Afternoon", "Sunset", "Night").forEach { value ->
+        listOf("Sunrise", "Morning", "Day", "Afternoon", "Sunset", "Night", "Midnight").forEach { value ->
             compose.runOnIdle { period.value = value }
             capture(view, "background-${value.lowercase()}")
             compose.runOnIdle {
@@ -409,7 +409,7 @@ class StoreReferenceScreenTest {
                 bitmap.recycle()
             }
         }
-        assertEquals("Each period must render in the preview", 5, colors.size)
+        assertEquals("Each period must render in the preview", 7, colors.size)
     }
 
     private fun assertFriendCardFitsCatalogViewport() {

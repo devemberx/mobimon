@@ -16,6 +16,8 @@ import com.monsters.mobimon.core.domain.UtcClock
 import com.monsters.mobimon.core.domain.VehicleFreshnessPolicy
 import com.monsters.mobimon.core.domain.VehicleRepository
 import com.monsters.mobimon.core.domain.VehicleSnapshot
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 
 /** All routes share one display ViewModel in the Activity's store, never a provider connection. */
 class VehiclePresentation(
@@ -25,6 +27,7 @@ class VehiclePresentation(
     private val freshness: VehicleFreshnessPolicy,
     private val utcClock: UtcClock,
     private val sourceProvider: SignalSourceProvider = SignalSourceProvider { identity.source },
+    private val backgroundOverride: StateFlow<String?> = MutableStateFlow(null),
 ) {
     @Composable
     fun snapshot(): VehicleSnapshot = reading().snapshot
@@ -42,6 +45,7 @@ class VehiclePresentation(
                             freshness,
                             utcClock,
                             sourceProvider = sourceProvider,
+                            backgroundOverride = backgroundOverride,
                         )
                     }
                 }

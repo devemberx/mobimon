@@ -1,8 +1,11 @@
 package com.monsters.mobimon.ui
 
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsOff
 import androidx.compose.ui.test.assertIsOn
@@ -11,6 +14,8 @@ import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.unit.dp
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -111,5 +116,32 @@ class DebugInterpretationRowTest {
 
         compose.onNodeWithTag("debug-interpretation-preset-timeOfDay-14:00").assertIsDisplayed().performClick()
         org.junit.Assert.assertEquals("14:00", manualValue)
+    }
+
+    @Test
+    fun narrowPreviewCanScrollToLastPreset() {
+        compose.setContent {
+            Box(Modifier.width(400.dp)) {
+                DebugInterpretationRow(
+                    label = "backgroundTime",
+                    value = "Auto",
+                    formula = "Local hour",
+                    onManualValueChange = {},
+                    onClearManualValue = {},
+                    presets =
+                        listOf(
+                            "Midnight (01시)" to "01:00",
+                            "Sunrise (06시)" to "06:00",
+                            "Morning (09시)" to "09:00",
+                            "Day (14시)" to "14:00",
+                            "Afternoon (16시)" to "16:00",
+                            "Sunset (18시)" to "18:00",
+                            "Night (20시)" to "20:00",
+                        ),
+                )
+            }
+        }
+
+        compose.onNodeWithTag("debug-interpretation-preset-backgroundTime-20:00").performScrollTo().assertIsDisplayed()
     }
 }

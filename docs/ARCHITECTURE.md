@@ -81,8 +81,10 @@ Shared presentation retains committed values on read failure, with explicit retr
 and no duplicate collectors. Settings writes and customization stream retries are
 independent of other loads; preview reaches shared appearance only on commit.
 
-Background time uses supplied time or `UtcClock` plus local time zone and never
-changes vehicle evidence.
+The decorative background uses `UtcClock` in the local time zone; a vehicle location
+timestamp remains evidence and cannot override it. Only the separate Debug
+background preview override changes the period while Debug mode is enabled.
+This display choice never changes vehicle evidence or quest weather.
 [PetAvatar](../core/core-ui/src/main/java/com/monsters/mobimon/core/ui/PetAvatar.kt)
 never owns rewards, equipment or authorization. Mobi's idle renderer caches one
 atlas off the main thread, selects cells from elapsed Compose frame time, and
