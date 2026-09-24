@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -44,12 +43,10 @@ import androidx.compose.ui.unit.dp
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import com.monsters.mobimon.core.ui.MobiMonNavigationButton
-import com.monsters.mobimon.core.ui.MobiMonParkingBadge
 import com.monsters.mobimon.core.ui.MobiMonReferenceText
 import com.monsters.mobimon.core.ui.PetAvatar
 import com.monsters.mobimon.core.ui.mobiMonReferenceTextStyle
 import com.monsters.mobimon.core.ui.MobiMonColors as Colors
-import com.monsters.mobimon.core.ui.R as CoreUiR
 
 /** Keyboard chat presentation. The caller owns readiness, messages and request lifecycle. */
 @OptIn(ExperimentalLayoutApi::class)
@@ -105,55 +102,22 @@ fun ConversationScreen(
         // Width determines reference geometry; the IME changes available height, never the whole screen scale.
         val wide = maxWidth >= 1200.dp && LocalDensity.current.fontScale <= 1.1f
         val scale = if (wide) maxWidth.value / 2560f else 0.65f
-        val shortened = maxHeight < 1050.dp * scale
-        Column(
-            Modifier.fillMaxSize().padding(
-                start = if (wide) 72.dp * scale else 24.dp,
-                end = if (wide) 72.dp * scale else 24.dp,
-                top = if (wide) 36.dp * scale else 16.dp,
-                bottom = if (wide) (if (shortened) 0.dp else 24.dp) * scale else 16.dp,
-            ),
-        ) {
-            ConversationHeader(friend, back, interactionAllowed, simulatedVehicle, scale, wide, shortened, state.failed)
-            Spacer(Modifier.height(if (wide) 56.dp * scale else 16.dp))
-            if (state.failed) {
-                ConversationFailure(
-                    onRetry,
-                    onDismissFailure,
-                    interactionAllowed,
+        val shortened = maxHeight < (if (wide) 1160.dp else 1050.dp) * scale
+        if (wide) {
+            val panelBottom = maxHeight - 24.dp * scale
+            Box(Modifier.fillMaxSize()) {
+                CompanionConversationPanel(
+                    friend,
+                    friendId,
+                    appearanceKey,
+                    accessoryId,
+                    outfitId,
+                    shortened,
                     scale,
-                    Modifier.weight(1f),
-                    state.problem,
+                    Modifier
+                        .offset(72.dp * scale, 196.dp * scale)
+                        .size(680.dp * scale, (panelBottom - 196.dp * scale).coerceAtLeast(0.dp)),
                 )
-            } else if (wide) {
-                Row(Modifier.weight(1f), horizontalArrangement = Arrangement.spacedBy(44.dp * scale)) {
-                    CompanionConversationPanel(
-                        friend,
-                        friendId,
-                        appearanceKey,
-                        accessoryId,
-                        outfitId,
-                        shortened,
-                        scale,
-                        Modifier.width(884.dp * scale).fillMaxHeight(),
-                    )
-                    ConversationPanel(
-                        state,
-                        draft,
-                        onDraftChange,
-                        onSend,
-                        onCancelReply,
-                        onOpenConnection,
-                        friend,
-                        interactionAllowed,
-                        shortened,
-                        scale,
-                        true,
-                        Modifier.weight(1f).fillMaxHeight(),
-                        onNewConversation,
-                    )
-                }
-            } else {
                 ConversationPanel(
                     state,
                     draft,
@@ -165,10 +129,65 @@ fun ConversationScreen(
                     interactionAllowed,
                     shortened,
                     scale,
-                    false,
-                    Modifier.weight(1f),
+                    true,
+                    Modifier
+                        .offset(796.dp * scale, 34.dp * scale)
+                        .size(1692.dp * scale, (panelBottom - 34.dp * scale).coerceAtLeast(0.dp)),
                     onNewConversation,
+                    onRetry,
+                    onDismissFailure,
                 )
+                ConversationAuthBadge(
+                    authenticated = state.connection != ConversationConnection.SIGNED_OUT,
+                    scale = scale,
+                    modifier = Modifier.offset(1887.dp * scale, 51.dp * scale),
+                )
+                ConversationParkingBadge(
+                    parked = interactionAllowed,
+                    scale = scale,
+                    modifier = Modifier.offset(2146.dp * scale, 51.dp * scale),
+                )
+                ConversationHeader(
+                    friend,
+                    back,
+                    simulatedVehicle,
+                    scale,
+                    true,
+                    shortened,
+                    state.failed,
+                    Modifier.offset(72.dp * scale, 36.dp * scale).width(680.dp * scale),
+                )
+            }
+        } else {
+            Column(Modifier.fillMaxSize().padding(start = 24.dp, end = 24.dp, top = 16.dp, bottom = 16.dp)) {
+                ConversationHeader(friend, back, simulatedVehicle, scale, false, shortened, state.failed)
+                Spacer(Modifier.height(16.dp))
+                if (state.failed) {
+                    ConversationFailure(
+                        onRetry,
+                        onDismissFailure,
+                        interactionAllowed,
+                        scale,
+                        Modifier.weight(1f),
+                        state.problem,
+                    )
+                } else {
+                    ConversationPanel(
+                        state,
+                        draft,
+                        onDraftChange,
+                        onSend,
+                        onCancelReply,
+                        onOpenConnection,
+                        friend,
+                        interactionAllowed,
+                        shortened,
+                        scale,
+                        false,
+                        Modifier.weight(1f),
+                        onNewConversation,
+                    )
+                }
             }
         }
     }
@@ -178,14 +197,14 @@ fun ConversationScreen(
 private fun ConversationHeader(
     friend: String,
     onBack: () -> Unit,
-    allowed: Boolean,
     simulated: Boolean,
     scale: Float,
     wide: Boolean,
     shortened: Boolean,
     failed: Boolean,
+    modifier: Modifier = Modifier,
 ) {
-    Box {
+    Box(modifier) {
         Row(
             Modifier.fillMaxWidth().heightIn(min = if (wide) 104.dp * scale else 76.dp),
             verticalAlignment = Alignment.Top,
@@ -215,7 +234,7 @@ private fun ConversationHeader(
                         modifier = Modifier.semantics { heading() },
                     )
                     MobiMonReferenceText(
-                        stringResource(if (failed) R.string.chat_failure_subtitle else R.string.chat_subtitle, friend),
+                        stringResource(R.string.chat_subtitle, friend),
                         0f,
                         88.2f,
                         28f,
@@ -243,19 +262,6 @@ private fun ConversationHeader(
                     }
                 }
             }
-            if (wide || !shortened) {
-                MobiMonParkingBadge(
-                    stringResource(
-                        if (allowed) {
-                            CoreUiR.string.mobimon_parking_confirmed
-                        } else {
-                            CoreUiR.string.mobimon_parking_unconfirmed
-                        },
-                    ),
-                    scale = scale,
-                    showParkingIcon = allowed,
-                )
-            }
         }
         if (simulated) {
             Text(
@@ -279,9 +285,8 @@ private fun CompanionConversationPanel(
     scale: Float,
     modifier: Modifier = Modifier,
 ) {
-    BoxWithConstraints(modifier.background(Colors.panel, RoundedCornerShape(48.dp * scale)).testTag("chat-companion")) {
-        val avatarSize =
-            minOf(656.dp * scale, (maxHeight - (if (shortened) 164.dp else 144.dp) * scale).coerceAtLeast(0.dp))
+    Box(modifier.background(Colors.panel, RoundedCornerShape(48.dp * scale)).testTag("chat-companion")) {
+        val avatarSize = (if (shortened) 440.dp else 624.dp) * scale
         Text(
             stringResource(R.string.chat_companion_title, friend),
             Modifier.fillMaxWidth().padding(top = (if (shortened) 40.dp else 58.dp) * scale),
@@ -289,22 +294,10 @@ private fun CompanionConversationPanel(
             color = Colors.text,
             textAlign = TextAlign.Center,
         )
-        if (!shortened) {
-            MobiMonReferenceText(
-                stringResource(R.string.chat_companion_note),
-                0f,
-                174.2f,
-                30f,
-                modifier = Modifier.align(Alignment.TopCenter),
-                scale = scale,
-                color = Colors.muted,
-            )
-        }
         PetAvatar(
             Modifier
-                .align(
-                    Alignment.TopCenter,
-                ).offset(y = (if (shortened) 120.dp else 188.dp) * scale)
+                .align(Alignment.TopStart)
+                .offset(x = (if (shortened) 120.dp else 28.dp) * scale, y = (if (shortened) 108.dp else 140.dp) * scale)
                 .size(avatarSize)
                 .testTag("chat-avatar"),
             appearanceKey,
@@ -312,21 +305,23 @@ private fun CompanionConversationPanel(
             accessoryId,
             outfitId,
         )
-        if (!shortened) {
-            Box(
-                Modifier
-                    .align(Alignment.BottomCenter)
-                    .padding(bottom = 46.dp * scale)
-                    .size(320.dp * scale, 60.dp * scale)
-                    .background(Colors.raised, RoundedCornerShape(50)),
-                contentAlignment = Alignment.Center,
-            ) {
-                Text(
-                    stringResource(R.string.chat_companion_tagline),
-                    style = mobiMonReferenceTextStyle(26f, scale),
-                    color = Colors.accent,
-                )
-            }
-        }
+        Text(
+            stringResource(R.string.chat_companion_tagline),
+            Modifier
+                .align(Alignment.BottomCenter)
+                .padding(bottom = (if (shortened) 100.dp else 126.dp) * scale),
+            style = mobiMonReferenceTextStyle(if (shortened) 36f else 40f, scale, true),
+            color = Colors.text,
+            textAlign = TextAlign.Center,
+        )
+        Text(
+            stringResource(R.string.chat_companion_note),
+            Modifier
+                .align(Alignment.BottomCenter)
+                .padding(bottom = (if (shortened) 54.dp else 68.dp) * scale),
+            style = mobiMonReferenceTextStyle(26f, scale),
+            color = Colors.muted,
+            textAlign = TextAlign.Center,
+        )
     }
 }

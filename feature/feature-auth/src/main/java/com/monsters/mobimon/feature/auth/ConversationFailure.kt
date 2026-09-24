@@ -49,26 +49,8 @@ internal fun ConversationFailure(
     modifier: Modifier = Modifier,
     problem: ConversationProblem? = null,
 ) {
-    val note =
-        when (problem) {
-            ConversationProblem.NETWORK -> R.string.chat_network_error
-            ConversationProblem.SERVICE -> R.string.chat_service_error
-            ConversationProblem.AUTO_UNAVAILABLE -> R.string.chat_auto_error
-            ConversationProblem.TIMEOUT -> R.string.chat_timeout_error
-            ConversationProblem.ACCESS -> R.string.chat_access_error
-            ConversationProblem.ACCOUNT -> R.string.chat_account_error
-            ConversationProblem.USAGE -> R.string.chat_usage_error
-            ConversationProblem.PROVIDER -> R.string.chat_provider_error
-            ConversationProblem.RESTRICTED -> R.string.chat_restricted_error
-            ConversationProblem.LIMIT -> R.string.chat_limit_error
-            null -> R.string.chat_failure_note
-        }
-    val retryLabel =
-        when (problem) {
-            ConversationProblem.ACCOUNT -> R.string.conversation_connect
-            ConversationProblem.LIMIT -> R.string.chat_new
-            else -> R.string.chat_retry
-        }
+    val note = conversationFailureNote(problem)
+    val retryLabel = conversationRetryLabel(problem)
     BoxWithConstraints(modifier.fillMaxSize().semantics { liveRegion = LiveRegionMode.Polite }) {
         if (maxWidth >= 1200.dp && maxHeight >= 900.dp * scale && LocalDensity.current.fontScale <= 1.1f) {
             Box(
@@ -192,3 +174,25 @@ internal fun ConversationFailure(
         }
     }
 }
+
+internal fun conversationFailureNote(problem: ConversationProblem?): Int =
+    when (problem) {
+        ConversationProblem.NETWORK -> R.string.chat_network_error
+        ConversationProblem.SERVICE -> R.string.chat_service_error
+        ConversationProblem.AUTO_UNAVAILABLE -> R.string.chat_auto_error
+        ConversationProblem.TIMEOUT -> R.string.chat_timeout_error
+        ConversationProblem.ACCESS -> R.string.chat_access_error
+        ConversationProblem.ACCOUNT -> R.string.chat_account_error
+        ConversationProblem.USAGE -> R.string.chat_usage_error
+        ConversationProblem.PROVIDER -> R.string.chat_provider_error
+        ConversationProblem.RESTRICTED -> R.string.chat_restricted_error
+        ConversationProblem.LIMIT -> R.string.chat_limit_error
+        null -> R.string.chat_failure_note
+    }
+
+internal fun conversationRetryLabel(problem: ConversationProblem?): Int =
+    when (problem) {
+        ConversationProblem.ACCOUNT -> R.string.conversation_connect
+        ConversationProblem.LIMIT -> R.string.chat_new
+        else -> R.string.chat_retry
+    }

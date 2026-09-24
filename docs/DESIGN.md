@@ -30,7 +30,8 @@ Expressions supplement vehicle facts; they never diagnose a vehicle or replace w
 - Reflow or scroll when enlarged text or the keyboard requires it. Controls are at least
   76 × 76dp, with 24dp spacing/edge clearance where possible. Maintain 4.5:1 text
   contrast and 3:1 control/icon contrast; pair status colors with labels or shapes.
-- Reuse shared navigation controls and `MobiMonParkingBadge`. Keep points and
+- Reuse shared navigation controls and `MobiMonParkingBadge` outside Conversation;
+  Conversation uses its export-sized parking capsule. Keep points and
   simulation labels separate. Order focus by heading, information and actions;
   trap dialog focus and return it to the trigger on dismissal.
 
@@ -145,6 +146,10 @@ card always opens connection management. Follow the [session and provider contra
 Enable Send for a valid draft when authenticated and parked; show readiness only after
 a successful reply. Do not add a consent panel, connection-check button or entry preflight.
 Suggestions fill the draft without sending; preserve selection and unfinished IME input.
+At 2560 × 1440, place the companion at x72–752, chat at x796–2488, and keep
+both panels 24px above the available content bottom. Use 244 × 60px authentication
+and 258 × 60px parking capsules in the chat header. The empty state has three
+70px suggestions; the 1577 × 87px composer stays above the footer and keyboard.
 
 Use the system keyboard; [keyboard-input.svg](ui/conversation/keyboard-input.svg)
 defines the resized app layout. Keep header scale and the composer above the IME,
@@ -156,7 +161,8 @@ Identify speakers and preserve drafts/replies on recoverable errors. Parking los
 disables editing and hides the IME; AAOS restrictions remove the screen. Show specific
 recovery for network, service/Auto availability, timeout, account, access, usage and
 length errors. Retries are explicit. Put New conversation beside the follow-up
-suggestion, retaining the reference header and message geometry.
+suggestion, retaining the reference header and message geometry. Show failed
+replies with inline retry and edit actions while keeping history visible.
 
 Hide unsupported voice controls. Future voice input requires permission, transcript
 review and explicit Send; stopping never submits.
