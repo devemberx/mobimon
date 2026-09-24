@@ -1,0 +1,14 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="36dp"
+    android:height="36dp"
+    android:viewportWidth="36"
+    android:viewportHeight="36">
+    <group android:translateX="-2000" android:translateY="-1036">
+        <path
+            android:pathData="M2013,1044C2015.03,1042.96 2017.31,1042.51 2019.58,1042.72C2021.85,1042.92 2024.02,1043.77 2025.82,1045.16C2027.63,1046.56 2029,1048.43 2029.78,1050.58C2030.56,1052.72 2030.71,1055.04 2030.21,1057.27C2029.72,1059.5 2028.6,1061.54 2026.99,1063.15C2025.37,1064.76 2023.34,1065.88 2021.11,1066.38C2018.88,1066.88 2016.56,1066.73 2014.42,1065.95C2012.27,1065.18 2010.39,1063.81 2009,1062M2006,1042V1053H2017"
+            android:fillColor="#00000000"
+            android:strokeColor="#A7E5ED"
+            android:strokeWidth="2.5"
+            android:strokeLineCap="round" />
+    </group>
+</vector>

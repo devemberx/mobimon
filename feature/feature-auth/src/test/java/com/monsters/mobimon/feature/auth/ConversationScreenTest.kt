@@ -169,6 +169,19 @@ class ConversationScreenTest {
         capture("connection-access")
         compose.onNodeWithText("GitHub가 이 앱의 대화 요청을 허용하지 않았어요.", substring = true).assertIsDisplayed()
         compose.onNodeWithTag("chat-send").assertDoesNotExist()
+        val icon =
+            compose
+                .onNodeWithTag(
+                    "chat-connection-icon",
+                    useUnmergedTree = true,
+                ).fetchSemanticsNode()
+                .boundsInRoot
+        assertEquals(112f, icon.width, 1f)
+        val body = compose.onNodeWithTag("chat-connection-body").fetchSemanticsNode().boundsInRoot
+        val instruction = compose.onNodeWithTag("chat-connection-instruction").fetchSemanticsNode().boundsInRoot
+        val preserved = compose.onNodeWithTag("chat-connection-preserved").fetchSemanticsNode().boundsInRoot
+        assertEquals(104f, instruction.top - body.top, 1f)
+        assertEquals(87f, preserved.top - instruction.top, 1f)
         compose.onNodeWithText("다시 확인").performClick()
         compose.runOnIdle { assertEquals(1, checks) }
     }
@@ -417,6 +430,24 @@ class ConversationScreenTest {
         val failure = compose.onNodeWithTag("chat-inline-failure").fetchSemanticsNode().boundsInRoot
         assertEquals(852f, failure.left, 1f)
         assertEquals(929f, failure.top, 1f)
+        val retry =
+            compose
+                .onNodeWithTag(
+                    "chat-inline-retry-visual",
+                    useUnmergedTree = true,
+                ).fetchSemanticsNode()
+                .boundsInRoot
+        val edit =
+            compose
+                .onNodeWithTag(
+                    "chat-inline-edit-visual",
+                    useUnmergedTree = true,
+                ).fetchSemanticsNode()
+                .boundsInRoot
+        assertEquals(1974f, retry.left, 1f)
+        assertEquals(230f, retry.width, 1f)
+        assertEquals(2228f, edit.left, 1f)
+        assertEquals(206f, edit.width, 1f)
         compose.onNodeWithText("내용 수정").performClick()
         compose.onNodeWithTag("chat-input").assertIsDisplayed()
         compose.runOnIdle { assertEquals("모비는 뭐가 좋아?", draft.text) }

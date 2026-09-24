@@ -595,24 +595,72 @@ private fun ConversationInlineFailure(
             color = Color(0xFFB5C5D5),
             maxLines = 2,
         )
-        ReferenceAction(
+        ReferenceFailureAction(
             stringResource(conversationRetryLabel(problem)),
             onRetry,
             allowed,
             scale,
             Modifier.offset(1122.dp * scale, 4.dp * scale).width(230.dp * scale),
-            visualHeight = 52f,
+            R.drawable.conversation_retry,
+            "chat-inline-retry-visual",
+            26f,
             backgroundColor = Color(0xFF223F59),
+            textColor = Color(0xFFD4F4F5),
         )
-        ReferenceAction(
+        ReferenceFailureAction(
             stringResource(R.string.chat_return),
             onDismiss,
             true,
             scale,
-            Modifier.offset(1376.dp * scale, 4.dp * scale).width(190.dp * scale),
-            visualHeight = 52f,
+            Modifier.offset(1376.dp * scale, 4.dp * scale).width(206.dp * scale),
+            R.drawable.conversation_edit,
+            "chat-inline-edit-visual",
+            23f,
             backgroundColor = Color(0xFF22394E),
+            textColor = Color(0xFFD6E2ED),
         )
+    }
+}
+
+@Composable
+private fun ReferenceFailureAction(
+    text: String,
+    onClick: () -> Unit,
+    enabled: Boolean,
+    scale: Float,
+    modifier: Modifier,
+    iconRes: Int,
+    visualTag: String,
+    leadingPadding: Float,
+    backgroundColor: Color,
+    textColor: Color,
+) {
+    Box(modifier.height(52.dp * scale), contentAlignment = Alignment.Center) {
+        Box(
+            Modifier
+                .fillMaxWidth()
+                .requiredHeight((52.dp * scale).coerceAtLeast(76.dp))
+                .clickable(enabled = enabled, role = Role.Button, onClick = onClick),
+            contentAlignment = Alignment.Center,
+        ) {
+            Row(
+                Modifier
+                    .fillMaxWidth()
+                    .height(52.dp * scale)
+                    .background(backgroundColor, RoundedCornerShape(16.dp * scale))
+                    .testTag(visualTag)
+                    .padding(start = leadingPadding.dp * scale),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Icon(painterResource(iconRes), null, Modifier.size(36.dp * scale), tint = Color.Unspecified)
+                Spacer(Modifier.width(8.dp * scale))
+                Text(
+                    text,
+                    style = mobiMonReferenceTextStyle(28f, scale),
+                    color = if (enabled) textColor else Colors.muted,
+                )
+            }
+        }
     }
 }
 

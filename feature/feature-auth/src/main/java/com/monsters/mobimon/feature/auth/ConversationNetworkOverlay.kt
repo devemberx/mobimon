@@ -103,6 +103,7 @@ internal fun ConversationNetworkOverlay(
                 else -> R.string.chat_network_recheck
             },
         )
+    val extraBodyLineOffset = if (referenceCopy) 0f else body.count { it == '\n' } * 50f
     BoxWithConstraints(
         Modifier.fillMaxSize().semantics {
             paneTitle = title
@@ -139,20 +140,30 @@ internal fun ConversationNetworkOverlay(
                     bold = true,
                     modifier = Modifier.semantics { heading() },
                 )
-                MobiMonReferenceText(body, 64f, 336f, 36f, scale = scale, color = Colors.muted)
+                MobiMonReferenceText(
+                    body,
+                    64f,
+                    336f,
+                    36f,
+                    modifier = Modifier.testTag("chat-connection-body"),
+                    scale = scale,
+                    color = Colors.muted,
+                )
                 MobiMonReferenceText(
                     instruction,
                     64f,
-                    if (referenceCopy) 390f else 430f,
+                    390f + extraBodyLineOffset,
                     36f,
+                    modifier = Modifier.testTag("chat-connection-instruction"),
                     scale = scale,
                     color = Colors.muted,
                 )
                 MobiMonReferenceText(
                     preserved,
                     64f,
-                    if (referenceCopy) 466f else 500f,
+                    466f + extraBodyLineOffset,
                     28f,
+                    modifier = Modifier.testTag("chat-connection-preserved"),
                     scale = scale,
                     color = Colors.muted,
                 )
@@ -233,7 +244,9 @@ private fun NetworkIcon(
                     if (networkError) R.drawable.conversation_network_off else R.drawable.conversation_warning,
                 ),
                 null,
-                Modifier.size(64.dp * scale),
+                Modifier
+                    .size((if (networkError) 64.dp else 112.dp) * scale)
+                    .testTag("chat-connection-icon"),
                 tint = Color.Unspecified,
             )
         }
