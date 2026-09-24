@@ -137,7 +137,7 @@ fun SettingsScreen(
                             }
                         SettingsItem(
                             title = R.string.pet_settings_launcher_title,
-                            description = if (reference) null else R.string.pet_settings_launcher_description,
+                            description = R.string.pet_settings_launcher_description,
                             status =
                                 if (settings.launcherCharacterEnabled) {
                                     R.string.pet_settings_on

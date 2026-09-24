@@ -128,10 +128,10 @@ class MobiMonContentTest {
         val friend = mutableStateOf("friend:mobi")
         compose.setContent { MobiMonContent(entries, appUseState = AppUseState.ALLOWED, activeFriendId = friend.value) }
         compose.onNodeWithText("Open menu").performClick()
-        compose.onNodeWithText("Mobi").assertExists()
+        compose.onNodeWithText("모비").assertExists()
         compose.runOnIdle { friend.value = "friend:luna" }
         compose.onNodeWithText("Luna").assertExists()
-        compose.onNodeWithText("Mobi").assertDoesNotExist()
+        compose.onNodeWithText("모비").assertDoesNotExist()
     }
 
     @Test

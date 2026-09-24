@@ -271,7 +271,7 @@ private fun MenuPanel(
                 Image(
                     painterResource(faceRes),
                     contentDescription = null,
-                    modifier = Modifier.size(imageSize),
+                    modifier = Modifier.size(imageSize).offset(y = if (isRunaOrLuna) 0.dp else (-5 * scale).dp),
                 )
             }
         }

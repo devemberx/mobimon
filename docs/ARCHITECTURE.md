@@ -14,7 +14,9 @@ breathing animation.
 Vehicle input and driving evaluation are Debug simulations. Release vehicle data
 is unavailable. Debug raw VSS sources are interpreted before they become vehicle
 snapshots; production VSS input still needs a verified adapter. Voice, condition
-expressions, background tracking and launcher/overlay rendering remain unimplemented.
+expressions and background tracking remain unimplemented. The floating companion
+overlay exists behind explicit opt-in and system permission; OEM launcher placement
+and lifecycle still need verification.
 Catalog entries and
 [UI exports](ui/README.md) do not establish real integration support.
 
@@ -70,7 +72,7 @@ Conversation navigation carries the activated button's bounds to the shell;
 | State | Owner/lifetime |
 | --- | --- |
 | Profiles, rewards, wallet, inventory and equipment | Room; durable |
-| Reduced motion, Debug and dormant launcher preferences | DataStore; independent keys, Debug/launcher default off |
+| Floating companion motion, Debug and launcher preferences | DataStore; independent keys, Debug/launcher default off |
 | Vehicle connection and AAOS listener | `CompanionRuntime`; one connection per process foreground |
 | Driving evaluation | Repository memory; Debug-fed, not durable evidence |
 | Preview and animation | Feature/renderer; never committed equipment |
@@ -96,11 +98,9 @@ Two canonical collapsed bitmaps load once off thread. A cached bitmap mesh defor
 destination rectangle over four seconds. All ground-contact vertices remain unchanged. A 6.5-second tired blink
 blends identical-body closed/open-eye bitmaps; no whole-pose frame registration occurs at runtime.
 Non-warning conditions restore existing normal idle without changing vehicle evidence.
-Leaving composition cancels playback. Idle breathing ignores the motion preference; reduced motion replaces
-Luna's run cycle with the idle breath and selects a static normal/collapsed endpoint for Mobi warnings.
-Failed/unknown motion preferences pause other decoration; retries follow shell subscription.
-The floating companion overlay applies the same preference: reduced, unknown or failed motion stops autonomous
-wandering; dragging stays available.
+Leaving composition cancels playback. The in-app scene and navigation do not read
+the floating companion motion preference. In the overlay, reduced, unknown or failed
+motion stops autonomous wandering; dragging stays available. Idle breathing remains.
 
 ### Window geometry
 

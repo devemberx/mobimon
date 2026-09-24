@@ -89,7 +89,7 @@ time overrides the clock. Home keeps the SVG artwork framing: a centered crop in
 the original 2560 × 1268 rectangle at y=76, clipped by the current safe content
 starting at design y=96. Changing available height does not recenter the horizon.
 Store previews crop within their own cards. Home adds cool tint/daylight shadows;
-artwork and tint crossfade for one second unless reduced motion is enabled.
+artwork and tint crossfade for one second.
 Controls remain untinted.
 
 Home follows [home.svg](ui/shell/home.svg). Its menu overlays the same scene.
@@ -205,9 +205,10 @@ Loading and failure states have no v5 export; reuse panel typography and control
 ## Motion
 
 Motion preserves context and focus; outgoing/restricted controls lose input
-immediately. Animation never authorizes or commits a command. Reduced motion shows
-settled states, keeps the idle breath in place and pauses running, wandering and
-particle loops. Unknown or failed motion preference reads keep decoration static.
+immediately. Animation never authorizes or commits a command. The Settings motion
+switch stops the floating companion's autonomous movement on vehicle Home; dragging
+and idle breathing remain. It does not change in-app scene or navigation motion.
+Unknown or failed preference reads keep the floating companion stationary.
 
 Home's conversation action reveals the destination from the activated button's
 rounded bounds over 300ms, with Home stationary underneath. Back closes it toward
@@ -222,5 +223,7 @@ delays are not success signals.
 
 ## Vehicle launcher
 
-Future launcher placement requires explicit opt-in and the
+The floating companion can be shown outside the app with explicit opt-in and
+overlay permission. Its intended location is vehicle Home; verify placement and
+lifecycle on the target vehicle under the
 [platform contract](ARCHITECTURE.md#shared-vehicle-condition-and-overlay).

@@ -243,8 +243,11 @@ class CompanionReviewTest {
                 debugModeAvailable = true,
                 parkedVerified = true,
                 onOpenCopilot = {},
+                onLauncherCharacterChange = {},
             )
         }
+        compose.onNodeWithText("앱 밖의 차량 홈에 캐릭터를 표시해요.").assertIsDisplayed()
+        compose.onNodeWithText("차량 홈 캐릭터가 자동으로 돌아다니지 않게 해요.").assertIsDisplayed()
         val back = compose.onNodeWithTag("settings-back").fetchSemanticsNode().boundsInRoot
         assertEquals(72f, back.left, 1f)
         assertEquals(36f, back.top, 1f)

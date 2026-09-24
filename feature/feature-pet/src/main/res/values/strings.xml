@@ -26,7 +26,7 @@
   <string name="pet_settings_unavailable">저장된 설정을 불러오지 못했어요.</string>
   <string name="pet_settings_retry">다시 시도</string>
   <string name="pet_setting_motion">움직임 줄이기</string>
-  <string name="pet_setting_motion_description">캐릭터와 배경의 반복 움직임과 화면 전환 효과를 줄여요.</string>
+  <string name="pet_setting_motion_description">차량 홈 캐릭터가 자동으로 돌아다니지 않게 해요.</string>
   <string name="pet_settings_title">설정</string>
   <string name="pet_settings_subtitle">친구와 함께하는 방식을 정해보세요.</string>
   <string name="pet_settings_parked_notice">설정 변경은 주차 중에 할 수 있어요.</string>
@@ -46,7 +46,7 @@
   <string name="pet_settings_back">뒤로</string>
     <string name="pet_route_save_failed">저장하지 못했어요. 현재 기록을 확인하고 다시 시도해 주세요.</string>
   <string name="pet_settings_launcher_title">차량 홈 캐릭터</string>
-  <string name="pet_settings_launcher_description">홈 화면과 다른 앱 위에서도 캐릭터를 플로팅으로 띄워요.</string>
+  <string name="pet_settings_launcher_description">앱 밖의 차량 홈에 캐릭터를 표시해요.</string>
   <string name="pet_settings_launcher_unavailable">앱 안의 미리보기에만 적용돼요. 실제 차량 런처는 지원하지 않아요. 현재 준비중이에요.</string>
   <string name="pet_settings_preparing">준비 중</string>
   <string name="pet_settings_overlay_permission_required">다른 앱 위에 표시 권한 허용이 필요합니다.</string>

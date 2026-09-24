@@ -1,0 +1,114 @@
+package com.monsters.mobimon.ui
+
+import android.app.Application
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onNodeWithText
+import com.monsters.mobimon.core.domain.AppUseState
+import com.monsters.mobimon.core.domain.CompanionSettings
+import com.monsters.mobimon.core.domain.CosmeticInventory
+import com.monsters.mobimon.core.domain.CosmeticItem
+import com.monsters.mobimon.core.domain.EquipResult
+import com.monsters.mobimon.core.domain.GitHubAuthentication
+import com.monsters.mobimon.core.domain.GitHubSession
+import com.monsters.mobimon.core.domain.GitHubSignIn
+import com.monsters.mobimon.core.domain.PointAwardResult
+import com.monsters.mobimon.core.domain.PointEconomy
+import com.monsters.mobimon.core.domain.PointWallet
+import com.monsters.mobimon.core.domain.PurchaseResult
+import com.monsters.mobimon.core.domain.SettingsRepository
+import com.monsters.mobimon.core.domain.VehicleSnapshot
+import com.monsters.mobimon.core.domain.WriteResult
+import com.monsters.mobimon.core.navigation.AppRoute
+import com.monsters.mobimon.core.navigation.FeatureEntry
+import com.monsters.mobimon.core.navigation.FeatureNavigator
+import com.monsters.mobimon.core.presentation.CompanionAppearancePresentation
+import com.monsters.mobimon.core.ui.LocalMobiMonMotionEnabled
+import com.monsters.mobimon.runtime.AppUseStateSource
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.flowOf
+import org.junit.Rule
+import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
+
+@RunWith(RobolectricTestRunner::class)
+@Config(sdk = [34], application = Application::class, qualifiers = "ko-rKR-w2560dp-h1184dp-mdpi")
+class MobiMonAppMotionTest {
+    @get:Rule val compose = createComposeRule()
+
+    @Test
+    fun floatingCompanionMotionPreferenceDoesNotDisableAppScreenMotion() {
+        val settings =
+            object : SettingsRepository {
+                override val settings = flowOf(CompanionSettings(reducedMotion = true))
+
+                override suspend fun setReducedMotion(enabled: Boolean) = WriteResult.Success
+
+                override suspend fun setLauncherCharacterEnabled(enabled: Boolean) = WriteResult.Success
+
+                override suspend fun setDebugModeEnabled(enabled: Boolean) = WriteResult.Success
+            }
+        val appUse =
+            object : AppUseStateSource {
+                override val states = MutableStateFlow(AppUseState.ALLOWED)
+
+                override fun state() = states.value
+
+                override fun start() = Unit
+
+                override fun stop() = Unit
+            }
+        val points =
+            object : PointEconomy {
+                override val wallet = flowOf(PointWallet(0))
+                override val inventory = flowOf(CosmeticInventory(emptySet(), emptyMap()))
+                override val catalog = flowOf(emptyList<CosmeticItem>())
+
+                override suspend fun purchase(
+                    itemId: String,
+                    expectedPrice: Long,
+                ): PurchaseResult = error("Not used")
+
+                override suspend fun equip(itemId: String): EquipResult = error("Not used")
+
+                override suspend fun awardQuest(
+                    questId: String,
+                    displayedSnapshot: VehicleSnapshot,
+                ): PointAwardResult = error("Not used")
+            }
+        val authentication =
+            object : GitHubAuthentication {
+                override val session = MutableStateFlow<GitHubSession>(GitHubSession.SignedOut)
+                override val configured = false
+
+                override suspend fun restore() = Unit
+
+                override fun signIn() = flowOf<GitHubSignIn>(GitHubSignIn.Requesting)
+
+                override suspend fun disconnect() = Unit
+            }
+        val home =
+            object : FeatureEntry {
+                override val routes = AppRoute.entries.toSet()
+
+                @Composable
+                override fun Content(
+                    route: AppRoute,
+                    navigator: FeatureNavigator,
+                    modifier: Modifier,
+                ) {
+                    Text(if (LocalMobiMonMotionEnabled.current) "app motion enabled" else "app motion disabled")
+                }
+            }
+
+        compose.setContent {
+            MobiMonApp(setOf(home), appUse, CompanionAppearancePresentation(points), settings, authentication)
+        }
+
+        compose.onNodeWithText("app motion enabled").assertExists()
+    }
+}
