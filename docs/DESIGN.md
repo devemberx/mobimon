@@ -128,6 +128,10 @@ An unknown wallet is not zero.
 Use the same committed balance throughout the app, labelled Points or `1,200 P`.
 Repeated claims reconcile without another celebration. Later repository updates,
 including resets, replace temporary claim confirmations.
+The completed quest detail shows the persisted completion date when available;
+never substitute the date shown in the SVG example.
+On the quest list, align the parking badge top with the back control and show
+the balance as plain text centered on the section heading, as on Home and Store.
 
 ## Customization
 

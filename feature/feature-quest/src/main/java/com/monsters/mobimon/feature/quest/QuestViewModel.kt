@@ -34,6 +34,7 @@ data class QuestRewardSuccess(
 
 data class QuestUiState(
     val completedPointQuestIds: Set<String> = emptySet(),
+    val completedPointQuestDates: Map<String, Long> = emptyMap(),
     val satisfiedDrivingQuestIds: Set<String> = emptySet(),
     val dismissedHiddenQuestIds: Set<String> = emptySet(),
     val driveEvaluation: DriveEvaluationData = DriveEvaluationData(),
@@ -67,18 +68,23 @@ class QuestViewModel(
         observation =
             viewModelScope.launch {
                 try {
-                    combine(economy.completedQuestIds, economy.driveEvaluation) { completedIds, evaluation ->
-                        Triple(
-                            completedIds,
-                            drivingEvaluator
-                                .evaluateAll(
-                                    evaluation,
-                                ).filter { it.isSatisfied }
-                                .map { it.questId }
-                                .toSet(),
-                            evaluation,
+                    combine(
+                        economy.completedQuestIds,
+                        economy.completedQuestDates,
+                        economy.driveEvaluation,
+                    ) { completedIds, completionDates, evaluation ->
+                        QuestObservation(
+                            completedIds = completedIds,
+                            completionDates = completionDates,
+                            satisfiedIds =
+                                drivingEvaluator
+                                    .evaluateAll(evaluation)
+                                    .filter { it.isSatisfied }
+                                    .map { it.questId }
+                                    .toSet(),
+                            evaluation = evaluation,
                         )
-                    }.collect { (completedIds, satisfiedIds, evaluation) ->
+                    }.collect { (completedIds, completionDates, satisfiedIds, evaluation) ->
                         observedQuestIds = completedIds
                         unobservedConfirmedQuestIds.removeAll(completedIds)
                         val pendingQuestId = state.value.pendingQuestId
@@ -86,6 +92,11 @@ class QuestViewModel(
                         mutableState.update {
                             it.copy(
                                 completedPointQuestIds = completedIds + unobservedConfirmedQuestIds,
+                                completedPointQuestDates =
+                                    completionDates.filterKeys { questId ->
+                                        questId in
+                                            completedIds
+                                    },
                                 satisfiedDrivingQuestIds = satisfiedIds,
                                 driveEvaluation = evaluation,
                                 isLoading = false,
@@ -167,3 +178,10 @@ class QuestViewModel(
         mutableState.update { it.copy(message = message) }
     }
 }
+
+private data class QuestObservation(
+    val completedIds: Set<String>,
+    val completionDates: Map<String, Long>,
+    val satisfiedIds: Set<String>,
+    val evaluation: DriveEvaluationData,
+)

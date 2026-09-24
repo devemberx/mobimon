@@ -45,9 +45,9 @@ internal fun QuestCardItem(
             modifier
                 .fillMaxWidth()
                 .height(220.dp * scale)
-                .clip(RoundedCornerShape(24.dp * scale))
+                .clip(RoundedCornerShape(36.dp * scale))
                 .background(Colors.panel)
-                .border(2.dp * scale, Colors.border, RoundedCornerShape(24.dp * scale))
+                .border(2.dp * scale, Colors.border, RoundedCornerShape(36.dp * scale))
                 .clickable(onClick = onClick)
                 .padding(horizontal = if (isCompact) 24.dp * scale else 48.dp * scale, vertical = 26.dp * scale)
                 .testTag("quest-card-${quest.id}"),
@@ -84,7 +84,7 @@ internal fun QuestCardItem(
                         Modifier
                             .width(if (isCompact) 160.dp * scale else 210.dp * scale)
                             .height(60.dp * scale)
-                            .clip(RoundedCornerShape(16.dp * scale))
+                            .clip(RoundedCornerShape(30.dp * scale))
                             .background(Colors.raised),
                     contentAlignment = Alignment.Center,
                 ) {
@@ -121,7 +121,7 @@ internal fun QuestCardItem(
                         Modifier
                             .width(buttonWidth)
                             .height(108.dp * scale)
-                            .clip(RoundedCornerShape(20.dp * scale))
+                            .clip(RoundedCornerShape(54.dp * scale))
                             .background(Colors.button)
                             .clickable(enabled = canClaim, onClick = onClaimReward)
                             .testTag("quest-btn-claim-${quest.id}"),
@@ -148,9 +148,9 @@ internal fun QuestCardItem(
                         Modifier
                             .width(buttonWidth)
                             .height(108.dp * scale)
-                            .clip(RoundedCornerShape(20.dp * scale))
+                            .clip(RoundedCornerShape(54.dp * scale))
                             .background(Colors.panel)
-                            .border(2.dp * scale, Colors.border, RoundedCornerShape(20.dp * scale))
+                            .border(2.dp * scale, Colors.border, RoundedCornerShape(54.dp * scale))
                             .clickable(onClick = onClick)
                             .testTag("quest-btn-detail-${quest.id}"),
                     verticalAlignment = Alignment.CenterVertically,

@@ -70,6 +70,7 @@ fun QuestScreen(
                             isParked = state.parkedVerified,
                             friendId = state.appearance.friendId,
                             scale = scale,
+                            referenceLayout = true,
                             onBack = {
                                 if (selectedQuest != null) {
                                     selectedQuestId = null
@@ -112,6 +113,7 @@ fun QuestScreen(
                         isParked = state.parkedVerified,
                         friendId = state.appearance.friendId,
                         scale = compactScale,
+                        referenceLayout = false,
                         onBack = {
                             if (selectedQuest != null) {
                                 selectedQuestId = null

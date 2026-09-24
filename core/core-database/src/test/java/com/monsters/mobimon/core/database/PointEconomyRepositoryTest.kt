@@ -119,6 +119,7 @@ class PointEconomyRepositoryTest {
             assertEquals(PointAwardResult.AlreadyAwarded, repository.awardQuest("welcome", vehicle))
             assertEquals(125L, repository.wallet.first().balance)
             assertEquals(1, database.economyDao().questCompletions("profile").size)
+            assertEquals(mapOf("welcome" to utcNow), repository.completedQuestDates.first())
             assertEquals(1, database.economyDao().ledger("profile").size)
         }
 
@@ -137,6 +138,7 @@ class PointEconomyRepositoryTest {
             assertTrue(second is PointAwardResult.Awarded)
             assertEquals(120L, repository.wallet.first().balance)
             assertEquals(2, database.economyDao().questCompletions("profile").size)
+            assertEquals(mapOf("daily-check" to utcNow), repository.completedQuestDates.first())
         }
 
     @Test

@@ -31,6 +31,7 @@ internal fun QuestHeader(
     friendId: String,
     scale: Float,
     onBack: () -> Unit,
+    referenceLayout: Boolean,
     modifier: Modifier = Modifier,
     onHome: (() -> Unit)? = null,
     isDetail: Boolean = false,
@@ -98,6 +99,7 @@ internal fun QuestHeader(
                     },
                 ),
             scale = scale,
+            modifier = if (referenceLayout) Modifier.align(Alignment.Top) else Modifier,
         )
     }
 }

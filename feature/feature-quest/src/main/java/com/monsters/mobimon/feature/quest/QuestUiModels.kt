@@ -95,6 +95,7 @@ data class QuestItemUiModel(
     val actionType: QuestActionType,
     val targetRoute: AppRoute,
     val progressDetail: QuestProgressDetail? = null,
+    val completedAtUtcMillis: Long? = null,
 ) {
     val showVehicleStep: Boolean get() = id == DrivingQuestIds.BATTERY_CARE || id == DrivingQuestIds.TIRE_CHECK
     val showExecuteButton: Boolean get() = id == DrivingQuestIds.BATTERY_CARE || id == DrivingQuestIds.TIRE_CHECK

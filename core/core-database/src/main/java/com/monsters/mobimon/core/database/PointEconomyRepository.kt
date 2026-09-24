@@ -102,6 +102,11 @@ class PointEconomyRepository(
             items.mapTo(mutableSetOf()) { it.questId }
         }
 
+    override val completedQuestDates: Flow<Map<String, Long>> =
+        dao.observeQuestCompletions(profileId).mapNotNull { items ->
+            items.associate { it.questId to it.completedAtUtcMillis }
+        }
+
     private val _driveEvaluation = MutableStateFlow(DriveEvaluationData())
     override val driveEvaluation: Flow<DriveEvaluationData> = _driveEvaluation.asStateFlow()
 

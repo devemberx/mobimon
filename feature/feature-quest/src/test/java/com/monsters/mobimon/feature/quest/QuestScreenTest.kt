@@ -18,8 +18,10 @@ import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertIsSelected
+import androidx.compose.ui.test.getUnclippedBoundsInRoot
 import androidx.compose.ui.test.junit4.StateRestorationTester
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -142,7 +144,7 @@ class QuestScreenTest {
             compose.onNodeWithTag("quest-btn-detail-${DrivingQuestIds.BATTERY_CARE}").performScrollTo().performClick()
             capture({ view }, "quest-detail-height-${contentHeight.value.toInt()}")
             checkPanels(detail = true)
-            compose.onNodeWithTag("quest-detail-back-button").performClick()
+            compose.onNodeWithTag("quest-header-back-button").performClick()
         }
     }
 
@@ -200,10 +202,29 @@ class QuestScreenTest {
         compose.onNodeWithTag("quest-tab-completed").assertIsDisplayed().performClick()
         compose.onNodeWithTag("quest-card-${DrivingQuestIds.SEATBELT}").performScrollTo().performClick()
         restoration.emulateSavedInstanceStateRestore()
-        compose.onNodeWithTag("quest-detail-back-button").assertIsDisplayed().performClick()
+        compose.onNodeWithTag("quest-header-back-button").assertIsDisplayed().performClick()
         compose.onNodeWithTag("quest-tab-completed").assertIsDisplayed().assertIsSelected()
         compose.onNodeWithTag("quest-card-${DrivingQuestIds.SAFE_DRIVE}").assertDoesNotExist()
         compose.onNodeWithText("2026.09.14", substring = true).assertDoesNotExist()
+    }
+
+    @Test
+    fun completedDetailShowsOnlyAnObservedCompletionDate() {
+        val completedAt =
+            java.time.Instant
+                .parse("2026-09-14T12:00:00Z")
+                .toEpochMilli()
+        render(
+            presentation(
+                QuestUiState(
+                    isLoading = false,
+                    completedPointQuestIds = setOf(DrivingQuestIds.SEATBELT),
+                    completedPointQuestDates = mapOf(DrivingQuestIds.SEATBELT to completedAt),
+                ),
+            ),
+        )
+        compose.onNodeWithTag("quest-card-${DrivingQuestIds.SEATBELT}").performScrollTo().performClick()
+        compose.onNodeWithText("보상 수령 완료 (2026.09.14)").assertIsDisplayed()
     }
 
     @Test
@@ -241,6 +262,18 @@ class QuestScreenTest {
         compose.onNodeWithText("차량 정보 확인 하기").assertIsDisplayed()
         compose.onNodeWithTag("quest-btn-detail-execute").assertIsDisplayed()
         compose.onNodeWithText("배터리 충전량").assertIsDisplayed()
+        val step = compose.onNodeWithText("차량 정보 확인 하기").getUnclippedBoundsInRoot()
+        val reward = compose.onNodeWithText("보상 ·", substring = true).getUnclippedBoundsInRoot()
+        assertTrue("Progress stays above the reward", step.bottom <= reward.top)
+    }
+
+    @Test
+    fun multiRowProgressStaysAboveReward() {
+        render(presentation())
+        compose.onNodeWithTag("quest-btn-detail-${DrivingQuestIds.CLEAN_DRIVE}").performScrollTo().performClick()
+        val lastMetric = compose.onNodeWithText("남은 거리").getUnclippedBoundsInRoot()
+        val reward = compose.onNodeWithText("보상 ·", substring = true).getUnclippedBoundsInRoot()
+        assertTrue("Two metric rows stay above the reward", lastMetric.bottom <= reward.top)
     }
 
     @Test
@@ -294,6 +327,8 @@ class QuestScreenTest {
             }
         }
         compose.onNodeWithText("17포인트를 획득했어요!!").assertIsDisplayed()
+        compose.onNodeWithTag("quest-reward-success-modal").performClick()
+        compose.onNodeWithTag("quest-reward-success-modal").assertIsDisplayed()
         compose.onNodeWithTag("quest-modal-btn-confirm").performClick()
         compose.onNodeWithTag("quest-reward-success-modal").assertDoesNotExist()
     }
@@ -445,7 +480,7 @@ class QuestScreenTest {
             }
         }
         compose.onNodeWithTag("quest-card-${DrivingQuestIds.SEATBELT}").performScrollTo().performClick()
-        compose.onNodeWithTag("quest-detail-back-button").assertIsDisplayed()
+        compose.onNodeWithTag("quest-detail-back-button").assertDoesNotExist()
         compose.onNodeWithTag("quest-header-back-button").performClick()
         compose.onNodeWithTag("quest-card-${DrivingQuestIds.SEATBELT}").assertIsDisplayed()
         assertFalse(backCalled)
@@ -465,6 +500,111 @@ class QuestScreenTest {
         assertEquals(QuestItemStatus.CLAIMABLE, state.quests.first().status)
         compose.onNodeWithTag("quest-card-${DrivingQuestIds.TIRE_CHECK}").assertIsDisplayed()
         compose.onNodeWithTag("quest-btn-claim-${DrivingQuestIds.TIRE_CHECK}").assertIsDisplayed()
+    }
+
+    @Test
+    fun referenceListAlignsHeadingBalanceAndTabs() {
+        render(presentation())
+        val backButton = compose.onNodeWithTag("quest-header-back-button").getUnclippedBoundsInRoot()
+        val parkingBadge = compose.onNodeWithContentDescription("주차 확인됨").getUnclippedBoundsInRoot()
+        val heading = compose.onNodeWithText("함께 해 볼까요?").getUnclippedBoundsInRoot()
+        val balance = compose.onNodeWithText("포인트 120 P").getUnclippedBoundsInRoot()
+        val firstTab = compose.onNodeWithTag("quest-tab-all").getUnclippedBoundsInRoot()
+        val secondTab = compose.onNodeWithTag("quest-tab-ongoing").getUnclippedBoundsInRoot()
+
+        assertEquals(
+            "Parking badge starts at the reference header top",
+            backButton.top.value,
+            parkingBadge.top.value,
+            2f,
+        )
+        assertTrue("Balance follows the section heading", balance.left > heading.right)
+        val balanceCenterOffset =
+            ((balance.top + balance.bottom) - (heading.top + heading.bottom)).value / 2f
+        assertTrue("Balance is centered slightly below the heading", balanceCenterOffset in 0f..12f)
+        assertEquals(808f, firstTab.left.value, 2f)
+        assertEquals(314f, firstTab.top.value, 2f)
+        assertEquals(336f, (firstTab.right - firstTab.left).value, 2f)
+        assertEquals(88f, (firstTab.bottom - firstTab.top).value, 2f)
+        assertEquals(1168f, secondTab.left.value, 2f)
+    }
+
+    @Test
+    fun bothEmptyFiltersOfferAWorkingAllQuestsAction() {
+        render(presentation().copy(quests = emptyList()))
+        for (tab in listOf("quest-tab-ongoing", "quest-tab-completed")) {
+            compose.onNodeWithTag(tab).performClick()
+            compose.onNodeWithTag("quest-empty-state").assertIsDisplayed()
+            compose.onNodeWithTag("quest-empty-show-all").assertIsDisplayed().performClick()
+            compose.onNodeWithTag("quest-tab-all").assertIsSelected()
+        }
+    }
+
+    @Test
+    @Config(qualifiers = "ko-rKR-w2560dp-h1332dp-mdpi")
+    @GraphicsMode(GraphicsMode.Mode.NATIVE)
+    fun captureReferenceQuestStatesForVisualReview() {
+        val catalogState = presentation()
+        val tire = catalogState.quests.first { it.id == DrivingQuestIds.TIRE_CHECK }
+        val first = tire.copy(status = QuestItemStatus.CLAIMABLE, actionType = QuestActionType.CLAIM_REWARD)
+        val second =
+            catalogState.quests
+                .first { it.id == DrivingQuestIds.BATTERY_CARE }
+                .copy(status = QuestItemStatus.IN_PROGRESS, actionType = QuestActionType.VIEW_DETAIL)
+        val third =
+            catalogState.quests
+                .first { it.id == DrivingQuestIds.SEATBELT }
+                .copy(status = QuestItemStatus.COMPLETED, actionType = QuestActionType.ALREADY_CLAIMED)
+        var state by mutableStateOf(catalogState.copy(quests = listOf(first, second, third)))
+        lateinit var view: View
+        compose.setContent {
+            val currentView = LocalView.current
+            SideEffect { view = currentView }
+            MobiMonTheme {
+                Box(Modifier.height(1184.dp)) { QuestScreen(state, {}, {}, {}, {}, {}, {}, {}) }
+            }
+        }
+
+        capture({ view }, "quest-reference-list-all")
+        compose.onNodeWithTag("quest-tab-ongoing").performClick()
+        capture({ view }, "quest-reference-list-in-progress")
+        compose.onNodeWithTag("quest-tab-completed").performClick()
+        capture({ view }, "quest-reference-list-completed")
+        compose.runOnIdle { state = state.copy(quests = listOf(first, second)) }
+        capture({ view }, "quest-reference-empty-completed")
+        compose.runOnIdle { state = state.copy(quests = listOf(third)) }
+        compose.onNodeWithTag("quest-tab-ongoing").performClick()
+        capture({ view }, "quest-reference-empty-in-progress")
+        compose.onNodeWithTag("quest-tab-all").performClick()
+        compose.runOnIdle {
+            state =
+                state.copy(
+                    quests =
+                        listOf(
+                            first.copy(status = QuestItemStatus.IN_PROGRESS, actionType = QuestActionType.VIEW_DETAIL),
+                        ),
+                )
+        }
+        compose.onNodeWithTag("quest-card-${DrivingQuestIds.TIRE_CHECK}").performClick()
+        capture({ view }, "quest-reference-detail-actionable")
+        compose.runOnIdle { state = state.copy(quests = listOf(first)) }
+        capture({ view }, "quest-reference-detail-claimable")
+        compose.runOnIdle { state = state.copy(quests = listOf(first.copy(status = QuestItemStatus.COMPLETED))) }
+        capture({ view }, "quest-reference-detail-completed")
+        compose.onNodeWithTag("quest-header-back-button").performClick()
+        compose.runOnIdle {
+            state = state.copy(quests = listOf(first), rewardSuccess = QuestRewardSuccess(first.id, first.rewardPoints))
+        }
+        compose.onNodeWithTag("quest-reward-success-modal").assertIsDisplayed()
+        capture(
+            {
+                org.robolectric.shadows.ShadowDialog
+                    .getLatestDialog()
+                    .window!!
+                    .decorView
+            },
+            "quest-reference-reward-success",
+        )
     }
 
     private fun render(
