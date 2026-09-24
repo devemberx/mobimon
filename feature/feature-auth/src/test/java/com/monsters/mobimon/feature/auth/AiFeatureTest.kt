@@ -80,6 +80,7 @@ class AiFeatureTest {
     private val points = FakePoints()
     private val session = MutableStateFlow<GitHubSession>(GitHubSession.SignedOut)
     private var route by mutableStateOf(AiRoute.COPILOT)
+    private var homeReturns = 0
 
     @Test
     fun disconnectedConversationOpensConnectionWhenParked() {
@@ -90,19 +91,34 @@ class AiFeatureTest {
     }
 
     @Test
-    fun disconnectedConversationCannotOpenConnectionWithoutParking() {
+    fun disconnectedConversationShowsParkingDialogAndReturnsHome() {
         route = AiRoute.CONVERSATION
         show()
-        compose.onNodeWithText("연결 안내 열기").assertIsNotEnabled()
+        compose.onNodeWithTag("chat-parking-dialog").assertIsDisplayed()
+        compose.onNodeWithText("연결 안내 열기").assertDoesNotExist()
+        compose.onNodeWithTag("chat-parking-home").performClick()
+        compose.runOnIdle { assertEquals(1, homeReturns) }
     }
 
     @Test
-    fun authenticatedAccountCanAttemptSendWithoutClaimingProviderReadiness() {
+    fun unparkedConversationKeepsParkingDialogWhenCompanionLoadFails() {
+        route = AiRoute.CONVERSATION
+        pets.initializationFailure = IOException("companion unavailable")
+        show()
+
+        compose.onNodeWithTag("chat-parking-dialog").assertIsDisplayed()
+        compose.onNodeWithText("다시 시도").assertDoesNotExist()
+        compose.onNodeWithTag("chat-parking-home").performClick()
+        compose.runOnIdle { assertEquals(1, homeReturns) }
+    }
+
+    @Test
+    fun authenticatedAccountCanSendAfterModelCheck() {
         route = AiRoute.CONVERSATION
         show(parked = true, authenticated = true)
         compose.onNodeWithTag("chat-input").performTextInput("오늘의 이야기")
         compose.onNodeWithTag("chat-send").assertIsEnabled()
-        compose.onNodeWithText("Copilot 연결됨").assertDoesNotExist()
+        compose.onNodeWithText("Copilot 연결됨").assertIsDisplayed()
         compose.runOnIdle { route = AiRoute.COPILOT }
         compose.onNodeWithText("GitHub 계정 인증이 완료됐어요.").assertIsDisplayed()
         compose.onNodeWithText("모비와 대화하기").assertIsDisplayed().performClick()
@@ -250,8 +266,7 @@ class AiFeatureTest {
                     override fun signIn() = flowOf<GitHubSignIn>()
                 },
                 object : ConversationProvider {
-                    override suspend fun connect(accountId: Long) =
-                        ConversationResult.Failure(ConversationProblem.ACCESS)
+                    override suspend fun connect(accountId: Long) = ConversationResult.Success("gpt-4o")
 
                     override suspend fun reply(
                         accountId: Long,
@@ -261,7 +276,7 @@ class AiFeatureTest {
                     ) = ConversationResult.Failure(ConversationProblem.ACCESS)
                 },
             )
-        val navigator = FeatureNavigator({ route = it as AiRoute }, {}, {}, {})
+        val navigator = FeatureNavigator({ route = it as AiRoute }, {}, { homeReturns++ }, {})
         compose.setContent {
             CompositionLocalProvider(LocalDensity provides Density(LocalDensity.current.density, fontScale)) {
                 MobiMonTheme { feature.Content(route, navigator, Modifier) }

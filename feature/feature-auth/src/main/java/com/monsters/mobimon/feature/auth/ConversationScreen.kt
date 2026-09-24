@@ -21,12 +21,12 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
@@ -34,6 +34,7 @@ import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.paneTitle
 import androidx.compose.ui.semantics.semantics
@@ -42,6 +43,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
+import com.monsters.mobimon.core.domain.ConversationProblem
 import com.monsters.mobimon.core.ui.MobiMonNavigationButton
 import com.monsters.mobimon.core.ui.MobiMonReferenceText
 import com.monsters.mobimon.core.ui.PetAvatar
@@ -69,6 +71,8 @@ fun ConversationScreen(
     onRetry: () -> Unit = onOpenConnection,
     onDismissFailure: () -> Unit = {},
     onNewConversation: (() -> Unit)? = null,
+    onReturnHome: () -> Unit = onBack,
+    onRecheckConnection: () -> Unit = onRetry,
 ) {
     val friend = stringResource(if (friendId == "friend:luna") R.string.copilot_luna else R.string.copilot_mobi)
     val title = stringResource(R.string.chat_title)
@@ -76,6 +80,15 @@ fun ConversationScreen(
     val focus = LocalFocusManager.current
     val view = LocalView.current
     val imeVisible = WindowInsets.isImeVisible
+    val messageFailure =
+        state.failed &&
+            state.problem in
+            setOf(ConversationProblem.NETWORK, ConversationProblem.SERVICE, ConversationProblem.TIMEOUT)
+    val connectionFailure =
+        state.connectionProblem in
+            setOf(ConversationProblem.NETWORK, ConversationProblem.SERVICE, ConversationProblem.TIMEOUT)
+    val networkChecking = state.connection == ConversationConnection.CHECKING && state.connectionRetrying
+    val networkDialog = interactionAllowed && (messageFailure || connectionFailure || networkChecking)
     val back = {
         // adjustResize can consume Compose's IME bounds; check the window at the time of the action.
         if (ViewCompat.getRootWindowInsets(view)?.isVisible(WindowInsetsCompat.Type.ime()) == true) {
@@ -85,9 +98,11 @@ fun ConversationScreen(
             onBack()
         }
     }
-    BackHandler(enabled = imeVisible) { back() }
-    LaunchedEffect(interactionAllowed) {
-        if (!interactionAllowed) {
+    BackHandler(enabled = imeVisible && interactionAllowed) { back() }
+    BackHandler(enabled = !interactionAllowed) { onReturnHome() }
+    BackHandler(enabled = networkDialog) { onReturnHome() }
+    LaunchedEffect(interactionAllowed, networkDialog) {
+        if (!interactionAllowed || networkDialog) {
             keyboard?.hide()
             focus.clearFocus()
         }
@@ -103,75 +118,28 @@ fun ConversationScreen(
         val wide = maxWidth >= 1200.dp && LocalDensity.current.fontScale <= 1.1f
         val scale = if (wide) maxWidth.value / 2560f else 0.65f
         val shortened = maxHeight < (if (wide) 1160.dp else 1050.dp) * scale
-        if (wide) {
-            val panelBottom = maxHeight - 24.dp * scale
-            Box(Modifier.fillMaxSize()) {
-                CompanionConversationPanel(
-                    friend,
-                    friendId,
-                    appearanceKey,
-                    accessoryId,
-                    outfitId,
-                    shortened,
-                    scale,
-                    Modifier
-                        .offset(72.dp * scale, 196.dp * scale)
-                        .size(680.dp * scale, (panelBottom - 196.dp * scale).coerceAtLeast(0.dp)),
-                )
-                ConversationPanel(
-                    state,
-                    draft,
-                    onDraftChange,
-                    onSend,
-                    onCancelReply,
-                    onOpenConnection,
-                    friend,
-                    interactionAllowed,
-                    shortened,
-                    scale,
-                    true,
-                    Modifier
-                        .offset(796.dp * scale, 34.dp * scale)
-                        .size(1692.dp * scale, (panelBottom - 34.dp * scale).coerceAtLeast(0.dp)),
-                    onNewConversation,
-                    onRetry,
-                    onDismissFailure,
-                )
-                ConversationAuthBadge(
-                    authenticated = state.connection != ConversationConnection.SIGNED_OUT,
-                    scale = scale,
-                    modifier = Modifier.offset(1887.dp * scale, 51.dp * scale),
-                )
-                ConversationParkingBadge(
-                    parked = interactionAllowed,
-                    scale = scale,
-                    modifier = Modifier.offset(2146.dp * scale, 51.dp * scale),
-                )
-                ConversationHeader(
-                    friend,
-                    back,
-                    simulatedVehicle,
-                    scale,
-                    true,
-                    shortened,
-                    state.failed,
-                    Modifier.offset(72.dp * scale, 36.dp * scale).width(680.dp * scale),
-                )
-            }
-        } else {
-            Column(Modifier.fillMaxSize().padding(start = 24.dp, end = 24.dp, top = 16.dp, bottom = 16.dp)) {
-                ConversationHeader(friend, back, simulatedVehicle, scale, false, shortened, state.failed)
-                Spacer(Modifier.height(16.dp))
-                if (state.failed) {
-                    ConversationFailure(
-                        onRetry,
-                        onDismissFailure,
-                        interactionAllowed,
+        val contentHeight = maxHeight
+        Box(
+            Modifier
+                .fillMaxSize()
+                .focusProperties { canFocus = interactionAllowed && !networkDialog }
+                .then(if (interactionAllowed && !networkDialog) Modifier else Modifier.clearAndSetSemantics {}),
+        ) {
+            if (wide) {
+                val panelBottom = contentHeight - 24.dp * scale
+                Box(Modifier.fillMaxSize()) {
+                    CompanionConversationPanel(
+                        friend,
+                        friendId,
+                        appearanceKey,
+                        accessoryId,
+                        outfitId,
+                        shortened,
                         scale,
-                        Modifier.weight(1f),
-                        state.problem,
+                        Modifier
+                            .offset(72.dp * scale, 196.dp * scale)
+                            .size(680.dp * scale, (panelBottom - 196.dp * scale).coerceAtLeast(0.dp)),
                     )
-                } else {
                     ConversationPanel(
                         state,
                         draft,
@@ -183,12 +151,85 @@ fun ConversationScreen(
                         interactionAllowed,
                         shortened,
                         scale,
-                        false,
-                        Modifier.weight(1f),
+                        true,
+                        Modifier
+                            .offset(796.dp * scale, 34.dp * scale)
+                            .size(1692.dp * scale, (panelBottom - 34.dp * scale).coerceAtLeast(0.dp)),
                         onNewConversation,
+                        onRetry,
+                        onDismissFailure,
+                    )
+                    ConversationAuthBadge(
+                        connection = state.connection,
+                        problem = if (messageFailure) state.problem else state.connectionProblem,
+                        scale = scale,
+                        modifier = Modifier.offset(1887.dp * scale, 51.dp * scale),
+                    )
+                    ConversationParkingBadge(
+                        parked = interactionAllowed,
+                        scale = scale,
+                        modifier =
+                            Modifier.offset(
+                                (if (interactionAllowed) 2146.dp else 2144.dp) * scale,
+                                51.dp * scale,
+                            ),
+                    )
+                    ConversationHeader(
+                        friend,
+                        back,
+                        simulatedVehicle,
+                        scale,
+                        true,
+                        shortened,
+                        state.failed,
+                        Modifier
+                            .offset(72.dp * scale, 36.dp * scale)
+                            .width(680.dp * scale),
                     )
                 }
+            } else {
+                Column(Modifier.fillMaxSize().padding(start = 24.dp, end = 24.dp, top = 16.dp, bottom = 16.dp)) {
+                    ConversationHeader(friend, back, simulatedVehicle, scale, false, shortened, state.failed)
+                    Spacer(Modifier.height(16.dp))
+                    if (state.failed) {
+                        ConversationFailure(
+                            onRetry,
+                            onDismissFailure,
+                            interactionAllowed,
+                            scale,
+                            Modifier.weight(1f),
+                            state.problem,
+                        )
+                    } else {
+                        ConversationPanel(
+                            state,
+                            draft,
+                            onDraftChange,
+                            onSend,
+                            onCancelReply,
+                            onOpenConnection,
+                            friend,
+                            interactionAllowed,
+                            shortened,
+                            scale,
+                            false,
+                            Modifier.weight(1f),
+                            onNewConversation,
+                        )
+                    }
+                }
             }
+        }
+        if (!interactionAllowed) {
+            ConversationParkingOverlay(onReturnHome)
+        } else if (networkDialog) {
+            ConversationNetworkOverlay(
+                checking = networkChecking,
+                messageFailure = messageFailure,
+                problem = if (messageFailure) state.problem else state.connectionProblem,
+                onHome = onReturnHome,
+                onRetry = if (messageFailure) onRetry else onRecheckConnection,
+            )
         }
     }
 }
@@ -227,7 +268,7 @@ private fun ConversationHeader(
                     MobiMonReferenceText(
                         stringResource(R.string.chat_title),
                         0f,
-                        48.2f,
+                        45.2f,
                         46f,
                         scale = scale,
                         bold = true,
@@ -285,32 +326,42 @@ private fun CompanionConversationPanel(
     scale: Float,
     modifier: Modifier = Modifier,
 ) {
-    Box(modifier.background(Colors.panel, RoundedCornerShape(48.dp * scale)).testTag("chat-companion")) {
+    Box(modifier.background(Colors.panel, ConversationPanelShape(36.923f / 680f)).testTag("chat-companion")) {
         val avatarSize = (if (shortened) 440.dp else 624.dp) * scale
         Text(
             stringResource(R.string.chat_companion_title, friend),
-            Modifier.fillMaxWidth().padding(top = (if (shortened) 40.dp else 58.dp) * scale),
-            style = mobiMonReferenceTextStyle(if (shortened) 44f else 48f, scale, true),
+            Modifier.fillMaxWidth().padding(top = (if (shortened) 40.dp else 61.dp) * scale),
+            style = mobiMonReferenceTextStyle(if (shortened) 44f else 42f, scale, true),
             color = Colors.text,
             textAlign = TextAlign.Center,
         )
-        PetAvatar(
+        Box(
             Modifier
                 .align(Alignment.TopStart)
                 .offset(x = (if (shortened) 120.dp else 28.dp) * scale, y = (if (shortened) 108.dp else 140.dp) * scale)
                 .size(avatarSize)
                 .testTag("chat-avatar"),
-            appearanceKey,
-            friendId,
-            accessoryId,
-            outfitId,
-        )
+        ) {
+            val referenceOffset =
+                if (friendId == "friend:mobi" && accessoryId == null && outfitId == null) {
+                    avatarSize * (35.24f / 1254f)
+                } else {
+                    0.dp
+                }
+            PetAvatar(
+                Modifier.fillMaxSize().offset(y = referenceOffset),
+                appearanceKey,
+                friendId,
+                accessoryId,
+                outfitId,
+            )
+        }
         Text(
             stringResource(R.string.chat_companion_tagline),
             Modifier
                 .align(Alignment.BottomCenter)
-                .padding(bottom = (if (shortened) 100.dp else 126.dp) * scale),
-            style = mobiMonReferenceTextStyle(if (shortened) 36f else 40f, scale, true),
+                .padding(bottom = (if (shortened) 100.dp else 124.dp) * scale),
+            style = mobiMonReferenceTextStyle(if (shortened) 36f else 42f, scale, true),
             color = Colors.text,
             textAlign = TextAlign.Center,
         )
@@ -318,8 +369,8 @@ private fun CompanionConversationPanel(
             stringResource(R.string.chat_companion_note),
             Modifier
                 .align(Alignment.BottomCenter)
-                .padding(bottom = (if (shortened) 54.dp else 68.dp) * scale),
-            style = mobiMonReferenceTextStyle(26f, scale),
+                .padding(bottom = (if (shortened) 54.dp else 63.dp) * scale),
+            style = mobiMonReferenceTextStyle(30f, scale),
             color = Colors.muted,
             textAlign = TextAlign.Center,
         )

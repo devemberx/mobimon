@@ -7,6 +7,7 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.room.Room
 import com.monsters.mobimon.core.database.AppDatabase
 import com.monsters.mobimon.core.domain.AppUseState
+import com.monsters.mobimon.core.domain.AuthenticationProblem
 import com.monsters.mobimon.core.domain.Clock
 import com.monsters.mobimon.core.domain.ConversationProvider
 import com.monsters.mobimon.core.domain.ConversationResult
@@ -58,17 +59,7 @@ object JourneyTestModule {
     fun authentication(authentication: JourneyAuthentication): GitHubAuthentication = authentication
 
     @Provides
-    fun conversation(): ConversationProvider =
-        object : ConversationProvider {
-            override suspend fun connect(accountId: Long) = ConversationResult.Success("journey-model")
-
-            override suspend fun reply(
-                accountId: Long,
-                conversationId: String,
-                friendId: String,
-                messages: List<ConversationTurn>,
-            ) = ConversationResult.Success("이야기를 들려줘서 고마워요.")
-        }
+    fun conversation(provider: JourneyConversationProvider): ConversationProvider = provider
 
     @Provides
     fun clock(): Clock = Clock { 10_000L }
@@ -94,17 +85,50 @@ object JourneyTestModule {
 }
 
 @Singleton
+class JourneyConversationProvider
+    @Inject
+    constructor() : ConversationProvider {
+        var connectionResult: ConversationResult<String> = ConversationResult.Success("gpt-4o")
+        var connections = 0
+            private set
+        var replies = 0
+            private set
+
+        override suspend fun connect(accountId: Long): ConversationResult<String> {
+            connections++
+            return connectionResult
+        }
+
+        override suspend fun reply(
+            accountId: Long,
+            conversationId: String,
+            friendId: String,
+            messages: List<ConversationTurn>,
+        ): ConversationResult<String> {
+            replies++
+            return ConversationResult.Success("이야기를 들려줘서 고마워요.")
+        }
+    }
+
+@Singleton
 class JourneyAuthentication
     @Inject
     constructor() : GitHubAuthentication {
         override val session = MutableStateFlow<GitHubSession>(GitHubSession.SignedOut)
         override val configured = false
+        var restoreSession: GitHubSession? = null
 
         fun approve() {
             session.value = GitHubSession.Authenticated(GitHubAccount(1, "journey-sample"))
         }
 
-        override suspend fun restore() = Unit
+        fun failNetwork() {
+            session.value = GitHubSession.Failure(AuthenticationProblem.NETWORK)
+        }
+
+        override suspend fun restore() {
+            restoreSession?.let { session.value = it }
+        }
 
         override suspend fun disconnect() {
             session.value = GitHubSession.SignedOut

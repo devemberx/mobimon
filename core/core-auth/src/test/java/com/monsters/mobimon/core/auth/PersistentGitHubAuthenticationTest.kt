@@ -130,6 +130,20 @@ class PersistentGitHubAuthenticationTest {
             assertTrue(repository.session.value is GitHubSession.Authenticated)
         }
 
+    @Test fun foregroundRestoreMarksPreviousSessionAsCheckingUntilIdentityIsValidated() =
+        runTest {
+            val repository = repository()
+            repository.signIn().toList()
+            val identity = CompletableDeferred<GitHubAccount>()
+            api.accountResult = { identity.await() }
+            val pending = launch { repository.restore() }
+            runCurrent()
+            assertEquals(GitHubSession.Restoring, repository.session.value)
+            identity.complete(GitHubAccount(1, "driver"))
+            pending.join()
+            assertTrue(repository.session.value is GitHubSession.Authenticated)
+        }
+
     @Test fun refreshIsPersistedBeforeIdentityFailureAndReusedAfterRestart() =
         runTest {
             store.credential = StoredCredential("client", GitHubTokens("old", 1, "refresh", 999999))

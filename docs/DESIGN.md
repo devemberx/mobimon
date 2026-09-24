@@ -143,7 +143,7 @@ No cash purchases, top-ups or conversion.
 Use the V5 split panels, empty state, suggestions and composer. Home/menu Chat opens
 connection settings when signed out and chat when authenticated; the Settings account
 card always opens connection management. Follow the [session and provider contract](ARCHITECTURE.md#keyboard-conversation-ui).
-Enable Send for a valid draft when authenticated and parked; show readiness only after
+Enable Send for a valid draft when Copilot access and `gpt-4o` are verified and the vehicle is parked; show readiness after
 a successful reply. Do not add a consent panel, connection-check button or entry preflight.
 Suggestions fill the draft without sending; preserve selection and unfinished IME input.
 At 2560 × 1440, place the companion at x72–752, chat at x796–2488, and keep
@@ -157,12 +157,23 @@ shorten the panels and shrink the companion. Enlarged-text layouts prioritize
 chat and hide secondary content. Preserve visible control geometry while meeting
 minimum touch bounds at AAOS density.
 
-Identify speakers and preserve drafts/replies on recoverable errors. Parking loss
-disables editing and hides the IME; AAOS restrictions remove the screen. Show specific
+Identify speakers and preserve drafts/replies on recoverable errors. Unverified parking
+shows the [parking dialog](ui/conversation/parking-required.svg) over chat, disables
+editing and hides the IME. Home and Back return home without clearing the draft; verified
+parking removes the dialog. AAOS restrictions remove the screen. Show specific
 recovery for network, service/Auto availability, timeout, account, access, usage and
 length errors. Retries are explicit. Put New conversation beside the follow-up
 suggestion, retaining the reference header and message geometry. Show failed
 replies with inline retry and edit actions while keeping history visible.
+
+On foreground entry, restore the GitHub session and check Copilot access/model when
+Park and AAOS allow interaction. Home remains available during the check. Chat shows
+“Copilot 확인 중” with Send disabled until verification succeeds. A network failure
+shows the [network dialog](ui/conversation/network-error.svg) over chat. “다시 확인”
+checks access/model without sending the draft and displays the
+[checking dialog](ui/conversation/network-checking.svg) until it finishes. A failed
+message instead offers “다시 보내기”; retry may consume usage. Home and Back preserve
+the draft. The modal stays on chat and does not interrupt Home.
 
 Hide unsupported voice controls. Future voice input requires permission, transcript
 review and explicit Send; stopping never submits.

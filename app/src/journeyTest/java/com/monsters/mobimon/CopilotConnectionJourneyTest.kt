@@ -23,14 +23,20 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.test.core.app.ActivityScenario
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
+import com.monsters.mobimon.core.domain.ConversationProblem
+import com.monsters.mobimon.core.domain.ConversationResult
 import com.monsters.mobimon.core.domain.DrivingState
+import com.monsters.mobimon.core.domain.GitHubAccount
+import com.monsters.mobimon.core.domain.GitHubSession
 import com.monsters.mobimon.core.domain.SignalQuality
 import com.monsters.mobimon.testing.JourneyAuthentication
+import com.monsters.mobimon.testing.JourneyConversationProvider
 import com.monsters.mobimon.testing.JourneyStorage
 import com.monsters.mobimon.testing.JourneyVehicle
 import dagger.hilt.android.testing.HiltAndroidRule
 import dagger.hilt.android.testing.HiltAndroidTest
 import org.junit.After
+import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -53,6 +59,8 @@ class CopilotConnectionJourneyTest {
     @Inject lateinit var storage: JourneyStorage
 
     @Inject lateinit var authentication: JourneyAuthentication
+
+    @Inject lateinit var conversations: JourneyConversationProvider
 
     @Before
     fun setUp() = hilt.inject()
@@ -82,7 +90,7 @@ class CopilotConnectionJourneyTest {
     }
 
     @Test
-    fun lossOfParkingDisablesChatAndBackReturnsHome() {
+    fun lossOfParkingShowsDialogAndHomeReturnsHome() {
         authentication.approve()
         ActivityScenario.launch(MainActivity::class.java).use {
             waitFor(hasText(text(PetR.string.pet_talk_action)) and isEnabled())
@@ -90,10 +98,45 @@ class CopilotConnectionJourneyTest {
             waitFor(hasTestTag("chat-input"))
             compose.onNodeWithTag("chat-input").assertIsEnabled()
             vehicle.publish(DrivingState.UNKNOWN, SignalQuality.UNAVAILABLE)
-            waitFor(hasTestTag("chat-input") and !isEnabled())
-            compose.onNodeWithTag("chat-input").assertIsNotEnabled()
-            compose.onNodeWithContentDescription(text(AuthR.string.copilot_back)).ensureDisplayed().performClick()
+            waitFor(hasTestTag("chat-parking-dialog"))
+            compose.onNodeWithTag("chat-input").assertDoesNotExist()
+            compose.onNodeWithTag("chat-parking-home").ensureDisplayed().performClick()
             waitFor(hasContentDescription(text(PetR.string.pet_open_menu)))
+        }
+    }
+
+    @Test
+    fun startupNetworkFailureStaysOnHomeAndConversationCanRecheckWithoutSending() {
+        authentication.approve()
+        conversations.connectionResult = ConversationResult.Failure(ConversationProblem.NETWORK)
+        ActivityScenario.launch(MainActivity::class.java).use {
+            waitFor(hasText(text(PetR.string.pet_talk_action)) and isEnabled())
+            compose.waitUntil(timeoutMillis = 10_000) { conversations.connections >= 1 }
+            compose.onNodeWithTag("chat-network-dialog").assertDoesNotExist()
+            compose.onNodeWithText(text(PetR.string.pet_talk_action)).ensureDisplayed().performClick()
+            waitFor(hasTestTag("chat-network-dialog"))
+            compose.onNodeWithTag("chat-send").assertDoesNotExist()
+            conversations.connectionResult = ConversationResult.Success("gpt-4o")
+            compose.onNodeWithTag("chat-network-retry").ensureDisplayed().performClick()
+            waitFor(hasText(text(AuthR.string.chat_ready)))
+            compose.onNodeWithTag("chat-network-dialog").assertDoesNotExist()
+            assertEquals(0, conversations.replies)
+        }
+    }
+
+    @Test
+    fun authenticationNetworkFailureRechecksCredentialsThenModelFromConversation() {
+        authentication.failNetwork()
+        ActivityScenario.launch(MainActivity::class.java).use {
+            waitFor(hasText(text(PetR.string.pet_talk_action)) and isEnabled())
+            compose.onNodeWithText(text(PetR.string.pet_talk_action)).ensureDisplayed().performClick()
+            waitFor(hasTestTag("chat-network-dialog"))
+            assertEquals(0, conversations.connections)
+            authentication.restoreSession = GitHubSession.Authenticated(GitHubAccount(1, "journey-sample"))
+            compose.onNodeWithTag("chat-network-retry").ensureDisplayed().performClick()
+            waitFor(hasText(text(AuthR.string.chat_ready)))
+            compose.onNodeWithTag("chat-network-dialog").assertDoesNotExist()
+            assertEquals(0, conversations.replies)
         }
     }
 
