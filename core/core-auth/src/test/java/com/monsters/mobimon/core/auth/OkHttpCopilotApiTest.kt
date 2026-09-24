@@ -119,7 +119,7 @@ class OkHttpCopilotApiTest {
             assertFalse(body.toString().contains("github-secret"))
         }
 
-    @Test fun fixedGpt4oCompletionDoesNotSendAnAutoSessionToken() =
+    @Test fun fixedGpt4oCompletionDoesNotSendASessionToken() =
         runBlocking {
             enqueue("""{"choices":[{"finish_reason":"stop","message":{"role":"assistant","content":"Hello"}}]}""")
             val fixedModel = CopilotModel("gpt-4o", CopilotChatApi.CHAT_COMPLETIONS)

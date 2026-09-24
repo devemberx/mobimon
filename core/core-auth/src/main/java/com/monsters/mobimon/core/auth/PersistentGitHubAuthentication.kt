@@ -39,6 +39,7 @@ class PersistentGitHubAuthentication internal constructor(
     override suspend fun restore() =
         mutex.withLock {
             invalidateCredential()
+            mutableSession.value = GitHubSession.Restoring
             if (!configured) {
                 mutableSession.value = GitHubSession.SignedOut
                 return@withLock
