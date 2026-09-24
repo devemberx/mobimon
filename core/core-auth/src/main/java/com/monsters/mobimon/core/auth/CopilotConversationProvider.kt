@@ -197,9 +197,9 @@ internal class CopilotConversationProvider(
             val client =
                 OkHttpClient
                     .Builder()
-                    .connectTimeout(15, TimeUnit.SECONDS)
-                    .readTimeout(60, TimeUnit.SECONDS)
-                    .callTimeout(90, TimeUnit.SECONDS)
+                    .connectTimeout(5, TimeUnit.SECONDS)
+                    .readTimeout(20, TimeUnit.SECONDS)
+                    .callTimeout(25, TimeUnit.SECONDS)
                     .followRedirects(false)
                     .followSslRedirects(false)
                     .retryOnConnectionFailure(false)

@@ -107,6 +107,28 @@ class MobiMonContentTest {
     }
 
     @Test
+    fun startChatUsesLatestAuthenticationBeforeShellCollectsSession() {
+        var authenticatedNow = false
+        compose.setContent {
+            MobiMonContent(
+                entries,
+                appUseState = AppUseState.ALLOWED,
+                conversationAuthenticated = false,
+                currentConversationAuthentication = { authenticatedNow },
+            )
+        }
+        compose.onNodeWithText("Open menu").performClick()
+        clickMenuItem("설정")
+        compose.onNodeWithText("Connect").performClick()
+        compose.onNodeWithText("Route COPILOT").assertExists()
+
+        compose.runOnIdle { authenticatedNow = true }
+        compose.onNodeWithText("Chat").performClick()
+
+        compose.onNodeWithText("Route CONVERSATION").assertExists()
+    }
+
+    @Test
     fun menuRoutesVehicleAndCustomizationAndClosesWithBackAndClose() {
         show()
         compose.onNodeWithText("Open menu").performClick()

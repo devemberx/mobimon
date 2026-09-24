@@ -90,6 +90,27 @@ class CopilotConnectionJourneyTest {
     }
 
     @Test
+    fun settingsStartChatOnFirstBootOpensConversation() {
+        authentication.approve()
+        ActivityScenario.launch(MainActivity::class.java).use {
+            waitFor(hasContentDescription(text(PetR.string.pet_open_menu)))
+            compose.onNodeWithContentDescription(text(PetR.string.pet_open_menu)).ensureDisplayed().performClick()
+            compose.onNodeWithText(text(R.string.drawer_settings)).ensureDisplayed().performClick()
+            waitFor(hasText(text(PetR.string.pet_settings_ai_title)) and isEnabled())
+            compose.onNodeWithText(text(PetR.string.pet_settings_ai_title)).ensureDisplayed().performClick()
+            val chat =
+                InstrumentationRegistry.getInstrumentation().targetContext.getString(
+                    AuthR.string.copilot_chat,
+                    "모비",
+                )
+            waitFor(hasText(chat) and isEnabled())
+            compose.onNodeWithText(chat).ensureDisplayed().performClick()
+            waitFor(hasTestTag("chat-input"))
+            compose.onNodeWithTag("chat-send").assertIsNotEnabled()
+        }
+    }
+
+    @Test
     fun lossOfParkingShowsDialogAndHomeReturnsHome() {
         authentication.approve()
         ActivityScenario.launch(MainActivity::class.java).use {

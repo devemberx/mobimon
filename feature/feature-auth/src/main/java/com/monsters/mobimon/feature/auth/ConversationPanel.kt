@@ -1,5 +1,11 @@
 package com.monsters.mobimon.feature.auth
 
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -54,6 +60,7 @@ import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
@@ -72,8 +79,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.monsters.mobimon.core.domain.ConversationLimits
 import com.monsters.mobimon.core.domain.ConversationProblem
+import com.monsters.mobimon.core.ui.LocalMobiMonMotionEnabled
 import com.monsters.mobimon.core.ui.MobiMonReferenceText
 import com.monsters.mobimon.core.ui.mobiMonReferenceTextStyle
+import kotlin.math.PI
+import kotlin.math.cos
 import com.monsters.mobimon.core.ui.MobiMonColors as Colors
 
 @Composable
@@ -179,37 +189,20 @@ internal fun ConversationPanel(
             CompactConversationInlineFailure(state.problem, onRetry, onDismissFailure, allowed, scale)
         }
         if (!shortened && !state.replyPending && !state.failed) {
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(24.dp * scale)) {
-                val suggestions =
-                    if (state.messages.isEmpty()) {
-                        listOf(R.string.chat_suggestion_mood, R.string.chat_suggestion_story)
-                    } else {
-                        listOf(R.string.chat_suggestion_followup)
-                    }
-                if (state.messages.isNotEmpty()) {
-                    if (onNewConversation != null) {
-                        ConversationAction(
-                            stringResource(R.string.chat_new),
-                            onNewConversation,
-                            allowed,
-                            scale,
-                            Modifier.weight(1f),
-                            referenceGeometry = wide,
-                        )
-                    } else if (wide) {
-                        Spacer(Modifier.weight(1f))
-                    }
-                }
-                suggestions.forEach { resource ->
-                    val text = stringResource(resource)
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                if (state.messages.isNotEmpty() && onNewConversation != null) {
                     ConversationAction(
-                        text,
-                        { chooseSuggestion(text) },
+                        stringResource(R.string.chat_new),
+                        onNewConversation,
                         allowed,
                         scale,
-                        Modifier.weight(1f),
-                        referenceGeometry = wide,
+                        Modifier.width(240.dp * scale).testTag("chat-new-action"),
                     )
+                } else if (state.messages.isEmpty()) {
+                    listOf(R.string.chat_suggestion_mood, R.string.chat_suggestion_story).forEach { resource ->
+                        val text = stringResource(resource)
+                        ConversationAction(text, { chooseSuggestion(text) }, allowed, scale, Modifier.weight(1f))
+                    }
                 }
             }
             Spacer(Modifier.height(24.dp * scale))
@@ -339,7 +332,7 @@ private fun ReferenceConversationPanel(
                     if (state.failed) {
                         108.dp
                     } else if (state.messages.isNotEmpty() && !shortened && !state.replyPending) {
-                        104.dp
+                        80.dp
                     } else {
                         20.dp
                     }
@@ -435,25 +428,23 @@ private fun ReferenceConversationPanel(
                         .size(1580.dp * scale, 70.dp * scale),
                 )
             }
-            if (!shortened && !state.replyPending && !state.failed && state.messages.isNotEmpty()) {
-                Row(
+            if (!shortened &&
+                !state.replyPending &&
+                !state.failed &&
+                state.messages.isNotEmpty() &&
+                onNewConversation != null
+            ) {
+                ReferenceAction(
+                    stringResource(R.string.chat_new),
+                    onNewConversation,
+                    allowed,
+                    scale,
                     Modifier
-                        .offset(840.dp * scale, (composerTop - 88.dp * scale))
-                        .width(796.dp * scale),
-                    horizontalArrangement = Arrangement.spacedBy(20.dp * scale),
-                ) {
-                    if (onNewConversation != null) {
-                        ReferenceAction(
-                            stringResource(R.string.chat_new),
-                            onNewConversation,
-                            allowed,
-                            scale,
-                            Modifier.weight(1f),
-                        )
-                    }
-                    val followup = stringResource(R.string.chat_suggestion_followup)
-                    ReferenceAction(followup, { chooseSuggestion(followup) }, allowed, scale, Modifier.weight(1f))
-                }
+                        .offset(1416.dp * scale, composerTop - 72.dp * scale)
+                        .width(220.dp * scale)
+                        .testTag("chat-new-action"),
+                    visualHeight = 58f,
+                )
             }
         }
 
@@ -571,12 +562,12 @@ private fun ConversationInlineFailure(
         Icon(
             painterResource(R.drawable.conversation_warning),
             null,
-            Modifier.size(32.dp * scale),
+            Modifier.offset(x = 2.dp * scale).size(32.dp * scale).testTag("chat-inline-warning-icon"),
             tint = Color.Unspecified,
         )
         Text(
             stringResource(R.string.chat_inline_failure_title),
-            Modifier.offset(68.dp * scale, 0.dp),
+            Modifier.offset(50.dp * scale, 0.dp),
             style = mobiMonReferenceTextStyle(24f, scale, true),
             color = Color(0xFFEAB8AA),
         )
@@ -590,7 +581,7 @@ private fun ConversationInlineFailure(
                     conversationFailureNote(problem)
                 },
             ),
-            Modifier.offset(56.dp * scale, 36.dp * scale).width(1020.dp * scale),
+            Modifier.offset(50.dp * scale, 36.dp * scale).width(1020.dp * scale),
             style = mobiMonReferenceTextStyle(18f, scale),
             color = Color(0xFFB5C5D5),
             maxLines = 2,
@@ -797,6 +788,18 @@ private fun MessageBubble(
     reference: Boolean = false,
 ) {
     val referencePending = reference && pending
+    val motionEnabled = LocalMobiMonMotionEnabled.current
+    val dotPhase =
+        if (pending && motionEnabled) {
+            rememberInfiniteTransition(label = "reply typing").animateFloat(
+                initialValue = 0f,
+                targetValue = 1f,
+                animationSpec = infiniteRepeatable(tween(1200, easing = LinearEasing), RepeatMode.Restart),
+                label = "typing dot phase",
+            )
+        } else {
+            null
+        }
     val labelGap =
         when {
             referencePending -> 10.dp
@@ -836,15 +839,13 @@ private fun MessageBubble(
                             )
                         }
                     } else {
-                        Modifier.fillMaxWidth(if (fromUser) 960f / 1360 else 1192f / 1360)
+                        Modifier.widthIn(max = (if (fromUser) 960.dp else 1192.dp) * scale)
                     },
                 ).heightIn(
                     min =
                         (
                             if (pending) {
                                 if (reference) 52.dp else 208.dp
-                            } else if (shortened && !fromUser && !reference) {
-                                156.dp
                             } else {
                                 0.dp
                             }
@@ -852,7 +853,7 @@ private fun MessageBubble(
                 ).then(
                     if (reference) {
                         Modifier.drawBehind {
-                            val bubbleColor = if (fromUser) Color(0xFFF5F1E5) else Colors.raised
+                            val bubbleColor = if (fromUser) Colors.button else Colors.raised
                             drawRoundRect(bubbleColor, cornerRadius = CornerRadius((24.dp * scale).toPx()))
                             val edge = if (fromUser) size.width - (17.dp * scale).toPx() else (17.dp * scale).toPx()
                             val base = if (fromUser) size.width - (33.dp * scale).toPx() else (33.dp * scale).toPx()
@@ -869,7 +870,7 @@ private fun MessageBubble(
                     } else {
                         Modifier.background(
                             if (fromUser) Colors.button else Colors.raised,
-                            RoundedCornerShape((if (reference) 24.dp else 36.dp) * scale),
+                            RoundedCornerShape(28.dp * scale),
                         )
                     },
                 ).padding(
@@ -912,14 +913,20 @@ private fun MessageBubble(
                             bottom = (if (reference) 4.dp else 44.dp) * scale,
                         ),
                 ) {
-                    repeat(
-                        3,
-                    ) {
+                    repeat(3) { index ->
                         Box(
                             Modifier
                                 .size(
                                     (if (reference) 12.dp else 16.dp) * scale,
-                                ).background(Colors.accent, CircleShape),
+                                ).graphicsLayer {
+                                    val progress = dotPhase?.value
+                                    if (progress != null) {
+                                        val pulse =
+                                            (1f - cos((progress - index * 0.2f) * (2f * PI).toFloat())) / 2f
+                                        alpha = 0.4f + 0.6f * pulse
+                                        translationY = -5.dp.toPx() * scale * pulse
+                                    }
+                                }.background(Colors.accent, CircleShape),
                         )
                     }
                 }
@@ -954,7 +961,7 @@ private fun MessageBubble(
                             ),
                         color =
                             when {
-                                reference && fromUser -> Colors.panel
+                                reference && fromUser -> Colors.onButton
                                 reference -> Color(0xFFEAF2F8)
                                 fromUser -> Colors.onButton
                                 else -> Colors.text

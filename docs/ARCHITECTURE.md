@@ -152,6 +152,8 @@ and preserves the connection entry route. While credentials are being restored, 
 their identity check has a recoverable network/provider failure, chat remains
 reachable with Send disabled. Network recheck repeats identity validation before
 the Copilot model check. Revoked credentials route to connection management.
+Start Chat reads the latest session value during navigation so initial boot cannot
+route through a stale authentication snapshot.
 Fixtures stay in Debug/test sources.
 `app` binds domain `ConversationProvider` to the experimental `core-auth` HTTP adapter.
 
@@ -174,6 +176,8 @@ cancel pending work. A connection-check failure stays on chat as a blocking dial
 with Home and a specific recheck or account action. Failed replies stay inline with
 their attempted turn and offer edit or explicit retry. Rechecking access never
 resends a message.
+Connection checks and replies have a 30-second total wait bound. Shorter transport
+timeouts report stalled connections promptly while retaining the draft and attempted turn.
 
 Explicit Send also checks Copilot access and the model catalog. The adapter selects
 `gpt-4o` only when the catalog advertises it as enabled for Chat Completions, with

@@ -20,6 +20,7 @@ import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
@@ -257,6 +258,54 @@ class ConversationViewModelTest {
                     .isEmpty(),
             )
             assertEquals("after", model.draft.text)
+        }
+
+    @Test fun stalledReplyTimesOutAndRetainsEditableAttempt() =
+        runTest {
+            Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+            val model = model()
+            runCurrent()
+            provider.answer = { CompletableDeferred<ConversationResult<String>>().await() }
+            model.edit(TextFieldValue("waiting"))
+            model.send()
+            runCurrent()
+            assertTrue(model.state.value.replyPending)
+
+            advanceTimeBy(30_000)
+            runCurrent()
+
+            assertFalse(model.state.value.replyPending)
+            assertEquals(ConversationProblem.TIMEOUT, model.state.value.problem)
+            assertEquals("waiting", model.draft.text)
+            assertEquals(
+                listOf("waiting"),
+                model.state.value.messages
+                    .map { it.text },
+            )
+            model.dismissFailure()
+            assertTrue(
+                model.state.value.messages
+                    .isEmpty(),
+            )
+        }
+
+    @Test fun stalledConnectionCheckTimesOutAndAllowsExplicitRecheck() =
+        runTest {
+            Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+            provider.connectionAnswer = { CompletableDeferred<ConversationResult<String>>().await() }
+            val model = model()
+            runCurrent()
+            assertEquals(ConversationConnection.CHECKING, model.state.value.connection)
+
+            advanceTimeBy(30_000)
+            runCurrent()
+
+            assertEquals(ConversationConnection.UNAVAILABLE, model.state.value.connection)
+            assertEquals(ConversationProblem.TIMEOUT, model.state.value.connectionProblem)
+            provider.connectionAnswer = { ConversationResult.Success("gpt-4o") }
+            model.retryConnection()
+            runCurrent()
+            assertEquals(ConversationConnection.READY, model.state.value.connection)
         }
 
     @Test fun failedTurnRemainsVisibleAfterLeavingAndReturningToChat() =

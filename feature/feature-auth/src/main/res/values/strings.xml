@@ -122,7 +122,6 @@
     <string name="chat_suggestion_mood">오늘 하루 이야기할래</string>
     <string name="chat_suggestion_story">기분 좋아지는 얘기 해줘</string>
     <string name="chat_suggestion_friend">%1$s는 오늘 어땠어?</string>
-    <string name="chat_suggestion_followup">기분 전환할 이야기 해 줘</string>
     <string name="chat_placeholder">%1$s에게 이야기해 주세요</string>
     <string name="chat_input">메시지 입력</string>
     <string name="chat_send">메시지 보내기</string>

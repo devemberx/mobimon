@@ -168,14 +168,19 @@ shorten the panels and shrink the companion. Enlarged-text layouts prioritize
 chat and hide secondary content. Preserve visible control geometry while meeting
 minimum touch bounds at AAOS density.
 
-Identify speakers and preserve drafts/replies on recoverable errors. Unverified parking
+Identify speakers and preserve drafts/replies on recoverable errors. Use soft rounded bubbles
+with readable dark text for user messages and light text for companion messages. Animate the
+three pending dots when motion is enabled. Unverified parking
 shows the [parking dialog](ui/conversation/parking-required.svg) over chat, disables
 editing and hides the IME. Home and Back return home without clearing the draft; verified
 parking removes the dialog. AAOS restrictions remove the screen. Show specific
 recovery for network, service, timeout, account, access, usage and
-length errors. Retries are explicit. Put New conversation beside the follow-up
-suggestion, retaining the reference header and message geometry. Show failed
-replies with inline retry and edit actions while keeping history visible.
+length errors. Retries are explicit. Put a compact New conversation action at the
+right edge above the composer and omit the change-of-pace follow-up suggestion.
+Align failed-reply icon and text with the reference. Editing removes the unanswered
+user bubble while retaining completed history and the draft.
+The checked-in conversation exports still show the older follow-up action and bubble
+appearance; compare those states against these updated requirements until new exports arrive.
 
 On foreground entry, restore the GitHub session and check Copilot access/model when
 Park and AAOS allow interaction. Home remains available during the check. Chat shows

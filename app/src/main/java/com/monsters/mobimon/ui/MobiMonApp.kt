@@ -138,6 +138,13 @@ fun MobiMonApp(
                 currentSession is GitHubSession.Failure &&
                 currentSession.problem in
                 setOf(AuthenticationProblem.NETWORK, AuthenticationProblem.PROVIDER),
+        currentConversationAuthentication = {
+            val latest = authentication.session.value
+            latest is GitHubSession.Authenticated ||
+                latest == GitHubSession.Restoring ||
+                latest is GitHubSession.Failure &&
+                latest.problem in setOf(AuthenticationProblem.NETWORK, AuthenticationProblem.PROVIDER)
+        },
         onReleaseDebuggerUnlocked = {
             debugResetScope.launch {
                 settings.setDebugModeEnabled(false)
@@ -177,13 +184,15 @@ fun MobiMonContent(
     activeBackgroundId: String? = null,
     reducedMotion: Boolean = false,
     conversationAuthenticated: Boolean = false,
+    currentConversationAuthentication: () -> Boolean = { conversationAuthenticated },
     debugOverlay: @Composable () -> Unit = { DebugOverlay() },
     debugSettingsAvailableByDefault: Boolean = BuildConfig.DEBUG,
     onReleaseDebuggerUnlocked: () -> Unit = {},
 ) {
     val registry = remember(entries) { FeatureRegistry(entries) }
     var savedShell by rememberSaveable(stateSaver = ShellSaver) { mutableStateOf(ShellState()) }
-    val shell = savedShell.requireConversationAccount(conversationAuthenticated)
+    val authenticated = currentConversationAuthentication()
+    val shell = savedShell.requireConversationAccount(authenticated)
     var returning by remember { mutableStateOf(false) }
     var reveal by remember { mutableStateOf<DestinationReveal?>(null) }
     var contentCoordinates by remember { mutableStateOf<LayoutCoordinates?>(null) }
@@ -215,7 +224,7 @@ fun MobiMonContent(
             navigate = { route ->
                 reveal = null
                 returning = false
-                savedShell = shell.navigate(route, conversationAuthenticated)
+                savedShell = shell.navigate(route, currentConversationAuthentication())
             },
             back = {
                 val previous = shell
@@ -228,7 +237,7 @@ fun MobiMonContent(
             },
             openMenu = { savedShell = shell.openMenu() },
             navigateFrom = { requested, bounds ->
-                val next = shell.navigate(requested, conversationAuthenticated)
+                val next = shell.navigate(requested, currentConversationAuthentication())
                 val route = next.route
                 val coordinates = contentCoordinates?.takeIf { it.isAttached }
                 reveal =

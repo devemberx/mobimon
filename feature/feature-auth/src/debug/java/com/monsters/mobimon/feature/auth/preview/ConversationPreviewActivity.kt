@@ -87,7 +87,7 @@ class ConversationPreviewActivity : ComponentActivity() {
                     ),
                 )
             }
-            CompositionLocalProvider(LocalMobiMonMotionEnabled provides false) {
+            CompositionLocalProvider(LocalMobiMonMotionEnabled provides (sample == "pending")) {
                 MobiMonTheme {
                     Box(
                         Modifier
@@ -116,7 +116,13 @@ class ConversationPreviewActivity : ComponentActivity() {
                             Modifier.fillMaxSize(),
                             interactionAllowed = true,
                             onRetry = { state = state.copy(failed = false) },
-                            onDismissFailure = { state = state.copy(failed = false) },
+                            onDismissFailure = {
+                                state = state.copy(messages = state.messages.dropLast(1), failed = false)
+                            },
+                            onNewConversation = {
+                                state = state.copy(messages = emptyList(), failed = false, replyPending = false)
+                                draft = TextFieldValue()
+                            },
                         )
                         Text(
                             "DEBUG UI preview · Sample conversation · No provider connection",

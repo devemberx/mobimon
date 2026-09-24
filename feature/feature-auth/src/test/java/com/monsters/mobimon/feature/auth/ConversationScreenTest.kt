@@ -159,6 +159,16 @@ class ConversationScreenTest {
         }
         compose.onNodeWithText("내용 수정").performClick()
         compose.runOnIdle { assertEquals("다시 보낼 내용", draft.text) }
+        compose.onNodeWithTag("chat-user-bubble").assertDoesNotExist()
+    }
+
+    @Test
+    fun shortExchangeKeepsUserAndCompanionBubblesVisible() {
+        state = state.copy(messages = messages)
+        show()
+        compose.onNodeWithText("오늘은 조금 피곤한 하루였어.").assertIsDisplayed()
+        compose.onNodeWithText("오늘 하루도 수고했어요.", substring = true).assertIsDisplayed()
+        compose.onNodeWithTag("chat-new-action").assertIsDisplayed()
     }
 
     @Test
@@ -375,6 +385,10 @@ class ConversationScreenTest {
                 .boundsInRoot
         assertTrue(userBubble.width < 500f)
         assertTrue(friendBubble.width < 900f)
+        compose.onNodeWithText("기분 전환할 이야기 해 줘").assertDoesNotExist()
+        val newChat = compose.onNodeWithTag("chat-new-action").fetchSemanticsNode().boundsInRoot
+        assertEquals(2212f, newChat.left, 1f)
+        assertEquals(220f, newChat.width, 1f)
         compose.runOnIdle {
             state =
                 state.copy(
@@ -430,6 +444,14 @@ class ConversationScreenTest {
         val failure = compose.onNodeWithTag("chat-inline-failure").fetchSemanticsNode().boundsInRoot
         assertEquals(852f, failure.left, 1f)
         assertEquals(929f, failure.top, 1f)
+        val warning =
+            compose
+                .onNodeWithTag("chat-inline-warning-icon", useUnmergedTree = true)
+                .fetchSemanticsNode()
+                .boundsInRoot
+        val failureTitle = compose.onNodeWithText("답변을 받지 못했어요").fetchSemanticsNode().boundsInRoot
+        assertEquals(854f, warning.left, 1f)
+        assertEquals(902f, failureTitle.left, 1f)
         val retry =
             compose
                 .onNodeWithTag(
@@ -450,6 +472,7 @@ class ConversationScreenTest {
         assertEquals(206f, edit.width, 1f)
         compose.onNodeWithText("내용 수정").performClick()
         compose.onNodeWithTag("chat-input").assertIsDisplayed()
+        assertEquals(2, compose.onAllNodesWithTag("chat-user-bubble").fetchSemanticsNodes().size)
         compose.runOnIdle { assertEquals("모비는 뭐가 좋아?", draft.text) }
     }
 
@@ -587,7 +610,9 @@ class ConversationScreenTest {
                                     connectionRetrying = true,
                                 )
                         },
-                        onDismissFailure = { state = state.copy(failed = false) },
+                        onDismissFailure = {
+                            state = state.copy(messages = state.messages.dropLast(1), failed = false)
+                        },
                         onNewConversation = { state = state.copy(messages = emptyList()) },
                     )
                 }

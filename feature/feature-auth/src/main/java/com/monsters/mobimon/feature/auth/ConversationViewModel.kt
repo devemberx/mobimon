@@ -16,9 +16,11 @@ import com.monsters.mobimon.core.domain.GitHubAuthentication
 import com.monsters.mobimon.core.domain.GitHubSession
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeout
 import java.util.UUID
 
 /** Activity memory only. Request generations also reject providers that return after cancellation. */
@@ -230,7 +232,7 @@ class ConversationViewModel(
         work =
             viewModelScope.launch {
                 val result =
-                    safely {
+                    safelyWithinWait {
                         provider.reply(
                             account,
                             conversationId,
@@ -407,7 +409,7 @@ class ConversationViewModel(
             )
         checkWork =
             viewModelScope.launch {
-                val result = safely { provider.connect(account) }
+                val result = safelyWithinWait { provider.connect(account) }
                 if (request != checkGeneration || !checkAllowed() || account != accountId) return@launch
                 checkWork = null
                 mutableState.value =
@@ -471,5 +473,12 @@ class ConversationViewModel(
             throw cancelled
         } catch (_: Exception) {
             ConversationResult.Failure(ConversationProblem.PROVIDER)
+        }
+
+    private suspend fun <T> safelyWithinWait(block: suspend () -> ConversationResult<T>): ConversationResult<T> =
+        try {
+            withTimeout(30_000) { safely(block) }
+        } catch (_: TimeoutCancellationException) {
+            ConversationResult.Failure(ConversationProblem.TIMEOUT)
         }
 }
