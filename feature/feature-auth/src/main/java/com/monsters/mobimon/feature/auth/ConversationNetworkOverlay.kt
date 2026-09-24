@@ -55,30 +55,41 @@ import com.monsters.mobimon.core.ui.MobiMonReferenceText
 import com.monsters.mobimon.core.ui.mobiMonReferenceTextStyle
 import com.monsters.mobimon.core.ui.MobiMonColors as Colors
 
-/** The same frame serves access recheck and explicit retry of a failed message. */
+/** Connection checks never submit a conversation draft. */
 @Composable
 internal fun ConversationNetworkOverlay(
     checking: Boolean,
-    messageFailure: Boolean,
     problem: ConversationProblem?,
     onHome: () -> Unit,
     onRetry: () -> Unit,
 ) {
+    val accountAction = problem == ConversationProblem.ACCOUNT
+    val networkError = problem == ConversationProblem.NETWORK
+    val referenceCopy = networkError || checking
     val title =
         stringResource(
-            if (checking) R.string.chat_network_rechecking_title else R.string.chat_network_title,
+            when {
+                checking -> R.string.chat_network_rechecking_title
+                networkError -> R.string.chat_network_title
+                else -> R.string.chat_connection_error_title
+            },
         )
     val body =
         stringResource(
             when {
                 checking -> R.string.chat_network_rechecking_body
-                messageFailure -> conversationFailureNote(problem)
-                else -> R.string.chat_network_body
+                networkError -> R.string.chat_network_body
+                else -> conversationFailureNote(problem)
             },
         )
     val instruction =
         stringResource(
-            if (checking) R.string.chat_network_rechecking_instruction else R.string.chat_network_instruction,
+            when {
+                checking -> R.string.chat_network_rechecking_instruction
+                accountAction -> R.string.chat_connection_account_instruction
+                problem == ConversationProblem.ACCESS -> R.string.chat_connection_access_instruction
+                else -> R.string.chat_network_instruction
+            },
         )
     val preserved =
         stringResource(
@@ -88,7 +99,7 @@ internal fun ConversationNetworkOverlay(
         stringResource(
             when {
                 checking -> R.string.chat_network_rechecking_action
-                messageFailure -> R.string.chat_retry
+                accountAction -> R.string.conversation_connect
                 else -> R.string.chat_network_recheck
             },
         )
@@ -118,7 +129,7 @@ internal fun ConversationNetworkOverlay(
                     .border(2.dp * scale, Colors.border, RoundedCornerShape(32.dp * scale))
                     .testTag("chat-network-dialog"),
             ) {
-                NetworkIcon(checking, Modifier.offset(64.dp * scale, 64.dp * scale), scale)
+                NetworkIcon(checking, networkError, Modifier.offset(64.dp * scale, 64.dp * scale), scale)
                 MobiMonReferenceText(
                     title,
                     64f,
@@ -129,8 +140,22 @@ internal fun ConversationNetworkOverlay(
                     modifier = Modifier.semantics { heading() },
                 )
                 MobiMonReferenceText(body, 64f, 336f, 36f, scale = scale, color = Colors.muted)
-                MobiMonReferenceText(instruction, 64f, 390f, 36f, scale = scale, color = Colors.muted)
-                MobiMonReferenceText(preserved, 64f, 466f, 28f, scale = scale, color = Colors.muted)
+                MobiMonReferenceText(
+                    instruction,
+                    64f,
+                    if (referenceCopy) 390f else 430f,
+                    36f,
+                    scale = scale,
+                    color = Colors.muted,
+                )
+                MobiMonReferenceText(
+                    preserved,
+                    64f,
+                    if (referenceCopy) 466f else 500f,
+                    28f,
+                    scale = scale,
+                    color = Colors.muted,
+                )
                 NetworkHomeButton(
                     onHome,
                     scale,
@@ -161,7 +186,7 @@ internal fun ConversationNetworkOverlay(
                     .testTag("chat-network-dialog"),
                 verticalArrangement = Arrangement.spacedBy(20.dp),
             ) {
-                NetworkIcon(checking, Modifier, 0.65f)
+                NetworkIcon(checking, networkError, Modifier, 0.65f)
                 Text(
                     title,
                     style = mobiMonReferenceTextStyle(48f, 0.65f, true),
@@ -189,6 +214,7 @@ internal fun ConversationNetworkOverlay(
 @Composable
 private fun NetworkIcon(
     checking: Boolean,
+    networkError: Boolean,
     modifier: Modifier,
     scale: Float,
 ) {
@@ -203,7 +229,9 @@ private fun NetworkIcon(
             CircularProgressIndicator(Modifier.size(52.dp * scale), color = Colors.accent, strokeWidth = 5.dp * scale)
         } else {
             Icon(
-                painterResource(R.drawable.conversation_network_off),
+                painterResource(
+                    if (networkError) R.drawable.conversation_network_off else R.drawable.conversation_warning,
+                ),
                 null,
                 Modifier.size(64.dp * scale),
                 tint = Color.Unspecified,

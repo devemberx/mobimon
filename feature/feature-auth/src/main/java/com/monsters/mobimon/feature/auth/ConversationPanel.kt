@@ -175,7 +175,10 @@ internal fun ConversationPanel(
                 ConversationMessages(state, friend, scale, shortened, Modifier.fillMaxSize())
             }
         }
-        if (!shortened && !state.replyPending) {
+        if (state.failed) {
+            CompactConversationInlineFailure(state.problem, onRetry, onDismissFailure, allowed, scale)
+        }
+        if (!shortened && !state.replyPending && !state.failed) {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(24.dp * scale)) {
                 val suggestions =
                     if (state.messages.isEmpty()) {
@@ -254,6 +257,51 @@ internal fun ConversationPanel(
                 allowed,
                 scale,
                 Modifier.fillMaxWidth().padding(top = 12.dp * scale),
+            )
+        }
+    }
+}
+
+@Composable
+private fun CompactConversationInlineFailure(
+    problem: ConversationProblem?,
+    onRetry: () -> Unit,
+    onDismiss: () -> Unit,
+    allowed: Boolean,
+    scale: Float,
+) {
+    Column(
+        Modifier
+            .fillMaxWidth()
+            .padding(vertical = 12.dp * scale)
+            .testTag("chat-inline-failure")
+            .semantics { liveRegion = LiveRegionMode.Polite },
+        verticalArrangement = Arrangement.spacedBy(8.dp * scale),
+    ) {
+        Text(
+            stringResource(R.string.chat_inline_failure_title),
+            style = mobiMonReferenceTextStyle(24f, scale, true),
+            color = Color(0xFFEAB8AA),
+        )
+        Text(
+            stringResource(problem?.let(::conversationFailureNote) ?: R.string.chat_inline_failure_note),
+            style = mobiMonReferenceTextStyle(20f, scale),
+            color = Color(0xFFB5C5D5),
+        )
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp * scale)) {
+            ConversationAction(
+                stringResource(conversationRetryLabel(problem)),
+                onRetry,
+                allowed,
+                scale,
+                Modifier.weight(1f),
+            )
+            ConversationAction(
+                stringResource(R.string.chat_return),
+                onDismiss,
+                true,
+                scale,
+                Modifier.weight(1f),
             )
         }
     }

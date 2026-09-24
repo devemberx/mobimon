@@ -53,6 +53,7 @@ class ConversationPreviewActivity : ComponentActivity() {
                                         ),
                                     )
                                 "pending" -> messages.take(1)
+                                "failed" -> messages + ConversationMessage("sample-failed", "모비는 뭐가 좋아?", true)
                                 else -> emptyList()
                             },
                         replyPending = sample == "pending",
@@ -61,7 +62,15 @@ class ConversationPreviewActivity : ComponentActivity() {
                 )
             }
             var draft by remember {
-                mutableStateOf(TextFieldValue(if (sample == "keyboard") "오늘 하루가 조금 힘들었어" else ""))
+                mutableStateOf(
+                    TextFieldValue(
+                        when (sample) {
+                            "keyboard" -> "오늘 하루가 조금 힘들었어"
+                            "failed" -> "모비는 뭐가 좋아?"
+                            else -> ""
+                        },
+                    ),
+                )
             }
             CompositionLocalProvider(LocalMobiMonMotionEnabled provides false) {
                 MobiMonTheme {

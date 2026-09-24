@@ -155,7 +155,8 @@ Fixtures stay in Debug/test sources.
 
 `ConversationViewModel` keeps the draft, selection, IME composition and completed
 exchanges in Activity memory across navigation/configuration changes. Profile/account
-changes, disconnect and process restart clear them; temporary failures retain them.
+changes, disconnect and process restart clear them; first account validation retains
+an unsent provisional draft. Temporary failures retain the draft and attempted turn.
 New conversation clears the draft and exchanges. Leaving, backgrounding, parking loss
 or companion changes cancel pending work; request generations reject late replies.
 The conversation route displays a blocking parking dialog while parking is unverified;
@@ -167,13 +168,15 @@ check Copilot access and the model catalog without sending a completion. Home do
 not wait for this check. The same state is shown on the conversation route; Send
 requires a successful check and a valid draft. Foreground return and explicit
 recheck repeat the model check; parking loss, account change and backgrounding
-cancel pending work. A network failure stays on chat as a blocking dialog with
-Home and recheck, while message retry is a separate explicit resend action.
+cancel pending work. A connection-check failure stays on chat as a blocking dialog
+with Home and a specific recheck or account action. Failed replies stay inline with
+their attempted turn and offer edit or explicit retry. Rechecking access never
+resends a message.
 
 Explicit Send also checks Copilot access and the model catalog. The adapter selects
 `gpt-4o` only when the catalog advertises it as enabled for Chat Completions, with
-no fallback model. It calls Chat Completions directly without an Auto request or
-session token. A successful model check establishes the UI's connection state;
+no fallback model. It calls Chat Completions directly without a session token.
+A successful model check establishes the UI's connection state;
 provider guards still verify credentials and access during Send.
 [OkHttpCopilotApi](../core/core-auth/src/main/java/com/monsters/mobimon/core/auth/OkHttpCopilotApi.kt)
 owns endpoints, API versions, headers and model metadata.

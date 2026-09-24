@@ -68,8 +68,7 @@ class ConversationViewModel(
                         GitHubSession.SignedOut -> null
                     }
                 if (next != accountId) {
-                    clear()
-                    accountId = next
+                    changeAccount(next)
                 }
                 when (session) {
                     is GitHubSession.Authenticated -> {
@@ -197,7 +196,7 @@ class ConversationViewModel(
     fun edit(value: TextFieldValue) {
         if (!active || !allowed || state.value.replyPending) return
         draft = value
-        if (state.value.failed) mutableState.value = state.value.copy(failed = false)
+        if (state.value.failed) resumeEditing()
     }
 
     fun send(text: String = draft.text) = sendInternal(text, retry = false)
@@ -302,8 +301,7 @@ class ConversationViewModel(
                         when (val restored = authentication.session.value) {
                             is GitHubSession.Authenticated -> {
                                 if (accountId != restored.account.id) {
-                                    clear()
-                                    accountId = restored.account.id
+                                    changeAccount(restored.account.id)
                                 }
                                 checkConnection(retrying = true)
                             }
@@ -331,14 +329,18 @@ class ConversationViewModel(
     }
 
     fun dismissFailure() {
-        mutableState.value = state.value.copy(failed = false)
+        if (state.value.failed) resumeEditing()
     }
 
     fun cancel() {
         generation++
         work?.cancel()
         work = null
-        mutableState.value = state.value.copy(messages = history, replyPending = false)
+        mutableState.value =
+            state.value.copy(
+                messages = if (state.value.failed && !state.value.replyPending) state.value.messages else history,
+                replyPending = false,
+            )
     }
 
     fun newConversation() {
@@ -357,6 +359,19 @@ class ConversationViewModel(
         conversationId = UUID.randomUUID().toString()
         draft = TextFieldValue()
         mutableState.value = ConversationUiState()
+    }
+
+    private fun changeAccount(next: Long?) {
+        val provisionalDraft = if (accountId == null && next != null && history.isEmpty()) draft else null
+        clear()
+        accountId = next
+        if (provisionalDraft != null) draft = provisionalDraft
+    }
+
+    private fun resumeEditing() {
+        val recheckAccess = state.value.problem == ConversationProblem.ACCESS
+        mutableState.value = state.value.copy(messages = history, failed = false, problem = null)
+        if (recheckAccess) checkConnection()
     }
 
     private fun canInteract() =
@@ -397,12 +412,18 @@ class ConversationViewModel(
                 checkWork = null
                 mutableState.value =
                     when (result) {
-                        is ConversationResult.Success ->
-                            state.value.copy(
+                        is ConversationResult.Success -> {
+                            val current = state.value
+                            val recoveredAccess = current.failed && current.problem == ConversationProblem.ACCESS
+                            current.copy(
                                 connection = ConversationConnection.READY,
                                 connectionProblem = null,
                                 connectionRetrying = false,
+                                messages = if (recoveredAccess) history else current.messages,
+                                failed = if (recoveredAccess) false else current.failed,
+                                problem = if (recoveredAccess) null else current.problem,
                             )
+                        }
                         is ConversationResult.Failure ->
                             state.value.copy(
                                 connection = ConversationConnection.UNAVAILABLE,
@@ -430,7 +451,7 @@ class ConversationViewModel(
     private fun fail(problem: ConversationProblem) {
         mutableState.value =
             state.value.copy(
-                messages = history,
+                messages = if (state.value.replyPending) state.value.messages else history,
                 replyPending = false,
                 failed = true,
                 problem = problem,

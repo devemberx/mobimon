@@ -195,6 +195,7 @@ class AiFeature(
                     onRetry = {
                         when (conversationState.problem) {
                             ConversationProblem.ACCOUNT -> navigator.navigate(AiRoute.COPILOT)
+                            ConversationProblem.ACCESS -> conversationModel.retryConnection()
                             ConversationProblem.LIMIT -> conversationModel.newConversation()
                             else -> conversationModel.retry()
                         }

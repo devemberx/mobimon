@@ -102,6 +102,9 @@
     <string name="chat_checking">Copilot 확인 중</string>
     <string name="chat_network_badge">네트워크 오류</string>
     <string name="chat_network_title">네트워크 연결을 확인해 주세요</string>
+    <string name="chat_connection_error_title">Copilot 연결을 확인해 주세요</string>
+    <string name="chat_connection_account_instruction">연결 관리에서 계정 권한을 확인해 주세요.</string>
+    <string name="chat_connection_access_instruction">GitHub 권한을 확인한 뒤 다시 확인해 주세요.</string>
     <string name="chat_network_body">인터넷 연결이 불안정해 Copilot에 연결하지 못했어요.</string>
     <string name="chat_network_instruction">연결 상태를 확인한 뒤 다시 시도해 주세요.</string>
     <string name="chat_network_preserved">홈으로 돌아가도 작성한 내용은 보관돼요.</string>
@@ -131,7 +134,6 @@
     <string name="chat_new">새 대화</string>
     <string name="chat_input_limit">메시지를 4,000자 이하로 줄여 주세요.</string>
     <string name="chat_service_error">Copilot 서비스가 응답하지 못했어요.\n잠시 후 다시 보내 주세요.</string>
-    <string name="chat_auto_error">이 앱에서 Copilot 자동 선택을 이용할 수 없어요.\nGitHub Copilot에서 같은 계정의 대화를 확인해 주세요.</string>
     <string name="chat_network_error">네트워크 연결을 확인해 주세요.\n다시 보내면 사용량이 추가될 수 있어요.</string>
     <string name="chat_timeout_error">답변 대기 시간이 지났어요.\n다시 보내면 사용량이 추가될 수 있어요.</string>
     <string name="chat_access_error">GitHub가 이 앱의 대화 요청을 허용하지 않았어요.\nCopilot 이용 설정과 계정·조직 정책을 확인해 주세요.</string>
@@ -147,11 +149,9 @@
     <string name="chat_parking_instruction">안전한 곳에 주차한 뒤 다시 들어와 주세요.</string>
     <string name="chat_parking_preserved">홈으로 돌아가도 작성한 내용은 보관돼요.</string>
     <string name="chat_parking_home">홈으로</string>
-    <string name="chat_failure_title">대화를 연결하지 못했어요</string>
     <string name="chat_inline_failure_title">답변을 받지 못했어요</string>
     <string name="chat_inline_failure_note">일시적인 연결 문제예요. 다시 시도해 주세요.</string>
     <string name="chat_failure_note">연결 상태를 확인하고 다시 보내 주세요.\n작성한 메시지는 사라지지 않아요.</string>
-    <string name="chat_failure_preserved">작성한 메시지와 이전 대화는 그대로 유지돼요.</string>
     <string name="chat_retry">다시 보내기</string>
     <string name="chat_return">내용 수정</string>
     <string name="chat_failure_subtitle">보내지 못한 메시지를 보관하고 있어요.</string>

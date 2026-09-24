@@ -34,7 +34,6 @@ sealed interface ConversationResult<out T> {
 enum class ConversationProblem {
     NETWORK,
     SERVICE,
-    AUTO_UNAVAILABLE,
     TIMEOUT,
     ACCESS,
     ACCOUNT,
