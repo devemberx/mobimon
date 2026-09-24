@@ -1,15 +1,6 @@
 @echo off
-setlocal
-title CSTDe AVD Setup
-chcp 65001 >nul
-
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%~dp0setup_avd.ps1"
-
-if errorlevel 1 (
-    echo.
-    echo [ERROR] Setup failed.
-    echo.
-)
-
+set "setup_exit=%ERRORLEVEL%"
+if not "%setup_exit%"=="0" echo Setup failed.
 pause
-exit /b %ERRORLEVEL%
+exit /b %setup_exit%
