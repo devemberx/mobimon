@@ -3,9 +3,9 @@ package com.monsters.mobimon.feature.vehicle
 import com.monsters.mobimon.core.domain.SignalQuality
 import com.monsters.mobimon.core.domain.VehicleSnapshot
 import com.monsters.mobimon.core.domain.VehicleWarning
-import com.monsters.mobimon.core.domain.WarningSeverity
+import com.monsters.mobimon.core.presentation.vehicleCondition
 
-internal enum class VehicleCondition { CHECKED, PARTIAL, LOW_BATTERY, WARNING, STALE, UNAVAILABLE }
+internal typealias VehicleCondition = com.monsters.mobimon.core.presentation.VehicleCondition
 
 internal enum class DriverAssistWarning { EMERGENCY_BRAKING, DROWSY, DISTRACTED }
 
@@ -40,20 +40,8 @@ internal fun VehicleSnapshot.toVehicleInfoUiState(): VehicleInfoUiState {
         }
     val assistChecked =
         current?.isEmergencyBraking != null && current.isDrowsy != null && current.isDistracted != null
-    val condition =
-        when {
-            quality == SignalQuality.UNAVAILABLE -> VehicleCondition.UNAVAILABLE
-            quality == SignalQuality.STALE -> VehicleCondition.STALE
-            assistWarning != null ||
-                warnings.any {
-                    it.quality == SignalQuality.VALID && it.severity != WarningSeverity.NOTICE
-                } -> VehicleCondition.WARNING
-            battery != null && battery < 20 -> VehicleCondition.LOW_BATTERY
-            battery == null || tire == null || !assistChecked -> VehicleCondition.PARTIAL
-            else -> VehicleCondition.CHECKED
-        }
     return VehicleInfoUiState(
-        condition = condition,
+        condition = vehicleCondition(),
         batteryPercent = battery,
         tireStatus = tire,
         tireWarning = tireWarning,

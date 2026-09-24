@@ -6,6 +6,7 @@ import com.monsters.mobimon.core.domain.DrivingState
 import com.monsters.mobimon.core.domain.ProgressionIdentity
 import com.monsters.mobimon.core.domain.SignalQuality
 import com.monsters.mobimon.core.domain.SignalSource
+import com.monsters.mobimon.core.domain.SignalSourceProvider
 import com.monsters.mobimon.core.domain.UtcClock
 import com.monsters.mobimon.core.domain.VehicleFreshnessPolicy
 import com.monsters.mobimon.core.domain.VehicleRepository
@@ -208,6 +209,33 @@ class VehicleStateViewModelTest {
 
                 assertEquals(SignalQuality.UNAVAILABLE, model.state.value.snapshot.quality)
                 assertEquals(SignalQuality.UNAVAILABLE, model.state.value.snapshot.batteryQuality)
+            } finally {
+                store.clear()
+                runCurrent()
+            }
+        }
+
+    @Test
+    fun debuggerSourceProviderAcceptsSimulatedParkingInReleaseIdentity() =
+        runTest(dispatcher) {
+            try {
+                vehicle.snapshots.value =
+                    vehicle.snapshots.value.copy(
+                        source = SignalSource.SIMULATED,
+                        drivingState = DrivingState.PARKED,
+                    )
+                val model =
+                    VehicleStateViewModel(
+                        vehicle,
+                        ProgressionIdentity("profile", SignalSource.REAL),
+                        Clock { now },
+                        VehicleFreshnessPolicy(15_000),
+                        UtcClock { 0L },
+                        sourceProvider = SignalSourceProvider { SignalSource.SIMULATED },
+                    ).also { store.put("vehicle", it) }
+
+                assertEquals(SignalQuality.VALID, model.state.value.snapshot.quality)
+                assertEquals(true, model.state.value.snapshot.parkedVerified)
             } finally {
                 store.clear()
                 runCurrent()

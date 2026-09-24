@@ -12,6 +12,7 @@ import com.monsters.mobimon.core.domain.DrivingState
 import com.monsters.mobimon.core.domain.GitHubAuthentication
 import com.monsters.mobimon.core.domain.ProgressionIdentity
 import com.monsters.mobimon.core.domain.SignalQuality
+import com.monsters.mobimon.core.domain.SignalSourceProvider
 import com.monsters.mobimon.core.domain.VehicleFreshnessPolicy
 import dagger.Module
 import dagger.Provides
@@ -30,11 +31,12 @@ object AuthenticationModule {
         appUse: CurrentAppUse,
         vehicle: CurrentVehicleEvidence,
         identity: ProgressionIdentity,
+        sourceProvider: SignalSourceProvider,
         clock: Clock,
         freshness: VehicleFreshnessPolicy,
     ): PersistentGitHubAuthentication =
         PersistentGitHubAuthentication.create(context, BuildConfig.GITHUB_CLIENT_ID) {
-            val snapshot = freshness.displaySnapshot(vehicle.snapshot(), identity.source, clock.nowMillis())
+            val snapshot = freshness.displaySnapshot(vehicle.snapshot(), sourceProvider.source(), clock.nowMillis())
             appUse.state() == AppUseState.ALLOWED &&
                 snapshot.quality == SignalQuality.VALID &&
                 snapshot.drivingState == DrivingState.PARKED

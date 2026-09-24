@@ -23,6 +23,9 @@ import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.unit.Density
+import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.IntSize
+import androidx.compose.ui.unit.LayoutDirection
 import com.monsters.mobimon.core.domain.CompanionSettings
 import com.monsters.mobimon.core.domain.DrivingState
 import com.monsters.mobimon.core.domain.PetProfile
@@ -45,36 +48,82 @@ import kotlin.math.abs
 import kotlin.math.roundToInt
 
 @RunWith(RobolectricTestRunner::class)
-@Config(sdk = [34], qualifiers = "ko-rKR-w2560dp-h1332dp-mdpi")
+@Config(sdk = [34], qualifiers = "ko-rKR-w2560dp-h1248dp-mdpi")
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 class CompanionReviewTest {
     @get:Rule val compose = createComposeRule()
+
+    @Test fun changingContentHeightKeepsTheBackgroundHorizonAnchored() {
+        val source = IntSize(2560, 1440)
+        val original = HomeBackgroundAlignment.align(source, IntSize(2560, 1268), LayoutDirection.Ltr)
+        val resized = HomeBackgroundAlignment.align(source, IntSize(2560, 1184), LayoutDirection.Ltr)
+        assertEquals(IntOffset(0, -106), original)
+        assertEquals(original, resized)
+        assertEquals(
+            IntOffset(0, -74),
+            HomeBackgroundAlignment.align(
+                IntSize(1792, 1008),
+                IntSize(1792, 829),
+                LayoutDirection.Ltr,
+            ),
+        )
+    }
 
     @Test fun homeReferenceRender() {
         homeRender("Night")
         val avatar = compose.onNodeWithContentDescription("Mobi 강아지").fetchSemanticsNode().boundsInRoot
         assertEquals(980f, avatar.left, 1f)
-        assertEquals(392f, avatar.top, 1f)
+        assertEquals(372f, avatar.top, 1f)
         assertEquals(600f, avatar.width, 1f)
         assertEquals(avatar.width, avatar.height, 1f)
         val menu = compose.onNodeWithContentDescription("메뉴 열기").fetchSemanticsNode().boundsInRoot
         assertEquals(72f, menu.left, 1f)
-        assertEquals(56f, menu.top, 1f)
+        assertEquals(36f, menu.top, 1f)
         assertEquals(104f, menu.width, 1f)
         val bubble = compose.onNodeWithTag("home-companion-message").fetchSemanticsNode().boundsInRoot
         val phrase = compose.onNodeWithTag("home-ambient-text").fetchSemanticsNode().boundsInRoot
         assertEquals(1280f, (phrase.left + phrase.right) / 2f, 1f)
-        assertEquals(292f, phrase.top, 1f)
+        assertEquals(272f, phrase.top, 1f)
         assertEquals(1576f, bubble.left, 1f)
-        assertEquals(520f, bubble.top, 1f)
+        assertEquals(500f, bubble.top, 1f)
         assertEquals(324f, bubble.width, 1f)
         assertEquals(174.6f, bubble.height, 1f)
         assertSpeechBubbleTextAndProportions()
         val action = compose.onNodeWithTag("home-conversation-action").fetchSemanticsNode().boundsInRoot
         assertEquals(1013.6f, action.left, 1f)
-        assertEquals(1068f, action.top, 1f)
+        assertEquals(1048f, action.top, 1f)
         assertEquals(532.8f, action.width, 1f)
         assertEquals(100.8f, action.height, 1f)
+    }
+
+    @Test
+    fun sharedVehicleWarningChangesHomeArtworkWithoutMovingItsSlot() {
+        val warning = mutableStateOf(false)
+        val view = render("home-warning-before") { ReviewHome("Night", warning.value) }
+        val bounds = compose.onNodeWithContentDescription("Mobi 강아지").fetchSemanticsNode().boundsInRoot
+
+        fun avatarPixels(): Int {
+            var hash = 0
+            compose.runOnIdle {
+                val bitmap = Bitmap.createBitmap(view.width, view.height, Bitmap.Config.ARGB_8888)
+                view.draw(Canvas(bitmap))
+                for (y in 480 until 960 step 24) {
+                    for (x in 1040 until 1520 step 24) {
+                        hash = hash * 31 + bitmap.getPixel(x, y)
+                    }
+                }
+                bitmap.recycle()
+            }
+            return hash
+        }
+        val normal = avatarPixels()
+        compose.runOnIdle { warning.value = true }
+        compose.waitUntil(5000) { avatarPixels() != normal }
+        assertEquals(bounds, compose.onNodeWithContentDescription("Mobi 강아지").fetchSemanticsNode().boundsInRoot)
+        capture(view, "home-warning-collapsed")
+        compose.runOnIdle { warning.value = false }
+        compose.waitUntil(5000) { avatarPixels() == normal }
+        assertEquals(bounds, compose.onNodeWithContentDescription("Mobi 강아지").fetchSemanticsNode().boundsInRoot)
     }
 
     @Test fun morningHomeReferenceRender() = homeRender("Morning")
@@ -86,12 +135,12 @@ class CompanionReviewTest {
     @Test fun sunsetHomeReferenceRender() = homeRender("Sunset")
 
     @Test
-    @Config(qualifiers = "ko-rKR-w1792dp-h952dp-mdpi")
+    @Config(qualifiers = "ko-rKR-w1792dp-h893dp-mdpi")
     fun aaosContentKeepsSpeechBubbleTextAndProportions() {
         val view = render("home-aaos-content") { ReviewHome("Night") }
         compose.runOnIdle {
             assertEquals(1792, view.width)
-            assertEquals(888, view.height)
+            assertEquals(829, view.height)
         }
         compose.onNodeWithTag("home-companion-message").assertIsDisplayed()
         assertSpeechBubbleTextAndProportions()
@@ -158,7 +207,10 @@ class CompanionReviewTest {
     }
 
     @Composable
-    private fun ReviewHome(period: String) {
+    private fun ReviewHome(
+        period: String,
+        warning: Boolean = false,
+    ) {
         PetHomeScreen(
             profile = PetProfile("review"),
             snapshot =
@@ -172,6 +224,7 @@ class CompanionReviewTest {
                     SignalQuality.VALID,
                     72,
                     timeOfDay = "Night",
+                    isDrowsy = warning,
                 ),
             onOpenMenu = {},
             onPetClick = {},
@@ -194,13 +247,13 @@ class CompanionReviewTest {
         }
         val back = compose.onNodeWithTag("settings-back").fetchSemanticsNode().boundsInRoot
         assertEquals(72f, back.left, 1f)
-        assertEquals(56f, back.top, 1f)
+        assertEquals(36f, back.top, 1f)
         assertEquals(104f, back.width, 1f)
         val title = compose.onNodeWithText("설정").fetchSemanticsNode().boundsInRoot
         assertEquals(208f, title.left, 1f)
         val done = compose.onNodeWithTag("settings-done").fetchSemanticsNode().boundsInRoot
         assertEquals(800f, done.left, 1f)
-        assertEquals(1077f, done.top, 1f)
+        assertEquals(996f, done.top, 1f)
         assertEquals(960f, done.width, 1f)
         assertEquals(100f, done.height, 1f)
         compose.onNodeWithTag("settings-done").assertIsDisplayed()
@@ -248,7 +301,7 @@ class CompanionReviewTest {
             val width = (source.width * scale).roundToInt()
             val height = (source.height * scale).roundToInt()
             val left = ((view.width - width) / 2f).roundToInt().toFloat()
-            val top = ((view.height - height) / 2f).roundToInt().toFloat()
+            val top = (-106f * view.width / 2560f).roundToInt().toFloat()
             Canvas(expected).drawBitmap(
                 source,
                 null,

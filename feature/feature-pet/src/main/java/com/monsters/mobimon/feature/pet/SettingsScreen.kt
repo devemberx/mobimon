@@ -56,7 +56,6 @@ import com.monsters.mobimon.core.ui.MobiMonMessage
 import com.monsters.mobimon.core.ui.MobiMonNavigationButton
 import com.monsters.mobimon.core.ui.MobiMonParkingBadge
 import com.monsters.mobimon.core.ui.MobiMonReferenceText
-import com.monsters.mobimon.core.ui.MobiMonSourceBadge
 import com.monsters.mobimon.core.ui.mobiMonReferenceTextStyle
 import com.monsters.mobimon.core.ui.R as CoreUiR
 
@@ -68,6 +67,10 @@ fun SettingsScreen(
     modifier: Modifier = Modifier,
     onDebugModeChange: (Boolean) -> Unit = {},
     debugModeAvailable: Boolean = false,
+    onLauncherCharacterChange: ((Boolean) -> Unit)? = null,
+    hasOverlayPermission: Boolean = true,
+    launcherSaving: Boolean = false,
+    launcherError: String? = null,
     motionSaving: Boolean = false,
     motionError: String? = null,
     debugSaving: Boolean = false,
@@ -78,12 +81,13 @@ fun SettingsScreen(
     onBack: () -> Unit = {},
     onDone: () -> Unit = {},
     parkedVerified: Boolean = false,
+    debugModeInteractionAllowed: Boolean = parkedVerified,
     simulatedVehicle: Boolean = false,
     onOpenCopilot: (() -> Unit)? = null,
 ) {
     BoxWithConstraints(modifier.fillMaxSize().background(MobiMonColors.background)) {
         val reference = maxWidth >= 1400.dp && maxHeight >= 800.dp && LocalDensity.current.fontScale <= 1f
-        val scale = if (reference) minOf(maxWidth.value / 2560f, maxHeight.value / 1268f) else 1f
+        val scale = if (reference) maxWidth.value / 2560f else 1f
         Column(Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally) {
             SettingsHeader(reference, scale, parkedVerified, simulatedVehicle, onBack)
             Column(
@@ -97,7 +101,7 @@ fun SettingsScreen(
             ) {
                 if (!reference) {
                     Text(stringResource(R.string.pet_settings_subtitle), color = MobiMonColors.muted)
-                    SettingsParking(parkedVerified, simulatedVehicle, 0.75f)
+                    SettingsParking(parkedVerified, 0.75f)
                 }
                 if (settingsAvailable) {
                     SettingsItem(
@@ -121,13 +125,42 @@ fun SettingsScreen(
                         enabled = parkedVerified,
                         onClick = onOpenCopilot,
                     )
-                    SettingsItem(
-                        R.string.pet_settings_launcher_title,
-                        R.string.pet_settings_launcher_unavailable,
-                        R.string.pet_settings_preparing,
-                        reference,
-                        scale,
-                    )
+                    if (onLauncherCharacterChange != null) {
+                        val overlayMissing = settings.launcherCharacterEnabled && !hasOverlayPermission
+                        val feedback =
+                            launcherError ?: if (launcherSaving) {
+                                stringResource(R.string.pet_saving)
+                            } else if (overlayMissing) {
+                                stringResource(R.string.pet_settings_overlay_permission_required)
+                            } else {
+                                null
+                            }
+                        SettingsItem(
+                            title = R.string.pet_settings_launcher_title,
+                            description = if (reference) null else R.string.pet_settings_launcher_description,
+                            status =
+                                if (settings.launcherCharacterEnabled) {
+                                    R.string.pet_settings_on
+                                } else {
+                                    R.string.pet_settings_off
+                                },
+                            reference = reference,
+                            scale = scale,
+                            checked = settings.launcherCharacterEnabled,
+                            enabled = parkedVerified && !launcherSaving,
+                            onCheckedChange = onLauncherCharacterChange,
+                            feedback = feedback,
+                            isError = launcherError != null || overlayMissing,
+                        )
+                    } else {
+                        SettingsItem(
+                            R.string.pet_settings_launcher_title,
+                            R.string.pet_settings_launcher_unavailable,
+                            R.string.pet_settings_preparing,
+                            reference,
+                            scale,
+                        )
+                    }
                     SettingsItem(
                         R.string.pet_settings_voice_title,
                         R.string.pet_settings_voice_unavailable,
@@ -155,7 +188,7 @@ fun SettingsScreen(
                             reference,
                             scale,
                             checked = settings.debugModeEnabled,
-                            enabled = parkedVerified && !debugSaving,
+                            enabled = debugModeInteractionAllowed && !debugSaving,
                             onCheckedChange = onDebugModeChange,
                             feedback = debugError ?: if (debugSaving) stringResource(R.string.pet_saving) else null,
                             isError = debugError != null,
@@ -201,14 +234,14 @@ private fun SettingsHeader(
             borderWidth = (2 * scale).dp,
         )
     }
-    val parking: @Composable () -> Unit = { SettingsParking(parkedVerified, simulatedVehicle, scale) }
+    val parking: @Composable () -> Unit = { SettingsParking(parkedVerified, scale) }
     if (reference) {
-        Box(Modifier.fillMaxWidth().height((216 * scale).dp)) {
-            Box(Modifier.offset((72 * scale).dp, (56 * scale).dp)) { back() }
+        Box(Modifier.fillMaxWidth().height((196 * scale).dp)) {
+            Box(Modifier.offset((72 * scale).dp, (36 * scale).dp)) { back() }
             MobiMonReferenceText(
                 stringResource(R.string.pet_settings_title),
                 208f,
-                100f,
+                80f,
                 46f,
                 Modifier.semantics { heading() },
                 scale,
@@ -217,13 +250,13 @@ private fun SettingsHeader(
             MobiMonReferenceText(
                 stringResource(R.string.pet_settings_subtitle),
                 208f,
-                144f,
+                124f,
                 28f,
                 scale = scale,
                 color = MobiMonColors.muted,
             )
             Box(
-                Modifier.align(Alignment.TopEnd).padding(end = (72 * scale).dp).offset(y = (56 * scale).dp),
+                Modifier.align(Alignment.TopEnd).padding(end = (72 * scale).dp).offset(y = (36 * scale).dp),
             ) { parking() }
         }
     } else {
@@ -251,22 +284,18 @@ private fun SettingsHeader(
 @Composable
 private fun SettingsParking(
     parkedVerified: Boolean,
-    simulatedVehicle: Boolean,
     scale: Float,
 ) {
-    Column(horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        MobiMonParkingBadge(
-            stringResource(
-                if (parkedVerified) {
-                    CoreUiR.string.mobimon_parking_confirmed
-                } else {
-                    CoreUiR.string.mobimon_parking_unconfirmed
-                },
-            ),
-            scale = scale,
-        )
-        if (simulatedVehicle) MobiMonSourceBadge(simulated = true)
-    }
+    MobiMonParkingBadge(
+        stringResource(
+            if (parkedVerified) {
+                CoreUiR.string.mobimon_parking_confirmed
+            } else {
+                CoreUiR.string.mobimon_parking_unconfirmed
+            },
+        ),
+        scale = scale,
+    )
 }
 
 @Composable
@@ -278,7 +307,7 @@ private fun SettingsFooter(
     Column(
         Modifier.fillMaxWidth().then(
             if (reference) {
-                Modifier.height((226 * scale).dp).padding(top = (35 * scale).dp)
+                Modifier.height((188 * scale).dp)
             } else {
                 Modifier.padding(24.dp)
             },
@@ -389,11 +418,11 @@ private fun SettingsItem(
         trailing = { SettingsStatus(stringResource(status), checked, onClick != null, scale, reference) },
     ) {
         if (reference) {
-            Box(Modifier.fillMaxWidth().height((146 * scale).dp)) {
+            Box(Modifier.fillMaxWidth().height((136 * scale).dp)) {
                 MobiMonReferenceText(
                     stringResource(title),
                     0f,
-                    if (supportingText == null) 80f else 58f,
+                    if (supportingText == null) 75f else 53f,
                     38f,
                     scale = scale,
                     bold = true,
@@ -402,7 +431,7 @@ private fun SettingsItem(
                     MobiMonReferenceText(
                         supportingText,
                         0f,
-                        108f,
+                        103f,
                         28f,
                         Modifier.semantics { if (feedback != null) liveRegion = LiveRegionMode.Polite },
                         scale,

@@ -24,6 +24,7 @@ import com.monsters.mobimon.core.domain.QuestType
 import com.monsters.mobimon.core.domain.RewardRepository
 import com.monsters.mobimon.core.domain.RewardResult
 import com.monsters.mobimon.core.domain.SignalSource
+import com.monsters.mobimon.core.domain.SignalSourceProvider
 import com.monsters.mobimon.core.domain.VehicleSnapshot
 import com.monsters.mobimon.core.domain.WriteResult
 import kotlinx.coroutines.flow.Flow
@@ -39,6 +40,7 @@ class RoomCompanionRepository(
     private val evaluator: QuestEvaluator,
     private val currentVehicle: CurrentVehicleEvidence,
     private val currentAppUse: CurrentAppUse,
+    private val sourceProvider: SignalSourceProvider = SignalSourceProvider { identity.source },
 ) : PetRepository,
     QuestRepository,
     RewardRepository {
@@ -119,6 +121,7 @@ class RoomCompanionRepository(
                 validateCurrentEvidence(snapshot, nowMillis)?.let { rejection ->
                     return@withTransaction QuestCommandResult.Rejected(rejection)
                 }
+                val expectedSource = sourceProvider.source()
                 val run =
                     QuestRun(
                         id = ids.nextId(),
@@ -131,7 +134,7 @@ class RoomCompanionRepository(
                         startEpoch = snapshot.epoch,
                         startSequence = snapshot.sequence,
                         startedAtMillis = nowMillis,
-                        source = identity.source,
+                        source = expectedSource,
                     )
                 dao.insertRun(run.toEntity())
                 QuestCommandResult.Started(run)
@@ -156,10 +159,11 @@ class RoomCompanionRepository(
                 if (run.status != QuestStatus.ACTIVE || run.revision != expectedRevision) {
                     return@withTransaction QuestCommandResult.Rejected(QuestRejection.RUN_CHANGED)
                 }
-                if (run.source != identity.source) {
+                val expectedSource = sourceProvider.source()
+                if (run.source != expectedSource) {
                     return@withTransaction QuestCommandResult.Rejected(QuestRejection.WRONG_SOURCE)
                 }
-                validateCurrentEvidence(snapshot, clock.nowMillis())?.let { rejection ->
+                validateCurrentEvidence(snapshot, clock.nowMillis(), expectedSource)?.let { rejection ->
                     return@withTransaction QuestCommandResult.Rejected(rejection)
                 }
 
@@ -200,10 +204,11 @@ class RoomCompanionRepository(
                 }
 
                 val nowMillis = clock.nowMillis()
-                validateCurrentEvidence(snapshot, nowMillis)?.let { rejection ->
+                val expectedSource = sourceProvider.source()
+                validateCurrentEvidence(snapshot, nowMillis, expectedSource)?.let { rejection ->
                     return@withTransaction RewardResult.Rejected(rejection)
                 }
-                evaluator.evaluate(run, expectedRevision, snapshot, identity.source, nowMillis)?.let { rejection ->
+                evaluator.evaluate(run, expectedRevision, snapshot, expectedSource, nowMillis)?.let { rejection ->
                     return@withTransaction RewardResult.Rejected(rejection)
                 }
                 val completion =
@@ -254,11 +259,12 @@ class RoomCompanionRepository(
     private fun validateCurrentEvidence(
         supplied: VehicleSnapshot,
         nowMillis: Long,
+        expectedSource: SignalSource = sourceProvider.source(),
     ): QuestRejection? {
         if (currentAppUse.state() != AppUseState.ALLOWED) return QuestRejection.APP_USE_RESTRICTED
-        evaluator.validateSnapshot(supplied, identity.source, nowMillis)?.let { return it }
+        evaluator.validateSnapshot(supplied, expectedSource, nowMillis)?.let { return it }
         val latest = currentVehicle.snapshot()
-        evaluator.validateSnapshot(latest, identity.source, nowMillis)?.let { return it }
+        evaluator.validateSnapshot(latest, expectedSource, nowMillis)?.let { return it }
         if (latest.epoch != supplied.epoch) return QuestRejection.WRONG_EPOCH
         if (latest != supplied) return QuestRejection.RUN_CHANGED
         return null

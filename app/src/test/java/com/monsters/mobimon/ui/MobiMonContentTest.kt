@@ -1,15 +1,22 @@
 package com.monsters.mobimon.ui
 
 import android.app.Application
+import android.graphics.Insets
+import android.view.View
+import android.view.WindowInsets
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.test.assertHeightIsAtLeast
 import androidx.compose.ui.test.assertIsFocused
 import androidx.compose.ui.test.assertWidthIsAtLeast
@@ -28,6 +35,8 @@ import com.monsters.mobimon.core.navigation.AppRoute
 import com.monsters.mobimon.core.navigation.CompanionRoute
 import com.monsters.mobimon.core.navigation.FeatureEntry
 import com.monsters.mobimon.core.navigation.FeatureNavigator
+import com.monsters.mobimon.core.navigation.LocalDebugSettingsAvailable
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -36,9 +45,10 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
 @RunWith(RobolectricTestRunner::class)
-@Config(sdk = [34], application = Application::class, qualifiers = "ko-rKR-w2560dp-h1268dp-mdpi")
+@Config(sdk = [34], application = Application::class, qualifiers = "ko-rKR-w2560dp-h1184dp-mdpi")
 class MobiMonContentTest {
     @get:Rule val compose = createComposeRule()
+    private lateinit var rootView: View
     private val mountedRoutes = mutableStateListOf<AppRoute>()
 
     private fun clickMenuItem(text: String) {
@@ -160,14 +170,14 @@ class MobiMonContentTest {
     }
 
     @Test
-    fun restrictionGatePreservesDestinationAcrossRecovery() {
+    fun restrictedAppUseKeepsDestinationVisibleAcrossRecovery() {
         val appUse = mutableStateOf(AppUseState.ALLOWED)
         compose.setContent { MobiMonContent(entries, appUseState = appUse.value) }
         compose.onNodeWithText("Open menu").performClick()
         clickMenuItem("퀘스트")
         compose.runOnIdle { appUse.value = AppUseState.RESTRICTED }
-        compose.onNodeWithText("Route QUESTS").assertDoesNotExist()
-        compose.onNodeWithText("지금은 MobiMon 사용이 제한돼요").assertExists()
+        compose.onNodeWithText("Route QUESTS").assertExists()
+        compose.onNodeWithText("지금은 MobiMon 사용이 제한돼요").assertDoesNotExist()
         compose.runOnIdle { appUse.value = AppUseState.ALLOWED }
         compose.onNodeWithText("Route QUESTS").assertExists()
     }
@@ -195,14 +205,131 @@ class MobiMonContentTest {
     }
 
     @Test
-    fun missingAppUseEvidenceFailsClosed() {
+    fun missingAppUseEvidenceKeepsReadOnlyShellVisible() {
         compose.setContent { MobiMonContent(entries) }
-        compose.onNodeWithText("Route HOME").assertDoesNotExist()
-        compose.onNodeWithText("지금은 MobiMon 사용이 제한돼요").assertExists()
+        compose.onNodeWithText("Route HOME").assertExists()
+        compose.onNodeWithText("지금은 MobiMon 사용이 제한돼요").assertDoesNotExist()
     }
 
     @Test
-    @Config(qualifiers = "ko-rKR-w1792dp-h888dp")
+    fun restrictedAppUseKeepsNavigationAvailable() {
+        compose.setContent { MobiMonContent(entries, appUseState = AppUseState.RESTRICTED) }
+        compose.onNodeWithText("Route HOME").assertExists()
+        compose.onNodeWithText("Open menu").performClick()
+        clickMenuItem("퀘스트")
+        compose.onNodeWithText("Route QUESTS").assertExists()
+        compose.onNodeWithText("지금은 MobiMon 사용이 제한돼요").assertDoesNotExist()
+    }
+
+    @Test
+    fun releaseMenuVersionTapsUnlockDebuggerSettings() {
+        show(debugSettingsAvailableByDefault = false)
+        compose.onNodeWithText("Open menu").performClick()
+        clickMenuItem("설정")
+        compose.onNodeWithText("Debugger").assertDoesNotExist()
+
+        compose.onNodeWithText("Open menu").performClick()
+        repeat(10) {
+            compose.onNodeWithTag("menu-version").performScrollTo().performClick()
+        }
+        clickMenuItem("설정")
+
+        compose.onNodeWithText("Route SETTINGS").assertExists()
+        compose.onNodeWithText("Debugger").assertExists()
+    }
+
+    @Test
+    fun releaseMenuVersionUnlockResetsDebuggerModeToDisabled() {
+        var resetRequests = 0
+        show(
+            debugSettingsAvailableByDefault = false,
+            onReleaseDebuggerUnlocked = { resetRequests++ },
+        )
+        compose.onNodeWithText("Open menu").performClick()
+
+        repeat(9) {
+            compose.onNodeWithTag("menu-version").performScrollTo().performClick()
+        }
+        compose.runOnIdle { assertTrue(resetRequests == 0) }
+
+        compose.onNodeWithTag("menu-version").performScrollTo().performClick()
+        compose.runOnIdle { assertTrue(resetRequests == 1) }
+
+        compose.onNodeWithTag("menu-version").performScrollTo().performClick()
+        compose.runOnIdle { assertTrue(resetRequests == 1) }
+    }
+
+    @Test
+    fun restrictedAppUseDoesNotUnlockDebuggerFromVersionTaps() {
+        var resetRequests = 0
+        show(
+            appUseState = AppUseState.RESTRICTED,
+            debugSettingsAvailableByDefault = false,
+            onReleaseDebuggerUnlocked = { resetRequests++ },
+        )
+        compose.onNodeWithText("Open menu").performClick()
+
+        repeat(10) {
+            compose.onNodeWithTag("menu-version").performScrollTo().performClick()
+        }
+        compose.runOnIdle { assertTrue(resetRequests == 0) }
+        compose.onNodeWithText("debugger 버튼이 활성화 되었습니다").assertDoesNotExist()
+        compose.onNodeWithContentDescription("닫기").performClick()
+        compose.onNodeWithText("Open menu").performClick()
+        clickMenuItem("설정")
+
+        compose.onNodeWithText("Debugger").assertDoesNotExist()
+    }
+
+    @Test
+    fun releaseMenuVersionTapsShowUnlockToastCountdown() {
+        show(debugSettingsAvailableByDefault = false)
+        compose.onNodeWithText("Open menu").performClick()
+
+        repeat(4) {
+            compose.onNodeWithTag("menu-version").performScrollTo().performClick()
+        }
+        compose.onNodeWithText("debugger 버튼 활성화까지 5회 남았습니다").assertDoesNotExist()
+
+        listOf(
+            "debugger 버튼 활성화까지 5회 남았습니다",
+            "debugger 버튼 활성화까지 4회 남았습니다",
+            "debugger 버튼 활성화까지 3회 남았습니다",
+            "debugger 버튼 활성화까지 2회 남았습니다",
+            "debugger 버튼 활성화까지 1회 남았습니다",
+            "debugger 버튼이 활성화 되었습니다",
+        ).forEach { message ->
+            compose.onNodeWithTag("menu-version").performScrollTo().performClick()
+            compose.onNodeWithText(message).assertExists()
+        }
+    }
+
+    @Test
+    fun releaseMenuVersionTapCountResetsAfterThreeSeconds() {
+        show(debugSettingsAvailableByDefault = false, reducedMotion = true)
+        compose.onNodeWithText("Open menu").performClick()
+        compose.waitForIdle()
+        compose.onNodeWithTag("menu-version").assertExists()
+
+        repeat(5) {
+            compose.onNodeWithTag("menu-version").performScrollTo().performClick()
+        }
+        compose.onNodeWithText("debugger 버튼 활성화까지 5회 남았습니다").assertExists()
+
+        compose.mainClock.advanceTimeBy(3_100)
+        compose.waitForIdle()
+
+        repeat(5) {
+            compose.onNodeWithTag("menu-version").performScrollTo().performClick()
+        }
+        compose.onNodeWithText("debugger 버튼 활성화까지 5회 남았습니다").assertExists()
+
+        clickMenuItem("설정")
+        compose.onNodeWithText("Debugger").assertDoesNotExist()
+    }
+
+    @Test
+    @Config(qualifiers = "ko-rKR-w1792dp-h829dp")
     fun menuFitsItsWindowAndKeepsAccessibleTargets() {
         show()
         compose.onNodeWithText("Open menu").performClick()
@@ -217,8 +344,64 @@ class MobiMonContentTest {
         compose.onNodeWithText("홈").assertIsFocused()
     }
 
-    private fun show() {
-        compose.setContent { MobiMonContent(entries, appUseState = AppUseState.ALLOWED) }
+    @Test
+    @Config(qualifiers = "ko-rKR-w2560dp-h1440dp-mdpi")
+    fun liveSystemBarInsetsResizeTheDestinationAndMenu() {
+        show(debugSettingsAvailableByDefault = false)
+
+        fun bars(
+            top: Int,
+            bottom: Int,
+        ) {
+            compose.runOnIdle {
+                rootView.dispatchApplyWindowInsets(
+                    WindowInsets
+                        .Builder()
+                        .setInsets(WindowInsets.Type.statusBars(), Insets.of(0, top, 0, 0))
+                        .setInsets(WindowInsets.Type.navigationBars(), Insets.of(0, 0, 0, bottom))
+                        .setVisible(WindowInsets.Type.systemBars(), true)
+                        .build(),
+                )
+            }
+            compose.waitForIdle()
+        }
+        bars(76, 96)
+        val before = compose.onNodeWithTag("test-destination").fetchSemanticsNode().boundsInRoot
+        assertEquals(1268f, before.height, 1f)
+        bars(96, 160)
+        val after = compose.onNodeWithTag("test-destination").fetchSemanticsNode().boundsInRoot
+        assertEquals(96f, after.top, 1f)
+        assertEquals(1184f, after.height, 1f)
+        compose.onNodeWithText("Open menu").performClick()
+        val host = compose.onNodeWithTag("menu-host").fetchSemanticsNode().boundsInRoot
+        val panel = compose.onNodeWithTag("companion-menu").fetchSemanticsNode().boundsInRoot
+        assertEquals(1184f, host.height, 1f)
+        assertEquals(host.height, panel.height, 1f)
+        repeat(5) {
+            compose.onNodeWithTag("menu-version").performClick()
+        }
+        val toast = compose.onNodeWithText("debugger 버튼 활성화까지 5회 남았습니다").fetchSemanticsNode().boundsInRoot
+        assertTrue("Debugger notice must clear the navigation bar", toast.bottom <= after.bottom - 32f)
+        compose.onNodeWithContentDescription("닫기").performClick()
+        bars(76, 96)
+        assertEquals(before, compose.onNodeWithTag("test-destination").fetchSemanticsNode().boundsInRoot)
+    }
+
+    private fun show(
+        appUseState: AppUseState = AppUseState.ALLOWED,
+        debugSettingsAvailableByDefault: Boolean = true,
+        reducedMotion: Boolean = false,
+        onReleaseDebuggerUnlocked: () -> Unit = {},
+    ) {
+        compose.setContent {
+            MobiMonContent(
+                entries,
+                appUseState = appUseState,
+                reducedMotion = reducedMotion,
+                debugSettingsAvailableByDefault = debugSettingsAvailableByDefault,
+                onReleaseDebuggerUnlocked = onReleaseDebuggerUnlocked,
+            )
+        }
     }
 
     private val entries =
@@ -236,8 +419,13 @@ class MobiMonContentTest {
                         mountedRoutes.add(route)
                         onDispose { mountedRoutes.remove(route) }
                     }
-                    Column(modifier) {
+                    val view = LocalView.current
+                    SideEffect { rootView = view.parent as View }
+                    Column(modifier.fillMaxSize().testTag("test-destination")) {
                         Text("Route ${route.name}")
+                        if (route == CompanionRoute.SETTINGS && LocalDebugSettingsAvailable.current) {
+                            Text("Debugger")
+                        }
                         TextButton(onClick = navigator.openMenu) { Text("Open menu") }
                         TextButton(onClick = { navigator.navigate(AiRoute.COPILOT) }) { Text("Connect") }
                         TextButton(onClick = { navigator.navigate(AiRoute.CONVERSATION) }) { Text("Chat") }

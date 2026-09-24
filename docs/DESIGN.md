@@ -18,7 +18,13 @@ Expressions supplement vehicle facts; they never diagnose a vehicle or replace w
   aspect ratios and arbitrary compact windows are outside the product scope.
   App content excludes system bars; AAOS compatibility density changes its dp
   dimensions. Preserve the target layout with those insets, enlarged text and
-  the system keyboard's reduced content height.
+  the system keyboard's reduced content height. Use the current
+  [export content bounds](ui/README.md), including the larger system bars.
+- Fit panel surfaces and bottom action groups to the available height. Reflow
+  Menu, Settings, store hints/actions and conversation input together; keep
+  footers, retry controls and pending indicators clear of adjacent controls and
+  system UI. Preserve font sizes and artwork proportions instead of scaling the
+  whole screen to fit.
 - Use `MobiMonTheme`, Twilight colors and bundled Noto Sans KR. Follow export
   positions, typography, proportions and icons; use actual runtime insets.
 - Reflow or scroll when enlarged text or the keyboard requires it. Controls are at least
@@ -46,7 +52,8 @@ Do not package full-screen references or generation drafts as runtime UI.
 
 | Asset | Location |
 | --- | --- |
-| Character frames | `core/core-ui/src/main/assets/characters/{mobi,luna}/idle_breath/` |
+| Mobi idle sprite / Luna frames | `core/core-ui/src/main/assets/characters/{mobi,luna}/idle_breath/` |
+| Original Mobi source frames | `docs/art/characters/mobi/idle_breath/` (not packaged) |
 | Shared artwork, accessories and backgrounds | `core/core-ui/src/main/res/drawable-nodpi/` |
 | Feature icons/artwork | Owning module's `res/drawable/` or `res/drawable-nodpi/` |
 | References | [docs/ui](ui/README.md) |
@@ -56,12 +63,33 @@ Use approved master assets for variants. Preserve identity, proportions, style,
 scene geometry, canvas size, framing, subject scale/anchor and transparency; change
 only requested properties. Check dimensions and compare visually before use.
 
+Mobi idle uses a lossless 6 x 4 atlas of all 24 original 1254px RGBA frames.
+Rebuild with `python scripts/build_mobi_idle_sprite.py` (Pillow required).
+Forward playback already contains inhale/exhale; 24-to-01 is visually identical.
+The 4.05-second cycle includes the source's repeated extreme poses, with
+an independent 6.2-second, +/-2.35-degree seated-pivot tilt. Eyes and sprout are baked
+in; there are no synthetic blink/sprout layers. Original source discontinuities
+remain strongest at 08-to-09, 13-to-14 and 14-to-15; alpha-correct adjacent-cell blending softens these jumps but cannot repair artwork.
+Breathing adds up to 1.2% width/2.4% height; a separate 6.6-second bob adds tiny
+settle and lift. All transforms share the seated pivot and preserve layout.
+
+Mobi's collapsed idle uses a lossless 24-frame sprite atlas `mobi_collapsed_sprite.png` (6 x 4 grid of 408px RGBA cells) under `core/core-ui/src/main/assets/characters/mobi/unhealthy/`.
+`scripts/build_mobi_unhealthy_sprites.py` builds the aligned atlas from accepted source artwork.
+The 200ms normal/warning crossfade is unchanged. The 24-frame animation loop plays continuously over 4.05 seconds with smooth frame interpolation, capturing shivering, sweating, eye movements, and dizziness.
+Reduced motion snaps to frame 0 and disables frame cycling. Older independently drawn idle/transition sheets remain archived, never loaded.
+Equipped Mobi uses base collapsed artwork during warnings and restores its equipped normal look afterward.
+
+Use the replaceable [PetAvatar](ARCHITECTURE.md#state-and-lifecycle) renderer.
+
 ### Home scene
 
 Home and store preview share five 2560 × 1440 WebP backgrounds. Local hours select
 Morning 06–11, Day 12–15, Afternoon 16–17, Sunset 18–19 and Night 20–05. Supplied
-time overrides the clock. Home center-crops them with cool tint/daylight shadows;
-artwork and tint crossfade for one second under the [motion rules](#motion).
+time overrides the clock. Home keeps the SVG artwork framing: a centered crop in
+the original 2560 × 1268 rectangle at y=76, clipped by the current safe content
+starting at design y=96. Changing available height does not recenter the horizon.
+Store previews crop within their own cards. Home adds cool tint/daylight shadows;
+artwork and tint crossfade for one second unless reduced motion is enabled.
 Controls remain untinted.
 
 Home follows [home.svg](ui/shell/home.svg). Its menu overlays the same scene.
@@ -178,8 +206,8 @@ Loading and failure states have no v5 export; reuse panel typography and control
 
 Motion preserves context and focus; outgoing/restricted controls lose input
 immediately. Animation never authorizes or commits a command. Reduced motion shows
-settled states and pauses character/particle loops. Unknown or failed motion
-preference reads keep decoration static.
+settled states, keeps the idle breath in place and pauses running, wandering and
+particle loops. Unknown or failed motion preference reads keep decoration static.
 
 Home's conversation action reveals the destination from the activated button's
 rounded bounds over 300ms, with Home stationary underneath. Back closes it toward

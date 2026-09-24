@@ -77,7 +77,7 @@ class ConversationRevealTest {
         compose.runOnIdle { assertEquals(setOf(CompanionRoute.HOME), mounted) }
     }
 
-    @Test fun backDuringRevealAndRestrictionImmediatelyRemoveOutgoingControls() {
+    @Test fun backDuringRevealRemovesOutgoingControlsButRestrictionKeepsDestinationVisible() {
         show()
         compose.onNodeWithText("Talk").performClick()
         compose.mainClock.advanceTimeBy(64)
@@ -89,9 +89,10 @@ class ConversationRevealTest {
         compose.mainClock.advanceTimeBy(64)
         compose.runOnIdle { appUse.value = AppUseState.RESTRICTED }
         compose.mainClock.advanceTimeByFrame()
-        compose.onNodeWithText("Back").assertDoesNotExist()
         compose.onNodeWithText("Talk").assertDoesNotExist()
-        compose.onNodeWithText("지금은 MobiMon 사용이 제한돼요").assertExists()
+        compose.onNodeWithText("지금은 MobiMon 사용이 제한돼요").assertDoesNotExist()
+        compose.mainClock.advanceTimeBy(350)
+        compose.onNodeWithText("Back").assertExists()
     }
 
     @Test fun reducedMotionSettlesOnTheNextFrames() {

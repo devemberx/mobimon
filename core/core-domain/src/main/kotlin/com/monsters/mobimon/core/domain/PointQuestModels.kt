@@ -171,11 +171,15 @@ sealed interface PointAwardResult {
         val points: Long,
         val resultingBalance: Long,
         val occurrenceKey: String,
+        val basePoints: Long = points,
+        val weatherMultiplier: Float = 1.0f,
     ) : PointAwardResult
 
     data object AlreadyAwarded : PointAwardResult
 
     data object QuestUnavailable : PointAwardResult
+
+    data object ConditionNotMet : PointAwardResult
 
     data object InteractionRestricted : PointAwardResult
 

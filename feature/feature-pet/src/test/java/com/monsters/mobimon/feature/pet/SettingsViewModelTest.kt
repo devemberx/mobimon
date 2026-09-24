@@ -114,6 +114,16 @@ class SettingsViewModelTest {
             assertFalse(model.state.value.reducedMotionSaveFailed)
         }
 
+    @Test fun launcherCharacterPreferenceSavesSuccessfully() =
+        runTest(dispatcher) {
+            val model = subject()
+            runCurrent()
+            model.setLauncherCharacter(true)
+            runCurrent()
+            assertTrue(model.state.value.settings.launcherCharacterEnabled)
+            assertFalse(model.state.value.launcherSaving)
+        }
+
     private class FakeSettings : SettingsRepository {
         val saved = MutableStateFlow(CompanionSettings())
         var failReads = false
@@ -139,6 +149,9 @@ class SettingsViewModelTest {
             return WriteResult.Success
         }
 
-        override suspend fun setLauncherCharacterEnabled(enabled: Boolean) = WriteResult.Failure
+        override suspend fun setLauncherCharacterEnabled(enabled: Boolean): WriteResult {
+            saved.value = saved.value.copy(launcherCharacterEnabled = enabled)
+            return WriteResult.Success
+        }
     }
 }

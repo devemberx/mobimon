@@ -51,7 +51,7 @@ import org.robolectric.annotation.GraphicsMode
 import java.io.File
 
 @RunWith(RobolectricTestRunner::class)
-@Config(sdk = [34], qualifiers = "ko-rKR-w2560dp-h1332dp-mdpi")
+@Config(sdk = [34], qualifiers = "ko-rKR-w2560dp-h1248dp-mdpi")
 class QuestFeatureTest {
     @get:Rule val compose = createComposeRule()
     private val vehicle = TestVehicle()
@@ -62,8 +62,10 @@ class QuestFeatureTest {
     @GraphicsMode(GraphicsMode.Mode.NATIVE)
     fun productionRouteProducesReviewImage() {
         show()
-        compose.onNodeWithTag("quest-hidden-btn-dismiss").performClick()
+        compose.onNodeWithTag("quest-hidden-btn-claim").performClick()
         compose.onNodeWithTag("quest-hidden-claim-modal").assertDoesNotExist()
+        compose.onNodeWithTag("quest-modal-btn-confirm").performClick()
+        compose.onNodeWithTag("quest-reward-success-modal").assertDoesNotExist()
         compose.runOnIdle {
             val bitmap = Bitmap.createBitmap(contentView.width, contentView.height, Bitmap.Config.ARGB_8888)
             contentView.draw(Canvas(bitmap))

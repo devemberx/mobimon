@@ -5,7 +5,6 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
@@ -21,8 +20,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
-import com.monsters.mobimon.core.ui.MobiMonButton
-import com.monsters.mobimon.core.ui.MobiMonButtonStyle
 import com.monsters.mobimon.core.ui.MobiMonDimensions
 import com.monsters.mobimon.core.ui.MobiMonParkingBadge
 import com.monsters.mobimon.core.ui.MobiMonColors as Colors
@@ -89,21 +86,6 @@ internal fun QuestHeader(
                     ),
                 style = questTextStyle(28f, scale, bold = false, color = Colors.muted),
             )
-        }
-
-        if (onHome != null) {
-            val homeHeight = if (scale >= 0.7f) 76.dp * scale else MobiMonDimensions.touchTarget
-            MobiMonButton(
-                style = MobiMonButtonStyle.SECONDARY,
-                onClick = onHome,
-                modifier = Modifier.height(homeHeight).testTag("quest-header-home-button"),
-            ) {
-                Text(
-                    text = stringResource(CoreUiR.string.mobimon_home),
-                    style = questTextStyle(28f, scale, bold = false, color = Colors.text),
-                )
-            }
-            Spacer(Modifier.width(16.dp * scale))
         }
 
         MobiMonParkingBadge(

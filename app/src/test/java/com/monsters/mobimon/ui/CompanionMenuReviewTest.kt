@@ -41,7 +41,7 @@ import java.io.File
 import com.monsters.mobimon.core.ui.R as CoreUiR
 
 @RunWith(RobolectricTestRunner::class)
-@Config(sdk = [34], application = Application::class, qualifiers = "ko-rKR-w2560dp-h1268dp-mdpi")
+@Config(sdk = [34], application = Application::class, qualifiers = "ko-rKR-w2560dp-h1184dp-mdpi")
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 class CompanionMenuReviewTest {
     @get:Rule val compose = createComposeRule()
@@ -50,10 +50,10 @@ class CompanionMenuReviewTest {
         show()
         val panel = compose.onNodeWithTag("companion-menu").fetchSemanticsNode().boundsInRoot
         assertEquals(690f, panel.width, 1f)
-        assertEquals(1268f, panel.height, 1f)
+        assertEquals(1184f, panel.height, 1f)
         val home = compose.onNodeWithText("홈").fetchSemanticsNode().boundsInRoot
         assertEquals(44f, home.left, 1f)
-        assertEquals(400f, home.top, 1f)
+        assertEquals(332f, home.top, 1f)
         assertEquals(596f, home.width, 1f)
         assertEquals(94f, home.height, 1f)
         val name = compose.onNodeWithText("Mobi").fetchSemanticsNode().boundsInRoot
@@ -63,7 +63,7 @@ class CompanionMenuReviewTest {
     }
 
     @Test
-    @Config(qualifiers = "ko-rKR-w1792dp-h888dp-mdpi")
+    @Config(qualifiers = "ko-rKR-w1792dp-h829dp-mdpi")
     fun aaosCompatibilityDensityPreservesReferenceGeometryAndSeparateTargets() {
         show()
         val scale = 0.7f
@@ -89,7 +89,7 @@ class CompanionMenuReviewTest {
                         .assertHeightIsAtLeast(76.dp)
                         .fetchSemanticsNode()
                         .boundsInRoot
-                val top = if (index == 0) 400f else 404f + 112f * index
+                val top = if (index == 0) 332f else 336f + 112f * index
                 assertEquals((top + 47) * scale, row.center.y, 1f)
                 row
             }
@@ -98,7 +98,7 @@ class CompanionMenuReviewTest {
     }
 
     @Test
-    @Config(qualifiers = "ko-rKR-w1792dp-h888dp-mdpi")
+    @Config(qualifiers = "ko-rKR-w1792dp-h829dp-mdpi")
     fun aaosMenuKeepsFooterAndSettingsReachableAtEnlargedText() {
         show(fontScale = 1.5f)
         capture("menu-aaos-enlarged-text")
@@ -110,7 +110,7 @@ class CompanionMenuReviewTest {
     }
 
     @Test
-    @Config(qualifiers = "ko-rKR-w1792dp-h888dp-mdpi")
+    @Config(qualifiers = "ko-rKR-w1792dp-h829dp-mdpi")
     fun aaosMenuKeepsDestinationTouchTargetsSeparate() {
         var selected: AppRoute? = null
         show(onNavigate = { selected = it })

@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.monsters.mobimon.core.domain.Clock
 import com.monsters.mobimon.core.domain.ProgressionIdentity
+import com.monsters.mobimon.core.domain.SignalSourceProvider
 import com.monsters.mobimon.core.domain.UtcClock
 import com.monsters.mobimon.core.domain.VehicleFreshnessPolicy
 import com.monsters.mobimon.core.domain.VehicleRepository
@@ -33,6 +34,7 @@ class VehicleStateViewModel(
     private val freshness: VehicleFreshnessPolicy,
     private val utcClock: UtcClock,
     private val zoneId: () -> ZoneId = ZoneId::systemDefault,
+    private val sourceProvider: SignalSourceProvider = SignalSourceProvider { identity.source },
 ) : ViewModel() {
     private val mutableState = MutableStateFlow(reading(vehicle.snapshots.value, clock.nowMillis()))
     val state = mutableState.asStateFlow()
@@ -56,7 +58,7 @@ class VehicleStateViewModel(
         nowMillis: Long,
     ): VehicleReading =
         VehicleReading(
-            snapshot = freshness.displaySnapshot(snapshot, identity.source, nowMillis),
+            snapshot = freshness.displaySnapshot(snapshot, sourceProvider.source(), nowMillis),
             evidence = snapshot,
             backgroundTimeOfDay =
                 snapshot.timeOfDay?.takeIf { it.isNotBlank() }

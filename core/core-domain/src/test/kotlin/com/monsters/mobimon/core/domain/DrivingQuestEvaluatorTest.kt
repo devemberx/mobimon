@@ -3,6 +3,7 @@ package com.monsters.mobimon.core.domain
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -159,18 +160,18 @@ class DrivingQuestEvaluatorTest {
     }
 
     @Test
-    fun fiveDaysSafeDriveRequiresFiveOrMoreConsecutiveDays() {
-        val fourDays = DriveEvaluationData(safeDriveDaysCount = 4)
-        assertFalse(evaluator.evaluate5DaysSafeDrive(fourDays).isSatisfied)
+    fun safeDriveStreakRequiresFiveOrMoreSafeDrives() {
+        val fourDrives = DriveEvaluationData(safeDriveCount = 4)
+        assertFalse(evaluator.evaluateSafeDriveStreak(fourDrives).isSatisfied)
 
-        val fiveDays = DriveEvaluationData(safeDriveDaysCount = 5)
-        val fiveDaysResult = evaluator.evaluate5DaysSafeDrive(fiveDays)
-        assertTrue(fiveDaysResult.isSatisfied)
-        assertEquals(50L, fiveDaysResult.basePoints)
-        assertEquals(50L, fiveDaysResult.earnedPoints)
+        val fiveDrives = DriveEvaluationData(safeDriveCount = 5)
+        val fiveDrivesResult = evaluator.evaluateSafeDriveStreak(fiveDrives)
+        assertTrue(fiveDrivesResult.isSatisfied)
+        assertEquals(50L, fiveDrivesResult.basePoints)
+        assertEquals(50L, fiveDrivesResult.earnedPoints)
 
-        val sevenDays = DriveEvaluationData(safeDriveDaysCount = 7)
-        assertTrue(evaluator.evaluate5DaysSafeDrive(sevenDays).isSatisfied)
+        val sevenDrives = DriveEvaluationData(safeDriveCount = 7)
+        assertTrue(evaluator.evaluateSafeDriveStreak(sevenDrives).isSatisfied)
     }
 
     @Test
@@ -265,6 +266,19 @@ class DrivingQuestEvaluatorTest {
     }
 
     @Test
+    fun evaluateByIdMatchesTheDedicatedEvaluatorAndReturnsNullForHiddenQuests() {
+        val data = DriveEvaluationData(distanceKm = 10f, safeBeltMinutes = 15)
+        val byId = evaluator.evaluateById(DrivingQuestIds.SEATBELT, data)
+        assertNotNull(byId)
+        assertEquals(evaluator.evaluateSeatbelt(data), byId)
+        assertTrue(byId!!.isSatisfied)
+
+        assertFalse(evaluator.evaluateById(DrivingQuestIds.SEATBELT, DriveEvaluationData())!!.isSatisfied)
+        assertNull(evaluator.evaluateById(DrivingQuestIds.HIDDEN_COSTUME, data))
+        assertNull(evaluator.evaluateById("unknown_quest", data))
+    }
+
+    @Test
     fun evaluateAllProducesAllFourteenQuestResults() {
         val perfectDrive =
             DriveEvaluationData(
@@ -282,7 +296,7 @@ class DrivingQuestEvaluatorTest {
                 isDestinationMaintenanceCenter = true,
                 isDestinationReached = true,
                 totalDistanceKm = 120.0f,
-                safeDriveDaysCount = 5,
+                safeDriveCount = 5,
                 isBatteryChargedProperly = true,
                 hasRestedDuringLongDrive = true,
                 isWasherFluidRefilled = true,

@@ -52,12 +52,9 @@ import com.monsters.mobimon.core.domain.SignalUnavailableReason
 import com.monsters.mobimon.core.domain.VehicleSnapshot
 import com.monsters.mobimon.core.domain.VehicleWarning
 import com.monsters.mobimon.core.domain.WarningSeverity
-import com.monsters.mobimon.core.ui.MobiMonButton
-import com.monsters.mobimon.core.ui.MobiMonButtonStyle
 import com.monsters.mobimon.core.ui.MobiMonColors
 import com.monsters.mobimon.core.ui.MobiMonDimensions
 import com.monsters.mobimon.core.ui.MobiMonParkingBadge
-import com.monsters.mobimon.core.ui.MobiMonSourceBadge
 import com.monsters.mobimon.core.ui.PetAvatar
 import com.monsters.mobimon.core.ui.R as CoreUiR
 
@@ -86,11 +83,12 @@ fun VehicleInfoScreen(
     ) {
         val fontScale = LocalDensity.current.fontScale
         val reference = maxWidth >= 1400.dp && maxHeight >= 760.dp && fontScale <= 1.2f
-        val scale = if (reference) minOf(maxWidth.value / 2560f, maxHeight.value / 1268f) else 0.75f
+        val scale = if (reference) maxWidth.value / 2560f else 0.75f
+        val contentHeight = maxHeight
 
         if (reference) {
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Box(Modifier.size(2560.dp * scale, 1268.dp * scale).testTag("vehicle-reference")) {
+                Box(Modifier.fillMaxSize().testTag("vehicle-reference")) {
                     VehicleHeader(
                         snapshot = snapshot,
                         onBack = onBack,
@@ -98,14 +96,14 @@ fun VehicleInfoScreen(
                         scale = scale,
                         modifier =
                             Modifier
-                                .offset(72.dp * scale, 56.dp * scale)
+                                .offset(72.dp * scale, 36.dp * scale)
                                 .size(2416.dp * scale, 104.dp * scale),
                     )
                     Column(
                         modifier =
                             Modifier
-                                .offset(72.dp * scale, 216.dp * scale)
-                                .size(2416.dp * scale, 994.dp * scale)
+                                .offset(72.dp * scale, 196.dp * scale)
+                                .size(2416.dp * scale, contentHeight - 220.dp * scale)
                                 .verticalScroll(rememberScrollState()),
                         verticalArrangement = Arrangement.spacedBy(28.dp * scale),
                     ) {
@@ -249,26 +247,6 @@ internal fun VehicleHeader(
                 color = MobiMonColors.muted,
                 fontSize = if (scale >= 0.7f) (28f * scale).sp else 14.sp,
             )
-        }
-
-        if (snapshot.source == SignalSource.SIMULATED) {
-            MobiMonSourceBadge(simulated = true)
-            Spacer(Modifier.width(if (scale >= 0.7f) 16.dp * scale else 12.dp))
-        }
-
-        if (onHome != null) {
-            val homeHeight = if (scale >= 0.7f) 76.dp * scale else MobiMonDimensions.touchTarget
-            MobiMonButton(
-                style = MobiMonButtonStyle.SECONDARY,
-                onClick = onHome,
-                modifier = Modifier.height(homeHeight).testTag("vehicle-header-home-button"),
-            ) {
-                Text(
-                    text = stringResource(CoreUiR.string.mobimon_home),
-                    fontSize = if (scale >= 0.7f) (28f * scale).sp else 14.sp,
-                    color = MobiMonColors.text,
-                )
-            }
         }
     }
 }

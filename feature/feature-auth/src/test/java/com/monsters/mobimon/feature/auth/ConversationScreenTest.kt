@@ -48,14 +48,14 @@ import org.robolectric.annotation.GraphicsMode
 import java.io.File
 
 @RunWith(RobolectricTestRunner::class)
-@Config(sdk = [34], qualifiers = "ko-rKR-w2560dp-h1332dp-mdpi")
+@Config(sdk = [34], qualifiers = "ko-rKR-w2560dp-h1248dp-mdpi")
 @OptIn(ExperimentalTestApi::class)
 class ConversationScreenTest {
     @get:Rule val compose = createComposeRule()
     private var state by mutableStateOf(ConversationUiState(ConversationConnection.READY))
     private var draft by mutableStateOf(TextFieldValue())
     private var allowed by mutableStateOf(true)
-    private var height by mutableStateOf(1268.dp)
+    private var height by mutableStateOf(1184.dp)
     private var sends = 0
     private var cancellations = 0
     private lateinit var view: View
@@ -158,7 +158,7 @@ class ConversationScreenTest {
     @GraphicsMode(GraphicsMode.Mode.NATIVE)
     fun initialComposerAndLengthFeedbackWorkWithEnlargedTextAndKeyboard() {
         state = ConversationUiState(ConversationConnection.UNAVAILABLE)
-        height = 960.dp
+        height = 940.dp
         show(fontScale = 1.6f)
         compose.onNodeWithTag("chat-input").assertIsDisplayed()
         capture("initial-enlarged-keyboard")
@@ -184,7 +184,7 @@ class ConversationScreenTest {
         compose.runOnIdle { state = state.copy(messages = messages.take(1), replyPending = true) }
         capture("reply-pending")
         compose.runOnIdle {
-            height = 960.dp
+            height = 940.dp
             state =
                 state.copy(
                     messages = listOf(ConversationMessage("keyboard", "오늘 하루도 수고했어요.\n어떤 일이 있었는지 들려줄래요?", false)),
@@ -198,9 +198,9 @@ class ConversationScreenTest {
         assertEquals(panel.left, resized.left, 1f)
         assertEquals(panel.top, resized.top, 1f)
         assertTrue(composer.bottom <= resized.bottom)
-        assertEquals(712f, resized.height, 1f)
+        assertEquals(744f, resized.height, 1f)
         compose.runOnIdle {
-            height = 1268.dp
+            height = 1184.dp
             state = state.copy(failed = true)
         }
         capture("connection-failed")
@@ -228,12 +228,12 @@ class ConversationScreenTest {
         compose.onNodeWithTag("chat-send").assertHeightIsAtLeast(76.dp)
         val panel = compose.onNodeWithTag("chat-panel").fetchSemanticsNode().boundsInRoot
         assertEquals(1000f, panel.left, 1f)
-        assertEquals(216f, panel.top, 1f)
-        assertEquals(994f, panel.height, 1f)
+        assertEquals(196f, panel.top, 1f)
+        assertEquals(964f, panel.height, 1f)
         val send = compose.onNodeWithTag("chat-send-visual", useUnmergedTree = true).fetchSemanticsNode().boundsInRoot
         assertEquals(92f, send.width, 1f)
         compose.runOnIdle {
-            height = 960.dp
+            height = 940.dp
             state =
                 state.copy(
                     messages =
@@ -247,12 +247,12 @@ class ConversationScreenTest {
         val resized = compose.onNodeWithTag("chat-panel").fetchSemanticsNode().boundsInRoot
         val composer = compose.onNodeWithTag("chat-composer").fetchSemanticsNode().boundsInRoot
         val avatar = compose.onNodeWithTag("chat-avatar").fetchSemanticsNode().boundsInRoot
-        assertEquals(712f, resized.height, 1f)
+        assertEquals(744f, resized.height, 1f)
         assertEquals(1056f, composer.left, 1f)
-        assertEquals(780f, composer.top, 1f)
+        assertEquals(792f, composer.top, 1f)
         assertEquals(116f, composer.height, 1f)
-        assertEquals(240f, avatar.left, 1f)
-        assertEquals(548f, avatar.width, 1f)
+        assertEquals(224f, avatar.left, 1f)
+        assertEquals(580f, avatar.width, 1f)
     }
 
     private fun show(

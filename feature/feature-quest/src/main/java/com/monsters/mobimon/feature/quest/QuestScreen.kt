@@ -60,11 +60,12 @@ fun QuestScreen(
         QuestStatusPanel(state, onRetryQuests, onRetryWallet, onRetryAppearance)
         BoxWithConstraints(Modifier.fillMaxWidth().weight(1f)) {
             val fontScale = LocalDensity.current.fontScale
-            val reference = maxWidth >= 1400.dp && maxHeight >= 760.dp && fontScale <= 1f
-            val scale = if (reference) minOf(maxWidth.value / 2560f, maxHeight.value / 1268f) else 0.75f
+            val reference = maxWidth >= 1400.dp && maxHeight >= maxWidth * (1184f / 2560f) && fontScale <= 1f
+            val scale = if (reference) maxWidth.value / 2560f else 0.75f
+            val contentHeight = maxHeight
             if (reference) {
                 Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Box(Modifier.size(2560.dp * scale, 1268.dp * scale).testTag("quest-reference")) {
+                    Box(Modifier.fillMaxSize().testTag("quest-reference")) {
                         QuestHeader(
                             isParked = state.parkedVerified,
                             friendId = state.appearance.friendId,
@@ -80,7 +81,7 @@ fun QuestScreen(
                             isDetail = selectedQuest != null,
                             modifier =
                                 Modifier
-                                    .offset(72.dp * scale, 56.dp * scale)
+                                    .offset(72.dp * scale, 36.dp * scale)
                                     .size(2416.dp * scale, 104.dp * scale),
                         )
                         QuestContent(
@@ -94,9 +95,9 @@ fun QuestScreen(
                             onClaimReward = onClaimReward,
                             onNavigateRoute = onNavigateRoute,
                             modifier =
-                                Modifier.offset(72.dp * scale, 216.dp * scale).size(
+                                Modifier.offset(72.dp * scale, 196.dp * scale).size(
                                     2416.dp * scale,
-                                    994.dp * scale,
+                                    contentHeight - 220.dp * scale,
                                 ),
                         )
                     }
@@ -155,6 +156,8 @@ fun QuestScreen(
             state.rewardSuccess?.let { success ->
                 QuestRewardSuccessModal(
                     points = success.points,
+                    bonusPoints = success.bonusPoints,
+                    weatherMultiplier = success.weatherMultiplier,
                     friendId = state.appearance.friendId,
                     accessoryId = state.appearance.accessoryId,
                     outfitId = state.appearance.outfitId,

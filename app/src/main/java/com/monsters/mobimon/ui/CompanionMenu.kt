@@ -81,7 +81,6 @@ import com.monsters.mobimon.core.navigation.VehicleRoute
 import com.monsters.mobimon.core.ui.LocalMobiMonMotionEnabled
 import com.monsters.mobimon.core.ui.MobiMonColors
 import com.monsters.mobimon.core.ui.MobiMonReferenceText
-import com.monsters.mobimon.core.ui.PetAvatar
 import com.monsters.mobimon.core.ui.mobiMonReferenceTextStyle
 
 private data class DrawerDestination(
@@ -116,6 +115,7 @@ fun CompanionMenu(
     currentRoute: AppRoute,
     onClose: () -> Unit,
     onNavigate: (AppRoute) -> Unit,
+    onVersionClick: () -> Unit = {},
     activeFriendId: String? = null,
     accessoryId: String? = null,
     outfitId: String? = null,
@@ -161,6 +161,7 @@ fun CompanionMenu(
                         currentRoute,
                         onClose,
                         onNavigate,
+                        onVersionClick,
                         activeFriendId,
                         accessoryId,
                         outfitId,
@@ -176,6 +177,7 @@ fun CompanionMenu(
     }
 }
 
+@Suppress("UNUSED_PARAMETER")
 @Composable
 private fun MenuPanel(
     windowWidth: Float,
@@ -184,16 +186,17 @@ private fun MenuPanel(
     currentRoute: AppRoute,
     onClose: () -> Unit,
     onNavigate: (AppRoute) -> Unit,
+    onVersionClick: () -> Unit,
     friendId: String?,
     accessoryId: String?,
     outfitId: String?,
     backgroundId: String?,
     first: FocusRequester,
 ) {
-    val referenceScale = minOf(windowWidth / 2560f, windowHeight / 1268f)
+    val referenceScale = windowWidth / 2560f
     val reference =
         windowWidth >= 1400 &&
-            windowHeight >= 800 &&
+            windowHeight >= 1184 * referenceScale &&
             LocalDensity.current.fontScale <= 1f &&
             referenceScale >= MIN_REFERENCE_MENU_SCALE
     val scale = if (reference) referenceScale else 1f
@@ -262,22 +265,14 @@ private fun MenuPanel(
                     },
                 contentAlignment = Alignment.Center,
             ) {
-                if (friendId == "friend:mobi") {
-                    Image(
-                        painterResource(R.drawable.drawer_mobi),
-                        contentDescription = null,
-                        modifier = Modifier.size((109 * scale).dp),
-                    )
-                } else {
-                    PetAvatar(
-                        Modifier.size((109 * scale).dp),
-                        friendId = friendId ?: "friend:mobi",
-                        accessoryId = accessoryId,
-                        outfitId = outfitId,
-                        backgroundId = backgroundId,
-                        isAnimated = false,
-                    )
-                }
+                val isRunaOrLuna = friendId == "friend:luna" || friendId == "friend:runa"
+                val faceRes = if (isRunaOrLuna) R.drawable.menu_runa_face else R.drawable.menu_mobi_face
+                val imageSize = if (isRunaOrLuna) (115 * scale).dp else (135 * scale).dp
+                Image(
+                    painterResource(faceRes),
+                    contentDescription = null,
+                    modifier = Modifier.size(imageSize),
+                )
             }
         }
         val close: @Composable (Modifier) -> Unit = { modifier ->
@@ -292,21 +287,21 @@ private fun MenuPanel(
         }
         if (reference) {
             Box(Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).heightIn(min = windowHeight.dp)) {
-                MobiMonReferenceText("MobiMon", 62f, 106f, 48f, scale = scale, bold = true, color = Color(0xFFF7FAFF))
+                MobiMonReferenceText("MobiMon", 62f, 70f, 48f, scale = scale, bold = true, color = Color(0xFFF7FAFF))
                 MobiMonReferenceText(
                     stringResource(R.string.drawer_tagline),
                     62f,
-                    155f,
+                    119f,
                     26f,
                     scale = scale,
                     color = Color(0xFFB9C9E1),
                 )
-                close(Modifier.offset((586 * scale).dp - 38.dp, (94 * scale).dp - 38.dp))
-                portrait(Modifier.offset((63 * scale).dp, (225 * scale).dp))
+                close(Modifier.offset((586 * scale).dp - 38.dp, (58 * scale).dp - 38.dp))
+                portrait(Modifier.offset((63 * scale).dp, (153 * scale).dp))
                 MobiMonReferenceText(
                     stringResource(drawerProfileName(friendId)),
                     244f,
-                    294f,
+                    222f,
                     34f,
                     Modifier.semantics { heading() },
                     scale,
@@ -316,13 +311,13 @@ private fun MenuPanel(
                 MobiMonReferenceText(
                     stringResource(R.string.drawer_profile_subtitle),
                     244f,
-                    335f,
+                    263f,
                     22f,
                     scale = scale,
                     color = Color(0xFF9FB2CE),
                 )
                 destinations.forEachIndexed { index, item ->
-                    val top = if (index == 0) 400f else 404f + 112f * index
+                    val top = if (index == 0) 332f else 336f + 112f * index
                     MenuDestination(
                         item,
                         item.route == currentRoute,
@@ -344,7 +339,12 @@ private fun MenuPanel(
                         reference = true,
                     )
                 }
-                MenuFooter(Modifier.align(Alignment.BottomStart).fillMaxWidth().height((194 * scale).dp), scale, true)
+                MenuFooter(
+                    Modifier.align(Alignment.BottomStart).fillMaxWidth().height((181 * scale).dp),
+                    scale,
+                    true,
+                    onVersionClick,
+                )
             }
         } else {
             Column(
@@ -386,7 +386,7 @@ private fun MenuPanel(
                         reference = false,
                     )
                 }
-                MenuFooter(Modifier.fillMaxWidth(), scale, false)
+                MenuFooter(Modifier.fillMaxWidth(), scale, false, onVersionClick)
             }
         }
     }
@@ -462,9 +462,10 @@ private fun MenuFooter(
     modifier: Modifier,
     scale: Float,
     reference: Boolean,
+    onVersionClick: () -> Unit,
 ) {
     if (reference) {
-        Box(modifier) {
+        Box(modifier.clickable(role = Role.Button, onClick = onVersionClick).testTag("menu-version")) {
             Box(
                 Modifier
                     .offset(
@@ -498,7 +499,10 @@ private fun MenuFooter(
             )
         }
     } else {
-        Column(modifier, verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Column(
+            modifier.clickable(role = Role.Button, onClick = onVersionClick).testTag("menu-version"),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
             Box(Modifier.fillMaxWidth().height(2.dp).background(Color(0x4787A6CB)))
             Text("MobiMon", style = MaterialTheme.typography.headlineMedium, color = Color(0xFF7287A8))
             Text(stringResource(R.string.drawer_tagline), color = Color(0xFF9FB2CE))

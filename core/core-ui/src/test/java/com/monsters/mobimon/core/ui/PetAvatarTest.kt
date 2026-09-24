@@ -95,12 +95,18 @@ class PetAvatarTest {
     }
 
     @Test
-    fun mobiAnimationCacheLoadsTwentyFourFramesFromAssets() {
+    fun mobiAnimationCacheLoadsOneSheetAndReusesIt() {
         val context =
             androidx.test.core.app.ApplicationProvider
                 .getApplicationContext<android.content.Context>()
-        val frames = MobiAnimationCache.getOrLoadFrames(context)
-        org.junit.Assert.assertEquals(24, frames.size)
+        val sprite = requireNotNull(MobiSpriteCache.getOrLoad(context))
+        assertEquals(627 * 6, sprite.width)
+        assertEquals(627 * 4, sprite.height)
+        assertTrue(sprite === MobiSpriteCache.getOrLoad(context))
+        assertEquals(
+            listOf("mobi_idle_breath_sprite.png"),
+            context.assets.list("characters/mobi/idle_breath")!!.toList(),
+        )
     }
 
     @Test
@@ -110,6 +116,15 @@ class PetAvatarTest {
                 .getApplicationContext<android.content.Context>()
         val frames = LunaAnimationCache.getOrLoadFrames(context)
         org.junit.Assert.assertEquals(24, frames.size)
+    }
+
+    @Test
+    fun lunaRunAnimationCacheLoadsTwentyFourFramesFromAssets() {
+        val context =
+            androidx.test.core.app.ApplicationProvider
+                .getApplicationContext<android.content.Context>()
+        val frames = LunaRunAnimationCache.getOrLoadFrames(context)
+        assertEquals(24, frames.size)
     }
 
     @Test

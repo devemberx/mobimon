@@ -2,6 +2,7 @@ package com.monsters.mobimon.di.features
 
 import com.monsters.mobimon.core.domain.Clock
 import com.monsters.mobimon.core.domain.ProgressionIdentity
+import com.monsters.mobimon.core.domain.SignalSourceProvider
 import com.monsters.mobimon.core.domain.UtcClock
 import com.monsters.mobimon.core.domain.VehicleFreshnessPolicy
 import com.monsters.mobimon.core.domain.VehicleRepository
@@ -26,7 +27,8 @@ object VehicleFeatureModule {
         clock: Clock,
         freshness: VehicleFreshnessPolicy,
         utcClock: UtcClock,
-    ): VehiclePresentation = VehiclePresentation(source, identity, clock, freshness, utcClock)
+        sourceProvider: SignalSourceProvider,
+    ): VehiclePresentation = VehiclePresentation(source, identity, clock, freshness, utcClock, sourceProvider)
 
     @Provides @IntoSet @Singleton
     fun entry(

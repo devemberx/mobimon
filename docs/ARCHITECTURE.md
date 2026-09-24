@@ -11,10 +11,12 @@ Room storage, DataStore preferences; GitHub device authentication and encrypted
 session restoration; experimental Copilot text conversation; Mobi/Luna artwork and
 breathing animation.
 
-Vehicle input and driving evaluation are Debug simulations; Release data is unavailable.
-Voice, condition expressions, background tracking and launcher/overlay rendering
-remain unimplemented. Catalog entries and [UI exports](ui/README.md) do not establish
-real integration support.
+Vehicle input and driving evaluation are Debug simulations. Release vehicle data
+is unavailable. Debug raw VSS sources are interpreted before they become vehicle
+snapshots; production VSS input still needs a verified adapter. Voice, condition
+expressions, background tracking and launcher/overlay rendering remain unimplemented.
+Catalog entries and
+[UI exports](ui/README.md) do not establish real integration support.
 
 ## Scope and decisions
 
@@ -32,7 +34,7 @@ Records are local, with no MobiMon backend, synchronization or reinstall recover
 | `core-domain` | Models, contracts and rules | None |
 | `core-auth` | GitHub OAuth, credential storage and experimental Copilot transport | Domain |
 | `core-database` | Room, DataStore and transactions | Domain |
-| `core-vss` | Unavailable real vehicle adapter | Domain |
+| `core-vss` | VSS raw models, generated signal containers and adapter seam | Domain |
 | `core-ui` | Stateless components, theme and artwork | None |
 | `core-navigation` | Routes, entries and callbacks | None |
 | `core-presentation` | Shared wallet, vehicle and appearance state | Domain |
@@ -48,10 +50,11 @@ at implementation boundaries; bind implementations in `app`. Test helpers stay
 outside production sources.
 
 `verifyModuleBoundaries` checks project dependencies, production external dependencies,
-resolved JVM graphs and selected source imports. Domain/VSS allow Kotlin and
-coroutines; features, presentation, UI and navigation cannot own Room, DataStore
-or Hilt. Generated code, qualified references and DTO leaks still need review;
-the guard is not a complete dependency audit.
+resolved JVM graphs and selected source imports. Domain remains plain Kotlin.
+`core-vss` is an Android library so it can host the closed-network adapter seam,
+but it still cannot own Room, DataStore, Hilt, UI, presentation or feature code.
+Generated code, qualified references and DTO leaks still need review; the guard is
+not a complete dependency audit.
 
 ## State and lifecycle
 
@@ -79,8 +82,41 @@ independent of other loads; preview reaches shared appearance only on commit.
 Background time uses supplied time or `UtcClock` plus local time zone and never
 changes vehicle evidence.
 [PetAvatar](../core/core-ui/src/main/java/com/monsters/mobimon/core/ui/PetAvatar.kt)
-never owns rewards, equipment or authorization. Motion preference retries follow
-shell subscription; [DESIGN.md](DESIGN.md#motion) defines fallback rendering.
+never owns rewards, equipment or authorization. Mobi's idle renderer caches one
+atlas off the main thread, selects cells from elapsed Compose frame time, and
+reads time only during draw/layer updates. Its fixed destination preserves layout. Adjacent cells blend with complementary
+alpha in an isolated reusable layer (two atlas draws, no bitmap crops). Continuous
+breath, sway and bob use separate periods; hands and wheel transform together.
+The 7524 x 5016 asset retains every source pixel; runtime keeps the prior 2x decode
+sampling (627px cells, about 36MiB) to fit a 4096px texture without a 144MiB bitmap.
+Home and Vehicle Info share `core-presentation`'s `vehicleCondition()` classification of the freshness-filtered snapshot.
+Only `WARNING` selects Mobi's collapsed idle. A 200ms opacity crossfade switches between normal and collapsed idle;
+there are no falling/recovery states or transition frames. Interruptions continue from the current opacity.
+Two canonical collapsed bitmaps load once off thread. A cached bitmap mesh deforms only the torso inside a fixed
+destination rectangle over four seconds. All ground-contact vertices remain unchanged. A 6.5-second tired blink
+blends identical-body closed/open-eye bitmaps; no whole-pose frame registration occurs at runtime.
+Non-warning conditions restore existing normal idle without changing vehicle evidence.
+Leaving composition cancels playback. Idle breathing ignores the motion preference; reduced motion replaces
+Luna's run cycle with the idle breath and selects a static normal/collapsed endpoint for Mobi warnings.
+Failed/unknown motion preferences pause other decoration; retries follow shell subscription.
+The floating companion overlay applies the same preference: reduced, unknown or failed motion stops autonomous
+wandering; dragging stays available.
+
+### Window geometry
+
+The shell owns runtime safe-drawing insets; the sibling menu handles its own
+safe window. Features use the available content constraints and width-based
+reference scaling, with scrolling or compact layouts for enlarged text. System
+bar pixels from the SVG are reference coordinates, never fixed runtime padding.
+Conversation additionally handles IME insets and resize without changing width scale.
+
+The floating companion uses full-window coordinates with explicit system-bar and
+cutout bounds from its overlay window context and current window metrics. Initial
+placement, dragging and each wander step clamp its measured size. Inset/layout
+changes reclamp an idle companion.
+Debug panels and unlock notices apply safe-drawing insets independently in both build variants.
+Panels measure and clamp inside that safe content.
+The [overlay verification boundary](#shared-vehicle-condition-and-overlay) still applies.
 
 ### Copilot connection UI
 
@@ -156,7 +192,9 @@ app/account. Rejections stay visible; never impersonate another OAuth client or 
 ### Vehicle interaction authorization
 
 Debug uses `.demo`, `mobimon-demo.db` and `demo-profile`; Release uses `mobimon.db`,
-`local-profile` and the REAL unavailable adapter. Debug freshness is 15 seconds.
+`local-profile` and a closed-network `VssRawVehicleSource` adapter when present.
+Local Release validation falls back to the default parked VSS source so the hidden
+Debugger flow can be checked without vehicle hardware. Debug freshness is 15 seconds.
 Only nonmoving Park is parked; motion is moving and stationary D/R/N is unknown.
 
 Commands require fresh parked evidence and the current display's AAOS allowance.
@@ -210,10 +248,14 @@ These are integration gaps, not completed functionality.
 ### Points, cosmetics and quest occurrences
 
 [Catalogs](../core/core-domain/src/main/kotlin/com/monsters/mobimon/core/domain/PointQuestModels.kt)
-define rewards, not SVG examples. Driving evaluation currently uses in-memory data;
-the award transaction checks parking and credits catalog amounts, not driving/hidden
-conditions. Production needs trusted per-quest evidence validated inside the credit
-transaction, real occurrence IDs/counts and agreement with evaluator amounts.
+define rewards, not SVG examples. The award transaction now gates each driving quest on
+its per-quest evidence (`DrivingQuestEvaluator.evaluateById` over the in-memory drive
+evaluation) inside the credit transaction, returning `ConditionNotMet` when unsatisfied;
+hidden quests have no driving condition and stay ungated. In debug the evidence is derived
+live from the simulated VSS signals (`DebugVssState.toDriveEvaluationData`), and history
+VSS cannot express (safe-drive count) is accumulated in the overlay. Evidence is still
+simulated in-memory data crediting catalog base amounts. Production needs a trusted evidence
+source, real occurrence IDs/counts and agreement with weather-scaled evaluator amounts.
 
 `completedQuestIds` cannot represent repeat eligibility. Define recurrence, reset
 zone/clock, interruption and evidence explicitly without weakening uniqueness.

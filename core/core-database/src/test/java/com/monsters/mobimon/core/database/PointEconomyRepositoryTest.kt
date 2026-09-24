@@ -9,6 +9,7 @@ import com.monsters.mobimon.core.domain.CosmeticSlot
 import com.monsters.mobimon.core.domain.CurrentAppUse
 import com.monsters.mobimon.core.domain.CurrentVehicleEvidence
 import com.monsters.mobimon.core.domain.DefaultPointQuestCatalog
+import com.monsters.mobimon.core.domain.DriveEvaluationData
 import com.monsters.mobimon.core.domain.DrivingQuestIds
 import com.monsters.mobimon.core.domain.DrivingState
 import com.monsters.mobimon.core.domain.EquipResult
@@ -23,6 +24,7 @@ import com.monsters.mobimon.core.domain.SignalQuality
 import com.monsters.mobimon.core.domain.SignalSource
 import com.monsters.mobimon.core.domain.UtcClock
 import com.monsters.mobimon.core.domain.VehicleSnapshot
+import com.monsters.mobimon.core.domain.WeatherCondition
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import org.junit.After
@@ -234,6 +236,7 @@ class PointEconomyRepositoryTest {
             assertEquals(100L, pointRepo.wallet.first().balance)
 
             vehicle = vehicle.copy(drivingState = DrivingState.PARKED)
+            pointRepo.updateDriveEvaluation(DriveEvaluationData(distanceKm = 10f, safeBeltMinutes = 15))
             val awardResult = pointRepo.awardQuest(DrivingQuestIds.SEATBELT, vehicle)
             assertTrue(awardResult is PointAwardResult.Awarded)
             assertEquals(5L, (awardResult as PointAwardResult.Awarded).points)
@@ -280,10 +283,85 @@ class PointEconomyRepositoryTest {
                     defaultCatalog,
                 )
 
+            debugPointRepo.updateDriveEvaluation(DriveEvaluationData(distanceKm = 10f, safeDriveScore = 90))
             val awardResult = debugPointRepo.awardQuest(DrivingQuestIds.SAFE_DRIVE, simVehicle)
             assertTrue(awardResult is PointAwardResult.Awarded)
             assertEquals(20L, (awardResult as PointAwardResult.Awarded).points)
             assertEquals(120L, debugPointRepo.wallet.first().balance)
             assertEquals(120L, database.economyDao().account("profile")?.balance)
+        }
+
+    @Test
+    fun drivingQuestAwardIsGatedOnEvidenceAndDoesNotCreditOrPersistWhenUnsatisfied() =
+        runBlocking {
+            val defaultCatalog = DefaultPointQuestCatalog()
+            val pointRepo =
+                PointEconomyRepository(
+                    database,
+                    "profile",
+                    UtcClock { utcNow },
+                    IdGenerator { "entry-${ids.incrementAndGet()}" },
+                    SignalSource.REAL,
+                    CurrentVehicleEvidence { vehicle },
+                    CurrentAppUse { appUse },
+                    Clock { 10_000 },
+                    QuestEvaluator(15_000),
+                    defaultCatalog,
+                )
+
+            // No drive evidence set: seatbelt condition is unsatisfied, so the award is refused.
+            val refused = pointRepo.awardQuest(DrivingQuestIds.SEATBELT, vehicle)
+            assertEquals(PointAwardResult.ConditionNotMet, refused)
+            assertEquals(100L, pointRepo.wallet.first().balance)
+            assertTrue(database.economyDao().questCompletions("profile").isEmpty())
+
+            // Satisfying only the seatbelt evidence unlocks that quest, leaving unrelated ones gated.
+            pointRepo.updateDriveEvaluation(DriveEvaluationData(distanceKm = 10f, safeBeltMinutes = 15))
+            assertEquals(PointAwardResult.ConditionNotMet, pointRepo.awardQuest(DrivingQuestIds.SAFE_DRIVE, vehicle))
+            val awarded = pointRepo.awardQuest(DrivingQuestIds.SEATBELT, vehicle)
+            assertTrue(awarded is PointAwardResult.Awarded)
+            assertEquals(105L, pointRepo.wallet.first().balance)
+            // Replay stays idempotent even though the evidence still satisfies the condition.
+            assertEquals(PointAwardResult.AlreadyAwarded, pointRepo.awardQuest(DrivingQuestIds.SEATBELT, vehicle))
+            assertEquals(105L, pointRepo.wallet.first().balance)
+        }
+
+    @Test
+    fun `awardQuest applies weather multiplier to awarded points and ledger`() =
+        runBlocking {
+            val pointRepo =
+                PointEconomyRepository(
+                    database,
+                    "profile",
+                    UtcClock { utcNow },
+                    IdGenerator { "entry-${ids.incrementAndGet()}" },
+                    SignalSource.REAL,
+                    CurrentVehicleEvidence { vehicle },
+                    CurrentAppUse { appUse },
+                    Clock { 10_000 },
+                    QuestEvaluator(15_000),
+                    DefaultPointQuestCatalog(),
+                )
+            val parkedVehicle = vehicle.copy(drivingState = DrivingState.PARKED)
+            // Seatbelt base is 5L. In RAIN_OR_SNOW (1.5x), 5 * 1.5 = 7.5 -> 8L.
+            pointRepo.updateDriveEvaluation(
+                DriveEvaluationData(
+                    distanceKm = 10f,
+                    safeBeltMinutes = 15,
+                    weather = WeatherCondition.RAIN_OR_SNOW,
+                ),
+            )
+            val awardResult = pointRepo.awardQuest(DrivingQuestIds.SEATBELT, parkedVehicle)
+            assertTrue(awardResult is PointAwardResult.Awarded)
+            val awarded = awardResult as PointAwardResult.Awarded
+            assertEquals(8L, awarded.points)
+            assertEquals(5L, awarded.basePoints)
+            assertEquals(1.5f, awarded.weatherMultiplier)
+            assertEquals(108L, awarded.resultingBalance)
+            assertEquals(108L, pointRepo.wallet.first().balance)
+
+            val ledger = database.economyDao().ledger("profile")
+            val entry = ledger.first { it.referenceKey.startsWith("quest:${DrivingQuestIds.SEATBELT}:") }
+            assertEquals(8L, entry.amount)
         }
 }

@@ -7,12 +7,19 @@
 Use JUnit 4, coroutines-test, Robolectric/Compose Testing and Hilt/Room device tests.
 Review images exist; golden comparisons and system-UI automation are not configured.
 
-Use the [fixed-display scope](DESIGN.md#visual-language), including AAOS density,
-enlarged text and IME resizing. Reference content is 2560 × 1268; compatibility
-content is approximately 1792 × 888dp on the same target display. Robolectric review
-hosts add a 64dp decor inset (2560 × 1332dp or 1792 × 952dp); decor-free shell tests
-use content sizes directly. Smaller component/motion fixtures do not establish
-additional display support. [cstd.ini](../.github/avd/cstd.ini) defines CI's display.
+Screen tests and previews follow the fixed-display scope in
+[DESIGN.md](DESIGN.md#visual-language), not a multiple-resolution device matrix.
+Retain reference content, AAOS compatibility density, enlarged text and IME resizing.
+Review fixtures use the current [Figma content bounds](ui/README.md): 2560 × 1184,
+1792 × 829 at compatibility density, and 2560 × 940 with the reference IME.
+Robolectric qualifiers describe the host, not necessarily the content bounds:
+a 2560 × 1248dp host leaves 1184dp after its 64dp decor inset; 1792 × 893dp
+leaves 829dp. Decor-free shell tests use content sizes directly. The shell inset
+test dispatches 76/96px, then 96/160px system bars and restores them in one run;
+this does not replace OEM window/Popup and native IME verification.
+Isolated component and synthetic motion tests may use smaller fixtures; these do
+not imply support for additional display sizes. CI's physical display is defined
+in [cstd.ini](../.github/avd/cstd.ini).
 
 Tests live in the subject module's `src/test`; device tests use `src/androidTest`.
 Debug-only behavior uses `src/testDebug`. Two shared source sets need explicit wiring:
@@ -62,7 +69,7 @@ Related suites share the linked module/package; test names define individual cas
 | --- | --- |
 | Module isolation and unique route registration | `verifyModuleBoundaries` in [root build](../build.gradle.kts); [FeatureRegistryTest](../core/core-navigation/src/test/java/com/monsters/mobimon/core/navigation/FeatureRegistryTest.kt) |
 | Parking freshness, independent signals, original/display evidence and decorative clock | [VehicleFreshnessPolicyTest](../core/core-domain/src/test/kotlin/com/monsters/mobimon/core/domain/VehicleFreshnessPolicyTest.kt), [VehicleStateViewModelTest](../core/core-presentation/src/test/java/com/monsters/mobimon/core/presentation/VehicleStateViewModelTest.kt) |
-| Debug Park interpretation, one foreground connection and unavailable real adapter | [DemoVehicleRepositoryTest](../app/src/testDebug/java/com/monsters/mobimon/vehicle/DemoVehicleRepositoryTest.kt), [CompanionRuntimeTest](../app/src/test/java/com/monsters/mobimon/runtime/CompanionRuntimeTest.kt), [UnavailableVehicleRepositoryTest](../core/core-vss/src/test/kotlin/com/monsters/mobimon/core/vss/UnavailableVehicleRepositoryTest.kt) |
+| Debug Park interpretation, raw VSS mapping, generated signal containers, adapter lookup, one foreground connection and unavailable real adapter | [DemoVehicleRepositoryTest](../app/src/testDebug/java/com/monsters/mobimon/vehicle/DemoVehicleRepositoryTest.kt), [VssVehicleInterpreterTest](../core/core-vss/src/test/kotlin/com/monsters/mobimon/core/vss/VssVehicleInterpreterTest.kt), [VssGeneratedSignalsTest](../core/core-vss/src/test/kotlin/com/monsters/mobimon/core/vss/VssGeneratedSignalsTest.kt), [VssAdapterLocatorTest](../core/core-vss/src/test/kotlin/com/monsters/mobimon/core/vss/VssAdapterLocatorTest.kt), [CompanionRuntimeTest](../app/src/test/java/com/monsters/mobimon/runtime/CompanionRuntimeTest.kt), [UnavailableVehicleRepositoryTest](../core/core-vss/src/test/kotlin/com/monsters/mobimon/core/vss/UnavailableVehicleRepositoryTest.kt) |
 | Legacy ownership/revision, later evidence, atomic completion and reopening | [QuestEvaluatorTest](../core/core-domain/src/test/kotlin/com/monsters/mobimon/core/domain/QuestEvaluatorTest.kt), [RoomCompanionRepositoryTest](../core/core-database/src/test/java/com/monsters/mobimon/core/database/RoomCompanionRepositoryTest.kt) and its device counterpart |
 | Point uniqueness, concurrent purchase/equip, rollback and authorization recheck | [PointEconomyRepositoryTest](../core/core-database/src/test/java/com/monsters/mobimon/core/database/PointEconomyRepositoryTest.kt), [Q01JourneyTest](../app/src/test/java/com/monsters/mobimon/Q01JourneyTest.kt), [DebugPointRepositoryTest](../core/core-database/src/testDebug/java/com/monsters/mobimon/core/database/DebugPointRepositoryTest.kt) |
 | V1→V4 and both V3 shapes preserve records/identity | [PointEconomyMigrationTest](../core/core-database/src/test/java/com/monsters/mobimon/core/database/PointEconomyMigrationTest.kt), [LevelingMigrationContract](../core/core-database/src/migrationTest/java/com/monsters/mobimon/core/database/LevelingMigrationContract.kt) with local/device wrappers |
@@ -77,7 +84,7 @@ Related suites share the linked module/package; test names define individual cas
 | Copilot credential/model cache, model absence, expiry, parking checks and request bounds | [CopilotConversationProviderTest](../core/core-auth/src/test/java/com/monsters/mobimon/core/auth/CopilotConversationProviderTest.kt); fake provider |
 | Poll intervals, slowdown, expiry, cancellation, persistence, refresh and revocation | [PersistentGitHubAuthenticationTest](../core/core-auth/src/test/java/com/monsters/mobimon/core/auth/PersistentGitHubAuthenticationTest.kt); fake provider/store |
 | Keystore encryption, reopening, tamper rejection and deletion | [EncryptedCredentialStoreTest](../core/core-auth/src/androidTest/java/com/monsters/mobimon/core/auth/EncryptedCredentialStoreTest.kt); device |
-| Authentication guards, recovery, readiness separation, QR and disconnect actions | [Authentication feature suites](../feature/feature-auth/src/test/java/com/monsters/mobimon/feature/auth); ViewModel and Robolectric |
+| Authentication guards/recovery, reference-layout parking guard, readiness separation, QR decoding and success/disconnect actions | [Authentication feature suites](../feature/feature-auth/src/test/java/com/monsters/mobimon/feature/auth); ViewModel and Robolectric |
 
 ### Presentation and navigation
 
@@ -87,11 +94,16 @@ Related suites share the linked module/package; test names define individual cas
 | Claim pending/duplicate/cancellation, committed amounts and reset reconciliation | [QuestViewModelTest](../feature/feature-quest/src/test/java/com/monsters/mobimon/feature/quest/QuestViewModelTest.kt), [QuestScreenTest](../feature/feature-quest/src/test/java/com/monsters/mobimon/feature/quest/QuestScreenTest.kt) |
 | Independent catalog/inventory retry, preview isolation and friend-specific equipment | [Customization suites](../feature/feature-customization/src/test/java/com/monsters/mobimon/feature/customization), point repository suite |
 | Independent settings writes, failure/retry and DataStore keys | [SettingsViewModelTest](../feature/feature-pet/src/test/java/com/monsters/mobimon/feature/pet/SettingsViewModelTest.kt), [DataStoreSettingsRepositoryTest](../core/core-database/src/test/java/com/monsters/mobimon/core/database/DataStoreSettingsRepositoryTest.kt) |
+| Mobi sprite cell identity, cache, blend continuity/opacity, delayed frames, independent transforms and fixed layout | `scripts/build_mobi_idle_sprite.py` verifies RGBA round-trip; `MobiIdleAnimationTest`, `PetAvatarTest`, `DecorativeMotionTest` in [core-ui tests](../core/core-ui/src/test/java/com/monsters/mobimon/core/ui) |
+| Shared warning classification, interruptible 200ms crossfade, 24-frame collapsed sprite loop, fixed ground anchor, reduced motion and unchanged bounds | `build_mobi_unhealthy_sprites.py` verifies aligned atlas generation; `VehicleConditionTest`, `MobiWarningAnimationTest`, `DecorativeMotionTest`, and `CompanionReviewTest` cover state, rendering and Home wiring |
 | Artwork, background periods/dimensions, reduced motion and shared control bounds | [Core UI suites](../core/core-ui/src/test/java/com/monsters/mobimon/core/ui); native Robolectric images |
-| Home/Settings, vehicle, store and quest layouts, focus and recovery | Owning feature `src/test` suites, including `CompanionReviewTest`, `VehicleReviewTest` and `StoreReferenceScreenTest` |
-| Menu layout/focus, authenticated routing, entry-route restoration and restricted input | [Shell suites](../app/src/test/java/com/monsters/mobimon/ui), [CopilotConnectionJourneyTest](../app/src/journeyTest/java/com/monsters/mobimon/CopilotConnectionJourneyTest.kt) |
-| Reveal/return geometry, touch bounds, interruption and reduced motion | [ConversationRevealTest](../app/src/test/java/com/monsters/mobimon/ui/ConversationRevealTest.kt), [PetHomeScreenTest](../feature/feature-pet/src/test/java/com/monsters/mobimon/feature/pet/PetHomeScreenTest.kt); native frames and pointer input |
-| Chat controls, parking guards and target-display/IME layouts | [ConversationScreenTest](../feature/feature-auth/src/test/java/com/monsters/mobimon/feature/auth/ConversationScreenTest.kt); native review images |
+| Home/Settings, vehicle, store and quest layouts, focus, recovery and quest panel resizing | Owning feature `src/test` suites, including `CompanionReviewTest`, `VehicleReviewTest`, `StoreReferenceScreenTest` and `QuestScreenTest` |
+| Menu reference/AAOS-density/enlarged-text bounds, focus, authenticated chat routing, connection origin after authentication loss, recreation and restricted/outgoing input | [Shell suites](../app/src/test/java/com/monsters/mobimon/ui), [CopilotConnectionJourneyTest](../app/src/journeyTest/java/com/monsters/mobimon/CopilotConnectionJourneyTest.kt) |
+| AAOS 96px status bar and 160px navigation bar | [System bar frame check](../scripts/check-aaos-system-bars.sh) in CI and after a baked-image AVD restart |
+| Conversation reveal/return, stationary Home, visible touch bounds, interruption, reduced motion and scrolled action bounds | [ConversationRevealTest](../app/src/test/java/com/monsters/mobimon/ui/ConversationRevealTest.kt), [PetHomeScreenTest](../feature/feature-pet/src/test/java/com/monsters/mobimon/feature/pet/PetHomeScreenTest.kt); native Robolectric frames and pointer input |
+| Live system-inset changes, destination/menu bounds, debugger unlock notice clearance and restoration | [MobiMonContentTest](../app/src/test/java/com/monsters/mobimon/ui/MobiMonContentTest.kt); platform inset dispatch in Robolectric |
+| Floating companion bounds use current bars/cutouts and measured size; Debug dragging, edge reversal and resize remain inside safe content | [OverlayMovementBoundsTest](../app/src/test/java/com/monsters/mobimon/service/OverlayMovementBoundsTest.kt), [DebugOverlayPlacementTest](../app/src/testDebug/java/com/monsters/mobimon/ui/DebugOverlayPlacementTest.kt); OEM overlay placement still requires a device |
+| Chat draft/composition lifetime, ownership clearing, input guards/actions and target-display/IME layouts | [Conversation and feature suites](../feature/feature-auth/src/test/java/com/monsters/mobimon/feature/auth); native review images |
 | Explicit-send readiness, duplicate/retry guards, draft/history lifetime, cancellation and limits | [ConversationViewModelTest](../feature/feature-auth/src/test/java/com/monsters/mobimon/feature/auth/ConversationViewModelTest.kt); fake transport |
 | Native keyboard resizing and Back/draft retention | [ConversationKeyboardDeviceTest](../app/src/androidTest/java/com/monsters/mobimon/preview/ConversationKeyboardDeviceTest.kt); AAOS device |
 | Isolated Debug rehearsal and branding | [CopilotPreviewJourneyTest](../app/src/journeyTest/java/com/monsters/mobimon/preview/CopilotPreviewJourneyTest.kt), [BrandingTest](../app/src/testDebug/java/com/monsters/mobimon/BrandingTest.kt) |
@@ -128,9 +140,32 @@ Kover: `./gradlew :app:koverHtmlReportDebug :app:koverXmlReportDebug` (local JVM
 ### CI AAOS environment
 
 The [workflow](../.github/workflows/android-ci.yml) and [cstd.ini](../.github/avd/cstd.ini)
-define the image, extension, ABI and display. Run the required
-[host check](../scripts/check-aaos-environment.sh) with only the intended emulator
-connected, then canonical device tests. Use emulator 35.1.9 or newer.
+define the image, extension, ABI and display. The workflow builds and installs the
+[system bars overlay](../.github/avd/system-bars-overlay/AndroidManifest.xml) on its
+disposable writable AVD, then checks the 96px top and 160px bottom bars with
+[check-aaos-system-bars.sh](../scripts/check-aaos-system-bars.sh). Run the required
+[host check](../scripts/check-aaos-environment.sh) and canonical device tests after
+the overlay check. Use emulator 35.1.9 or newer.
+
+For a persistent local AVD, install Python 3, JDK 17, SDK Platform 34, Build
+Tools 34.0.0, `debugfs` and `e2fsck`. Install the official AAOS 34-ext9 Google
+APIs revision 5 image matching the host ABI. Create a standard AAOS AVD at
+2560x1440 / 160 dpi, then set `ANDROID_HOME`, `TEMPLATE_AVD` and `IMAGE_DIR`
+to the local SDK, template AVD and output paths. Run from the repository root:
+
+```bash
+python3 scripts/build_aaos_baked_image.py \
+  --sdk-dir "$ANDROID_HOME" \
+  --template-avd-config "$TEMPLATE_AVD/config.ini" \
+  --output-image-dir "$IMAGE_DIR" \
+  --avd-name mobimon_baked_bars_34
+```
+
+Use `--help` for nondefault AVD homes and host path conversion. Start the new
+AVD in Device Manager, fully stop and restart it, then run
+`bash scripts/check-aaos-system-bars.sh`. Set `ADB` or `ANDROID_SERIAL` if needed.
+The image stays at `IMAGE_DIR` outside Git; the template AVD can be removed
+after verification.
 
 CI uses a fresh, headless AVD with software rendering and disabled animations.
 Local CSTD images are separate inputs; matching metadata does not establish

@@ -2,6 +2,7 @@ package com.monsters.mobimon.feature.quest
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.monsters.mobimon.core.domain.DriveEvaluationData
 import com.monsters.mobimon.core.domain.DrivingQuestEvaluator
 import com.monsters.mobimon.core.domain.PointAwardResult
 import com.monsters.mobimon.core.domain.PointEconomy
@@ -17,6 +18,7 @@ import kotlinx.coroutines.launch
 enum class QuestMessage {
     INTERACTION_RESTRICTED,
     REFRESH_REQUIRED,
+    CONDITION_NOT_MET,
     UNSUPPORTED,
     STORAGE_FAILURE,
 }
@@ -24,12 +26,17 @@ enum class QuestMessage {
 data class QuestRewardSuccess(
     val questId: String,
     val points: Long,
-)
+    val basePoints: Long = points,
+    val weatherMultiplier: Float = 1.0f,
+) {
+    val bonusPoints: Long get() = (points - basePoints).coerceAtLeast(0)
+}
 
 data class QuestUiState(
     val completedPointQuestIds: Set<String> = emptySet(),
     val satisfiedDrivingQuestIds: Set<String> = emptySet(),
     val dismissedHiddenQuestIds: Set<String> = emptySet(),
+    val driveEvaluation: DriveEvaluationData = DriveEvaluationData(),
     val pendingQuestId: String? = null,
     val isLoading: Boolean = true,
     val observationFailed: Boolean = false,
@@ -61,14 +68,17 @@ class QuestViewModel(
             viewModelScope.launch {
                 try {
                     combine(economy.completedQuestIds, economy.driveEvaluation) { completedIds, evaluation ->
-                        completedIds to
+                        Triple(
+                            completedIds,
                             drivingEvaluator
                                 .evaluateAll(
                                     evaluation,
                                 ).filter { it.isSatisfied }
                                 .map { it.questId }
-                                .toSet()
-                    }.collect { (completedIds, satisfiedIds) ->
+                                .toSet(),
+                            evaluation,
+                        )
+                    }.collect { (completedIds, satisfiedIds, evaluation) ->
                         observedQuestIds = completedIds
                         unobservedConfirmedQuestIds.removeAll(completedIds)
                         val pendingQuestId = state.value.pendingQuestId
@@ -77,6 +87,7 @@ class QuestViewModel(
                             it.copy(
                                 completedPointQuestIds = completedIds + unobservedConfirmedQuestIds,
                                 satisfiedDrivingQuestIds = satisfiedIds,
+                                driveEvaluation = evaluation,
                                 isLoading = false,
                                 observationFailed = false,
                             )
@@ -109,9 +120,19 @@ class QuestViewModel(
         viewModelScope.launch {
             try {
                 when (val result = economy.awardQuest(questId, displayedSnapshot)) {
-                    is PointAwardResult.Awarded -> confirm(questId, QuestRewardSuccess(questId, result.points))
+                    is PointAwardResult.Awarded ->
+                        confirm(
+                            questId,
+                            QuestRewardSuccess(
+                                questId = questId,
+                                points = result.points,
+                                basePoints = result.basePoints,
+                                weatherMultiplier = result.weatherMultiplier,
+                            ),
+                        )
                     PointAwardResult.AlreadyAwarded -> confirm(questId, null)
                     PointAwardResult.EvidenceChanged -> show(QuestMessage.REFRESH_REQUIRED)
+                    PointAwardResult.ConditionNotMet -> show(QuestMessage.CONDITION_NOT_MET)
                     PointAwardResult.InteractionRestricted -> show(QuestMessage.INTERACTION_RESTRICTED)
                     PointAwardResult.QuestUnavailable -> show(QuestMessage.UNSUPPORTED)
                     PointAwardResult.StorageFailure -> show(QuestMessage.STORAGE_FAILURE)

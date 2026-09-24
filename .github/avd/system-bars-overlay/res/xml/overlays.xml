@@ -1,0 +1,10 @@
+<overlay xmlns:android="http://schemas.android.com/apk/res/android">
+    <item target="dimen/status_bar_height_default" value="@dimen/mobimon_status_bar_height" />
+    <item target="dimen/status_bar_height" value="@dimen/mobimon_status_bar_height" />
+    <item target="dimen/status_bar_height_portrait" value="@dimen/mobimon_status_bar_height" />
+    <item target="dimen/status_bar_height_landscape" value="@dimen/mobimon_status_bar_height" />
+    <item target="dimen/navigation_bar_height" value="@dimen/mobimon_navigation_bar_height" />
+    <item target="dimen/navigation_bar_height_landscape" value="@dimen/mobimon_navigation_bar_height" />
+    <item target="dimen/navigation_bar_height_car_mode" value="@dimen/mobimon_navigation_bar_height" />
+    <item target="dimen/navigation_bar_height_landscape_car_mode" value="@dimen/mobimon_navigation_bar_height" />
+</overlay>

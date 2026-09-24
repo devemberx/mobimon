@@ -1,6 +1,7 @@
 <resources>
     <string name="quest_saving">진행 상황을 저장하고 있어요.</string>
     <string name="quest_refresh_required">차량 상태나 퀘스트가 바뀌었어요. 최신 내용을 확인하고 다시 눌러 주세요.</string>
+    <string name="quest_condition_not_met">아직 완료 조건을 충족하지 못했어요. 주행 기록을 확인해 주세요.</string>
     <string name="quest_unsupported">이 퀘스트는 아직 준비 중이에요.</string>
     <string name="quest_route_save_failed">저장하지 못했어요. 현재 기록을 확인하고 다시 시도해 주세요.</string>
     <string name="quest_destination_title">퀘스트</string>
@@ -39,10 +40,35 @@
     <string name="quest_detail_reward_label">보상 · %1$d Point</string>
     <string name="quest_detail_notice">보상은 완료 기록이 저장된 뒤 지급돼요.</string>
     <string name="quest_detail_received_note">%1$d Point를 획득했어요.</string>
+    <string name="quest_detail_metric_current_distance">현재 주행 거리</string>
+    <string name="quest_detail_metric_remaining_distance">남은 거리</string>
+    <string name="quest_detail_metric_safe_score">현재 안전점수</string>
+    <string name="quest_detail_metric_total_distance">누적 주행거리</string>
+    <string name="quest_detail_metric_hard_accel">급가속</string>
+    <string name="quest_detail_metric_hard_brake">급제동</string>
+    <string name="quest_detail_metric_overspeed">과속</string>
+    <string name="quest_detail_metric_distraction_level">부주의 레벨</string>
+    <string name="quest_detail_metric_lane_departure">차선 이탈</string>
+    <string name="quest_detail_metric_turn_signal">방향지시등 점등</string>
+    <string name="quest_detail_metric_safe_drive_count">안전 주행</string>
+    <string name="quest_detail_metric_battery_charge">배터리 충전량</string>
+    <string name="quest_detail_metric_driving_time">주행 시간</string>
+    <string name="quest_detail_metric_washer_level">워셔액 레벨</string>
+    <string name="quest_detail_msg_first_drive">오늘의 첫 주행을 시작해보세요!</string>
+    <string name="quest_detail_msg_maintenance">차량 점검을 위해 정비소를 방문해주세요</string>
+    <string name="quest_detail_unknown">정보 없음</string>
+    <string name="quest_detail_count_format">%1$d회</string>
+    <string name="quest_detail_score_format">%1$d점</string>
+    <string name="quest_detail_percent_format">%1$d%%</string>
+    <string name="quest_detail_time_minutes_format">%1$d분</string>
+    <string name="quest_detail_time_hours_minutes_format">%1$d시간 %2$d분</string>
     <string name="quest_modal_badge">퀘스트 완료</string>
+    <string name="quest_modal_badge_weather_bonus">퀘스트 완료 · 날씨 보너스</string>
     <string name="quest_modal_title">%1$d포인트를 획득했어요!!</string>
     <string name="quest_modal_subtitle">작은 도전으로 모비와 함께 성장했어요.</string>
+    <string name="quest_modal_weather_bonus">날씨 보너스로 %1$d포인트를 더 받았어요!</string>
     <string name="quest_modal_chip">보상 · %1$d Point</string>
+    <string name="quest_modal_chip_weather_bonus">보상 · %1$d Point (날씨 보너스 +%2$d)</string>
 
 
     <string name="quest_schedule_per_drive_short">주행 당</string>
@@ -79,7 +105,7 @@
 
     <string name="quest_focus_drive_name">눈은 반짝, 핸들은 꽉!</string>
     <string name="quest_focus_drive_short_desc">부주의 없이 30km 연속 집중 운전 달성</string>
-    <string name="quest_focus_drive_detail_line1">전방 주시와 주의력을 유지하며</string>
+    <string name="quest_focus_drive_detail_line1">전방 주시와 주의력(부주의 레벨 70% 이상)유지하며</string>
     <string name="quest_focus_drive_detail_line2">30km 이상 연속으로 안전하게 운행해 보세요.</string>
 
     <string name="quest_lane_keep_name">흔들리지 않는 나의 핸들</string>
@@ -97,10 +123,10 @@
     <string name="quest_turn_signal_detail_line1">차선 변경 전 방향지시등을 켜는 매너 운전으로</string>
     <string name="quest_turn_signal_detail_line2">주변 차량을 배려해 보세요. (일일 최대 10P)</string>
 
-    <string name="quest_5days_safe_name">작심오일은 없다! 5일 연속 무사고</string>
-    <string name="quest_5days_safe_short_desc">5일 연속으로 안전 운전 달성</string>
-    <string name="quest_5days_safe_detail_line1">매일 안전 운전을 이어가며</string>
-    <string name="quest_5days_safe_detail_line2">주간 5일 연속 안전 주행 보너스를 받아보세요.</string>
+    <string name="quest_5days_safe_name">티끌모아 태산! 안전 주행 5회</string>
+    <string name="quest_5days_safe_short_desc">안전 주행 5회 달성</string>
+    <string name="quest_5days_safe_detail_line1">5km 이상 안전 주행을 5회 쌓으며</string>
+    <string name="quest_5days_safe_detail_line2">안전 주행 5회 보너스를 받아보세요.</string>
 
     <!-- New Regular Driving Quests -->
     <string name="quest_battery_care_name">배터리 지킴이</string>
@@ -125,7 +151,6 @@
 
     <!-- Hidden Quests and Dialog -->
     <string name="quest_hidden_badge">히든 퀘스트 달성!</string>
-    <string name="quest_hidden_dismiss">닫기</string>
     <string name="quest_hidden_costume_name">멋쟁이 모비몬</string>
     <string name="quest_hidden_costume_desc">새로운 코스튬을 멋지게 착용했어요!</string>
 

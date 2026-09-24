@@ -1,6 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
   <uses-permission android:name="android.permission.INTERNET" />
+  <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
+  <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+  <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
   <uses-feature
       android:name="android.hardware.type.automotive"
       android:required="true" />
@@ -15,6 +18,7 @@
       android:supportsRtl="true"
       android:theme="@style/Theme.MobiMon">
     <uses-library android:name="android.car" android:required="false" />
+    <uses-library android:name="mobis.framework" android:required="false" />
     <activity
         android:name=".MainActivity"
         android:windowSoftInputMode="adjustResize"
@@ -24,5 +28,13 @@
         <category android:name="android.intent.category.LAUNCHER" />
       </intent-filter>
     </activity>
+    <service
+        android:name=".service.FloatingCompanionService"
+        android:exported="false"
+        android:foregroundServiceType="specialUse">
+      <property
+          android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+          android:value="Floating companion overlay" />
+    </service>
   </application>
 </manifest>

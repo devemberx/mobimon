@@ -52,7 +52,7 @@ For code or build changes, format first and review the resulting diff:
 
 ```bash
 ./gradlew ktlintFormat
-./gradlew verifyModuleBoundaries ktlintCheck lintDebug testDebugUnitTest :core:core-domain:test :core:core-vss:test :app:assembleDebug :app:assembleDebugAndroidTest :core:core-database:assembleDebugAndroidTest :core:core-auth:assembleDebugAndroidTest
+./gradlew verifyModuleBoundaries ktlintCheck lintDebug testDebugUnitTest :core:core-domain:test :core:core-vss:testDebugUnitTest :app:assembleDebug :app:assembleDebugAndroidTest :core:core-database:assembleDebugAndroidTest :core:core-auth:assembleDebugAndroidTest
 git diff --check
 ```
 

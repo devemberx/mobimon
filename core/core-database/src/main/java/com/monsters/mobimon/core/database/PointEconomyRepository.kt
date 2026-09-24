@@ -9,6 +9,7 @@ import com.monsters.mobimon.core.domain.CosmeticSlot
 import com.monsters.mobimon.core.domain.CurrentAppUse
 import com.monsters.mobimon.core.domain.CurrentVehicleEvidence
 import com.monsters.mobimon.core.domain.DriveEvaluationData
+import com.monsters.mobimon.core.domain.DrivingQuestEvaluator
 import com.monsters.mobimon.core.domain.EquipResult
 import com.monsters.mobimon.core.domain.IdGenerator
 import com.monsters.mobimon.core.domain.PointAwardResult
@@ -19,6 +20,7 @@ import com.monsters.mobimon.core.domain.PointWallet
 import com.monsters.mobimon.core.domain.PurchaseResult
 import com.monsters.mobimon.core.domain.QuestEvaluator
 import com.monsters.mobimon.core.domain.SignalSource
+import com.monsters.mobimon.core.domain.SignalSourceProvider
 import com.monsters.mobimon.core.domain.UtcClock
 import com.monsters.mobimon.core.domain.VehicleSnapshot
 import kotlinx.coroutines.CancellationException
@@ -42,6 +44,8 @@ class PointEconomyRepository(
     private val clock: Clock,
     private val evaluator: QuestEvaluator,
     private val quests: PointQuestCatalog,
+    private val drivingEvaluator: DrivingQuestEvaluator = DrivingQuestEvaluator(),
+    private val sourceProvider: SignalSourceProvider = SignalSourceProvider { source },
 ) : PointEconomy {
     private val dao = database.economyDao()
 
@@ -112,7 +116,7 @@ class PointEconomyRepository(
         try {
             database.withTransaction {
                 if (appUse.state() != AppUseState.ALLOWED ||
-                    evaluator.validateSnapshot(vehicle.snapshot(), source, clock.nowMillis()) != null
+                    evaluator.validateSnapshot(vehicle.snapshot(), sourceProvider.source(), clock.nowMillis()) != null
                 ) {
                     return@withTransaction PurchaseResult.InteractionRestricted
                 }
@@ -153,7 +157,7 @@ class PointEconomyRepository(
         try {
             database.withTransaction {
                 if (appUse.state() != AppUseState.ALLOWED ||
-                    evaluator.validateSnapshot(vehicle.snapshot(), source, clock.nowMillis()) != null
+                    evaluator.validateSnapshot(vehicle.snapshot(), sourceProvider.source(), clock.nowMillis()) != null
                 ) {
                     return@withTransaction EquipResult.InteractionRestricted
                 }
@@ -212,12 +216,21 @@ class PointEconomyRepository(
                     return@withTransaction PointAwardResult.QuestUnavailable
                 }
                 val current = vehicle.snapshot()
+                val expectedSource = sourceProvider.source()
                 if (appUse.state() != AppUseState.ALLOWED ||
-                    evaluator.validateSnapshot(current, source, clock.nowMillis()) != null
+                    evaluator.validateSnapshot(current, expectedSource, clock.nowMillis()) != null
                 ) {
                     return@withTransaction PointAwardResult.InteractionRestricted
                 }
                 if (current != displayedSnapshot) return@withTransaction PointAwardResult.EvidenceChanged
+                // Gate driving quests on their per-quest evidence; hidden quests (null) stay ungated.
+                val drivingResult = drivingEvaluator.evaluateById(questId, _driveEvaluation.value)
+                if (drivingResult != null && !drivingResult.isSatisfied) {
+                    return@withTransaction PointAwardResult.ConditionNotMet
+                }
+                val awardedPoints = drivingResult?.earnedPoints ?: definition.rewardPoints
+                val basePoints = drivingResult?.basePoints ?: definition.rewardPoints
+                val weatherMultiplier = drivingResult?.weatherCondition?.multiplier ?: 1.0f
                 val completedAt = utcClock.nowEpochMillis()
                 val occurrence =
                     definition.schedule.occurrenceKey(completedAt)
@@ -226,7 +239,7 @@ class PointEconomyRepository(
                     return@withTransaction PointAwardResult.AlreadyAwarded
                 }
                 val account = dao.account(profileId) ?: return@withTransaction PointAwardResult.StorageFailure
-                if (account.balance > Long.MAX_VALUE - definition.rewardPoints) {
+                if (account.balance > Long.MAX_VALUE - awardedPoints) {
                     return@withTransaction PointAwardResult.StorageFailure
                 }
                 val completionId = ids.nextId()
@@ -236,7 +249,7 @@ class PointEconomyRepository(
                         profileId = profileId,
                         questId = questId,
                         occurrenceKey = occurrence,
-                        rewardPoints = definition.rewardPoints,
+                        rewardPoints = awardedPoints,
                         completedAtUtcMillis = completedAt,
                         snapshotId = current.id,
                         snapshotEpoch = current.epoch,
@@ -250,7 +263,7 @@ class PointEconomyRepository(
                         PointAwardResult.StorageFailure
                     }
                 }
-                if (dao.credit(profileId, definition.rewardPoints, Long.MAX_VALUE - definition.rewardPoints) != 1) {
+                if (dao.credit(profileId, awardedPoints, Long.MAX_VALUE - awardedPoints) != 1) {
                     throw SQLiteException("Account changed during point award")
                 }
                 dao.insertLedger(
@@ -258,11 +271,17 @@ class PointEconomyRepository(
                         id = ids.nextId(),
                         profileId = profileId,
                         referenceKey = "quest:$questId:$occurrence",
-                        amount = definition.rewardPoints,
+                        amount = awardedPoints,
                         occurredAtUtcMillis = completedAt,
                     ),
                 )
-                PointAwardResult.Awarded(definition.rewardPoints, account.balance + definition.rewardPoints, occurrence)
+                PointAwardResult.Awarded(
+                    points = awardedPoints,
+                    resultingBalance = account.balance + awardedPoints,
+                    occurrenceKey = occurrence,
+                    basePoints = basePoints,
+                    weatherMultiplier = weatherMultiplier,
+                )
             }
         } catch (cancelled: CancellationException) {
             throw cancelled

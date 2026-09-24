@@ -4,10 +4,16 @@ import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.view.View
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.height
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotEnabled
@@ -18,6 +24,9 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.unit.Density
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
 import androidx.test.core.app.ApplicationProvider
 import com.monsters.mobimon.core.domain.CosmeticInventory
 import com.monsters.mobimon.core.domain.CosmeticSlot
@@ -27,6 +36,7 @@ import com.monsters.mobimon.core.navigation.AppRoute
 import com.monsters.mobimon.core.navigation.VehicleRoute
 import com.monsters.mobimon.core.presentation.CompanionAppearanceState
 import com.monsters.mobimon.core.presentation.PointBalanceState
+import com.monsters.mobimon.core.ui.MobiMonColors
 import com.monsters.mobimon.core.ui.MobiMonTheme
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -40,11 +50,101 @@ import org.robolectric.annotation.GraphicsMode
 import java.io.File
 
 @RunWith(RobolectricTestRunner::class)
-@Config(sdk = [34], qualifiers = "ko-rKR-w2560dp-h1332dp-mdpi")
+@Config(sdk = [34], qualifiers = "ko-rKR-w2560dp-h1248dp-mdpi")
 class QuestScreenTest {
     @get:Rule val compose = createComposeRule()
     private val context = ApplicationProvider.getApplicationContext<Context>()
     private val catalog = QuestCatalog(DefaultPointQuestCatalog())
+
+    @Test
+    @Config(qualifiers = "ko-rKR-w2560dp-h1332dp-mdpi")
+    @GraphicsMode(GraphicsMode.Mode.NATIVE)
+    fun panelsFollowAvailableContentHeight() = checkPanelHeights(listOf(1184.dp, 1268.dp, 1184.dp), 1f)
+
+    @Test
+    @Config(qualifiers = "ko-rKR-w1792dp-h952dp-mdpi")
+    @GraphicsMode(GraphicsMode.Mode.NATIVE)
+    fun compatibilityPanelsFollowAvailableContentHeight() = checkPanelHeights(listOf(829.dp, 888.dp, 829.dp), 0.7f)
+
+    @Test
+    @Config(qualifiers = "ko-rKR-w1792dp-h893dp-mdpi")
+    @GraphicsMode(GraphicsMode.Mode.NATIVE)
+    fun enlargedTextKeepsCompactQuestActionsReachable() {
+        lateinit var view: View
+        val state = presentation()
+        compose.setContent {
+            val currentView = LocalView.current
+            SideEffect { view = currentView }
+            CompositionLocalProvider(LocalDensity provides Density(LocalDensity.current.density, 1.5f)) {
+                MobiMonTheme { QuestScreen(state, {}, {}, {}, {}, {}, {}, {}) }
+            }
+        }
+        compose.onNodeWithTag("quest-reference").assertDoesNotExist()
+        capture({ view }, "quest-list-enlarged")
+        compose.onNodeWithTag("quest-btn-detail-${DrivingQuestIds.BATTERY_CARE}").performScrollTo().performClick()
+        compose.onNodeWithTag("quest-btn-detail-execute").performScrollTo().assertIsDisplayed()
+        capture({ view }, "quest-detail-enlarged")
+    }
+
+    private fun checkPanelHeights(
+        heights: List<Dp>,
+        scale: Float,
+    ) {
+        var height by mutableStateOf(heights.first())
+        lateinit var view: View
+        val state = presentation()
+        compose.setContent {
+            val currentView = LocalView.current
+            SideEffect { view = currentView }
+            MobiMonTheme {
+                Box(Modifier.height(height)) {
+                    QuestScreen(state, {}, {}, {}, {}, {}, {}, {})
+                }
+            }
+        }
+
+        fun checkPanels(detail: Boolean) {
+            compose.runOnIdle {
+                val bitmap = Bitmap.createBitmap(view.width, view.height, Bitmap.Config.ARGB_8888)
+                view.draw(Canvas(bitmap))
+                val y = (height.value - 40 * scale).toInt()
+                assertEquals(
+                    "Companion panel must reach the bottom gutter",
+                    MobiMonColors.panel.toArgb(),
+                    bitmap.getPixel(
+                        (
+                            400 *
+                                scale
+                        ).toInt(),
+                        y,
+                    ),
+                )
+                if (detail) {
+                    assertEquals(
+                        "Detail panel must reach the bottom gutter",
+                        MobiMonColors.panel.toArgb(),
+                        bitmap.getPixel(
+                            (
+                                2000 *
+                                    scale
+                            ).toInt(),
+                            y,
+                        ),
+                    )
+                }
+                bitmap.recycle()
+            }
+        }
+        for (contentHeight in heights) {
+            compose.runOnIdle { height = contentHeight }
+            capture({ view }, "quest-list-height-${contentHeight.value.toInt()}")
+            checkPanels(detail = false)
+            compose.onNodeWithTag("quest-btn-detail-${DrivingQuestIds.BATTERY_CARE}").performScrollTo().performClick()
+            capture({ view }, "quest-detail-height-${contentHeight.value.toInt()}")
+            checkPanels(detail = true)
+            compose.onNodeWithTag("quest-detail-back-button").performClick()
+        }
+    }
 
     @Test
     fun claimDoesNotInventCompletionOrSuccessBeforeCommittedResult() {
@@ -65,7 +165,7 @@ class QuestScreenTest {
             ),
         )
         compose.onNodeWithTag("quest-hidden-btn-claim").assertIsNotEnabled()
-        compose.onNodeWithTag("quest-hidden-btn-dismiss").assertIsNotEnabled()
+        compose.onNodeWithTag("quest-hidden-btn-dismiss").assertDoesNotExist()
         compose.onNodeWithTag("quest-reward-success-modal").assertDoesNotExist()
     }
 
@@ -110,9 +210,60 @@ class QuestScreenTest {
     fun drivingDetailExecutesRealNavigationCallback() {
         var route: AppRoute? = null
         render(presentation(), onNavigate = { route = it })
-        compose.onNodeWithTag("quest-btn-detail-${DrivingQuestIds.SEATBELT}").performScrollTo().performClick()
+        compose.onNodeWithTag("quest-btn-detail-${DrivingQuestIds.BATTERY_CARE}").performScrollTo().performClick()
         compose.onNodeWithTag("quest-btn-detail-execute").assertIsDisplayed().performClick()
         assertEquals(VehicleRoute.VEHICLE_INFO, route)
+    }
+
+    @Test
+    fun seatbeltDetailShowsDistanceMetricsAndNoExecuteButtonOrVehicleStep() {
+        render(presentation())
+        compose.onNodeWithTag("quest-btn-detail-${DrivingQuestIds.SEATBELT}").performScrollTo().performClick()
+        compose.onNodeWithTag("quest-btn-detail-execute").assertDoesNotExist()
+        compose.onNodeWithText("차량 정보 확인 하기").assertDoesNotExist()
+        compose.onNodeWithText("현재 주행 거리").assertIsDisplayed()
+        compose.onNodeWithText("남은 거리").assertIsDisplayed()
+    }
+
+    @Test
+    fun firstDriveDetailShowsGuideMessageAndNoExecuteButton() {
+        render(presentation())
+        compose.onNodeWithTag("quest-btn-detail-${DrivingQuestIds.FIRST_DRIVE}").performScrollTo().performClick()
+        compose.onNodeWithTag("quest-btn-detail-execute").assertDoesNotExist()
+        compose.onNodeWithText("차량 정보 확인 하기").assertDoesNotExist()
+        compose.onNodeWithText("오늘의 첫 주행을 시작해보세요!").assertIsDisplayed()
+    }
+
+    @Test
+    fun batteryCareDetailShowsChargeAndVehicleStep() {
+        render(presentation())
+        compose.onNodeWithTag("quest-btn-detail-${DrivingQuestIds.BATTERY_CARE}").performScrollTo().performClick()
+        compose.onNodeWithText("차량 정보 확인 하기").assertIsDisplayed()
+        compose.onNodeWithTag("quest-btn-detail-execute").assertIsDisplayed()
+        compose.onNodeWithText("배터리 충전량").assertIsDisplayed()
+    }
+
+    @Test
+    fun focusDriveDetailShowsMetricsAndCustomDescription() {
+        render(presentation())
+        compose.onNodeWithTag("quest-btn-detail-${DrivingQuestIds.FOCUS_DRIVE}").performScrollTo().performClick()
+        compose.onNodeWithTag("quest-btn-detail-execute").assertDoesNotExist()
+        compose.onNodeWithText("차량 정보 확인 하기").assertDoesNotExist()
+        compose.onNodeWithText("전방 주시와 주의력(부주의 레벨 70% 이상)유지하며").assertIsDisplayed()
+        compose.onNodeWithText("현재 주행 거리").assertIsDisplayed()
+        compose.onNodeWithText("남은 거리").assertIsDisplayed()
+        compose.onNodeWithText("부주의 레벨").assertIsDisplayed()
+    }
+
+    @Test
+    fun longTripRestDetailShowsMetricsAndNoExecuteButton() {
+        render(presentation())
+        compose.onNodeWithTag("quest-btn-detail-${DrivingQuestIds.LONG_TRIP_REST}").performScrollTo().performClick()
+        compose.onNodeWithTag("quest-btn-detail-execute").assertDoesNotExist()
+        compose.onNodeWithText("차량 정보 확인 하기").assertDoesNotExist()
+        compose.onNodeWithText("현재 주행 거리").assertIsDisplayed()
+        compose.onNodeWithText("남은 거리").assertIsDisplayed()
+        compose.onNodeWithText("주행 시간").assertIsDisplayed()
     }
 
     @Test
@@ -148,22 +299,38 @@ class QuestScreenTest {
     }
 
     @Test
-    fun hiddenDismissalUsesOwnerStateWithoutClaimingReward() {
-        var state by mutableStateOf(presentation(friend = "friend:luna"))
-        var dismissed: String? = null
-        var claims = 0
+    fun committedSuccessWithWeatherBonusDisplaysBonusBadgeNotificationAndChip() {
+        val state =
+            presentation(
+                QuestUiState(
+                    isLoading = false,
+                    rewardSuccess =
+                        QuestRewardSuccess(
+                            questId = DrivingQuestIds.SEATBELT,
+                            points = 8,
+                            basePoints = 5,
+                            weatherMultiplier = 1.5f,
+                        ),
+                ),
+            )
         compose.setContent {
             MobiMonTheme {
-                QuestScreen(state, { claims++ }, {
-                    dismissed = it
-                    state = state.copy(hiddenQuests = emptyList())
-                }, {}, {}, {}, {}, {})
+                QuestScreen(state, {}, {}, {}, {}, {}, {}, {})
             }
         }
-        compose.onNodeWithTag("quest-hidden-btn-dismiss").performClick()
-        assertEquals(DrivingQuestIds.HIDDEN_NEW_FRIEND, dismissed)
-        assertEquals(0, claims)
-        compose.onNodeWithTag("quest-hidden-claim-modal").assertDoesNotExist()
+        compose.onNodeWithText("8포인트를 획득했어요!!").assertIsDisplayed()
+        compose.onNodeWithText("퀘스트 완료 · 날씨 보너스").assertIsDisplayed()
+        compose.onNodeWithText("날씨 보너스로 3포인트를 더 받았어요!").assertIsDisplayed()
+        compose.onNodeWithText("보상 · 8 Point (날씨 보너스 +3)").assertIsDisplayed()
+    }
+
+    @Test
+    fun hiddenClaimModalDoesNotOfferDismissButton() {
+        render(presentation(friend = "friend:luna"))
+        compose.onNodeWithTag("quest-hidden-claim-modal").assertIsDisplayed()
+        compose.onNodeWithTag("quest-hidden-btn-claim").assertIsDisplayed()
+        compose.onNodeWithTag("quest-hidden-btn-dismiss").assertDoesNotExist()
+        compose.onNodeWithText("닫기").assertDoesNotExist()
     }
 
     @Test
@@ -239,8 +406,7 @@ class QuestScreenTest {
     }
 
     @Test
-    fun headerHomeButtonCallsOnHome() {
-        var homeCalled = false
+    fun headerHomeButtonDoesNotExist() {
         val state = presentation()
         compose.setContent {
             MobiMonTheme {
@@ -253,12 +419,10 @@ class QuestScreenTest {
                     onRetryWallet = {},
                     onRetryAppearance = {},
                     onNavigateRoute = {},
-                    onHome = { homeCalled = true },
                 )
             }
         }
-        compose.onNodeWithTag("quest-header-home-button").performClick()
-        assertTrue(homeCalled)
+        compose.onNodeWithTag("quest-header-home-button").assertDoesNotExist()
     }
 
     @Test
@@ -285,6 +449,22 @@ class QuestScreenTest {
         compose.onNodeWithTag("quest-header-back-button").performClick()
         compose.onNodeWithTag("quest-card-${DrivingQuestIds.SEATBELT}").assertIsDisplayed()
         assertFalse(backCalled)
+    }
+
+    @Test
+    fun claimableQuestAppearsAtTopInList() {
+        val state =
+            presentation(
+                QuestUiState(
+                    isLoading = false,
+                    satisfiedDrivingQuestIds = setOf(DrivingQuestIds.TIRE_CHECK),
+                ),
+            )
+        render(state)
+        assertEquals(DrivingQuestIds.TIRE_CHECK, state.quests.first().id)
+        assertEquals(QuestItemStatus.CLAIMABLE, state.quests.first().status)
+        compose.onNodeWithTag("quest-card-${DrivingQuestIds.TIRE_CHECK}").assertIsDisplayed()
+        compose.onNodeWithTag("quest-btn-claim-${DrivingQuestIds.TIRE_CHECK}").assertIsDisplayed()
     }
 
     private fun render(

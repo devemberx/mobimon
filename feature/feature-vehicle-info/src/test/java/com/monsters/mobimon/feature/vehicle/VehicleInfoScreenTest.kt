@@ -21,7 +21,7 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
 @RunWith(RobolectricTestRunner::class)
-@Config(sdk = [34], qualifiers = "ko-rKR-w2560dp-h1332dp-mdpi")
+@Config(sdk = [34], qualifiers = "ko-rKR-w2560dp-h1248dp-mdpi")
 class VehicleInfoScreenTest {
     @get:Rule
     val compose = createComposeRule()
@@ -141,24 +141,20 @@ class VehicleInfoScreenTest {
     }
 
     @Test
-    fun headerNavigationInvokesCallbacks() {
+    fun headerBackButtonCallsOnBackAndHomeButtonDoesNotExist() {
         var backClicked = false
-        var homeClicked = false
         compose.setContent {
             MaterialTheme {
                 VehicleInfoScreen(
                     snapshot = snapshot(),
                     onBack = { backClicked = true },
-                    onHome = { homeClicked = true },
                 )
             }
         }
 
         compose.onNodeWithTag("vehicle-header-back-button").performClick()
         assertTrue("Back callback invoked", backClicked)
-
-        compose.onNodeWithTag("vehicle-header-home-button").performClick()
-        assertTrue("Home callback invoked", homeClicked)
+        compose.onNodeWithTag("vehicle-header-home-button").assertDoesNotExist()
     }
 
     private fun render(snapshot: VehicleSnapshot) {

@@ -29,14 +29,14 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
 @RunWith(RobolectricTestRunner::class)
-@Config(sdk = [34], qualifiers = "ko-rKR-w2560dp-h1332dp-mdpi")
+@Config(sdk = [34], qualifiers = "ko-rKR-w2560dp-h1248dp-mdpi")
 @OptIn(androidx.compose.ui.test.ExperimentalTestApi::class)
 class PetPreferencesScreenTest {
     @get:Rule
     val compose = createComposeRule()
 
     @Test
-    @Config(qualifiers = "ko-rKR-w1792dp-h952dp-mdpi")
+    @Config(qualifiers = "ko-rKR-w1792dp-h893dp-mdpi")
     fun headUnitKeepsSharedRowsReachableAndDoneVisible() {
         compose.setContent {
             MobiMonTheme {
@@ -77,6 +77,63 @@ class PetPreferencesScreenTest {
     }
 
     @Test
+    fun launcherCharacterToggleRequestsChangeWhenProvided() {
+        var requested: Boolean? = null
+        compose.setContent {
+            MobiMonTheme {
+                SettingsScreen(
+                    settings = CompanionSettings(launcherCharacterEnabled = false),
+                    parkedVerified = true,
+                    onReducedMotionChange = {},
+                    onLauncherCharacterChange = { requested = it },
+                )
+            }
+        }
+
+        compose.onNodeWithText("차량 홈 캐릭터").performScrollTo().performClick()
+
+        assertEquals(true, requested)
+    }
+
+    @Test
+    fun launcherCharacterShowsPermissionWarningWhenEnabledWithoutOverlayPermission() {
+        compose.setContent {
+            MobiMonTheme {
+                SettingsScreen(
+                    settings = CompanionSettings(launcherCharacterEnabled = true),
+                    parkedVerified = true,
+                    onReducedMotionChange = {},
+                    onLauncherCharacterChange = {},
+                    hasOverlayPermission = false,
+                )
+            }
+        }
+
+        compose.onNodeWithText("차량 홈 캐릭터").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText("다른 앱 위에 표시 권한 허용이 필요합니다.").assertIsDisplayed()
+    }
+
+    @Test
+    fun launcherCharacterToggleOffRequestsFalseWhenEnabled() {
+        var requested: Boolean? = null
+        compose.setContent {
+            MobiMonTheme {
+                SettingsScreen(
+                    settings = CompanionSettings(launcherCharacterEnabled = true),
+                    parkedVerified = true,
+                    onReducedMotionChange = {},
+                    onLauncherCharacterChange = { requested = it },
+                    hasOverlayPermission = true,
+                )
+            }
+        }
+
+        compose.onNodeWithText("차량 홈 캐릭터").performScrollTo().performClick()
+
+        assertEquals(false, requested)
+    }
+
+    @Test
     fun unavailableServicesAndUnknownParkingDoNotInvokeSettingsActions() {
         var motionCalls = 0
         var debugCalls = 0
@@ -98,6 +155,32 @@ class PetPreferencesScreenTest {
         compose.onNodeWithText("Debugger").performScrollTo().performClick()
         assertEquals(0, motionCalls)
         assertEquals(0, debugCalls)
+    }
+
+    @Test
+    fun debugModeCanToggleWhenHiddenReleaseDebuggerIsAvailableWithoutParkingEvidence() {
+        var requested: Boolean? = null
+        compose.setContent {
+            MobiMonTheme {
+                SettingsScreen(
+                    settings = CompanionSettings(debugModeEnabled = false),
+                    onReducedMotionChange = {},
+                    onDebugModeChange = { requested = it },
+                    debugModeAvailable = true,
+                    debugModeInteractionAllowed = true,
+                    parkedVerified = false,
+                )
+            }
+        }
+
+        compose.onNodeWithText("주차 확인 불가").assertExists()
+        compose
+            .onNodeWithText("Debugger")
+            .performScrollTo()
+            .assertIsEnabled()
+            .performClick()
+
+        assertEquals(true, requested)
     }
 
     @Test
@@ -176,12 +259,12 @@ class PetPreferencesScreenTest {
     }
 
     @Test
-    fun simulatedParkingIsExplicitlyLabeled() {
+    fun settingsOmitsSimulationBadge() {
         compose.setContent {
             MobiMonTheme { SettingsScreen(CompanionSettings(), {}, parkedVerified = true, simulatedVehicle = true) }
         }
         compose.onNodeWithText("주차 확인됨").assertExists()
-        compose.onNodeWithText("시뮬레이션").assertExists()
+        compose.onNodeWithText("시뮬레이션").assertDoesNotExist()
     }
 
     @Test

@@ -244,6 +244,7 @@ class QuestViewModelTest {
             runCurrent()
             for ((result, message) in listOf(
                 PointAwardResult.EvidenceChanged to QuestMessage.REFRESH_REQUIRED,
+                PointAwardResult.ConditionNotMet to QuestMessage.CONDITION_NOT_MET,
                 PointAwardResult.InteractionRestricted to QuestMessage.INTERACTION_RESTRICTED,
                 PointAwardResult.QuestUnavailable to QuestMessage.UNSUPPORTED,
             )) {
@@ -311,6 +312,19 @@ class QuestViewModelTest {
             runCurrent()
             assertTrue(DrivingQuestIds.SEATBELT in vm.state.value.satisfiedDrivingQuestIds)
             assertTrue(DrivingQuestIds.SAFE_DRIVE in vm.state.value.satisfiedDrivingQuestIds)
+            assertEquals(10f, vm.state.value.driveEvaluation.distanceKm)
+        }
+
+    @Test
+    fun drivingEvaluationUpdatesDriveEvaluationInState() =
+        runModelTest {
+            val vm = subject()
+            runCurrent()
+            assertEquals(0f, vm.state.value.driveEvaluation.distanceKm)
+            economy.evaluation.value = DriveEvaluationData(distanceKm = 12.5f, safeDriveScore = 95)
+            runCurrent()
+            assertEquals(12.5f, vm.state.value.driveEvaluation.distanceKm)
+            assertEquals(95, vm.state.value.driveEvaluation.safeDriveScore)
         }
 
     private class TestEconomy : PointEconomy {

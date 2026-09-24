@@ -57,7 +57,15 @@ class QuestFeature(
         val reading = vehicle.reading()
         val snapshot = reading.snapshot
         val context = LocalContext.current
-        val screenState = catalog.present(state, equipped, pointBalance, snapshot.parkedVerified, context::getString)
+        val screenState =
+            catalog.present(
+                state = state,
+                appearance = equipped,
+                pointBalance = pointBalance,
+                parkedVerified = snapshot.parkedVerified,
+                snapshot = snapshot,
+                text = context::getString,
+            )
         QuestScreen(
             state = screenState,
             onClaimReward = { questId ->

@@ -36,7 +36,7 @@ class DecorativeMotionTest {
     private lateinit var view: View
 
     @Test
-    fun petAvatarsStopWhenMotionPreferenceChanges() {
+    fun petAvatarsKeepBreathingWithReducedMotion() {
         var motionEnabled by mutableStateOf(true)
         show {
             CompositionLocalProvider(LocalMobiMonMotionEnabled provides motionEnabled) {
@@ -49,34 +49,42 @@ class DecorativeMotionTest {
         val firstMobi = pixels("mobi")
         val firstLuna = pixels("luna")
         compose.mainClock.advanceTimeBy(320)
-        assertTrue("Mobi advances with decorative motion enabled", firstMobi != pixels("mobi"))
-        assertTrue("Luna advances with decorative motion enabled", firstLuna != pixels("luna"))
+        assertTrue("Mobi breathes with motion enabled", firstMobi != pixels("mobi"))
+        assertTrue("Luna breathes with motion enabled", firstLuna != pixels("luna"))
 
         updateStateAndDraw { motionEnabled = false }
-        val staticMobi = pixels("mobi")
-        val staticLuna = pixels("luna")
-        compose.mainClock.advanceTimeBy(480)
+        val reducedMobi = pixels("mobi")
+        val reducedLuna = pixels("luna")
+        compose.mainClock.advanceTimeBy(320)
 
-        assertTrue("Mobi remains static after the preference changes", staticMobi == pixels("mobi"))
-        assertTrue("Luna remains static after the preference changes", staticLuna == pixels("luna"))
+        assertTrue("Mobi keeps breathing with reduced motion", reducedMobi != pixels("mobi"))
+        assertTrue("Luna keeps breathing with reduced motion", reducedLuna != pixels("luna"))
     }
 
     @Test
-    fun directBreathingRenderersHonorDisabledMotion() {
+    fun movingLunaBreathesInPlaceWithReducedMotion() {
         show {
             CompositionLocalProvider(LocalMobiMonMotionEnabled provides false) {
                 Row {
-                    MobiIdleBreathAnimation(Modifier.size(180.dp).testTag("mobi"))
-                    LunaIdleBreathAnimation(Modifier.size(180.dp).testTag("luna"))
+                    PetAvatar(Modifier.size(180.dp).testTag("moving"), friendId = "friend:luna", isMoving = true)
+                    PetAvatar(Modifier.size(180.dp).testTag("idle"), friendId = "friend:luna")
+                    CompositionLocalProvider(LocalMobiMonMotionEnabled provides true) {
+                        PetAvatar(Modifier.size(180.dp).testTag("running"), friendId = "friend:luna", isMoving = true)
+                    }
                 }
             }
         }
-        val mobi = pixels("mobi")
-        val luna = pixels("luna")
-        compose.mainClock.advanceTimeBy(480)
+        val first = pixels("moving")
+        compose.mainClock.advanceTimeBy(320)
+        val moving = pixels("moving")
+        val idle = pixels("idle")
+        val running = pixels("running")
 
-        assertTrue("Direct Mobi renderer obeys the preference", mobi == pixels("mobi"))
-        assertTrue("Direct Luna renderer obeys the preference", luna == pixels("luna"))
+        assertTrue("Reduced motion still breathes", first != moving)
+        // Neighbouring cells rasterize slightly differently, so compare against the run cycle's distance.
+        val idleDistance = moving.indices.count { moving[it] != idle[it] }
+        val runDistance = moving.indices.count { moving[it] != running[it] }
+        assertTrue("Reduced motion swaps running for the idle breath", idleDistance * 4 < runDistance)
     }
 
     @Test
@@ -163,7 +171,119 @@ class DecorativeMotionTest {
         assertTrue("Updated particle size must affect the rendered area", enlargedArea > initialArea * 4)
     }
 
+    @Test
+    fun mobiSpriteKeepsLayoutBoundsAcrossBreathingAndTilt() {
+        show { PetAvatar(Modifier.size(240.dp).testTag("mobi")) }
+        val bounds = compose.onNodeWithTag("mobi").fetchSemanticsNode().boundsInRoot
+        val initial = pixels("mobi")
+        compose.mainClock.advanceTimeBy(2_150)
+        assertTrue("Sprite and tilt advance", initial != pixels("mobi"))
+        assertTrue(
+            "Animation does not remeasure its parent",
+            bounds == compose.onNodeWithTag("mobi").fetchSemanticsNode().boundsInRoot,
+        )
+        compose.runOnIdle {
+            val bitmap = Bitmap.createBitmap(view.width, view.height, Bitmap.Config.ARGB_8888)
+            view.draw(Canvas(bitmap))
+            val output = java.io.File("build/reports/mobi-idle-sprite-review.png")
+            output.parentFile?.mkdirs()
+            output.outputStream().use { bitmap.compress(Bitmap.CompressFormat.PNG, 100, it) }
+            bitmap.recycle()
+        }
+        compose.mainClock.advanceTimeBy(4_300)
+        assertTrue(
+            "Opposite tilt retains layout",
+            bounds == compose.onNodeWithTag("mobi").fetchSemanticsNode().boundsInRoot,
+        )
+    }
+
+    @Test
+    fun mobiBlendsBetweenSourceTicksWithoutFadingItsOpaqueBody() {
+        show { PetAvatar(Modifier.size(240.dp).testTag("mobi")) }
+        val initial = pixels("mobi")
+        compose.mainClock.advanceTimeBy(64)
+        val middle = pixels("mobi")
+        assertTrue("Motion progresses inside a source-frame interval", initial != middle)
+        for (step in 0..24) {
+            val sample = pixels("mobi")
+            // The original body is near-opaque (alpha 253), not 255. Allow two levels of raster rounding.
+            assertTrue("Blending preserves source body opacity", (sample[130 * 240 + 120] ushr 24) >= 251)
+            compose.mainClock.advanceTimeBy(32)
+        }
+    }
+
+    @Test
+    fun warningCrossfadesToCollapsedSpriteAndReturnsWithoutChangingBounds() {
+        val context =
+            androidx.test.core.app.ApplicationProvider
+                .getApplicationContext<android.content.Context>()
+        assertTrue(context.assets.list("characters/mobi/unhealthy")!!.none { "transition" in it })
+        val sprite = requireNotNull(MobiCollapsedSpriteCache.getOrLoad(context))
+        assertTrue(sprite === MobiCollapsedSpriteCache.getOrLoad(context))
+        assertTrue(
+            sprite.width == MobiCollapsedSpriteCache.CELL * MobiCollapsedTimeline.COLUMNS &&
+                sprite.height == MobiCollapsedSpriteCache.CELL * MobiCollapsedTimeline.ROWS,
+        )
+        var warning by mutableStateOf(false)
+        show {
+            MobiIdleBreathAnimation(
+                Modifier.size(240.dp).testTag("mobi"),
+                vehicleWarning = warning,
+                animateNormal = false,
+            )
+        }
+        val bounds = compose.onNodeWithTag("mobi").fetchSemanticsNode().boundsInRoot
+        val normal = pixels("mobi")
+        updateStateAndDraw { warning = true }
+        compose.mainClock.advanceTimeBy(800)
+        val falling = pixels("mobi")
+        assertTrue(normal != falling)
+        updateStateAndDraw { warning = false }
+        compose.mainClock.advanceTimeBy(200)
+        assertTrue(falling != pixels("mobi"))
+        updateStateAndDraw { warning = true }
+        compose.mainClock.advanceTimeBy(2600)
+        val collapsed = pixels("mobi")
+        compose.mainClock.advanceTimeBy(700)
+        assertTrue("Collapsed sprite animation remains alive", collapsed != pixels("mobi"))
+        compose.mainClock.advanceTimeBy(12_000)
+        assertTrue("Collapsed sprite keeps animating across repeated cycles", collapsed != pixels("mobi"))
+        assertTrue(bounds == compose.onNodeWithTag("mobi").fetchSemanticsNode().boundsInRoot)
+        updateStateAndDraw { warning = false }
+        compose.mainClock.advanceTimeBy(2600)
+        assertTrue("Recovery returns to existing normal renderer", normal == pixels("mobi"))
+        assertTrue(bounds == compose.onNodeWithTag("mobi").fetchSemanticsNode().boundsInRoot)
+    }
+
+    @Test
+    fun collapsedSpriteAtlasLoadsAndAnimatesOverTime() {
+        val context =
+            androidx.test.core.app.ApplicationProvider
+                .getApplicationContext<android.content.Context>()
+        val sprite = requireNotNull(MobiCollapsedSpriteCache.getOrLoad(context))
+        assertTrue(
+            sprite.width == MobiCollapsedSpriteCache.CELL * MobiCollapsedTimeline.COLUMNS &&
+                sprite.height == MobiCollapsedSpriteCache.CELL * MobiCollapsedTimeline.ROWS,
+        )
+        show {
+            MobiIdleBreathAnimation(
+                Modifier.size(240.dp).testTag("collapsed"),
+                vehicleWarning = true,
+                animateNormal = false,
+            )
+        }
+        compose.mainClock.advanceTimeBy(400)
+        val frameA = pixels("collapsed")
+        compose.mainClock.advanceTimeBy(500)
+        val frameB = pixels("collapsed")
+        assertTrue("Collapsed sprite sheet animates frames over time", frameA != frameB)
+    }
+
     private fun show(content: @Composable () -> Unit) {
+        val context =
+            androidx.test.core.app.ApplicationProvider
+                .getApplicationContext<android.content.Context>()
+        requireNotNull(MobiSpriteCache.getOrLoad(context))
         compose.mainClock.autoAdvance = false
         compose.setContent {
             val currentView = LocalView.current

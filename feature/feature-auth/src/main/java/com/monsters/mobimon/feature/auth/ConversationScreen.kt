@@ -110,8 +110,8 @@ fun ConversationScreen(
             Modifier.fillMaxSize().padding(
                 start = if (wide) 72.dp * scale else 24.dp,
                 end = if (wide) 72.dp * scale else 24.dp,
-                top = if (wide) 56.dp * scale else 16.dp,
-                bottom = if (wide) (if (shortened) 32.dp else 58.dp) * scale else 16.dp,
+                top = if (wide) 36.dp * scale else 16.dp,
+                bottom = if (wide) (if (shortened) 0.dp else 24.dp) * scale else 16.dp,
             ),
         ) {
             ConversationHeader(friend, back, interactionAllowed, simulatedVehicle, scale, wide, shortened, state.failed)
