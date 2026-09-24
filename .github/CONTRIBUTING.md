@@ -33,8 +33,14 @@ binaries, even when the checkout is under `/mnt/c`.
 
 ## Before changing code
 
-- Create or use an issue based on [ISSUE_TEMPLATE.md](ISSUE_TEMPLATE.md). Do not
-  start implementation until the linked issue passes its format check.
+- Before creating a branch or worktree, search open issues and pull requests for
+  overlapping work. Coordinate on a matching issue owned by someone else or an
+  open pull request; reuse an issue already assigned to you.
+- Assign yourself to an unclaimed issue, or create one from
+  [ISSUE_TEMPLATE.md](ISSUE_TEMPLATE.md) and assign yourself. Verify that the
+  issue is open and assigned to you. Release or hand off your claim if you stop.
+- Start implementation only after the issue passes its format check. If GitHub
+  ownership cannot be verified, stop and report the blocker.
 - Read the relevant parts of [ARCHITECTURE.md](../docs/ARCHITECTURE.md),
   [DESIGN.md](../docs/DESIGN.md), and [TESTING.md](../docs/TESTING.md).
 - Confirm the module, dependency, task, or integration in source and build files;
