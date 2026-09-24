@@ -112,8 +112,8 @@ jobs:
           disable-animations: true
           emulator-options: -writable-system -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim
           script: |
-            AAOS_OVERLAY_AVD_NAME=cstd_api_34 bash scripts/install-aaos-system-bars-overlay.sh
-            bash scripts/check-aaos-environment.sh
+            AAOS_OVERLAY_AVD_NAME=cstd_api_34 bash scripts/aaos/install-aaos-system-bars-overlay.sh
+            bash scripts/aaos/check-aaos-environment.sh
             ./gradlew --no-daemon --stacktrace :core:core-database:connectedDebugAndroidTest :core:core-auth:connectedDebugAndroidTest :app:connectedDebugAndroidTest
       - name: Save device reports
         if: always()
