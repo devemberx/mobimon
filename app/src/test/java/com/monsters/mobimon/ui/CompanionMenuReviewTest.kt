@@ -56,7 +56,7 @@ class CompanionMenuReviewTest {
         assertEquals(332f, home.top, 1f)
         assertEquals(596f, home.width, 1f)
         assertEquals(94f, home.height, 1f)
-        val name = compose.onNodeWithText("Mobi").fetchSemanticsNode().boundsInRoot
+        val name = compose.onNodeWithText("모비").fetchSemanticsNode().boundsInRoot
         assertEquals(244f, name.left, 1f)
         compose.onNodeWithText("v0.1.0").assertIsDisplayed()
         capture("menu")
@@ -71,7 +71,7 @@ class CompanionMenuReviewTest {
         assertEquals(690f * scale, panel.width, 1f)
         val name =
             compose
-                .onNodeWithText("Mobi")
+                .onNodeWithText("모비")
                 .assertIsDisplayed()
                 .fetchSemanticsNode()
                 .boundsInRoot

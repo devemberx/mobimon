@@ -46,9 +46,6 @@ import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.lifecycle.viewmodel.initializer
-import androidx.lifecycle.viewmodel.viewModelFactory
 import com.monsters.mobimon.BuildConfig
 import com.monsters.mobimon.R
 import com.monsters.mobimon.core.domain.AppUseState
@@ -90,9 +87,6 @@ fun MobiMonApp(
     settings: SettingsRepository,
     authentication: GitHubAuthentication,
 ) {
-    val factory = remember(settings) { viewModelFactory { initializer { MotionPreferencesViewModel(settings) } } }
-    val motion: MotionPreferencesViewModel = viewModel(factory = factory)
-    val reducedMotion by motion.reducedMotion.collectAsStateWithLifecycle()
     val state by appUse.states.collectAsStateWithLifecycle()
     val session by authentication.session.collectAsStateWithLifecycle()
     val appearance = companion.state()
@@ -105,7 +99,6 @@ fun MobiMonApp(
         activeAccessoryId = appearance.accessoryId,
         activeOutfitId = appearance.outfitId,
         activeBackgroundId = appearance.backgroundId,
-        reducedMotion = reducedMotion,
         conversationAuthenticated = session is GitHubSession.Authenticated,
         onReleaseDebuggerUnlocked = {
             debugResetScope.launch {
