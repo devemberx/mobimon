@@ -1,10 +1,12 @@
 # V5 UI reference exports
 
-The 39 SVGs in this folder are direct exports of the current visible screens on the
-[v5 Figma page](https://www.figma.com/design/7tyb4oJsJAUc15KnU7H0F6?node-id=524-2),
+The 39 SVGs in this folder are direct exports of the visible screens on the
+[v5 Figma page](https://www.figma.com/design/7tyb4oJsJAUc15KnU7H0F6?node-id=524-2).
+The seven [conversation screens](#conversation-7) were re-exported on 2026-09-24
+after the P10 parking and Copilot badge alignment. The other 32 screens were
 exported on 2026-09-23 after the [issue #127](https://github.com/devemberx/mobimon/issues/127)
-system-bar and content reflow updates.
-Figma checkpoint: `2402430463934068827`. The hidden duplicate Home frame is excluded.
+system-bar and content reflow updates (Figma checkpoint: `2402430463934068827`).
+The hidden duplicate Home frame is excluded.
 They are full-screen visual references, not Android runtime resources or proof
 that a feature is implemented. [DESIGN.md](../DESIGN.md) defines behavior and
 implementation exceptions; [ARCHITECTURE.md](../ARCHITECTURE.md) records current support.
