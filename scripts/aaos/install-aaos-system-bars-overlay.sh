@@ -3,7 +3,7 @@ set -euo pipefail
 
 adb_bin=${ADB:-adb}
 expected_avd=${AAOS_OVERLAY_AVD_NAME:?Set AAOS_OVERLAY_AVD_NAME to the disposable AVD name.}
-project_dir=$(cd "$(dirname "$0")/.." && pwd)
+script_dir=$(cd "$(dirname "$0")" && pwd)
 
 case "$expected_avd" in
     mobimon_system_bars_*) ;;
@@ -46,7 +46,7 @@ wait_for_boot() {
     exit 1
 }
 
-apk=$(bash "$project_dir/scripts/build-aaos-system-bars-overlay.sh")
+apk=$(bash "$script_dir/build-aaos-system-bars-overlay.sh")
 "$adb_bin" root
 "$adb_bin" wait-for-device
 "$adb_bin" disable-verity
@@ -62,4 +62,4 @@ wait_for_boot
 "$adb_bin" reboot
 wait_for_boot
 
-bash "$project_dir/scripts/check-aaos-system-bars.sh"
+bash "$script_dir/check-aaos-system-bars.sh"

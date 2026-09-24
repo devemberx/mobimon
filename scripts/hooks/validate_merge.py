@@ -8,10 +8,10 @@ import shlex
 import subprocess
 import sys
 
-try:
-    from . import validate_pr
-except ImportError:  # Executed directly from the scripts directory.
-    import validate_pr
+ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(ROOT / "scripts/github"))
+
+import validate_pr
 
 
 CONTROL_TOKENS = {";", "&&", "||", "|", "&", "(", ")", "`"}

@@ -53,7 +53,7 @@ Do not package full-screen references or generation drafts as runtime UI.
 | Asset | Location |
 | --- | --- |
 | Mobi idle sprite / Luna frames | `core/core-ui/src/main/assets/characters/{mobi,luna}/idle_breath/` |
-| Original Mobi source frames | `docs/art/characters/mobi/idle_breath/` (not packaged) |
+| Original Mobi warning artwork | `art/characters/mobi/unhealthy/` (not packaged) |
 | Shared artwork, accessories and backgrounds | `core/core-ui/src/main/res/drawable-nodpi/` |
 | Feature icons/artwork | Owning module's `res/drawable/` or `res/drawable-nodpi/` |
 | References | [docs/ui](ui/README.md) |
@@ -64,7 +64,7 @@ scene geometry, canvas size, framing, subject scale/anchor and transparency; cha
 only requested properties. Check dimensions and compare visually before use.
 
 Mobi idle uses a lossless 6 x 4 atlas of all 24 original 1254px RGBA frames.
-Rebuild with `python scripts/build_mobi_idle_sprite.py` (Pillow required).
+The atlas retains every source frame pixel; separate frame PNGs are not kept.
 Forward playback already contains inhale/exhale; 24-to-01 is visually identical.
 The 4.05-second cycle includes the source's repeated extreme poses, with
 an independent 6.2-second, +/-2.35-degree seated-pivot tilt. Eyes and sprout are baked
@@ -74,9 +74,9 @@ Breathing adds up to 1.2% width/2.4% height; a separate 6.6-second bob adds tiny
 settle and lift. All transforms share the seated pivot and preserve layout.
 
 Mobi's collapsed idle uses a lossless 24-frame sprite atlas `mobi_collapsed_sprite.png` (6 x 4 grid of 408px RGBA cells) under `core/core-ui/src/main/assets/characters/mobi/unhealthy/`.
-`scripts/build_mobi_unhealthy_sprites.py` builds the aligned atlas from accepted source artwork.
+Original collapsed and transition artwork remains under `art/characters/mobi/unhealthy/` for future edits; it is not packaged.
 The 200ms normal/warning crossfade is unchanged. The 24-frame animation loop plays continuously over 4.05 seconds with smooth frame interpolation, capturing shivering, sweating, eye movements, and dizziness.
-Reduced motion snaps to frame 0 and disables frame cycling. Older independently drawn idle/transition sheets remain archived, never loaded.
+Reduced motion snaps to frame 0 and disables frame cycling.
 Equipped Mobi uses base collapsed artwork during warnings and restores its equipped normal look afterward.
 
 Use the replaceable [PetAvatar](ARCHITECTURE.md#state-and-lifecycle) renderer.

@@ -49,7 +49,7 @@ binaries, even when the checkout is under `/mnt/c`.
 Validate an issue locally with Python 3.9 or newer:
 
 ```bash
-python3 scripts/validate_issue.py --title 'Restore the session on startup' --body-file /tmp/issue.md
+python3 scripts/github/validate_issue.py --title 'Restore the session on startup' --body-file /tmp/issue.md
 ```
 
 ## Verification
@@ -143,7 +143,7 @@ why, then what changed.
 Validate the PR before creating or updating it:
 
 ```bash
-python3 scripts/validate_pr.py --title 'feat(auth): restore login' --body-file /tmp/pr-body.md
+python3 scripts/github/validate_pr.py --title 'feat(auth): restore login' --body-file /tmp/pr-body.md
 ```
 
 Before merging, confirm `PR format` and `Android checks` passed for the current

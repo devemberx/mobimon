@@ -3,7 +3,7 @@ set -euo pipefail
 
 # Find the supplied CSTDe bundle beside the repository or this script.
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-PROJECT_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)"
+PROJECT_DIR="$(cd "$SCRIPT_DIR/../../.." && pwd)"
 SETTING_DIR=""
 
 if [ -d "$PROJECT_DIR/setting/cstd" ]; then

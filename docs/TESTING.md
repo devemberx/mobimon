@@ -94,13 +94,13 @@ Related suites share the linked module/package; test names define individual cas
 | Claim pending/duplicate/cancellation, committed amounts and reset reconciliation | [QuestViewModelTest](../feature/feature-quest/src/test/java/com/monsters/mobimon/feature/quest/QuestViewModelTest.kt), [QuestScreenTest](../feature/feature-quest/src/test/java/com/monsters/mobimon/feature/quest/QuestScreenTest.kt) |
 | Independent catalog/inventory retry, preview isolation and friend-specific equipment | [Customization suites](../feature/feature-customization/src/test/java/com/monsters/mobimon/feature/customization), point repository suite |
 | Independent settings writes, failure/retry and DataStore keys | [SettingsViewModelTest](../feature/feature-pet/src/test/java/com/monsters/mobimon/feature/pet/SettingsViewModelTest.kt), [DataStoreSettingsRepositoryTest](../core/core-database/src/test/java/com/monsters/mobimon/core/database/DataStoreSettingsRepositoryTest.kt) |
-| Mobi sprite cell identity, cache, blend continuity/opacity, delayed frames, independent transforms and fixed layout | `scripts/build_mobi_idle_sprite.py` verifies RGBA round-trip; `MobiIdleAnimationTest`, `PetAvatarTest`, `DecorativeMotionTest` in [core-ui tests](../core/core-ui/src/test/java/com/monsters/mobimon/core/ui) |
-| Shared warning classification, interruptible 200ms crossfade, 24-frame collapsed sprite loop, fixed ground anchor, reduced motion and unchanged bounds | `build_mobi_unhealthy_sprites.py` verifies aligned atlas generation; `VehicleConditionTest`, `MobiWarningAnimationTest`, `DecorativeMotionTest`, and `CompanionReviewTest` cover state, rendering and Home wiring |
+| Mobi sprite frame timing, cache, blend continuity/opacity, delayed frames, independent transforms and fixed layout | `MobiIdleAnimationTest`, `PetAvatarTest`, and `DecorativeMotionTest` in [core-ui tests](../core/core-ui/src/test/java/com/monsters/mobimon/core/ui) |
+| Shared warning classification, interruptible 200ms crossfade, 24-frame collapsed sprite loop, fixed ground anchor, reduced motion and unchanged bounds | `VehicleConditionTest`, `MobiWarningAnimationTest`, `DecorativeMotionTest`, and `CompanionReviewTest` cover state, rendering and Home wiring; [final visual acceptance](#final-figma-visual-acceptance) checks ground alignment |
 | Artwork, seven background periods, celestial disk sizes, dark midnight city, dimensions, reduced motion and shared control bounds | [Core UI suites](../core/core-ui/src/test/java/com/monsters/mobimon/core/ui); native Robolectric images |
 | Decorative local time ignores vehicle timestamps; only enabled explicit Debug time changes it | [VehicleStateViewModelTest](../core/core-presentation/src/test/java/com/monsters/mobimon/core/presentation/VehicleStateViewModelTest.kt), [BackgroundTimeOverrideTest](../app/src/testDebug/java/com/monsters/mobimon/di/features/BackgroundTimeOverrideTest.kt) |
 | Home/Settings, vehicle, store and quest layouts, focus, recovery, store inventory loading transitions and quest panel resizing | Owning feature `src/test` suites, including `CompanionReviewTest`, `VehicleReviewTest`, `StoreReferenceScreenTest` and `QuestScreenTest` |
 | Menu reference/AAOS-density/enlarged-text bounds, focus, authenticated chat routing, connection origin after authentication loss, recreation and restricted/outgoing input | [Shell suites](../app/src/test/java/com/monsters/mobimon/ui), [CopilotConnectionJourneyTest](../app/src/journeyTest/java/com/monsters/mobimon/CopilotConnectionJourneyTest.kt) |
-| AAOS 96px status bar and 160px navigation bar | [System bar frame check](../scripts/check-aaos-system-bars.sh) in CI and after a baked-image AVD restart |
+| AAOS 96px status bar and 160px navigation bar | [System bar frame check](../scripts/aaos/check-aaos-system-bars.sh) in CI and after a baked-image AVD restart |
 | Conversation reveal/return, stationary Home, visible touch bounds, interruption, reduced motion and scrolled action bounds | [ConversationRevealTest](../app/src/test/java/com/monsters/mobimon/ui/ConversationRevealTest.kt), [PetHomeScreenTest](../feature/feature-pet/src/test/java/com/monsters/mobimon/feature/pet/PetHomeScreenTest.kt); native Robolectric frames and pointer input |
 | Live system-inset changes, destination/menu bounds, debugger unlock notice clearance and restoration | [MobiMonContentTest](../app/src/test/java/com/monsters/mobimon/ui/MobiMonContentTest.kt); platform inset dispatch in Robolectric |
 | Floating companion bounds use current bars/cutouts and measured size; Debug dragging, edge reversal and resize remain inside safe content | [OverlayMovementBoundsTest](../app/src/test/java/com/monsters/mobimon/service/OverlayMovementBoundsTest.kt), [DebugOverlayPlacementTest](../app/src/testDebug/java/com/monsters/mobimon/ui/DebugOverlayPlacementTest.kt); OEM overlay placement still requires a device |
@@ -145,8 +145,8 @@ The [workflow](../.github/workflows/android-ci.yml) and [cstd.ini](../.github/av
 define the image, extension, ABI and display. The workflow builds and installs the
 [system bars overlay](../.github/avd/system-bars-overlay/AndroidManifest.xml) on its
 disposable writable AVD, then checks the 96px top and 160px bottom bars with
-[check-aaos-system-bars.sh](../scripts/check-aaos-system-bars.sh). Run the required
-[host check](../scripts/check-aaos-environment.sh) and canonical device tests after
+[check-aaos-system-bars.sh](../scripts/aaos/check-aaos-system-bars.sh). Run the required
+[host check](../scripts/aaos/check-aaos-environment.sh) and canonical device tests after
 the overlay check. Use emulator 35.1.9 or newer.
 
 For a persistent local AVD, install Python 3, JDK 17, SDK Platform 34, Build
@@ -156,7 +156,7 @@ APIs revision 5 image matching the host ABI. Create a standard AAOS AVD at
 to the local SDK, template AVD and output paths. Run from the repository root:
 
 ```bash
-python3 scripts/build_aaos_baked_image.py \
+python3 scripts/aaos/build_aaos_baked_image.py \
   --sdk-dir "$ANDROID_HOME" \
   --template-avd-config "$TEMPLATE_AVD/config.ini" \
   --output-image-dir "$IMAGE_DIR" \
@@ -165,7 +165,7 @@ python3 scripts/build_aaos_baked_image.py \
 
 Use `--help` for nondefault AVD homes and host path conversion. Start the new
 AVD in Device Manager, fully stop and restart it, then run
-`bash scripts/check-aaos-system-bars.sh`. Set `ADB` or `ANDROID_SERIAL` if needed.
+`bash scripts/aaos/check-aaos-system-bars.sh`. Set `ADB` or `ANDROID_SERIAL` if needed.
 The image stays at `IMAGE_DIR` outside Git; the template AVD can be removed
 after verification.
 

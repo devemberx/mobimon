@@ -303,11 +303,10 @@ def main():
         host_path(image_dir)
         host_path(avd_home)
 
-    project_dir = Path(__file__).resolve().parent.parent
     environment = os.environ.copy()
     environment["ANDROID_HOME"] = str(args.sdk_dir.resolve())
     apk = Path(subprocess.check_output(
-        ["bash", str(project_dir / "scripts/build-aaos-system-bars-overlay.sh")],
+        ["bash", str(Path(__file__).resolve().with_name("build-aaos-system-bars-overlay.sh"))],
         text=True, env=environment,
     ).strip())
     changed = build_image(args.sdk_dir, image_dir, apk, find_tool("debugfs"), find_tool("e2fsck"), abi)

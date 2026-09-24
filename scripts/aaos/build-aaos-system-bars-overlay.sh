@@ -7,7 +7,7 @@ if [[ -z "$sdk_dir" ]]; then
     exit 1
 fi
 
-project_dir=$(cd "$(dirname "$0")/.." && pwd)
+project_dir=$(cd "$(dirname "$0")/../.." && pwd)
 source_dir="$project_dir/.github/avd/system-bars-overlay"
 output_dir="$project_dir/build/aaos-system-bars-overlay"
 build_tools="$sdk_dir/build-tools/34.0.0"
