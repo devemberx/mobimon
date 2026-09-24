@@ -105,7 +105,10 @@ fun PetHomeScreen(
             val fontScale = LocalDensity.current.fontScale
             val scale = maxWidth.value / 2560f
             val textShadow =
-                if (companionBackgroundRes(backgroundTimeOfDay) == CoreUiR.drawable.pet_home_background_night) {
+                if (
+                    companionBackgroundRes(backgroundTimeOfDay) == CoreUiR.drawable.pet_home_background_night ||
+                    companionBackgroundRes(backgroundTimeOfDay) == CoreUiR.drawable.pet_home_background_midnight
+                ) {
                     null
                 } else {
                     with(LocalDensity.current) {
@@ -224,6 +227,7 @@ private fun HomeBackground(
     ) { targetRes ->
         val tintOpacity =
             when (targetRes) {
+                CoreUiR.drawable.pet_home_background_sunrise -> 0.08f
                 CoreUiR.drawable.pet_home_background_morning -> 0.08f
                 CoreUiR.drawable.pet_home_background_day -> 0.12f
                 CoreUiR.drawable.pet_home_background_afternoon -> 0.10f

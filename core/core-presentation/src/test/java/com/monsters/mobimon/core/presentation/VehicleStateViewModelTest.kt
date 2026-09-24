@@ -65,6 +65,29 @@ class VehicleStateViewModelTest {
     }
 
     @Test
+    fun vehicleTimestampPeriodDoesNotOverrideDecorativeLocalTime() =
+        runTest(dispatcher) {
+            val original = vehicle.snapshots.value.copy(timeOfDay = "Morning")
+            vehicle.snapshots.value = original
+            val model =
+                VehicleStateViewModel(
+                    vehicle,
+                    ProgressionIdentity("profile", SignalSource.REAL),
+                    Clock { now },
+                    VehicleFreshnessPolicy(15_000),
+                    UtcClock { Instant.parse("2026-09-20T09:00:00Z").toEpochMilli() },
+                    { ZoneId.of("Asia/Seoul") },
+                ).also { store.put("vehicle", it) }
+            try {
+                assertEquals("18", model.state.value.backgroundTimeOfDay)
+                assertEquals("Morning", model.state.value.evidence.timeOfDay)
+            } finally {
+                store.clear()
+                runCurrent()
+            }
+        }
+
+    @Test
     fun backgroundUsesWallClockAndTracksHourZoneAndClockChangesWithoutVehicleEmissions() =
         runTest(dispatcher) {
             var wallTime = Instant.parse("2026-09-20T08:59:59Z").toEpochMilli()
@@ -105,9 +128,10 @@ class VehicleStateViewModelTest {
         }
 
     @Test
-    fun suppliedTimeOverridesWallClockAndClearingItResumesAutomaticTime() =
+    fun explicitBackgroundOverrideResumesLocalTimeWhenCleared() =
         runTest(dispatcher) {
-            vehicle.snapshots.value = vehicle.snapshots.value.copy(timeOfDay = "Sunset")
+            val backgroundOverride = MutableStateFlow<String?>("Sunset")
+            vehicle.snapshots.value = vehicle.snapshots.value.copy(timeOfDay = "Morning")
             val model =
                 VehicleStateViewModel(
                     vehicle,
@@ -116,6 +140,7 @@ class VehicleStateViewModelTest {
                     VehicleFreshnessPolicy(15_000),
                     UtcClock { Instant.parse("2026-09-20T03:00:00Z").toEpochMilli() },
                     { ZoneId.of("Asia/Seoul") },
+                    backgroundOverride = backgroundOverride,
                 ).also { store.put("vehicle", it) }
             try {
                 assertEquals("Sunset", model.state.value.backgroundTimeOfDay)
@@ -123,10 +148,10 @@ class VehicleStateViewModelTest {
                 advanceTimeBy(1_000)
                 runCurrent()
                 assertEquals("Sunset", model.state.value.backgroundTimeOfDay)
-                vehicle.snapshots.value = vehicle.snapshots.value.copy(timeOfDay = null)
+                backgroundOverride.value = null
                 runCurrent()
                 assertEquals("12", model.state.value.backgroundTimeOfDay)
-                vehicle.snapshots.value = vehicle.snapshots.value.copy(timeOfDay = " ")
+                backgroundOverride.value = " "
                 runCurrent()
                 assertEquals("12", model.state.value.backgroundTimeOfDay)
             } finally {

@@ -138,7 +138,7 @@ data class SpeechBubbleColors(
 
 fun getSpeechBubbleColors(timeOfDay: String?): SpeechBubbleColors {
     val period = companionTimePeriod(timeOfDay)
-    return if (period == "night") {
+    return if (period == "night" || period == "midnight") {
         SpeechBubbleColors(
             backgroundColor = Color(0xFF182436).copy(alpha = 0.85f),
             borderColor = Color(0xFF425672).copy(alpha = 0.35f),

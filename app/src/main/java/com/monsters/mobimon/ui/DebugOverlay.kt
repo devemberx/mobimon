@@ -1176,11 +1176,13 @@ private fun DebugInterpretationSection(
             label = "timeOfDay",
             value = state.timeOfDay,
             manualValue = overrides.timeOfDay.orEmpty(),
-            formula = "Timestamp hour: 06-11=Morning, 12-15=Day, 16-17=Afternoon, 18-19=Sunset, else=Night",
+            formula = "Vehicle evidence uses its timestamp. Background uses local time unless this override is set.",
             onManualValueChange = { onOverridesChange(overrides.copy(timeOfDay = it.ifBlank { null })) },
             onClearManualValue = { onOverridesChange(overrides.copy(timeOfDay = null)) },
             presets =
                 listOf(
+                    "Midnight (01시)" to "01:00",
+                    "Sunrise (06시)" to "06:00",
                     "Morning (09시)" to "09:00",
                     "Day (14시)" to "14:00",
                     "Afternoon (16시)" to "16:00",

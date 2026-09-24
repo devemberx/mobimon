@@ -81,7 +81,7 @@ internal val nightPhrases =
 
 internal fun ambientPhrasesForPeriod(period: String): List<String> =
     when (period) {
-        "morning" -> morningPhrases
+        "sunrise", "morning" -> morningPhrases
         "day" -> dayPhrases
         "afternoon" -> afternoonPhrases
         "sunset" -> sunsetPhrases
@@ -111,7 +111,7 @@ internal data class AmbientTiming(
 
 internal fun getAmbientTiming(period: String): AmbientTiming =
     when (period) {
-        "morning" -> AmbientTiming(fadeInMs = 1600, visibleMs = 7500, fadeOutMs = 1800, emptyMs = 840)
+        "sunrise", "morning" -> AmbientTiming(fadeInMs = 1600, visibleMs = 7500, fadeOutMs = 1800, emptyMs = 840)
         "day" -> AmbientTiming(fadeInMs = 1500, visibleMs = 8000, fadeOutMs = 1800, emptyMs = 900)
         "afternoon" -> AmbientTiming(fadeInMs = 1600, visibleMs = 8000, fadeOutMs = 1800, emptyMs = 900)
         "sunset" -> AmbientTiming(fadeInMs = 1800, visibleMs = 8000, fadeOutMs = 2000, emptyMs = 960)
