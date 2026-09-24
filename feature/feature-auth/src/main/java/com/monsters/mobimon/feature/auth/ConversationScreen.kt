@@ -84,11 +84,9 @@ fun ConversationScreen(
         state.failed &&
             state.problem in
             setOf(ConversationProblem.NETWORK, ConversationProblem.SERVICE, ConversationProblem.TIMEOUT)
-    val connectionFailure =
-        state.connectionProblem in
-            setOf(ConversationProblem.NETWORK, ConversationProblem.SERVICE, ConversationProblem.TIMEOUT)
+    val connectionFailure = state.connectionProblem != null
     val networkChecking = state.connection == ConversationConnection.CHECKING && state.connectionRetrying
-    val networkDialog = interactionAllowed && (messageFailure || connectionFailure || networkChecking)
+    val connectionDialog = interactionAllowed && (connectionFailure || networkChecking)
     val back = {
         // adjustResize can consume Compose's IME bounds; check the window at the time of the action.
         if (ViewCompat.getRootWindowInsets(view)?.isVisible(WindowInsetsCompat.Type.ime()) == true) {
@@ -100,9 +98,9 @@ fun ConversationScreen(
     }
     BackHandler(enabled = imeVisible && interactionAllowed) { back() }
     BackHandler(enabled = !interactionAllowed) { onReturnHome() }
-    BackHandler(enabled = networkDialog) { onReturnHome() }
-    LaunchedEffect(interactionAllowed, networkDialog) {
-        if (!interactionAllowed || networkDialog) {
+    BackHandler(enabled = connectionDialog) { onReturnHome() }
+    LaunchedEffect(interactionAllowed, connectionDialog) {
+        if (!interactionAllowed || connectionDialog) {
             keyboard?.hide()
             focus.clearFocus()
         }
@@ -122,8 +120,8 @@ fun ConversationScreen(
         Box(
             Modifier
                 .fillMaxSize()
-                .focusProperties { canFocus = interactionAllowed && !networkDialog }
-                .then(if (interactionAllowed && !networkDialog) Modifier else Modifier.clearAndSetSemantics {}),
+                .focusProperties { canFocus = interactionAllowed && !connectionDialog }
+                .then(if (interactionAllowed && !connectionDialog) Modifier else Modifier.clearAndSetSemantics {}),
         ) {
             if (wide) {
                 val panelBottom = contentHeight - 24.dp * scale
@@ -191,44 +189,39 @@ fun ConversationScreen(
                 Column(Modifier.fillMaxSize().padding(start = 24.dp, end = 24.dp, top = 16.dp, bottom = 16.dp)) {
                     ConversationHeader(friend, back, simulatedVehicle, scale, false, shortened, state.failed)
                     Spacer(Modifier.height(16.dp))
-                    if (state.failed) {
-                        ConversationFailure(
-                            onRetry,
-                            onDismissFailure,
-                            interactionAllowed,
-                            scale,
-                            Modifier.weight(1f),
-                            state.problem,
-                        )
-                    } else {
-                        ConversationPanel(
-                            state,
-                            draft,
-                            onDraftChange,
-                            onSend,
-                            onCancelReply,
-                            onOpenConnection,
-                            friend,
-                            interactionAllowed,
-                            shortened,
-                            scale,
-                            false,
-                            Modifier.weight(1f),
-                            onNewConversation,
-                        )
-                    }
+                    ConversationPanel(
+                        state,
+                        draft,
+                        onDraftChange,
+                        onSend,
+                        onCancelReply,
+                        onOpenConnection,
+                        friend,
+                        interactionAllowed,
+                        shortened,
+                        scale,
+                        false,
+                        Modifier.weight(1f),
+                        onNewConversation,
+                        onRetry,
+                        onDismissFailure,
+                    )
                 }
             }
         }
         if (!interactionAllowed) {
             ConversationParkingOverlay(onReturnHome)
-        } else if (networkDialog) {
+        } else if (connectionDialog) {
             ConversationNetworkOverlay(
                 checking = networkChecking,
-                messageFailure = messageFailure,
-                problem = if (messageFailure) state.problem else state.connectionProblem,
+                problem = state.connectionProblem,
                 onHome = onReturnHome,
-                onRetry = if (messageFailure) onRetry else onRecheckConnection,
+                onRetry =
+                    if (state.connectionProblem == ConversationProblem.ACCOUNT) {
+                        onOpenConnection
+                    } else {
+                        onRecheckConnection
+                    },
             )
         }
     }

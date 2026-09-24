@@ -111,7 +111,7 @@ class CopilotConversationProviderTest {
             assertEquals(0, api.completions)
         }
 
-    @Test fun fixedGpt4oUsesTheCatalogEntryWithoutAutoRouting() =
+    @Test fun fixedGpt4oUsesTheCatalogEntry() =
         runTest {
             api.availableModels =
                 listOf(

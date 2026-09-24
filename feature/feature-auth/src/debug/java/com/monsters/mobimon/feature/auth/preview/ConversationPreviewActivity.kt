@@ -53,6 +53,22 @@ class ConversationPreviewActivity : ComponentActivity() {
                                         ),
                                     )
                                 "pending" -> messages.take(1)
+                                "failed" ->
+                                    listOf(
+                                        messages.first(),
+                                        ConversationMessage(
+                                            "sample-reply",
+                                            "오늘 하루도 수고했어요.\n잠깐 쉬면서 편하게 이야기해 볼까요?",
+                                            false,
+                                        ),
+                                        ConversationMessage("sample-next", "응, 기분 좋아지는 얘기 해줘.", true),
+                                        ConversationMessage(
+                                            "sample-next-reply",
+                                            "좋아요. 오늘 발견한 작은 행복부터 나눠 볼까요?",
+                                            false,
+                                        ),
+                                        ConversationMessage("sample-failed", "모비는 뭐가 좋아?", true),
+                                    )
                                 else -> emptyList()
                             },
                         replyPending = sample == "pending",
@@ -61,7 +77,15 @@ class ConversationPreviewActivity : ComponentActivity() {
                 )
             }
             var draft by remember {
-                mutableStateOf(TextFieldValue(if (sample == "keyboard") "오늘 하루가 조금 힘들었어" else ""))
+                mutableStateOf(
+                    TextFieldValue(
+                        when (sample) {
+                            "keyboard" -> "오늘 하루가 조금 힘들었어"
+                            "failed" -> "모비는 뭐가 좋아?"
+                            else -> ""
+                        },
+                    ),
+                )
             }
             CompositionLocalProvider(LocalMobiMonMotionEnabled provides false) {
                 MobiMonTheme {
