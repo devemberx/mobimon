@@ -6,6 +6,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -19,8 +20,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.requiredHeight
 import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -43,10 +46,13 @@ import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.platform.testTag
@@ -65,6 +71,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.monsters.mobimon.core.domain.ConversationLimits
+import com.monsters.mobimon.core.domain.ConversationProblem
+import com.monsters.mobimon.core.ui.MobiMonReferenceText
 import com.monsters.mobimon.core.ui.mobiMonReferenceTextStyle
 import com.monsters.mobimon.core.ui.MobiMonColors as Colors
 
@@ -83,6 +91,8 @@ internal fun ConversationPanel(
     wide: Boolean,
     modifier: Modifier = Modifier,
     onNewConversation: (() -> Unit)? = null,
+    onRetry: () -> Unit = {},
+    onDismissFailure: () -> Unit = {},
 ) {
     val focusRequester = remember { FocusRequester() }
     val keyboard = LocalSoftwareKeyboardController.current
@@ -93,10 +103,31 @@ internal fun ConversationPanel(
             keyboard?.show()
         }
     }
+    if (wide) {
+        ReferenceConversationPanel(
+            state,
+            draft,
+            onDraftChange,
+            onSend,
+            onCancelReply,
+            onOpenConnection,
+            friend,
+            allowed,
+            shortened,
+            scale,
+            focusRequester,
+            chooseSuggestion,
+            modifier,
+            onNewConversation,
+            onRetry,
+            onDismissFailure,
+        )
+        return
+    }
     Column(
         modifier
             .fillMaxWidth()
-            .background(Colors.panel, RoundedCornerShape(48.dp * scale))
+            .background(Colors.panel, ConversationPanelShape(54.581f / 1692f))
             .testTag("chat-panel")
             .padding(
                 start = (if (wide) 56.dp else 24.dp) * scale,
@@ -107,7 +138,7 @@ internal fun ConversationPanel(
     ) {
         Row(Modifier.fillMaxWidth().heightIn(min = 60.dp * scale), verticalAlignment = Alignment.CenterVertically) {
             Text(
-                stringResource(R.string.chat_today),
+                stringResource(R.string.chat_today, friend),
                 Modifier.weight(1f).semantics { heading() },
                 style = mobiMonReferenceTextStyle(36f, scale, true),
                 color = Colors.text,
@@ -128,6 +159,7 @@ internal fun ConversationPanel(
                         when (state.connection) {
                             ConversationConnection.READY -> R.string.chat_ready
                             ConversationConnection.SIGNED_OUT -> R.string.chat_signed_out
+                            ConversationConnection.CHECKING -> R.string.chat_checking
                             ConversationConnection.UNAVAILABLE -> R.string.chat_unavailable
                         },
                     ),
@@ -228,6 +260,315 @@ internal fun ConversationPanel(
 }
 
 @Composable
+private fun ReferenceConversationPanel(
+    state: ConversationUiState,
+    draft: TextFieldValue,
+    onDraftChange: (TextFieldValue) -> Unit,
+    onSend: (String) -> Unit,
+    onCancelReply: () -> Unit,
+    onOpenConnection: () -> Unit,
+    friend: String,
+    allowed: Boolean,
+    shortened: Boolean,
+    scale: Float,
+    focusRequester: FocusRequester,
+    chooseSuggestion: (String) -> Unit,
+    modifier: Modifier,
+    onNewConversation: (() -> Unit)?,
+    onRetry: () -> Unit,
+    onDismissFailure: () -> Unit,
+) {
+    BoxWithConstraints(
+        modifier
+            .background(Colors.panel, ConversationPanelShape(54.581f / 1692f))
+            .clipToBounds()
+            .testTag("chat-panel"),
+    ) {
+        val composerTop = maxHeight - (if (shortened) 112.dp else 140.dp) * scale
+        val bodyBottom =
+            composerTop -
+                (
+                    if (state.failed) {
+                        108.dp
+                    } else if (state.messages.isNotEmpty() && !shortened && !state.replyPending) {
+                        104.dp
+                    } else {
+                        20.dp
+                    }
+                ) * scale
+        Icon(
+            painterResource(R.drawable.conversation_chat),
+            null,
+            Modifier.offset(80.dp * scale, 36.dp * scale).size(40.dp * scale),
+            tint = Colors.accent,
+        )
+        MobiMonReferenceText(
+            stringResource(R.string.chat_today, friend),
+            141f,
+            70f,
+            36f,
+            scale = scale,
+            bold = true,
+            modifier = Modifier.semantics { heading() },
+        )
+        Box(
+            Modifier
+                .offset(56.dp * scale, 99.dp * scale)
+                .size(1580.dp * scale, 2.dp * scale)
+                .background(Colors.border),
+        )
+
+        if (state.messages.isEmpty() && !state.replyPending && !state.failed) {
+            val titleTop = if (shortened) (composerTop - 270.dp * scale) else 459.dp * scale
+            Column(
+                Modifier.offset(y = titleTop).fillMaxWidth(),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                Text(
+                    stringResource(R.string.chat_empty_title),
+                    style = mobiMonReferenceTextStyle(48f, scale, true),
+                    color = Colors.text,
+                    textAlign = TextAlign.Center,
+                )
+                Spacer(Modifier.height(24.dp * scale))
+                Text(
+                    stringResource(R.string.chat_empty_note),
+                    style = mobiMonReferenceTextStyle(28f, scale),
+                    color = Colors.muted,
+                    textAlign = TextAlign.Center,
+                )
+            }
+            if (!shortened) {
+                ReferenceSuggestion(
+                    stringResource(R.string.chat_suggestion_mood),
+                    372f,
+                    293f,
+                    { chooseSuggestion("오늘 하루 이야기할래") },
+                    allowed,
+                    scale,
+                )
+                val story = stringResource(R.string.chat_suggestion_story)
+                ReferenceSuggestion(story, 689f, 326f, { chooseSuggestion(story) }, allowed, scale)
+                val friendSuggestion = stringResource(R.string.chat_suggestion_friend, friend)
+                ReferenceSuggestion(
+                    friendSuggestion,
+                    1039f,
+                    281f,
+                    { chooseSuggestion(friendSuggestion) },
+                    allowed,
+                    scale,
+                )
+            }
+        } else {
+            val bodyHeight = (bodyBottom - 120.dp * scale).coerceAtLeast(0.dp)
+            Column(
+                Modifier
+                    .offset(56.dp * scale, 115.dp * scale)
+                    .size(1580.dp * scale, bodyHeight + 5.dp * scale),
+            ) {
+                ConversationMessages(
+                    state,
+                    friend,
+                    scale,
+                    shortened,
+                    Modifier.weight(1f).fillMaxWidth(),
+                    reference = true,
+                )
+            }
+            if (state.failed) {
+                ConversationInlineFailure(
+                    state.problem,
+                    onRetry,
+                    onDismissFailure,
+                    allowed,
+                    scale,
+                    Modifier
+                        .offset(56.dp * scale, composerTop - 91.dp * scale)
+                        .size(1580.dp * scale, 70.dp * scale),
+                )
+            }
+            if (!shortened && !state.replyPending && !state.failed && state.messages.isNotEmpty()) {
+                Row(
+                    Modifier
+                        .offset(840.dp * scale, (composerTop - 88.dp * scale))
+                        .width(796.dp * scale),
+                    horizontalArrangement = Arrangement.spacedBy(20.dp * scale),
+                ) {
+                    if (onNewConversation != null) {
+                        ReferenceAction(
+                            stringResource(R.string.chat_new),
+                            onNewConversation,
+                            allowed,
+                            scale,
+                            Modifier.weight(1f),
+                        )
+                    }
+                    val followup = stringResource(R.string.chat_suggestion_followup)
+                    ReferenceAction(followup, { chooseSuggestion(followup) }, allowed, scale, Modifier.weight(1f))
+                }
+            }
+        }
+
+        ConversationComposer(
+            state,
+            draft,
+            onDraftChange,
+            onSend,
+            onCancelReply,
+            friend,
+            allowed,
+            scale,
+            true,
+            focusRequester,
+            Modifier.offset(58.dp * scale, composerTop).size(1577.dp * scale, 87.dp * scale),
+        )
+        if (draft.text.length > ConversationLimits.INPUT_CHARACTERS) {
+            Text(
+                stringResource(R.string.chat_input_limit),
+                Modifier
+                    .offset(60.dp * scale, (composerTop - 34.dp * scale))
+                    .semantics { liveRegion = LiveRegionMode.Polite },
+                style = mobiMonReferenceTextStyle(22f, scale),
+                color = Colors.warning,
+            )
+        }
+        Text(
+            stringResource(
+                if (state.connection == ConversationConnection.SIGNED_OUT) {
+                    R.string.chat_sign_in_note
+                } else {
+                    R.string.chat_disclaimer
+                },
+            ),
+            Modifier.offset(58.dp * scale, maxHeight - (if (shortened) 20.dp else 47.dp) * scale),
+            style = mobiMonReferenceTextStyle(if (shortened) 14f else 20f, scale),
+            color = Colors.muted,
+        )
+        if (state.connection == ConversationConnection.SIGNED_OUT && !shortened) {
+            ReferenceAction(
+                stringResource(R.string.conversation_connect),
+                onOpenConnection,
+                allowed,
+                scale,
+                Modifier.offset(1100.dp * scale, (composerTop - 88.dp * scale)).width(536.dp * scale),
+            )
+        }
+    }
+}
+
+@Composable
+private fun ReferenceSuggestion(
+    text: String,
+    x: Float,
+    width: Float,
+    onClick: () -> Unit,
+    enabled: Boolean,
+    scale: Float,
+) {
+    ReferenceAction(
+        text,
+        onClick,
+        enabled,
+        scale,
+        Modifier.offset(x.dp * scale, 646.dp * scale).width(width.dp * scale),
+    )
+}
+
+@Composable
+private fun ReferenceAction(
+    text: String,
+    onClick: () -> Unit,
+    enabled: Boolean,
+    scale: Float,
+    modifier: Modifier = Modifier,
+    visualHeight: Float = 70f,
+    backgroundColor: Color = Color(0xFF203C58),
+) {
+    Box(modifier.height(visualHeight.dp * scale), contentAlignment = Alignment.Center) {
+        Box(
+            Modifier
+                .fillMaxWidth()
+                .requiredHeight((visualHeight.dp * scale).coerceAtLeast(76.dp))
+                .clickable(enabled = enabled, role = Role.Button, onClick = onClick),
+            contentAlignment = Alignment.Center,
+        ) {
+            Box(
+                Modifier
+                    .fillMaxWidth()
+                    .height(visualHeight.dp * scale)
+                    .background(backgroundColor, RoundedCornerShape(35.dp * scale)),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(
+                    text,
+                    style = mobiMonReferenceTextStyle(28f, scale),
+                    color = if (enabled) Color(0xFFDCE9F4) else Colors.muted,
+                    maxLines = 1,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun ConversationInlineFailure(
+    problem: ConversationProblem?,
+    onRetry: () -> Unit,
+    onDismiss: () -> Unit,
+    allowed: Boolean,
+    scale: Float,
+    modifier: Modifier = Modifier,
+) {
+    Box(modifier.testTag("chat-inline-failure")) {
+        Icon(
+            painterResource(R.drawable.conversation_warning),
+            null,
+            Modifier.size(32.dp * scale),
+            tint = Color.Unspecified,
+        )
+        Text(
+            stringResource(R.string.chat_inline_failure_title),
+            Modifier.offset(68.dp * scale, 0.dp),
+            style = mobiMonReferenceTextStyle(24f, scale, true),
+            color = Color(0xFFEAB8AA),
+        )
+        Text(
+            stringResource(
+                if (problem ==
+                    null
+                ) {
+                    R.string.chat_inline_failure_note
+                } else {
+                    conversationFailureNote(problem)
+                },
+            ),
+            Modifier.offset(56.dp * scale, 36.dp * scale).width(1020.dp * scale),
+            style = mobiMonReferenceTextStyle(18f, scale),
+            color = Color(0xFFB5C5D5),
+            maxLines = 2,
+        )
+        ReferenceAction(
+            stringResource(conversationRetryLabel(problem)),
+            onRetry,
+            allowed,
+            scale,
+            Modifier.offset(1122.dp * scale, 4.dp * scale).width(230.dp * scale),
+            visualHeight = 52f,
+            backgroundColor = Color(0xFF223F59),
+        )
+        ReferenceAction(
+            stringResource(R.string.chat_return),
+            onDismiss,
+            true,
+            scale,
+            Modifier.offset(1376.dp * scale, 4.dp * scale).width(190.dp * scale),
+            visualHeight = 52f,
+            backgroundColor = Color(0xFF22394E),
+        )
+    }
+}
+
+@Composable
 private fun ConversationEmpty(
     scale: Float,
     shortened: Boolean,
@@ -272,26 +613,78 @@ private fun ConversationMessages(
     scale: Float,
     shortened: Boolean,
     modifier: Modifier = Modifier,
+    reference: Boolean = false,
 ) {
     val scroll = rememberLazyListState()
     val count = state.messages.size + if (state.replyPending) 1 else 0
     LaunchedEffect(count, shortened) {
         // BoxWithConstraints can launch this during measurement; scrolling forces a remeasure.
         withFrameNanos { }
-        if (count > 0) scroll.scrollToItem(count - 1)
+        if (count > 0) {
+            scroll.scrollToItem(0)
+            withFrameNanos { }
+            val visible = scroll.layoutInfo.visibleItemsInfo
+            val last = visible.lastOrNull()
+            val allFit =
+                visible.firstOrNull()?.index == 0 &&
+                    last != null &&
+                    last.index == count - 1 &&
+                    last.offset + last.size <= scroll.layoutInfo.viewportEndOffset
+            if (!allFit) scroll.scrollToItem(count - 1)
+        }
     }
     LazyColumn(
         modifier.testTag("chat-messages"),
         state = scroll,
-        contentPadding = PaddingValues(top = (if (shortened) 4.dp else 16.dp) * scale, bottom = 24.dp * scale),
-        verticalArrangement = Arrangement.spacedBy(54.dp * scale),
+        contentPadding =
+            PaddingValues(
+                top =
+                    (
+                        if (reference) {
+                            0.dp
+                        } else if (shortened) {
+                            4.dp
+                        } else {
+                            16.dp
+                        }
+                    ) * scale,
+                bottom =
+                    (if (reference) 8.dp else 24.dp) * scale,
+            ),
+        verticalArrangement = Arrangement.spacedBy((if (reference) 0.dp else 54.dp) * scale),
     ) {
-        items(state.messages, key = { it.id }) { message ->
-            MessageBubble(message.text, message.fromUser, friend, scale, shortened = shortened)
+        itemsIndexed(state.messages, key = { _, message -> message.id }) { index, message ->
+            Column {
+                MessageBubble(
+                    message.text,
+                    message.fromUser,
+                    friend,
+                    scale,
+                    shortened = shortened,
+                    reference = reference,
+                )
+                if (reference && (index < state.messages.lastIndex || state.replyPending)) {
+                    val gap =
+                        when {
+                            index == 0 && message.fromUser -> 73.dp
+                            index == 1 && !message.fromUser -> 17.dp
+                            message.fromUser -> 32.dp
+                            else -> 27.dp
+                        }
+                    Spacer(Modifier.height(gap * scale))
+                }
+            }
         }
         if (state.replyPending) {
             item(key = "reply-pending") {
-                MessageBubble(stringResource(R.string.chat_preparing, friend), false, friend, scale, pending = true)
+                MessageBubble(
+                    stringResource(R.string.chat_preparing, friend),
+                    false,
+                    friend,
+                    scale,
+                    pending = true,
+                    reference = reference,
+                )
             }
         }
     }
@@ -305,35 +698,93 @@ private fun MessageBubble(
     scale: Float,
     pending: Boolean = false,
     shortened: Boolean = false,
+    reference: Boolean = false,
 ) {
+    val referencePending = reference && pending
+    val labelGap =
+        when {
+            referencePending -> 10.dp
+            reference -> 8.dp
+            else -> 16.dp
+        } * scale
+    val bubbleStartPadding =
+        when {
+            referencePending -> 31.dp
+            reference -> 22.dp
+            else -> 44.dp
+        } * scale
+    val bubbleEndPadding =
+        when {
+            referencePending -> 33.dp
+            reference -> 22.dp
+            else -> 44.dp
+        } * scale
     Column(Modifier.fillMaxWidth(), horizontalAlignment = if (fromUser) Alignment.End else Alignment.Start) {
         Text(
             if (fromUser) stringResource(R.string.chat_user) else friend,
-            Modifier.padding(horizontal = 16.dp * scale),
-            style = mobiMonReferenceTextStyle(28f, scale, true),
-            color = if (fromUser) Colors.muted else Colors.accent,
+            Modifier.padding(horizontal = (if (reference) 22.dp else 16.dp) * scale),
+            style = mobiMonReferenceTextStyle(if (reference) 20f else 28f, scale, true),
+            color = Colors.accent,
         )
-        Spacer(Modifier.height(16.dp * scale))
+        Spacer(Modifier.height(labelGap))
         Column(
             Modifier
-                .fillMaxWidth(if (fromUser) 960f / 1360 else 1192f / 1360)
-                .heightIn(
+                .then(
+                    if (reference) {
+                        if (pending) {
+                            Modifier.width(116.dp * scale)
+                        } else {
+                            Modifier.widthIn(
+                                max =
+                                    (if (fromUser) 850.dp else 900.dp) * scale,
+                            )
+                        }
+                    } else {
+                        Modifier.fillMaxWidth(if (fromUser) 960f / 1360 else 1192f / 1360)
+                    },
+                ).heightIn(
                     min =
                         (
                             if (pending) {
-                                208.dp
-                            } else if (shortened && !fromUser) {
+                                if (reference) 52.dp else 208.dp
+                            } else if (shortened && !fromUser && !reference) {
                                 156.dp
                             } else {
                                 0.dp
                             }
                         ) * scale,
-                ).background(if (fromUser) Colors.button else Colors.raised, RoundedCornerShape(36.dp * scale))
-                .padding(
-                    horizontal = 44.dp * scale,
+                ).then(
+                    if (reference) {
+                        Modifier.drawBehind {
+                            val bubbleColor = if (fromUser) Color(0xFFF5F1E5) else Colors.raised
+                            drawRoundRect(bubbleColor, cornerRadius = CornerRadius((24.dp * scale).toPx()))
+                            val edge = if (fromUser) size.width - (17.dp * scale).toPx() else (17.dp * scale).toPx()
+                            val base = if (fromUser) size.width - (33.dp * scale).toPx() else (33.dp * scale).toPx()
+                            drawPath(
+                                Path().apply {
+                                    moveTo(edge, size.height)
+                                    lineTo(base, size.height)
+                                    lineTo(edge, size.height + (8.dp * scale).toPx())
+                                    close()
+                                },
+                                bubbleColor,
+                            )
+                        }
+                    } else {
+                        Modifier.background(
+                            if (fromUser) Colors.button else Colors.raised,
+                            RoundedCornerShape((if (reference) 24.dp else 36.dp) * scale),
+                        )
+                    },
+                ).padding(
+                    start = bubbleStartPadding,
+                    end = bubbleEndPadding,
+                ).padding(
                     vertical =
                         (
-                            if (fromUser) {
+                            if (reference) {
+                                14.dp
+                            } else if (fromUser) {
                                 38.dp
                             } else if (shortened) {
                                 22.dp
@@ -341,26 +792,79 @@ private fun MessageBubble(
                                 28.dp
                             }
                         ) * scale,
-                ).semantics { if (pending) liveRegion = LiveRegionMode.Polite },
+                ).testTag(
+                    if (pending) {
+                        "chat-pending-bubble"
+                    } else if (fromUser) {
+                        "chat-user-bubble"
+                    } else {
+                        "chat-friend-bubble"
+                    },
+                ).semantics {
+                    if (pending) {
+                        liveRegion = LiveRegionMode.Polite
+                        contentDescription = text
+                    }
+                },
         ) {
             if (pending) {
                 Row(
-                    horizontalArrangement = Arrangement.spacedBy(32.dp * scale),
-                    modifier = Modifier.padding(top = 26.dp * scale, bottom = 44.dp * scale),
+                    horizontalArrangement = Arrangement.spacedBy((if (reference) 8.dp else 32.dp) * scale),
+                    modifier =
+                        Modifier.padding(
+                            top = (if (reference) 6.dp else 26.dp) * scale,
+                            bottom = (if (reference) 4.dp else 44.dp) * scale,
+                        ),
                 ) {
-                    repeat(3) { Box(Modifier.size(16.dp * scale).background(Colors.accent, CircleShape)) }
+                    repeat(
+                        3,
+                    ) {
+                        Box(
+                            Modifier
+                                .size(
+                                    (if (reference) 12.dp else 16.dp) * scale,
+                                ).background(Colors.accent, CircleShape),
+                        )
+                    }
                 }
             }
-            SelectionContainer {
-                Text(
-                    text,
-                    style =
-                        mobiMonReferenceTextStyle(
-                            if (shortened) 34f else 36f,
-                            scale,
-                        ).copy(lineHeight = ((if (shortened) 56f else 60f) * scale).sp),
-                    color = if (fromUser) Colors.onButton else Colors.text,
-                )
+            if (!pending || !reference) {
+                SelectionContainer {
+                    Text(
+                        text,
+                        style =
+                            mobiMonReferenceTextStyle(
+                                if (reference) {
+                                    28f
+                                } else if (shortened) {
+                                    34f
+                                } else {
+                                    36f
+                                },
+                                scale,
+                            ).copy(
+                                lineHeight =
+                                    (
+                                        (
+                                            if (reference) {
+                                                40f
+                                            } else if (shortened) {
+                                                56f
+                                            } else {
+                                                60f
+                                            }
+                                        ) * scale
+                                    ).sp,
+                            ),
+                        color =
+                            when {
+                                reference && fromUser -> Colors.panel
+                                reference -> Color(0xFFEAF2F8)
+                                fromUser -> Colors.onButton
+                                else -> Colors.text
+                            },
+                    )
+                }
             }
         }
     }
@@ -378,10 +882,12 @@ private fun ConversationComposer(
     scale: Float,
     wide: Boolean,
     focusRequester: FocusRequester,
+    modifier: Modifier = Modifier,
 ) {
     val canSend =
         allowed &&
-            state.connection != ConversationConnection.SIGNED_OUT &&
+            state.connection == ConversationConnection.READY &&
+            !state.failed &&
             !state.replyPending &&
             draft.text.length <= ConversationLimits.INPUT_CHARACTERS &&
             draft.text.isNotBlank()
@@ -395,18 +901,23 @@ private fun ConversationComposer(
     val label = stringResource(R.string.chat_input)
     val actionLabel = stringResource(if (state.replyPending) R.string.chat_stop else R.string.chat_send)
     Row(
-        Modifier
+        modifier
             .fillMaxWidth()
-            .heightIn(min = 116.dp * scale)
+            .then(if (wide) Modifier.height(87.dp * scale) else Modifier.heightIn(min = 116.dp * scale))
             .testTag("chat-composer")
-            .background(Colors.background, RoundedCornerShape(58.dp * scale))
+            .background(if (wide) Color(0xFF091A29) else Colors.background, RoundedCornerShape(43.5.dp * scale))
             .border(
-                2.dp * scale,
-                Colors.border,
+                1.dp * scale,
+                if (wide) Color(0xFF546D85) else Colors.border,
                 RoundedCornerShape(
-                    58.dp * scale,
+                    43.5.dp * scale,
                 ),
-            ).padding(start = 44.dp * scale, end = 28.dp * scale, top = 12.dp * scale, bottom = 12.dp * scale),
+            ).padding(
+                start = (if (wide) 32.dp else 44.dp) * scale,
+                end = (if (wide) 8.dp else 28.dp) * scale,
+                top = (if (wide) 7.dp else 12.dp) * scale,
+                bottom = (if (wide) 7.dp else 12.dp) * scale,
+            ),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(20.dp * scale),
     ) {
@@ -416,14 +927,14 @@ private fun ConversationComposer(
             modifier =
                 Modifier
                     .weight(1f)
-                    .heightIn(min = 64.dp * scale)
+                    .heightIn(min = (if (wide) 60.dp else 64.dp) * scale)
                     .focusRequester(focusRequester)
                     .testTag(
                         "chat-input",
                     ).semantics { contentDescription = label },
             enabled = allowed,
             readOnly = state.replyPending,
-            textStyle = mobiMonReferenceTextStyle(32f, scale).copy(color = Colors.text),
+            textStyle = mobiMonReferenceTextStyle(if (wide) 26f else 32f, scale).copy(color = Colors.text),
             cursorBrush = SolidColor(Colors.accent),
             maxLines = 3,
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Send),
@@ -436,7 +947,7 @@ private fun ConversationComposer(
                                 if (state.replyPending) R.string.chat_waiting else R.string.chat_placeholder,
                                 friend,
                             ),
-                            style = mobiMonReferenceTextStyle(32f, scale),
+                            style = mobiMonReferenceTextStyle(if (wide) 26f else 32f, scale),
                             color = Colors.muted,
                         )
                     }
@@ -446,7 +957,7 @@ private fun ConversationComposer(
         )
         var sendFocused by remember { mutableStateOf(false) }
         val enabled = if (state.replyPending) allowed else canSend
-        val visualSize = 92.dp * scale
+        val visualSize = (if (wide) 72.dp else 92.dp) * scale
         val targetSize = visualSize.coerceAtLeast(76.dp)
         Box(Modifier.size(if (wide) visualSize else targetSize), contentAlignment = Alignment.Center) {
             Surface(
@@ -471,14 +982,21 @@ private fun ConversationComposer(
                     Surface(
                         Modifier.size(visualSize).testTag("chat-send-visual"),
                         shape = CircleShape,
-                        color = if (enabled) Colors.button else Color(0xFF33465B),
+                        color =
+                            if (wide) {
+                                if (enabled) Color(0xFFF6F2E8) else Color(0xFF233F55)
+                            } else if (enabled) {
+                                Colors.button
+                            } else {
+                                Color(0xFF33465B)
+                            },
                         border = if (sendFocused) BorderStroke(3.dp, Colors.accent) else null,
                     ) {
                         Box(contentAlignment = Alignment.Center) {
                             if (state.replyPending) {
                                 Box(
-                                    Modifier.size(32.dp * scale).background(
-                                        Colors.onButton,
+                                    Modifier.size((if (wide) 24.dp else 32.dp) * scale).background(
+                                        if (wide) Colors.panel else Colors.onButton,
                                         RoundedCornerShape(
                                             3.dp * scale,
                                         ),
@@ -488,8 +1006,15 @@ private fun ConversationComposer(
                                 Icon(
                                     painterResource(R.drawable.conversation_send),
                                     stringResource(R.string.chat_send),
-                                    Modifier.size(40.dp * scale),
-                                    tint = if (enabled) Colors.onButton else Colors.muted,
+                                    Modifier.size((if (wide) 32.dp else 40.dp) * scale),
+                                    tint =
+                                        if (wide) {
+                                            if (enabled) Color(0xFF142B40) else Color(0xFF91A9BA)
+                                        } else if (enabled) {
+                                            Colors.onButton
+                                        } else {
+                                            Colors.muted
+                                        },
                                 )
                             }
                         }

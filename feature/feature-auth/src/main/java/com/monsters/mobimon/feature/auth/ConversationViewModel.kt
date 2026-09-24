@@ -22,7 +22,7 @@ import kotlinx.coroutines.launch
 import java.util.UUID
 
 /** Activity memory only. Request generations also reject providers that return after cancellation. */
-internal class ConversationViewModel(
+class ConversationViewModel(
     private val authentication: GitHubAuthentication,
     private val provider: ConversationProvider,
 ) : ViewModel() {
@@ -35,15 +35,21 @@ internal class ConversationViewModel(
     private var friendId = "friend:mobi"
     private var active = false
     private var allowed = false
+    private var foregroundAllowed = false
+    private var foregroundManaged = false
     private var generation = 0L
+    private var checkGeneration = 0L
     private var conversationId = UUID.randomUUID().toString()
     private var messageId = 0L
     private var work: Job? = null
+    private var checkWork: Job? = null
+    private var authenticationRetry: Job? = null
     private var history = emptyList<ConversationMessage>()
 
     init {
         viewModelScope.launch {
             authentication.session.collect { session ->
+                val retryingAuthentication = authenticationRetry?.isActive == true
                 val next =
                     when (session) {
                         is GitHubSession.Authenticated -> session.account.id
@@ -65,11 +71,60 @@ internal class ConversationViewModel(
                     clear()
                     accountId = next
                 }
-                if (session !is GitHubSession.Authenticated) {
-                    cancel()
-                    mutableState.value = state.value.copy(connection = ConversationConnection.SIGNED_OUT)
-                } else if (state.value.connection == ConversationConnection.SIGNED_OUT) {
-                    mutableState.value = state.value.copy(connection = ConversationConnection.UNAVAILABLE)
+                when (session) {
+                    is GitHubSession.Authenticated -> {
+                        if (state.value.connection == ConversationConnection.SIGNED_OUT) {
+                            mutableState.value = state.value.copy(connection = ConversationConnection.UNAVAILABLE)
+                        }
+                        if (checkAllowed() &&
+                            (
+                                retryingAuthentication ||
+                                    state.value.connection == ConversationConnection.UNAVAILABLE &&
+                                    state.value.connectionProblem == null
+                            )
+                        ) {
+                            checkConnection(retrying = retryingAuthentication)
+                        }
+                    }
+                    GitHubSession.Restoring -> {
+                        if (!retryingAuthentication) {
+                            cancel()
+                            cancelCheck()
+                            mutableState.value = state.value.copy(connection = ConversationConnection.CHECKING)
+                        }
+                    }
+                    is GitHubSession.Failure -> {
+                        if (!retryingAuthentication ||
+                            session.problem !in setOf(AuthenticationProblem.NETWORK, AuthenticationProblem.PROVIDER)
+                        ) {
+                            cancel()
+                            cancelCheck()
+                            mutableState.value =
+                                state.value.copy(
+                                    connection =
+                                        if (session.problem in
+                                            setOf(AuthenticationProblem.NETWORK, AuthenticationProblem.PROVIDER)
+                                        ) {
+                                            ConversationConnection.UNAVAILABLE
+                                        } else {
+                                            ConversationConnection.SIGNED_OUT
+                                        },
+                                    connectionProblem =
+                                        when (session.problem) {
+                                            AuthenticationProblem.NETWORK -> ConversationProblem.NETWORK
+                                            AuthenticationProblem.PROVIDER -> ConversationProblem.SERVICE
+                                            else -> null
+                                        },
+                                    connectionRetrying = false,
+                                )
+                        }
+                    }
+                    GitHubSession.SignedOut -> {
+                        cancel()
+                        cancelCheck()
+                        mutableState.value =
+                            state.value.copy(connection = ConversationConnection.SIGNED_OUT, connectionProblem = null)
+                    }
                 }
             }
         }
@@ -88,6 +143,12 @@ internal class ConversationViewModel(
             conversationId = UUID.randomUUID().toString()
             friendId = friend
         }
+        if (checkAllowed() &&
+            state.value.connection == ConversationConnection.UNAVAILABLE &&
+            state.value.connectionProblem == null
+        ) {
+            checkConnection()
+        }
     }
 
     fun activate(interactionAllowed: Boolean) {
@@ -95,6 +156,34 @@ internal class ConversationViewModel(
         allowed = interactionAllowed
         if (!allowed) {
             cancel()
+            if (!foregroundAllowed) cancelCheck()
+        } else if (state.value.connection == ConversationConnection.UNAVAILABLE &&
+            state.value.connectionProblem == null
+        ) {
+            checkConnection()
+        }
+    }
+
+    /** The app shell calls this on foreground entry and whenever trusted Park/AAOS evidence changes. */
+    fun setForegroundAllowed(
+        interactionAllowed: Boolean,
+        refresh: Boolean = false,
+    ) {
+        foregroundManaged = true
+        foregroundAllowed = interactionAllowed
+        if (!checkAllowed()) {
+            cancelCheck()
+            cancel()
+        } else if (interactionAllowed &&
+            (
+                refresh ||
+                    (
+                        state.value.connection == ConversationConnection.UNAVAILABLE &&
+                            state.value.connectionProblem == null
+                    )
+            )
+        ) {
+            checkConnection(force = refresh)
         }
     }
 
@@ -102,16 +191,24 @@ internal class ConversationViewModel(
         active = false
         allowed = false
         cancel()
+        if (!foregroundAllowed) cancelCheck()
     }
 
     fun edit(value: TextFieldValue) {
         if (!active || !allowed || state.value.replyPending) return
         draft = value
+        if (state.value.failed) mutableState.value = state.value.copy(failed = false)
     }
 
-    fun send(text: String = draft.text) {
+    fun send(text: String = draft.text) = sendInternal(text, retry = false)
+
+    private fun sendInternal(
+        text: String,
+        retry: Boolean,
+    ) {
         if (!canInteract() ||
             work?.isActive == true ||
+            (state.value.failed && !retry) ||
             text.isBlank() ||
             text != draft.text
         ) {
@@ -166,7 +263,71 @@ internal class ConversationViewModel(
 
     fun retry() {
         if (!canInteract() || work?.isActive == true) return
-        send()
+        sendInternal(draft.text, retry = true)
+    }
+
+    fun retryConnection() {
+        if (!interactionAvailable() || checkWork?.isActive == true || authenticationRetry?.isActive == true) return
+        when (val session = authentication.session.value) {
+            is GitHubSession.Authenticated -> checkConnection(retrying = true)
+            is GitHubSession.Failure -> {
+                if (session.problem !in setOf(AuthenticationProblem.NETWORK, AuthenticationProblem.PROVIDER)) return
+                val request = ++checkGeneration
+                mutableState.value =
+                    state.value.copy(
+                        connection = ConversationConnection.CHECKING,
+                        connectionProblem = null,
+                        connectionRetrying = true,
+                    )
+                authenticationRetry =
+                    viewModelScope.launch {
+                        try {
+                            authentication.restore()
+                        } catch (cancelled: CancellationException) {
+                            throw cancelled
+                        } catch (_: Exception) {
+                            if (request == checkGeneration && interactionAvailable()) {
+                                authenticationRetry = null
+                                mutableState.value =
+                                    state.value.copy(
+                                        connection = ConversationConnection.UNAVAILABLE,
+                                        connectionProblem = ConversationProblem.SERVICE,
+                                        connectionRetrying = false,
+                                    )
+                            }
+                            return@launch
+                        }
+                        if (request != checkGeneration || !interactionAvailable()) return@launch
+                        authenticationRetry = null
+                        when (val restored = authentication.session.value) {
+                            is GitHubSession.Authenticated -> {
+                                if (accountId != restored.account.id) {
+                                    clear()
+                                    accountId = restored.account.id
+                                }
+                                checkConnection(retrying = true)
+                            }
+                            is GitHubSession.Failure -> {
+                                mutableState.value =
+                                    state.value.copy(
+                                        connection = ConversationConnection.UNAVAILABLE,
+                                        connectionProblem =
+                                            if (restored.problem ==
+                                                AuthenticationProblem.NETWORK
+                                            ) {
+                                                ConversationProblem.NETWORK
+                                            } else {
+                                                ConversationProblem.SERVICE
+                                            },
+                                        connectionRetrying = false,
+                                    )
+                            }
+                            else -> Unit
+                        }
+                    }
+            }
+            else -> Unit
+        }
     }
 
     fun dismissFailure() {
@@ -191,6 +352,7 @@ internal class ConversationViewModel(
 
     private fun clear() {
         cancel()
+        cancelCheck()
         history = emptyList()
         conversationId = UUID.randomUUID().toString()
         draft = TextFieldValue()
@@ -200,9 +362,70 @@ internal class ConversationViewModel(
     private fun canInteract() =
         active &&
             allowed &&
+            interactionAvailable() &&
+            state.value.connection == ConversationConnection.READY &&
             profileId != null &&
             (authentication.session.value as? GitHubSession.Authenticated)?.account?.id == accountId &&
             accountId != null
+
+    private fun interactionAvailable() = if (foregroundManaged) foregroundAllowed else active && allowed
+
+    private fun checkAllowed() = interactionAvailable() && authentication.session.value is GitHubSession.Authenticated
+
+    private fun checkConnection(
+        force: Boolean = false,
+        retrying: Boolean = false,
+    ) {
+        if (!checkAllowed()) return
+        if (checkWork?.isActive == true) {
+            if (!force) return
+            cancelCheck()
+        }
+        val account = (authentication.session.value as? GitHubSession.Authenticated)?.account?.id ?: return
+        if (account != accountId) return
+        val request = ++checkGeneration
+        mutableState.value =
+            state.value.copy(
+                connection = ConversationConnection.CHECKING,
+                connectionProblem = null,
+                connectionRetrying = retrying,
+            )
+        checkWork =
+            viewModelScope.launch {
+                val result = safely { provider.connect(account) }
+                if (request != checkGeneration || !checkAllowed() || account != accountId) return@launch
+                checkWork = null
+                mutableState.value =
+                    when (result) {
+                        is ConversationResult.Success ->
+                            state.value.copy(
+                                connection = ConversationConnection.READY,
+                                connectionProblem = null,
+                                connectionRetrying = false,
+                            )
+                        is ConversationResult.Failure ->
+                            state.value.copy(
+                                connection = ConversationConnection.UNAVAILABLE,
+                                connectionProblem = result.problem,
+                                connectionRetrying = false,
+                            )
+                    }
+            }
+    }
+
+    private fun cancelCheck() {
+        checkGeneration++
+        checkWork?.cancel()
+        checkWork = null
+        authenticationRetry?.cancel()
+        authenticationRetry = null
+        if (state.value.connection == ConversationConnection.CHECKING ||
+            state.value.connection == ConversationConnection.READY
+        ) {
+            mutableState.value =
+                state.value.copy(connection = ConversationConnection.UNAVAILABLE, connectionRetrying = false)
+        }
+    }
 
     private fun fail(problem: ConversationProblem) {
         mutableState.value =
