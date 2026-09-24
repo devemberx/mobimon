@@ -33,8 +33,20 @@ binaries, even when the checkout is under `/mnt/c`.
 
 ## Before changing code
 
-- Create or use an issue based on [ISSUE_TEMPLATE.md](ISSUE_TEMPLATE.md). Do not
-  start implementation until the linked issue passes its format check.
+- Before creating a branch or worktree, search open issues and pull requests for
+  the same work using the affected area, behavior, and related terms. Inspect
+  likely matches. If someone else owns a matching issue or an open pull request
+  covers the work, coordinate there before starting. Reuse a matching issue
+  already assigned to you.
+- Claim an unassigned matching issue by assigning yourself, then read it again
+  to verify it is open and no one else claimed it. If no matching issue exists,
+  create one from [ISSUE_TEMPLATE.md](ISSUE_TEMPLATE.md), assign yourself at
+  creation, and verify the assignment. `@me` in `gh` means the authenticated
+  GitHub account; confirm it is the intended owner.
+- Do not start implementation until the claimed issue passes its format check.
+  If GitHub cannot be queried, the assignment fails, or another assignee
+  appears, stop and report the blocker. Remove your assignment when abandoning
+  the work or hand the issue to its next owner.
 - Read the relevant parts of [ARCHITECTURE.md](../docs/ARCHITECTURE.md),
   [DESIGN.md](../docs/DESIGN.md), and [TESTING.md](../docs/TESTING.md).
 - Confirm the module, dependency, task, or integration in source and build files;
@@ -45,6 +57,14 @@ Validate an issue locally with Python 3.9 or newer:
 ```bash
 python3 scripts/validate_issue.py --title 'Restore the session on startup' --body-file /tmp/issue.md
 ```
+
+Use `gh issue list --state open --search '<topic>'` and
+`gh pr list --state open --search '<topic>'` to find active work. Inspect a
+candidate with `gh issue view <number>`, claim it with
+`gh issue edit <number> --add-assignee '@me'`, and verify it with
+`gh issue view <number> --json state,assignees`. For new work, validate the body
+first, then use `gh issue create --title '<title>' --body-file /tmp/issue.md
+--assignee '@me'` and verify the new issue.
 
 ## Verification
 

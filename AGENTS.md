@@ -3,6 +3,7 @@
 ## Workflow
 
 - Read [CONTRIBUTING.md](.github/CONTRIBUTING.md) before development or Git/GitHub work. It owns setup, dependencies, checks, branches, commits, PRs and squash merges; prefer `gh pr merge --squash` when merging.
+- Before implementation, follow the [issue claim procedure](.github/CONTRIBUTING.md#before-changing-code). If sandboxed `gh` fails, retry with approved access; stop if ownership still cannot be verified.
 - Inspect source/build configuration before claiming a module, integration or task exists. Read [ARCHITECTURE.md](docs/ARCHITECTURE.md) for structural/behavior changes, [DESIGN.md](docs/DESIGN.md) for UI, and [TESTING.md](docs/TESTING.md) for tests.
 - Before using `ui-ux-pro-max`, read the [project integration rules](.agents/skills/README.md#uiux-design-guidance).
 - For PR/commit description requests (including "description 적어줘/써줘"), output exactly two single-line English bullets starting directly with `- `: why, then what changed; at most 120 characters each.
