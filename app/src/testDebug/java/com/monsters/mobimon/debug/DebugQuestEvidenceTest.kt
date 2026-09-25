@@ -106,11 +106,11 @@ class DebugQuestEvidenceTest {
     @Test
     fun odometerSignalDrivesTheCumulativeDistanceQuest() {
         val below =
-            state(DebugRawVssState(traveledDistanceKm = 99f)).toDriveEvaluationData(WeatherCondition.CLEAR)
+            state(DebugRawVssState(traveledDistanceMeters = 99_000f)).toDriveEvaluationData(WeatherCondition.CLEAR)
         assertFalse(evaluator.evaluateById(DrivingQuestIds.DISTANCE_100KM, below)!!.isSatisfied)
 
         val reached =
-            state(DebugRawVssState(traveledDistanceKm = 120f)).toDriveEvaluationData(WeatherCondition.CLEAR)
+            state(DebugRawVssState(traveledDistanceMeters = 120_000f)).toDriveEvaluationData(WeatherCondition.CLEAR)
         assertEquals(120f, reached.totalDistanceKm, 0.001f)
         assertTrue(evaluator.evaluateById(DrivingQuestIds.DISTANCE_100KM, reached)!!.isSatisfied)
     }

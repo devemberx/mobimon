@@ -54,4 +54,6 @@ data class VehicleSnapshot(
     /** Derived UI metadata; never used as quest evidence. */
     val parkingAgeMillis: Long? = null,
     val batteryAgeMillis: Long? = null,
+    /** Display-only VSS readings from the isolated simulation; absent paths are unavailable. */
+    val vssCardSignals: Map<String, String> = emptyMap(),
 )

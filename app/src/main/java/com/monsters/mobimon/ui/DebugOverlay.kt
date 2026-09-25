@@ -53,6 +53,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.monsters.mobimon.BuildConfig
 import com.monsters.mobimon.core.database.DebugPointRepository
+import com.monsters.mobimon.core.domain.CardVssType
 import com.monsters.mobimon.core.domain.DriveEvaluationData
 import com.monsters.mobimon.core.domain.DrivingQuestEvaluator
 import com.monsters.mobimon.core.domain.DrivingQuestIds
@@ -63,6 +64,7 @@ import com.monsters.mobimon.core.domain.SettingsRepository
 import com.monsters.mobimon.core.domain.VehicleRepository
 import com.monsters.mobimon.core.domain.WeatherCondition
 import com.monsters.mobimon.core.navigation.LocalDebugSettingsAvailable
+import com.monsters.mobimon.debug.DebugCardVssSignals
 import com.monsters.mobimon.debug.DebugInterpretationOverrides
 import com.monsters.mobimon.debug.DebugRawVssState
 import com.monsters.mobimon.debug.DebugVssState
@@ -276,6 +278,9 @@ fun DebugOverlay() {
 
                     DebugSection("차량 신호 (VSS)") {
                         DebugVssRawSection(state.raw) { raw -> updateState { it.copy(raw = raw) } }
+                        DebugCardVssSection(state.cardExtraSignals) { path, value ->
+                            updateState { it.copy(cardExtraSignals = it.cardExtraSignals + (path to value)) }
+                        }
                     }
 
                     DebugSection("차량 상태 (Interpretation)") {
@@ -973,8 +978,8 @@ private fun DebugVssRawSection(
         DebugRawNumberRow("Vehicle.Powertrain.Transmission.SelectedGear", raw.selectedGear) {
             onRawChange(raw.copy(selectedGear = it.toIntOrNull() ?: 126))
         }
-        DebugRawNumberRow("Vehicle.TraveledDistance", raw.traveledDistanceKm) {
-            onRawChange(raw.copy(traveledDistanceKm = it.toFloatOrNull() ?: 0f))
+        DebugRawNumberRow("Vehicle.TraveledDistance (m)", raw.traveledDistanceMeters) {
+            onRawChange(raw.copy(traveledDistanceMeters = it.toFloatOrNull() ?: 0f))
         }
         DebugToggleRow("Vehicle.Cabin.Seat.Row1.DriverSide.IsBelted", raw.driverSeatBelted) {
             onRawChange(raw.copy(driverSeatBelted = it))
@@ -1020,6 +1025,32 @@ private fun DebugVssRawSection(
         }
         DebugRawNumberRow("Vehicle.AverageSpeed", raw.averageSpeedKmh) {
             onRawChange(raw.copy(averageSpeedKmh = it.toFloatOrNull() ?: 0f))
+        }
+    }
+}
+
+@Composable
+private fun DebugCardVssSection(
+    values: Map<String, String>,
+    onChange: (String, String) -> Unit,
+) {
+    DebugSection("J. 차량상태 카드 추가 신호") {
+        DebugCardVssSignals.additional.forEach { definition ->
+            val value = values[definition.path] ?: definition.defaultValue
+            when (definition.type) {
+                CardVssType.BOOLEAN ->
+                    DebugToggleRow(definition.path, value == "true") {
+                        onChange(definition.path, it.toString())
+                    }
+                CardVssType.NUMBER ->
+                    DebugRawNumberRow(definition.path, value) { input ->
+                        if (input.toDoubleOrNull()?.isFinite() == true) onChange(definition.path, input)
+                    }
+                CardVssType.TEXT ->
+                    DebugRawNumberRow(definition.path, value, wideInput = true) {
+                        onChange(definition.path, it)
+                    }
+            }
         }
     }
 }

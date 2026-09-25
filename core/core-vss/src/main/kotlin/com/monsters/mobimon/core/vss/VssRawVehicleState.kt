@@ -145,8 +145,21 @@ object VssVehicleInterpreter {
     }
 }
 
-private fun parkedVssSignals(): VssSignals =
-    VssSignals(
+private fun parkedVssSignals(): VssSignals {
+    val washer =
+        VssSignals.Body.Windshield.Front
+            .WasherFluid(level = 100)
+    return VssSignals(
+        body =
+            VssSignals.Body(
+                windshield =
+                    VssSignals.Body.Windshield(
+                        front =
+                            VssSignals.Body.Windshield.Front(
+                                washerFluid = washer,
+                            ),
+                    ),
+            ),
         currentLocation = VssSignals.CurrentLocation(timestamp = DEFAULT_CURRENT_LOCATION_TIMESTAMP),
         exterior = VssSignals.Exterior(airTemperature = 20f),
         powertrain =
@@ -158,6 +171,7 @@ private fun parkedVssSignals(): VssSignals =
                 transmission = VssSignals.Powertrain.Transmission(selectedGear = 126),
             ),
     )
+}
 
 private val VssSignals.selectedGear: Int
     get() = powertrain.transmission.selectedGear

@@ -232,8 +232,10 @@ pressing any card opens a scrollable gallery of 30 VSS-mapped alternatives at
 the same size as the displayed cards. The active slot and selected card are
 highlighted; Confirm saves that slot's choice locally. The hint below the six
 cards explains the gesture. Unavailable or stale signals show missing data
-instead of sample values. The character panel uses the normal, hungry and sick
-Mobi artwork for the corresponding observed conditions.
+instead of sample values. In the Debug app with no adapter, the screen uses
+simulated defaults; the Settings-enabled Debugger can edit every card signal.
+The character panel uses the normal, hungry and sick Mobi artwork for the
+corresponding observed conditions.
 
 ## AI connection and settings
 

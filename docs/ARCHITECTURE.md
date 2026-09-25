@@ -236,6 +236,11 @@ Debug uses `.demo`, `mobimon-demo.db` and `demo-profile`; Release uses `mobimon.
 `local-profile` and a closed-network `VssRawVehicleSource` adapter when present.
 Local Release validation falls back to the default parked VSS source so the hidden
 Debugger flow can be checked without vehicle hardware. Debug freshness is 15 seconds.
+The Debug fallback supplies explicit simulated defaults for every vehicle-status card
+signal. The Debugger starts from those values and persists edits to card-only
+signals; existing raw controls remain the source for shared signals. Card signal
+values are display-only and never become command or reward evidence. Release and
+real adapters do not inherit fallback card values for unreported paths.
 Only nonmoving Park is parked; motion is moving and stationary D/R/N is unknown.
 
 Commands require fresh parked evidence and the current display's AAOS allowance.
