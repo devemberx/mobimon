@@ -151,65 +151,40 @@ No cash purchases, top-ups or conversion.
 
 ## Conversation
 
-Use the V5 split panels, empty state, suggestions and composer. Home/menu Chat opens
-connection settings when signed out and chat when authenticated; the Settings account
-card always opens connection management. Follow the [session and provider contract](ARCHITECTURE.md#keyboard-conversation-ui).
-Enable Send for a valid draft when Copilot access and `gpt-4o` are verified and the vehicle is parked; show readiness after
-a successful model check. Do not add a consent panel, connection-check button or entry preflight.
-Suggestions fill the draft without sending; preserve selection and unfinished IME input.
-At 2560 × 1440, place the companion at x72–752, chat at x796–2488, and keep
-both panels 24px above the available content bottom. Use 244 × 60px authentication
-and 258 × 60px parking capsules in the chat header. The empty state has three
-70px suggestions; the 1577 × 87px composer stays above the footer and keyboard.
+Use the V5 split panels, empty state, suggestions and composer. Keep the companion
+and chat visible together, with a compact New conversation action at the right edge
+above the composer. Omit the change-of-pace follow-up suggestion. Suggestions fill
+the draft without sending. Home/menu Chat opens connection settings when signed out
+and chat when authenticated; the Settings account card opens connection management.
+Follow the [session and provider contract](ARCHITECTURE.md#keyboard-conversation-ui).
 
-Use the system keyboard; [keyboard-input.svg](ui/conversation/keyboard-input.svg)
-defines the resized app layout. Keep header scale and the composer above the IME,
-shorten the panels and shrink the companion. Enlarged-text layouts prioritize
-chat and hide secondary content. Preserve visible control geometry while meeting
-minimum touch bounds at AAOS density.
+Use the system keyboard and keep the composer visible above it. The
+[keyboard export](ui/conversation/keyboard-input.svg) shows the resized layout.
+Enlarged text prioritizes chat and hides secondary content. Controls retain usable
+touch bounds at AAOS density. Use soft rounded message bubbles and animate new
+bubbles and the pending dots when motion is enabled. Existing messages and reduced
+motion remain still.
 
-Identify speakers and preserve drafts/replies on recoverable errors. Use soft rounded bubbles
-with readable dark text for user messages and light text for companion messages. Animate the
-three pending dots when motion is enabled. Unverified parking
-shows the [parking dialog](ui/conversation/parking-required.svg) over chat, disables
-editing and hides the IME. Home and Back return home without clearing the draft; verified
-parking removes the dialog. AAOS restrictions remove the screen. Show specific
-recovery for network, service, timeout, account, access, usage and
-length errors. Retries are explicit. Put a compact New conversation action at the
-right edge above the composer and omit the change-of-pace follow-up suggestion.
-Match the failed-reply export's 28px warning ring with a 3px stroke, 30px regular
-title, 26px regular single-line note, and 230x52px Retry and 206x52px Edit
-actions at their exported positions. Editing removes the unanswered user bubble
-while retaining completed history and the draft. Keep the failed turn
-visible until its Edit or Retry action; keyboard composition and selection updates
-must not dismiss it. Newly sent and received bubbles rise and fade into place over
-280ms, with a slight scale change; existing history and reduced-motion mode stay still.
-The checked-in conversation exports still show the older follow-up action and bubble
-appearance; compare those states against these updated requirements until new exports arrive.
+Keep the attempted user turn during recovery. After a network or timeout dialog
+closes, show its inline failure until Edit or Retry. Align the single-line warning
+and actions with the [failed-reply export](ui/conversation/reply-failed.svg). Edit
+removes the unanswered user bubble while preserving the draft and completed
+history; selection and IME composition changes do not dismiss the failure. The
+checked-in exports still show the older follow-up action and bubble appearance.
 
-On foreground entry, restore the GitHub session and check Copilot access/model when
-Park and AAOS allow interaction. Home remains available during the check. Chat shows
-“Copilot 확인 중” with Send disabled until verification succeeds. A network failure
-during connection checks shows the [network dialog](ui/conversation/network-error.svg)
-over chat. Other connection failures explain the cause and offer recheck or connection
-management. “다시 확인” checks access/model without sending the draft and displays the
-[checking dialog](ui/conversation/network-checking.svg) until it finishes. The
-connection-check ring has a 28px radius, 7px stroke and rotating quarter arc,
-matching that export. Keep the destination visible while companion context loads;
-do not insert a separate loading screen on first entry. A failed message stays
-inline with its attempted turn and offers edit or explicit retry.
-Check validated internet before Send and recheck, and show the network dialog as
-soon as it disappears during a request. If internet remains available, account,
-access, usage, timeout and provider failures show Copilot recovery. Account errors
-open connection guidance; access and usage errors explain what to change in GitHub
-and return Home without an immediate recheck action. Returning to chat after those
-changes checks Copilot again. Online timeouts say that the Copilot response is
-delayed. Show one notice at a time:
-hide the inline failure while the connection dialog is open, then retain it until
-Edit or Retry. Rechecking restores access without resending the attempted turn.
-A retry may consume usage.
-An access failure requires recheck before Send. Home and
-Back preserve the draft. The modal stays on chat and does not interrupt Home.
+When Park and AAOS allow chat, show Copilot readiness and disable Send until the
+connection is verified. Keep the destination visible during initial loading. An
+offline failure shows the [network dialog](ui/conversation/network-error.svg)
+promptly. Recheck uses the [checking dialog](ui/conversation/network-checking.svg)
+and never resends the draft. Account errors open connection guidance; access and
+usage errors explain what to change in GitHub and offer Home without an immediate
+recheck. Online timeouts explain the delayed response. Show one failure notice at a
+time: the inline failure appears after the dialog closes. Preserve the draft;
+a deliberate Retry may consume additional usage.
+
+Unverified parking shows the [parking dialog](ui/conversation/parking-required.svg),
+disables editing and hides the IME. Home and Back preserve the draft. Verified
+parking removes the dialog; AAOS restrictions remove the screen.
 
 Hide unsupported voice controls. Future voice input requires permission, transcript
 review and explicit Send; stopping never submits.
