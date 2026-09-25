@@ -45,7 +45,6 @@ import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import com.monsters.mobimon.core.domain.ConversationProblem
 import com.monsters.mobimon.core.ui.MobiMonNavigationButton
-import com.monsters.mobimon.core.ui.MobiMonParkingStatusBadge
 import com.monsters.mobimon.core.ui.MobiMonReferenceText
 import com.monsters.mobimon.core.ui.PetAvatar
 import com.monsters.mobimon.core.ui.mobiMonReferenceTextStyle
@@ -164,7 +163,7 @@ fun ConversationScreen(
                         connection = state.connection,
                         problem = if (messageFailure) state.problem else state.connectionProblem,
                         scale = scale,
-                        modifier = Modifier.offset(1776.dp * scale, 51.dp * scale),
+                        modifier = Modifier.offset(1887.dp * scale, 51.dp * scale),
                     )
                     ConversationHeader(
                         friend,
@@ -203,15 +202,23 @@ fun ConversationScreen(
                 }
             }
         }
-        MobiMonParkingStatusBadge(
-            confirmed = parkingBadgeConfirmed,
-            modifier =
-                Modifier.align(Alignment.TopEnd).padding(
-                    end = if (wide) 72.dp * scale else 24.dp,
-                    top = if (wide) 36.dp * scale else 16.dp,
-                ),
-            scale = scale,
-        )
+        if (wide) {
+            ConversationParkingBadge(
+                confirmed = parkingBadgeConfirmed,
+                scale = scale,
+                modifier =
+                    Modifier.offset(
+                        (if (parkingBadgeConfirmed) 2146.dp else 2144.dp) * scale,
+                        51.dp * scale,
+                    ),
+            )
+        } else {
+            ConversationParkingBadge(
+                confirmed = parkingBadgeConfirmed,
+                modifier = Modifier.align(Alignment.TopEnd).padding(end = 24.dp, top = 16.dp),
+                scale = scale,
+            )
+        }
         if (!interactionAllowed) {
             ConversationParkingOverlay(onReturnHome)
         } else if (connectionDialog) {

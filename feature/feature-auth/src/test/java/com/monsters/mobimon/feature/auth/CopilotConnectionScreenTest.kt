@@ -150,7 +150,7 @@ class CopilotConnectionScreenTest {
         val badge =
             compose
                 .onNodeWithContentDescription(
-                    "주차 후 이용 가능",
+                    "주차 후 이용",
                 ).assertIsDisplayed()
                 .fetchSemanticsNode()
                 .boundsInRoot

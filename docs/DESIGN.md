@@ -34,15 +34,20 @@ Expressions supplement vehicle facts; they never diagnose a vehicle or replace w
   Keep points and
   simulation labels separate. Order focus by heading, information and actions;
   trap dialog focus and return it to the trigger on dismissal.
-- Place the shared parking badge at the top right of each route, 72px from the
-  content edge and 36px from the content top in the reference layout. It moves
-  with its screen during navigation. The initial profile loading screen omits
-  the badge. Both states use a 440 × 76 capsule at
-  reference scale, with centered text and no parking icon. The confirmed badge
-  keeps the dark blue and cyan palette. The restricted badge uses a deep orange
-  surface, orange border and amber text. Fresh, valid nonmoving `P` at speed zero
-  shows “주차 확인됨”; every other state shows “주차 후 이용 가능”.
-  Vehicle details may still describe the specific signal or data gap separately.
+- Place the shared parking badge at the top right of standard routes, 72px from
+  the content edge and 36px from the content top in the reference layout. It
+  moves with its screen during navigation. The initial profile loading screen
+  omits it. The 344 × 76 capsule retains the Figma parking icon, text placement,
+  dark blue surface and cyan text for confirmed Park. The restricted state keeps
+  this geometry and centers its pause icon and label together. It uses the same
+  dark blue surface and border, with the conversation parking dialog's red
+  status color for the icon and text. Fresh, valid nonmoving `P` at speed zero
+  shows “주차 확인됨”;
+  every other state shows “주차 후 이용”. Conversation retains its separate Figma
+  badge at 258 × 60 when confirmed and 272 × 60 when restricted, positioned
+  beside its connection badge. Its restricted icon and label are also centered
+  together. Vehicle details may describe the specific signal
+  or data gap separately.
 
 ### Launcher icon and native splash
 
@@ -139,8 +144,10 @@ Repeated claims reconcile without another celebration. Later repository updates,
 including resets, replace temporary claim confirmations.
 The completed quest detail shows the persisted completion date when available;
 never substitute the date shown in the SVG example.
-On the quest list, align the parking badge top with the back control and show
-the balance as plain text centered on the section heading, as on Home and Store.
+At reference size, align the Quest and Store point balance beside the parking
+badge like Home: the same 36px bold font, a 48px horizontal gap and a text center
+7px below the badge center. The compact Quest list keeps the balance beside its
+section heading when the header cannot fit both statuses.
 
 ## Customization
 
@@ -183,6 +190,9 @@ checked-in exports still show the older follow-up action and bubble appearance.
 
 When Park and AAOS allow chat, show Copilot readiness and disable Send until the
 connection is verified. Keep the destination visible during initial loading. An
+in-chat connection badge shows “Copilot 연결됨” only when readiness is verified
+without an active problem; every other state shows “Copilot 확인 중”. The detailed
+problem remains in the dialog or inline notice. An
 offline failure shows the [network dialog](ui/conversation/network-error.svg)
 promptly. Recheck uses the [checking dialog](ui/conversation/network-checking.svg)
 and never resends the draft. Account errors open connection guidance; access and

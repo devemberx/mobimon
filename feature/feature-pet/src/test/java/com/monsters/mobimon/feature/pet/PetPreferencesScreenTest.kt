@@ -39,7 +39,7 @@ class PetPreferencesScreenTest {
     @Test
     fun parkingBadgeUsesSharedTopRightAnchor() {
         compose.setContent { MobiMonTheme { SettingsScreen(CompanionSettings(), {}) } }
-        val bounds = compose.onNodeWithContentDescription("주차 후 이용 가능").fetchSemanticsNode().boundsInRoot
+        val bounds = compose.onNodeWithContentDescription("주차 후 이용").fetchSemanticsNode().boundsInRoot
         assertEquals(36f, bounds.top, 1f)
         assertEquals(2488f, bounds.right, 1f)
     }
@@ -158,7 +158,7 @@ class PetPreferencesScreenTest {
             }
         }
 
-        compose.onNodeWithText("주차 후 이용 가능").assertExists()
+        compose.onNodeWithText("주차 후 이용").assertExists()
         compose.onNodeWithText("GitHub Copilot").assertIsNotEnabled()
         compose.onNodeWithText("움직임 줄이기").performScrollTo().performClick()
         compose.onNodeWithText("Debugger").performScrollTo().performClick()
@@ -179,7 +179,7 @@ class PetPreferencesScreenTest {
             }
         }
 
-        compose.onNodeWithText("주차 후 이용 가능").assertExists()
+        compose.onNodeWithText("주차 후 이용").assertExists()
         compose.onNodeWithText("GitHub Copilot").assertIsNotEnabled()
         compose.onNodeWithText("움직임 줄이기").performScrollTo().performClick()
         assertEquals(0, motionCalls)
@@ -201,7 +201,7 @@ class PetPreferencesScreenTest {
             }
         }
 
-        compose.onNodeWithText("주차 후 이용 가능").assertExists()
+        compose.onNodeWithText("주차 후 이용").assertExists()
         compose
             .onNodeWithText("Debugger")
             .performScrollTo()

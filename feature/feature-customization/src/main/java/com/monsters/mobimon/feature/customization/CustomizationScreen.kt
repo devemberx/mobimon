@@ -25,7 +25,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -673,16 +672,9 @@ private fun StoreHeader(
         )
         MobiMonPointSummary(
             balance,
+            modifier = Modifier.offset(y = -7.dp * scale),
             failed = failed,
-            textStyle =
-                MaterialTheme.typography.titleLarge.copy(
-                    fontSize =
-                        (
-                            36f *
-                                scale
-                        ).sp,
-                    color = MobiMonColors.text,
-                ),
+            scale = scale,
         )
         Spacer(Modifier.width(48.dp * scale))
         MobiMonParkingStatusBadge(

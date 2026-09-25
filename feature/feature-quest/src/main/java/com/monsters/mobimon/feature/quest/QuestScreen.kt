@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.offset
@@ -27,7 +28,9 @@ import androidx.compose.ui.semantics.paneTitle
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.monsters.mobimon.core.navigation.AppRoute
+import com.monsters.mobimon.core.presentation.PointBalanceState
 import com.monsters.mobimon.core.ui.MobiMonParkingStatusBadge
+import com.monsters.mobimon.core.ui.MobiMonPointSummary
 import com.monsters.mobimon.core.ui.MobiMonColors as Colors
 
 @Composable
@@ -56,9 +59,10 @@ fun QuestScreen(
         }
     }
     val title = stringResource(R.string.quest_header_title)
-    Box(
+    BoxWithConstraints(
         modifier = modifier.fillMaxSize().background(Colors.background).semantics { paneTitle = title },
     ) {
+        val pointInHeader = maxWidth >= 1400.dp && LocalDensity.current.fontScale <= 1f
         Column(Modifier.fillMaxSize()) {
             QuestStatusPanel(state, onRetryQuests, onRetryWallet, onRetryAppearance)
             BoxWithConstraints(Modifier.fillMaxWidth().weight(1f)) {
@@ -96,6 +100,7 @@ fun QuestScreen(
                                 onSelectQuest = { selectedQuestId = it },
                                 onClaimReward = onClaimReward,
                                 onNavigateRoute = onNavigateRoute,
+                                pointInHeader = pointInHeader,
                                 modifier =
                                     Modifier.offset(72.dp * scale, 196.dp * scale).size(
                                         2416.dp * scale,
@@ -134,6 +139,7 @@ fun QuestScreen(
                             onSelectQuest = { selectedQuestId = it },
                             onClaimReward = onClaimReward,
                             onNavigateRoute = onNavigateRoute,
+                            pointInHeader = pointInHeader,
                             modifier = Modifier.fillMaxWidth(),
                         )
                     }
@@ -173,11 +179,22 @@ fun QuestScreen(
                 }
             }
         }
-        BoxWithConstraints(Modifier.fillMaxSize()) {
-            val badgeScale = maxWidth.value / 2560f
+        val badgeScale = maxWidth.value / 2560f
+        Row(
+            modifier = Modifier.align(Alignment.TopEnd).padding(end = 72.dp * badgeScale, top = 36.dp * badgeScale),
+            horizontalArrangement = Arrangement.spacedBy(48.dp * badgeScale),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            if (pointInHeader) {
+                MobiMonPointSummary(
+                    balance = (state.pointBalance as? PointBalanceState.Ready)?.balance,
+                    modifier = Modifier.offset(y = 7.dp * badgeScale),
+                    failed = state.pointBalance == PointBalanceState.Failed,
+                    scale = badgeScale,
+                )
+            }
             MobiMonParkingStatusBadge(
                 confirmed = parkingBadgeConfirmed,
-                modifier = Modifier.align(Alignment.TopEnd).padding(end = 72.dp * badgeScale, top = 36.dp * badgeScale),
                 scale = badgeScale,
             )
         }
@@ -195,6 +212,7 @@ private fun QuestContent(
     onSelectQuest: (String?) -> Unit,
     onClaimReward: (String) -> Unit,
     onNavigateRoute: (AppRoute) -> Unit,
+    pointInHeader: Boolean,
     modifier: Modifier = Modifier,
 ) {
     if (selectedQuest != null) {
@@ -226,6 +244,7 @@ private fun QuestContent(
             onSelectQuest = onSelectQuest,
             onClaimReward = onClaimReward,
             pointBalance = state.pointBalance,
+            showPointInPanel = !pointInHeader,
             modifier = modifier,
             isCompact = isCompact,
         )

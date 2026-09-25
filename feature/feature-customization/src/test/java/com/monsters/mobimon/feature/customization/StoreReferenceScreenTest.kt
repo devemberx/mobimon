@@ -82,9 +82,16 @@ class StoreReferenceScreenTest {
         val initialHeader = compose.onNodeWithText("꾸미기").getUnclippedBoundsInRoot()
         val initialPreview = compose.onNodeWithTag("store-preview-panel").getUnclippedBoundsInRoot()
         compose.onNodeWithText("소유한 아이템을 확인하고 있어요.").assertIsDisplayed()
-        val loadingBadge = compose.onNodeWithContentDescription("주차 확인됨").fetchSemanticsNode().boundsInRoot
-        assertEquals(36f, loadingBadge.top, 1f)
-        assertEquals(2488f, loadingBadge.right, 1f)
+        val loadingBadge = compose.onNodeWithContentDescription("주차 확인됨").getUnclippedBoundsInRoot()
+        val pointSummary = compose.onNodeWithText("포인트 1,200 P").getUnclippedBoundsInRoot()
+        assertEquals(36f, loadingBadge.top.value, 1f)
+        assertEquals(2488f, loadingBadge.right.value, 1f)
+        assertEquals(48f, (loadingBadge.left - pointSummary.right).value, 2f)
+        assertEquals(
+            7f,
+            ((pointSummary.top + pointSummary.bottom) - (loadingBadge.top + loadingBadge.bottom)).value / 2f,
+            2f,
+        )
         compose.onNodeWithTag("shop-items").assertDoesNotExist()
         compose.onNodeWithContentDescription("뒤로").performClick()
         assertEquals(1, backs)
