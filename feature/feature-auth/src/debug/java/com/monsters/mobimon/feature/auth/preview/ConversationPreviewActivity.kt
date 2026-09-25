@@ -18,6 +18,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.sp
+import com.monsters.mobimon.core.domain.ConversationProblem
 import com.monsters.mobimon.core.ui.LocalMobiMonMotionEnabled
 import com.monsters.mobimon.core.ui.MobiMonColors
 import com.monsters.mobimon.core.ui.MobiMonTheme
@@ -31,6 +32,17 @@ class ConversationPreviewActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         val sample = intent.getStringExtra("state")
+        val sampleProblem =
+            when (sample) {
+                "network-failed" -> ConversationProblem.NETWORK
+                "usage-failed" -> ConversationProblem.USAGE
+                "access-failed" -> ConversationProblem.ACCESS
+                "account-failed" -> ConversationProblem.ACCOUNT
+                "timeout-failed" -> ConversationProblem.TIMEOUT
+                else -> null
+            }
+        val failedSamples =
+            setOf("failed", "network-failed", "usage-failed", "access-failed", "account-failed", "timeout-failed")
         val messages =
             listOf(
                 ConversationMessage("sample-user", "오늘은 조금 피곤한 하루였어.", true),
@@ -40,7 +52,14 @@ class ConversationPreviewActivity : ComponentActivity() {
             var state by remember {
                 mutableStateOf(
                     ConversationUiState(
-                        connection = ConversationConnection.READY,
+                        connection =
+                            when (sample) {
+                                "network-failed", "usage-failed", "access-failed", "account-failed", "timeout-failed" ->
+                                    ConversationConnection.UNAVAILABLE
+                                "checking" -> ConversationConnection.CHECKING
+                                else -> ConversationConnection.READY
+                            },
+                        connectionRetrying = sample == "checking",
                         messages =
                             when (sample) {
                                 "messages" -> messages
@@ -53,7 +72,7 @@ class ConversationPreviewActivity : ComponentActivity() {
                                         ),
                                     )
                                 "pending" -> messages.take(1)
-                                "failed" ->
+                                in failedSamples ->
                                     listOf(
                                         messages.first(),
                                         ConversationMessage(
@@ -72,7 +91,9 @@ class ConversationPreviewActivity : ComponentActivity() {
                                 else -> emptyList()
                             },
                         replyPending = sample == "pending",
-                        failed = sample == "failed",
+                        failed = sample == "failed" || sampleProblem != null,
+                        problem = sampleProblem,
+                        connectionProblem = sampleProblem,
                     ),
                 )
             }
@@ -81,13 +102,14 @@ class ConversationPreviewActivity : ComponentActivity() {
                     TextFieldValue(
                         when (sample) {
                             "keyboard" -> "오늘 하루가 조금 힘들었어"
-                            "failed" -> "모비는 뭐가 좋아?"
+                            in failedSamples ->
+                                "모비는 뭐가 좋아?"
                             else -> ""
                         },
                     ),
                 )
             }
-            CompositionLocalProvider(LocalMobiMonMotionEnabled provides false) {
+            CompositionLocalProvider(LocalMobiMonMotionEnabled provides (sample != "reduced-motion")) {
                 MobiMonTheme {
                     Box(
                         Modifier
@@ -116,7 +138,21 @@ class ConversationPreviewActivity : ComponentActivity() {
                             Modifier.fillMaxSize(),
                             interactionAllowed = true,
                             onRetry = { state = state.copy(failed = false) },
-                            onDismissFailure = { state = state.copy(failed = false) },
+                            onRecheckConnection = {
+                                state =
+                                    state.copy(
+                                        connection = ConversationConnection.READY,
+                                        connectionProblem = null,
+                                        connectionRetrying = false,
+                                    )
+                            },
+                            onDismissFailure = {
+                                state = state.copy(messages = state.messages.dropLast(1), failed = false)
+                            },
+                            onNewConversation = {
+                                state = state.copy(messages = emptyList(), failed = false, replyPending = false)
+                                draft = TextFieldValue()
+                            },
                         )
                         Text(
                             "DEBUG UI preview · Sample conversation · No provider connection",

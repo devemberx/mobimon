@@ -1,5 +1,11 @@
 package com.monsters.mobimon.feature.auth
 
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
@@ -23,7 +29,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -35,8 +40,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
@@ -50,6 +59,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.monsters.mobimon.core.domain.ConversationProblem
+import com.monsters.mobimon.core.ui.LocalMobiMonMotionEnabled
 import com.monsters.mobimon.core.ui.MobiMonButton
 import com.monsters.mobimon.core.ui.MobiMonReferenceText
 import com.monsters.mobimon.core.ui.mobiMonReferenceTextStyle
@@ -64,13 +74,20 @@ internal fun ConversationNetworkOverlay(
     onRetry: () -> Unit,
 ) {
     val accountAction = problem == ConversationProblem.ACCOUNT
+    val accessError = problem == ConversationProblem.ACCESS
     val networkError = problem == ConversationProblem.NETWORK
+    val usageError = problem == ConversationProblem.USAGE
+    val showAction = checking || !accessError && !usageError
     val referenceCopy = networkError || checking
     val title =
         stringResource(
             when {
                 checking -> R.string.chat_network_rechecking_title
                 networkError -> R.string.chat_network_title
+                usageError -> R.string.chat_connection_usage_title
+                accessError -> R.string.chat_connection_access_title
+                accountAction -> R.string.chat_connection_account_title
+                problem == ConversationProblem.TIMEOUT -> R.string.chat_connection_timeout_title
                 else -> R.string.chat_connection_error_title
             },
         )
@@ -87,8 +104,10 @@ internal fun ConversationNetworkOverlay(
             when {
                 checking -> R.string.chat_network_rechecking_instruction
                 accountAction -> R.string.chat_connection_account_instruction
-                problem == ConversationProblem.ACCESS -> R.string.chat_connection_access_instruction
-                else -> R.string.chat_network_instruction
+                accessError -> R.string.chat_connection_access_instruction
+                usageError -> R.string.chat_connection_usage_instruction
+                networkError -> R.string.chat_network_instruction
+                else -> R.string.chat_connection_retry_instruction
             },
         )
     val preserved =
@@ -170,18 +189,22 @@ internal fun ConversationNetworkOverlay(
                 NetworkHomeButton(
                     onHome,
                     scale,
-                    Modifier.offset(64.dp * scale, 560.dp * scale).size(592.dp * scale, 116.dp * scale),
+                    Modifier
+                        .offset(64.dp * scale, 560.dp * scale)
+                        .size((if (showAction) 592.dp else 1232.dp) * scale, 116.dp * scale),
                 )
-                MobiMonButton(
-                    onClick = onRetry,
-                    enabled = !checking,
-                    modifier =
-                        Modifier
-                            .offset(680.dp * scale, 560.dp * scale)
-                            .size(616.dp * scale, 116.dp * scale)
-                            .testTag("chat-network-retry"),
-                ) {
-                    Text(action, style = mobiMonReferenceTextStyle(40f, scale, true))
+                if (showAction) {
+                    MobiMonButton(
+                        onClick = onRetry,
+                        enabled = !checking,
+                        modifier =
+                            Modifier
+                                .offset(680.dp * scale, 560.dp * scale)
+                                .size(616.dp * scale, 116.dp * scale)
+                                .testTag("chat-network-retry"),
+                    ) {
+                        Text(action, style = mobiMonReferenceTextStyle(40f, scale, true))
+                    }
                 }
             }
         } else {
@@ -209,12 +232,18 @@ internal fun ConversationNetworkOverlay(
                 Spacer(Modifier.height(8.dp))
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     NetworkHomeButton(onHome, 0.65f, Modifier.weight(1f).height(76.dp))
-                    MobiMonButton(
-                        onClick = onRetry,
-                        enabled = !checking,
-                        modifier = Modifier.weight(1f).height(76.dp).testTag("chat-network-retry"),
-                    ) {
-                        Text(action, style = mobiMonReferenceTextStyle(36f, 0.65f, true), textAlign = TextAlign.Center)
+                    if (showAction) {
+                        MobiMonButton(
+                            onClick = onRetry,
+                            enabled = !checking,
+                            modifier = Modifier.weight(1f).height(76.dp).testTag("chat-network-retry"),
+                        ) {
+                            Text(
+                                action,
+                                style = mobiMonReferenceTextStyle(36f, 0.65f, true),
+                                textAlign = TextAlign.Center,
+                            )
+                        }
                     }
                 }
             }
@@ -229,15 +258,40 @@ private fun NetworkIcon(
     modifier: Modifier,
     scale: Float,
 ) {
+    val motionEnabled = LocalMobiMonMotionEnabled.current
+    val rotation =
+        if (checking && motionEnabled) {
+            rememberInfiniteTransition(label = "connection ring")
+                .animateFloat(
+                    initialValue = 0f,
+                    targetValue = 360f,
+                    animationSpec = infiniteRepeatable(tween(1100, easing = LinearEasing), RepeatMode.Restart),
+                    label = "connection ring rotation",
+                )
+        } else {
+            null
+        }
     Box(
         modifier.size(112.dp * scale).background(Colors.raised, RoundedCornerShape(32.dp * scale)),
         contentAlignment = Alignment.Center,
     ) {
         if (checking) {
-            Canvas(Modifier.size(52.dp * scale)) {
-                drawCircle(Colors.border, style = Stroke(width = 5.dp.toPx() * scale))
+            Canvas(Modifier.size(64.dp * scale).testTag("chat-connection-ring")) {
+                val stroke = 7.dp.toPx() * scale
+                val radius = 28.dp.toPx() * scale
+                drawCircle(Color(0xFF64839F).copy(alpha = 0.42f), radius = radius, style = Stroke(stroke))
+                rotate(rotation?.value ?: 0f) {
+                    drawArc(
+                        color = Color(0xFF87DAF5),
+                        startAngle = -90f,
+                        sweepAngle = 90f,
+                        useCenter = false,
+                        topLeft = Offset(center.x - radius, center.y - radius),
+                        size = Size(radius * 2, radius * 2),
+                        style = Stroke(width = stroke, cap = StrokeCap.Round),
+                    )
+                }
             }
-            CircularProgressIndicator(Modifier.size(52.dp * scale), color = Colors.accent, strokeWidth = 5.dp * scale)
         } else {
             Icon(
                 painterResource(

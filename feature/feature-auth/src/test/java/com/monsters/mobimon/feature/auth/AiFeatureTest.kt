@@ -58,6 +58,7 @@ import com.monsters.mobimon.core.navigation.AiRoute
 import com.monsters.mobimon.core.navigation.FeatureNavigator
 import com.monsters.mobimon.core.presentation.VehiclePresentation
 import com.monsters.mobimon.core.ui.MobiMonTheme
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.emitAll
@@ -81,6 +82,18 @@ class AiFeatureTest {
     private val session = MutableStateFlow<GitHubSession>(GitHubSession.SignedOut)
     private var route by mutableStateOf(AiRoute.COPILOT)
     private var homeReturns = 0
+
+    @Test
+    fun firstConversationFrameKeepsChatWhileCompanionContextLoads() {
+        points.initialInventoryGate = CompletableDeferred()
+        route = AiRoute.CONVERSATION
+        show(parked = true, authenticated = true)
+        compose.onNodeWithTag("chat-panel").assertIsDisplayed()
+        compose.onNodeWithTag("chat-send").assertIsNotEnabled()
+        compose.onNodeWithText("친구 정보를 불러오는 중이에요.").assertDoesNotExist()
+        compose.runOnIdle { points.initialInventoryGate?.complete(Unit) }
+        compose.onNodeWithTag("chat-panel").assertIsDisplayed()
+    }
 
     @Test
     fun disconnectedConversationOpensConnectionWhenParked() {
@@ -189,7 +202,6 @@ class AiFeatureTest {
         compose.runOnIdle { pets.initializationFailure = null }
         compose
             .onNodeWithText("다시 시도")
-            .performScrollTo()
             .assertHeightIsAtLeast(76.dp)
             .performClick()
         compose.onNodeWithText("모비와 이야기해요.").performScrollTo().assertIsDisplayed()
@@ -297,6 +309,7 @@ class AiFeatureTest {
 
     private class FakePoints : PointEconomy {
         val fail = Channel<Unit>(Channel.CONFLATED)
+        var initialInventoryGate: CompletableDeferred<Unit>? = null
         val savedInventory = MutableStateFlow(equippedFriend("friend:mobi"))
         var subscriptions = 0
         var activeObservers = 0
@@ -307,6 +320,7 @@ class AiFeatureTest {
                 activeObservers++
                 maxActiveObservers = maxOf(maxActiveObservers, activeObservers)
                 try {
+                    initialInventoryGate?.await()
                     if (subscriptions == 1) {
                         emit(savedInventory.value)
                         fail.receive()

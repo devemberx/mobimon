@@ -73,6 +73,8 @@ import com.monsters.mobimon.core.presentation.VehiclePresentation
 import com.monsters.mobimon.core.presentation.parkedVerified
 import com.monsters.mobimon.core.ui.LocalMobiMonMotionEnabled
 import com.monsters.mobimon.core.ui.MobiMonTheme
+import com.monsters.mobimon.feature.auth.AssumedOnlineConversationNetworkStatus
+import com.monsters.mobimon.feature.auth.ConversationNetworkStatus
 import com.monsters.mobimon.feature.auth.ConversationViewModel
 import com.monsters.mobimon.runtime.AppUseStateSource
 import kotlinx.coroutines.awaitCancellation
@@ -100,12 +102,13 @@ fun MobiMonApp(
     authentication: GitHubAuthentication,
     conversation: ConversationProvider,
     vehicle: VehiclePresentation,
+    networkStatus: ConversationNetworkStatus = AssumedOnlineConversationNetworkStatus,
 ) {
     val state by appUse.states.collectAsStateWithLifecycle()
     val session by authentication.session.collectAsStateWithLifecycle()
     val conversationFactory =
-        remember(authentication, conversation) {
-            viewModelFactory { initializer { ConversationViewModel(authentication, conversation) } }
+        remember(authentication, conversation, networkStatus) {
+            viewModelFactory { initializer { ConversationViewModel(authentication, conversation, networkStatus) } }
         }
     val conversationModel: ConversationViewModel = viewModel(factory = conversationFactory)
     val parked = vehicle.snapshot().parkedVerified
@@ -138,6 +141,21 @@ fun MobiMonApp(
                 currentSession is GitHubSession.Failure &&
                 currentSession.problem in
                 setOf(AuthenticationProblem.NETWORK, AuthenticationProblem.PROVIDER),
+        currentConversationAuthentication = {
+            val latest = authentication.session.value
+            latest is GitHubSession.Authenticated ||
+                latest == GitHubSession.Restoring ||
+                latest is GitHubSession.Failure &&
+                latest.problem in setOf(AuthenticationProblem.NETWORK, AuthenticationProblem.PROVIDER)
+        },
+        currentConversationStartReady = {
+            when (val latest = authentication.session.value) {
+                is GitHubSession.Authenticated -> true
+                is GitHubSession.Failure ->
+                    latest.problem in setOf(AuthenticationProblem.NETWORK, AuthenticationProblem.PROVIDER)
+                else -> false
+            }
+        },
         onReleaseDebuggerUnlocked = {
             debugResetScope.launch {
                 settings.setDebugModeEnabled(false)
@@ -177,13 +195,16 @@ fun MobiMonContent(
     activeBackgroundId: String? = null,
     reducedMotion: Boolean = false,
     conversationAuthenticated: Boolean = false,
+    currentConversationAuthentication: () -> Boolean = { conversationAuthenticated },
+    currentConversationStartReady: () -> Boolean = currentConversationAuthentication,
     debugOverlay: @Composable () -> Unit = { DebugOverlay() },
     debugSettingsAvailableByDefault: Boolean = BuildConfig.DEBUG,
     onReleaseDebuggerUnlocked: () -> Unit = {},
 ) {
     val registry = remember(entries) { FeatureRegistry(entries) }
     var savedShell by rememberSaveable(stateSaver = ShellSaver) { mutableStateOf(ShellState()) }
-    val shell = savedShell.requireConversationAccount(conversationAuthenticated)
+    val authenticated = currentConversationAuthentication()
+    val shell = savedShell.requireConversationAccount(authenticated)
     var returning by remember { mutableStateOf(false) }
     var reveal by remember { mutableStateOf<DestinationReveal?>(null) }
     var contentCoordinates by remember { mutableStateOf<LayoutCoordinates?>(null) }
@@ -215,7 +236,7 @@ fun MobiMonContent(
             navigate = { route ->
                 reveal = null
                 returning = false
-                savedShell = shell.navigate(route, conversationAuthenticated)
+                savedShell = shell.navigate(route, currentConversationStartReady())
             },
             back = {
                 val previous = shell
@@ -228,7 +249,7 @@ fun MobiMonContent(
             },
             openMenu = { savedShell = shell.openMenu() },
             navigateFrom = { requested, bounds ->
-                val next = shell.navigate(requested, conversationAuthenticated)
+                val next = shell.navigate(requested, currentConversationStartReady())
                 val route = next.route
                 val coordinates = contentCoordinates?.takeIf { it.isAttached }
                 reveal =

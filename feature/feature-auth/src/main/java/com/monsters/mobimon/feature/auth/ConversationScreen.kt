@@ -89,6 +89,7 @@ fun ConversationScreen(
     val connectionFailure = state.connectionProblem != null
     val networkChecking = state.connection == ConversationConnection.CHECKING && state.connectionRetrying
     val connectionDialog = interactionAllowed && (connectionFailure || networkChecking)
+    val panelState = if (connectionDialog && state.failed) state.copy(failed = false) else state
     val back = {
         // adjustResize can consume Compose's IME bounds; check the window at the time of the action.
         if (ViewCompat.getRootWindowInsets(view)?.isVisible(WindowInsetsCompat.Type.ime()) == true) {
@@ -141,7 +142,7 @@ fun ConversationScreen(
                             .size(680.dp * scale, (panelBottom - 196.dp * scale).coerceAtLeast(0.dp)),
                     )
                     ConversationPanel(
-                        state,
+                        panelState,
                         draft,
                         onDraftChange,
                         onSend,
@@ -183,7 +184,7 @@ fun ConversationScreen(
                     ConversationHeader(friend, back, simulatedVehicle, scale, false, shortened, state.failed)
                     Spacer(Modifier.height(16.dp))
                     ConversationPanel(
-                        state,
+                        panelState,
                         draft,
                         onDraftChange,
                         onSend,

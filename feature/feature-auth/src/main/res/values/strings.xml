@@ -103,8 +103,14 @@
     <string name="chat_network_badge">네트워크 오류</string>
     <string name="chat_network_title">네트워크 연결을 확인해 주세요</string>
     <string name="chat_connection_error_title">Copilot 연결을 확인해 주세요</string>
-    <string name="chat_connection_account_instruction">연결 관리에서 계정 권한을 확인해 주세요.</string>
-    <string name="chat_connection_access_instruction">GitHub 권한을 확인한 뒤 다시 확인해 주세요.</string>
+    <string name="chat_connection_account_title">Copilot 계정을 확인해 주세요</string>
+    <string name="chat_connection_access_title">Copilot 권한을 확인해 주세요</string>
+    <string name="chat_connection_usage_title">Copilot 사용량을 확인해 주세요</string>
+    <string name="chat_connection_timeout_title">Copilot 답변이 지연됐어요</string>
+    <string name="chat_connection_account_instruction">연결 안내에서 계정을 다시 승인해 주세요.</string>
+    <string name="chat_connection_access_instruction">GitHub 계정·조직의 Copilot 권한을 변경한 뒤 대화를 다시 열어 주세요.</string>
+    <string name="chat_connection_usage_instruction">GitHub에서 사용량을 확인하고, 한도 갱신 후 대화를 다시 열어 주세요.</string>
+    <string name="chat_connection_retry_instruction">Copilot 상태를 확인한 뒤 다시 시도해 주세요.</string>
     <string name="chat_network_body">인터넷 연결이 불안정해 Copilot에 연결하지 못했어요.</string>
     <string name="chat_network_instruction">연결 상태를 확인한 뒤 다시 시도해 주세요.</string>
     <string name="chat_network_preserved">홈으로 돌아가도 작성한 내용은 보관돼요.</string>
@@ -122,7 +128,6 @@
     <string name="chat_suggestion_mood">오늘 하루 이야기할래</string>
     <string name="chat_suggestion_story">기분 좋아지는 얘기 해줘</string>
     <string name="chat_suggestion_friend">%1$s는 오늘 어땠어?</string>
-    <string name="chat_suggestion_followup">기분 전환할 이야기 해 줘</string>
     <string name="chat_placeholder">%1$s에게 이야기해 주세요</string>
     <string name="chat_input">메시지 입력</string>
     <string name="chat_send">메시지 보내기</string>
@@ -136,9 +141,9 @@
     <string name="chat_service_error">Copilot 서비스가 응답하지 못했어요.\n잠시 후 다시 보내 주세요.</string>
     <string name="chat_network_error">네트워크 연결을 확인해 주세요.\n다시 보내면 사용량이 추가될 수 있어요.</string>
     <string name="chat_timeout_error">답변 대기 시간이 지났어요.\n다시 보내면 사용량이 추가될 수 있어요.</string>
-    <string name="chat_access_error">GitHub가 이 앱의 대화 요청을 허용하지 않았어요.\nCopilot 이용 설정과 계정·조직 정책을 확인해 주세요.</string>
-    <string name="chat_account_error">계정 인증을 다시 확인해 주세요.\n연결 관리에서 다시 승인할 수 있어요.</string>
-    <string name="chat_usage_error">Copilot 사용량 또는 요청 한도에 도달했어요.\n계정 한도를 확인하고 나중에 다시 시도해 주세요.</string>
+    <string name="chat_access_error">GitHub가 이 앱의 대화 요청을 허용하지 않았어요.</string>
+    <string name="chat_account_error">계정 인증을 다시 확인해 주세요.</string>
+    <string name="chat_usage_error">Copilot 사용량 또는 요청 한도에 도달했어요.</string>
     <string name="chat_provider_error">Copilot이 지원하지 않는 응답을 보냈어요.\n잠시 후 다시 시도하거나 연결을 확인해 주세요.</string>
     <string name="chat_restricted_error">주차 상태와 앱 이용 허용 상태를 확인해 주세요.\n안전하게 주차한 뒤 다시 시도할 수 있어요.</string>
     <string name="chat_limit_error">메시지는 4,000자까지 보낼 수 있어요.\n대화 길이 한도에 도달하면 새 대화를 시작해 주세요.</string>

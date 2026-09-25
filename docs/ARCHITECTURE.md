@@ -152,6 +152,12 @@ and preserves the connection entry route. While credentials are being restored, 
 their identity check has a recoverable network/provider failure, chat remains
 reachable with Send disabled. Network recheck repeats identity validation before
 the Copilot model check. Revoked credentials route to connection management.
+Start Chat reads the latest session value during navigation so initial boot cannot
+route through a stale authentication snapshot.
+While restoration is pending, a new Start Chat opens connection management in its
+pending state; an existing conversation route stays in place with Send disabled.
+The destination stays visible while companion context loads; the first frame uses
+the current session state and Send remains unavailable until the profile is bound.
 Fixtures stay in Debug/test sources.
 `app` binds domain `ConversationProvider` to the experimental `core-auth` HTTP adapter.
 
@@ -171,9 +177,17 @@ not wait for this check. The same state is shown on the conversation route; Send
 requires a successful check and a valid draft. Foreground return and explicit
 recheck repeat the model check; parking loss, account change and backgrounding
 cancel pending work. A connection-check failure stays on chat as a blocking dialog
-with Home and a specific recheck or account action. Failed replies stay inline with
-their attempted turn and offer edit or explicit retry. Rechecking access never
-resends a message.
+with Home and a specific recheck or account action. Android's validated internet
+state is checked before Send and recheck, and a lost connection cancels an active
+request. Offline failures show the network dialog immediately. With internet
+available, account, access, usage, timeout and provider failures show their Copilot
+recovery. Account errors open connection guidance; access and usage errors direct
+the user to GitHub and offer Home rather than immediate recheck. Reentering chat
+checks the model again. Usage blocks Send until that check succeeds. Failed replies retain
+their attempted turn until explicit edit or retry. The inline failure appears after
+the blocking dialog closes, so the two notices never overlap. Rechecking never
+resends a message. Connection checks and replies have a 30-second total wait bound
+when internet stays available; the draft and attempted turn survive failures.
 
 Explicit Send also checks Copilot access and the model catalog. The adapter selects
 `gpt-4o` only when the catalog advertises it as enabled for Chat Completions, with

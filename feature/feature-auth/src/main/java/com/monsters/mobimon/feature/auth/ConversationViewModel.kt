@@ -16,15 +16,18 @@ import com.monsters.mobimon.core.domain.GitHubAuthentication
 import com.monsters.mobimon.core.domain.GitHubSession
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeout
 import java.util.UUID
 
 /** Activity memory only. Request generations also reject providers that return after cancellation. */
 class ConversationViewModel(
     private val authentication: GitHubAuthentication,
     private val provider: ConversationProvider,
+    private val networkStatus: ConversationNetworkStatus = AssumedOnlineConversationNetworkStatus,
 ) : ViewModel() {
     private val mutableState = MutableStateFlow(ConversationUiState())
     val state = mutableState.asStateFlow()
@@ -47,6 +50,26 @@ class ConversationViewModel(
     private var history = emptyList<ConversationMessage>()
 
     init {
+        viewModelScope.launch {
+            networkStatus.online.collect { online ->
+                if (online) return@collect
+                if (work?.isActive == true) {
+                    generation++
+                    work?.cancel()
+                    work = null
+                    fail(ConversationProblem.NETWORK)
+                }
+                if (checkWork?.isActive == true || authenticationRetry?.isActive == true) {
+                    cancelCheck()
+                    mutableState.value =
+                        state.value.copy(
+                            connection = ConversationConnection.UNAVAILABLE,
+                            connectionProblem = ConversationProblem.NETWORK,
+                            connectionRetrying = false,
+                        )
+                }
+            }
+        }
         viewModelScope.launch {
             authentication.session.collect { session ->
                 val retryingAuthentication = authenticationRetry?.isActive == true
@@ -111,7 +134,12 @@ class ConversationViewModel(
                                     connectionProblem =
                                         when (session.problem) {
                                             AuthenticationProblem.NETWORK -> ConversationProblem.NETWORK
-                                            AuthenticationProblem.PROVIDER -> ConversationProblem.SERVICE
+                                            AuthenticationProblem.PROVIDER ->
+                                                if (networkStatus.isOnline()) {
+                                                    ConversationProblem.SERVICE
+                                                } else {
+                                                    ConversationProblem.NETWORK
+                                                }
                                             else -> null
                                         },
                                     connectionRetrying = false,
@@ -157,7 +185,8 @@ class ConversationViewModel(
             cancel()
             if (!foregroundAllowed) cancelCheck()
         } else if (state.value.connection == ConversationConnection.UNAVAILABLE &&
-            state.value.connectionProblem == null
+            state.value.connectionProblem in
+            setOf(null, ConversationProblem.USAGE, ConversationProblem.ACCESS)
         ) {
             checkConnection()
         }
@@ -194,9 +223,8 @@ class ConversationViewModel(
     }
 
     fun edit(value: TextFieldValue) {
-        if (!active || !allowed || state.value.replyPending) return
+        if (!active || !allowed || state.value.replyPending || state.value.failed) return
         draft = value
-        if (state.value.failed) resumeEditing()
     }
 
     fun send(text: String = draft.text) = sendInternal(text, retry = false)
@@ -227,10 +255,14 @@ class ConversationViewModel(
         draft = draft.copy(composition = null)
         mutableState.value =
             state.value.copy(messages = history + user, replyPending = true, failed = false, problem = null)
+        if (!networkStatus.isOnline()) {
+            fail(ConversationProblem.NETWORK)
+            return
+        }
         work =
             viewModelScope.launch {
                 val result =
-                    safely {
+                    safelyWithinWait {
                         provider.reply(
                             account,
                             conversationId,
@@ -267,6 +299,15 @@ class ConversationViewModel(
 
     fun retryConnection() {
         if (!interactionAvailable() || checkWork?.isActive == true || authenticationRetry?.isActive == true) return
+        if (!networkStatus.isOnline()) {
+            mutableState.value =
+                state.value.copy(
+                    connection = ConversationConnection.UNAVAILABLE,
+                    connectionProblem = ConversationProblem.NETWORK,
+                    connectionRetrying = false,
+                )
+            return
+        }
         when (val session = authentication.session.value) {
             is GitHubSession.Authenticated -> checkConnection(retrying = true)
             is GitHubSession.Failure -> {
@@ -290,7 +331,12 @@ class ConversationViewModel(
                                 mutableState.value =
                                     state.value.copy(
                                         connection = ConversationConnection.UNAVAILABLE,
-                                        connectionProblem = ConversationProblem.SERVICE,
+                                        connectionProblem =
+                                            if (networkStatus.isOnline()) {
+                                                ConversationProblem.SERVICE
+                                            } else {
+                                                ConversationProblem.NETWORK
+                                            },
                                         connectionRetrying = false,
                                     )
                             }
@@ -310,8 +356,8 @@ class ConversationViewModel(
                                     state.value.copy(
                                         connection = ConversationConnection.UNAVAILABLE,
                                         connectionProblem =
-                                            if (restored.problem ==
-                                                AuthenticationProblem.NETWORK
+                                            if (restored.problem == AuthenticationProblem.NETWORK ||
+                                                !networkStatus.isOnline()
                                             ) {
                                                 ConversationProblem.NETWORK
                                             } else {
@@ -398,6 +444,15 @@ class ConversationViewModel(
         }
         val account = (authentication.session.value as? GitHubSession.Authenticated)?.account?.id ?: return
         if (account != accountId) return
+        if (!networkStatus.isOnline()) {
+            mutableState.value =
+                state.value.copy(
+                    connection = ConversationConnection.UNAVAILABLE,
+                    connectionProblem = ConversationProblem.NETWORK,
+                    connectionRetrying = false,
+                )
+            return
+        }
         val request = ++checkGeneration
         mutableState.value =
             state.value.copy(
@@ -407,7 +462,7 @@ class ConversationViewModel(
             )
         checkWork =
             viewModelScope.launch {
-                val result = safely { provider.connect(account) }
+                val result = safelyWithinWait { provider.connect(account) }
                 if (request != checkGeneration || !checkAllowed() || account != accountId) return@launch
                 checkWork = null
                 mutableState.value =
@@ -456,10 +511,16 @@ class ConversationViewModel(
                 failed = true,
                 problem = problem,
                 connection =
-                    if (problem in listOf(ConversationProblem.ACCOUNT, ConversationProblem.ACCESS)) {
+                    if (problem !in setOf(ConversationProblem.LIMIT, ConversationProblem.RESTRICTED)) {
                         ConversationConnection.UNAVAILABLE
                     } else {
                         state.value.connection
+                    },
+                connectionProblem =
+                    if (problem !in setOf(ConversationProblem.LIMIT, ConversationProblem.RESTRICTED)) {
+                        problem
+                    } else {
+                        state.value.connectionProblem
                     },
             )
     }
@@ -472,4 +533,19 @@ class ConversationViewModel(
         } catch (_: Exception) {
             ConversationResult.Failure(ConversationProblem.PROVIDER)
         }
+
+    private suspend fun <T> safelyWithinWait(block: suspend () -> ConversationResult<T>): ConversationResult<T> {
+        if (!networkStatus.isOnline()) return ConversationResult.Failure(ConversationProblem.NETWORK)
+        val result =
+            try {
+                withTimeout(30_000) { safely(block) }
+            } catch (_: TimeoutCancellationException) {
+                ConversationResult.Failure(ConversationProblem.TIMEOUT)
+            }
+        return if (result is ConversationResult.Failure && !networkStatus.isOnline()) {
+            ConversationResult.Failure(ConversationProblem.NETWORK)
+        } else {
+            result
+        }
+    }
 }

@@ -1,7 +1,10 @@
 package com.monsters.mobimon.feature.auth
 
 import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.graphics.Canvas
+import android.graphics.Color
+import android.graphics.Rect
 import android.view.View
 import androidx.compose.foundation.layout.height
 import androidx.compose.runtime.CompositionLocalProvider
@@ -50,6 +53,7 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 import java.io.File
+import kotlin.math.abs
 
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34], qualifiers = "ko-rKR-w2560dp-h1248dp-mdpi")
@@ -144,6 +148,17 @@ class ConversationScreenTest {
             assertEquals("작성 중", draft.text)
         }
         compose.onNodeWithText("Copilot 연결을 다시 확인하는 중").assertIsDisplayed()
+        val ring =
+            compose
+                .onNodeWithTag(
+                    "chat-connection-ring",
+                    useUnmergedTree = true,
+                ).fetchSemanticsNode()
+                .boundsInRoot
+        assertEquals(688f, ring.left, 1f)
+        assertEquals(342f, ring.top, 1f)
+        assertEquals(64f, ring.width, 1f)
+        assertEquals(64f, ring.height, 1f)
         compose.onNodeWithTag("chat-network-retry").assertIsNotEnabled()
         compose.onNodeWithTag("chat-network-home").assertIsEnabled()
         capture("network-checking")
@@ -154,34 +169,86 @@ class ConversationScreenTest {
 
     @Test
     @GraphicsMode(GraphicsMode.Mode.NATIVE)
-    fun failedMessageNetworkErrorKeepsRetryAndEditReachable() {
+    fun failedMessageNetworkErrorShowsDialogThenKeepsRetryAndEditReachable() {
         state =
             ConversationUiState(
-                ConversationConnection.READY,
+                ConversationConnection.UNAVAILABLE,
                 messages = listOf(ConversationMessage("attempt", "다시 보낼 내용", true)),
                 failed = true,
                 problem = ConversationProblem.NETWORK,
+                connectionProblem = ConversationProblem.NETWORK,
             )
         draft = TextFieldValue("다시 보낼 내용")
         show()
         capture("message-network-failed")
+        compose.onNodeWithTag("chat-network-dialog").assertIsDisplayed()
+        compose.onNodeWithTag("chat-inline-failure").assertDoesNotExist()
+        compose.onNodeWithTag("chat-network-retry").performClick()
+        compose.runOnIdle { assertEquals(1, checks) }
+        compose.runOnIdle { state = state.copy(connection = ConversationConnection.READY, connectionRetrying = false) }
         compose.onNodeWithTag("chat-network-dialog").assertDoesNotExist()
         compose.onNodeWithTag("chat-user-bubble").assertIsDisplayed()
+        compose.onNodeWithTag("chat-inline-failure").assertIsDisplayed()
+        compose.runOnIdle { draft = draft.copy(selection = TextRange(0)) }
+        compose.onNodeWithTag("chat-inline-failure").assertIsDisplayed()
         compose.onNodeWithText("다시 보내기").performClick()
         compose.runOnIdle {
             assertEquals(1, retries)
-            assertEquals(0, checks)
+            assertEquals(1, checks)
         }
         compose.onNodeWithText("내용 수정").performClick()
         compose.runOnIdle { assertEquals("다시 보낼 내용", draft.text) }
+        compose.onNodeWithTag("chat-user-bubble").assertDoesNotExist()
+    }
+
+    @Test fun usageFailureShowsOnlyCopilotUsageDialog() {
+        state =
+            ConversationUiState(
+                ConversationConnection.UNAVAILABLE,
+                messages = listOf(ConversationMessage("attempt", "사용량 확인", true)),
+                failed = true,
+                problem = ConversationProblem.USAGE,
+                connectionProblem = ConversationProblem.USAGE,
+            )
+        show()
+
+        compose.onNodeWithText("Copilot 사용량을 확인해 주세요").assertIsDisplayed()
+        compose.onNodeWithText("GitHub에서 사용량을 확인하고, 한도 갱신 후 대화를 다시 열어 주세요.").assertIsDisplayed()
+        compose.onNodeWithTag("chat-inline-failure").assertDoesNotExist()
+        compose.onNodeWithTag("chat-network-retry").assertDoesNotExist()
+        compose.onNodeWithTag("chat-network-home").performClick()
+        compose.runOnIdle {
+            assertEquals(1, homeReturns)
+            assertEquals(0, checks)
+            assertEquals(0, sends)
+        }
+    }
+
+    @Test fun onlineTimeoutExplainsDelayedCopilotResponse() {
+        state = ConversationUiState(ConversationConnection.UNAVAILABLE, connectionProblem = ConversationProblem.TIMEOUT)
+        show()
+
+        compose.onNodeWithText("Copilot 답변이 지연됐어요").assertIsDisplayed()
+        compose.onNodeWithTag("chat-network-retry").performClick()
+        compose.runOnIdle { assertEquals(1, checks) }
+    }
+
+    @Test
+    fun shortExchangeKeepsUserAndCompanionBubblesVisible() {
+        state = state.copy(messages = messages)
+        show()
+        compose.onNodeWithText("오늘은 조금 피곤한 하루였어.").assertIsDisplayed()
+        compose.onNodeWithText("오늘 하루도 수고했어요.", substring = true).assertIsDisplayed()
+        compose.onNodeWithTag("chat-new-action").assertIsDisplayed()
     }
 
     @Test
     @GraphicsMode(GraphicsMode.Mode.NATIVE)
-    fun accessCheckFailureExplainsHowToRecheckAfterChangingPermissions() {
+    fun accessCheckFailureExplainsPermissionChangeAndReturnsHome() {
         state = ConversationUiState(ConversationConnection.UNAVAILABLE, connectionProblem = ConversationProblem.ACCESS)
         show()
         capture("connection-access")
+        compose.onNodeWithText("Copilot 권한을 확인해 주세요").assertIsDisplayed()
         compose.onNodeWithText("GitHub가 이 앱의 대화 요청을 허용하지 않았어요.", substring = true).assertIsDisplayed()
         compose.onNodeWithTag("chat-send").assertDoesNotExist()
         val icon =
@@ -195,18 +262,26 @@ class ConversationScreenTest {
         val body = compose.onNodeWithTag("chat-connection-body").fetchSemanticsNode().boundsInRoot
         val instruction = compose.onNodeWithTag("chat-connection-instruction").fetchSemanticsNode().boundsInRoot
         val preserved = compose.onNodeWithTag("chat-connection-preserved").fetchSemanticsNode().boundsInRoot
-        assertEquals(104f, instruction.top - body.top, 1f)
+        assertEquals(54f, instruction.top - body.top, 1f)
         assertEquals(87f, preserved.top - instruction.top, 1f)
-        compose.onNodeWithText("다시 확인").performClick()
-        compose.runOnIdle { assertEquals(1, checks) }
+        compose.onNodeWithTag("chat-network-retry").assertDoesNotExist()
+        compose.onNodeWithTag("chat-network-home").performClick()
+        compose.runOnIdle {
+            assertEquals(1, homeReturns)
+            assertEquals(0, checks)
+        }
     }
 
     @Test
     fun accountCheckFailureOpensConnectionManagement() {
         state = ConversationUiState(ConversationConnection.UNAVAILABLE, connectionProblem = ConversationProblem.ACCOUNT)
         show()
+        compose.onNodeWithText("Copilot 계정을 확인해 주세요").assertIsDisplayed()
         compose.onNodeWithText("연결 안내 열기").performClick()
-        compose.runOnIdle { assertEquals(1, connectionOpens) }
+        compose.runOnIdle {
+            assertEquals(1, connectionOpens)
+            assertEquals(0, checks)
+        }
     }
 
     @Test
@@ -385,6 +460,10 @@ class ConversationScreenTest {
                 .boundsInRoot
         assertTrue(userBubble.width < 500f)
         assertTrue(friendBubble.width < 900f)
+        compose.onNodeWithText("기분 전환할 이야기 해 줘").assertDoesNotExist()
+        val newChat = compose.onNodeWithTag("chat-new-action").fetchSemanticsNode().boundsInRoot
+        assertEquals(2212f, newChat.left, 1f)
+        assertEquals(220f, newChat.width, 1f)
         compose.runOnIdle {
             state =
                 state.copy(
@@ -434,12 +513,36 @@ class ConversationScreenTest {
                 )
         }
         capture("connection-failed")
+        val failureImage = BitmapFactory.decodeFile("build/reports/conversation-ui/connection-failed.png")
+        try {
+            // Exported SVG includes a 96px status bar; compare only the visible ink after removing it.
+            assertPaintBounds(failureImage, 845..890, 920..965, Color.rgb(234, 184, 170), Rect(853, 928, 883, 958))
+            assertPaintBounds(failureImage, 895..1180, 920..970, Color.rgb(234, 184, 170), Rect(903, 930, 1160, 956))
+            assertPaintBounds(failureImage, 895..1420, 960..1005, Color.rgb(181, 197, 213), Rect(902, 969, 1372, 992))
+        } finally {
+            failureImage.recycle()
+        }
         compose.onNodeWithText("오늘은 조금 피곤한 하루였어.").assertIsDisplayed()
         compose.onNodeWithTag("chat-companion").assertIsDisplayed()
         compose.onNodeWithTag("chat-panel").assertIsDisplayed()
         val failure = compose.onNodeWithTag("chat-inline-failure").fetchSemanticsNode().boundsInRoot
         assertEquals(852f, failure.left, 1f)
         assertEquals(929f, failure.top, 1f)
+        val warning =
+            compose
+                .onNodeWithTag("chat-inline-warning-icon", useUnmergedTree = true)
+                .fetchSemanticsNode()
+                .boundsInRoot
+        val failureTitle = compose.onNodeWithText("답변을 받지 못했어요").fetchSemanticsNode().boundsInRoot
+        assertEquals(852f, warning.left, 1f)
+        assertEquals(927f, warning.top, 1f)
+        assertEquals(32f, warning.width, 1f)
+        assertEquals(900f, failureTitle.left, 1f)
+        assertEquals(920f, failureTitle.top, 1f)
+        assertEquals(262f, failureTitle.width, 1f)
+        val failureNote = compose.onNodeWithText("일시적인 연결 문제예요. 다시 시도해 주세요.").fetchSemanticsNode().boundsInRoot
+        assertEquals(900f, failureNote.left, 1f)
+        assertEquals(960f, failureNote.top, 1f)
         val retry =
             compose
                 .onNodeWithTag(
@@ -455,11 +558,16 @@ class ConversationScreenTest {
                 ).fetchSemanticsNode()
                 .boundsInRoot
         assertEquals(1974f, retry.left, 1f)
+        assertEquals(933f, retry.top, 1f)
         assertEquals(230f, retry.width, 1f)
+        assertEquals(52f, retry.height, 1f)
         assertEquals(2228f, edit.left, 1f)
+        assertEquals(933f, edit.top, 1f)
         assertEquals(206f, edit.width, 1f)
+        assertEquals(52f, edit.height, 1f)
         compose.onNodeWithText("내용 수정").performClick()
         compose.onNodeWithTag("chat-input").assertIsDisplayed()
+        assertEquals(2, compose.onAllNodesWithTag("chat-user-bubble").fetchSemanticsNodes().size)
         compose.runOnIdle { assertEquals("모비는 뭐가 좋아?", draft.text) }
     }
 
@@ -597,7 +705,9 @@ class ConversationScreenTest {
                                     connectionRetrying = true,
                                 )
                         },
-                        onDismissFailure = { state = state.copy(failed = false) },
+                        onDismissFailure = {
+                            state = state.copy(messages = state.messages.dropLast(1), failed = false)
+                        },
                         onNewConversation = { state = state.copy(messages = emptyList()) },
                     )
                 }
@@ -615,6 +725,35 @@ class ConversationScreenTest {
             }
             bitmap.recycle()
         }
+    }
+
+    private fun assertPaintBounds(
+        bitmap: Bitmap,
+        xRange: IntRange,
+        yRange: IntRange,
+        color: Int,
+        expected: Rect,
+    ) {
+        val actual = Rect(Int.MAX_VALUE, Int.MAX_VALUE, 0, 0)
+        for (y in yRange) {
+            for (x in xRange) {
+                val pixel = bitmap.getPixel(x, y)
+                if (abs(Color.red(pixel) - Color.red(color)) < 25 &&
+                    abs(Color.green(pixel) - Color.green(color)) < 25 &&
+                    abs(Color.blue(pixel) - Color.blue(color)) < 25
+                ) {
+                    actual.left = minOf(actual.left, x)
+                    actual.top = minOf(actual.top, y)
+                    actual.right = maxOf(actual.right, x + 1)
+                    actual.bottom = maxOf(actual.bottom, y + 1)
+                }
+            }
+        }
+        assertTrue("No matching pixels in $xRange x $yRange", actual.left != Int.MAX_VALUE)
+        assertTrue("Expected $expected, found $actual", abs(actual.left - expected.left) <= 1)
+        assertTrue("Expected $expected, found $actual", abs(actual.top - expected.top) <= 1)
+        assertTrue("Expected $expected, found $actual", abs(actual.right - expected.right) <= 1)
+        assertTrue("Expected $expected, found $actual", abs(actual.bottom - expected.bottom) <= 1)
     }
 
     private val messages =

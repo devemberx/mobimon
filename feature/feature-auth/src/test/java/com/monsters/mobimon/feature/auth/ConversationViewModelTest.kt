@@ -20,6 +20,7 @@ import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
@@ -36,6 +37,12 @@ import org.junit.Test
 class ConversationViewModelTest {
     private val authentication = FakeAuthentication()
     private val provider = FakeProvider()
+    private val networkStatus =
+        object : ConversationNetworkStatus {
+            override val online = MutableStateFlow(true)
+
+            override fun isOnline() = online.value
+        }
     private val store = ViewModelStore()
 
     @After fun close() {
@@ -223,7 +230,11 @@ class ConversationViewModelTest {
             )
             assertEquals("second", model.draft.text)
             assertEquals(ConversationProblem.TIMEOUT, model.state.value.problem)
+            assertEquals(ConversationProblem.TIMEOUT, model.state.value.connectionProblem)
             provider.answer = { ConversationResult.Success("answer") }
+            model.retryConnection()
+            runCurrent()
+            assertTrue(model.state.value.failed)
             model.retry()
             runCurrent()
             assertFalse(model.state.value.failed)
@@ -251,12 +262,182 @@ class ConversationViewModelTest {
 
             model.edit(TextFieldValue("after"))
 
+            assertTrue(model.state.value.failed)
+            assertEquals("before", model.draft.text)
+            assertEquals(
+                listOf("before"),
+                model.state.value.messages
+                    .map { it.text },
+            )
+            model.dismissFailure()
+            model.edit(TextFieldValue("after"))
+
             assertFalse(model.state.value.failed)
             assertTrue(
                 model.state.value.messages
                     .isEmpty(),
             )
             assertEquals("after", model.draft.text)
+        }
+
+    @Test fun replyNetworkFailureRequiresRecheckAndKeepsFailedTurnUntilExplicitAction() =
+        runTest {
+            Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+            val model = model()
+            runCurrent()
+            provider.answer = { ConversationResult.Failure(ConversationProblem.NETWORK) }
+            model.edit(TextFieldValue("keep me"))
+            model.send()
+            runCurrent()
+
+            assertEquals(ConversationConnection.UNAVAILABLE, model.state.value.connection)
+            assertEquals(ConversationProblem.NETWORK, model.state.value.connectionProblem)
+            assertTrue(model.state.value.failed)
+            model.edit(TextFieldValue("keep me", TextRange(0)))
+            assertTrue(model.state.value.failed)
+            assertEquals(
+                listOf("keep me"),
+                model.state.value.messages
+                    .map { it.text },
+            )
+
+            model.retryConnection()
+            runCurrent()
+            assertEquals(ConversationConnection.READY, model.state.value.connection)
+            assertEquals(null, model.state.value.connectionProblem)
+            assertTrue(model.state.value.failed)
+            assertEquals(
+                listOf("keep me"),
+                model.state.value.messages
+                    .map { it.text },
+            )
+            assertEquals(1, provider.requests.size)
+        }
+
+    @Test fun offlineSendAndRecheckFailImmediatelyWithoutCallingCopilot() =
+        runTest {
+            Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+            val model = model()
+            runCurrent()
+            val checksBeforeDisconnect = provider.connections
+            networkStatus.online.value = false
+            model.edit(TextFieldValue("keep this"))
+            model.send()
+            runCurrent()
+
+            assertEquals(0, provider.requests.size)
+            assertEquals(ConversationProblem.NETWORK, model.state.value.problem)
+            assertEquals(ConversationProblem.NETWORK, model.state.value.connectionProblem)
+            assertFalse(model.state.value.replyPending)
+            assertEquals(
+                listOf("keep this"),
+                model.state.value.messages
+                    .map { it.text },
+            )
+
+            model.retryConnection()
+            runCurrent()
+            assertEquals(checksBeforeDisconnect, provider.connections)
+            assertEquals(ConversationProblem.NETWORK, model.state.value.connectionProblem)
+            assertFalse(model.state.value.connectionRetrying)
+
+            networkStatus.online.value = true
+            model.retryConnection()
+            runCurrent()
+            assertEquals(checksBeforeDisconnect + 1, provider.connections)
+            assertEquals(ConversationConnection.READY, model.state.value.connection)
+            assertTrue(model.state.value.failed)
+        }
+
+    @Test fun disconnectDuringPendingReplyStopsWaitingAndShowsNetworkFailure() =
+        runTest {
+            Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+            val model = model()
+            runCurrent()
+            provider.answer = { CompletableDeferred<ConversationResult<String>>().await() }
+            model.edit(TextFieldValue("sent before disconnect"))
+            model.send()
+            runCurrent()
+            assertTrue(model.state.value.replyPending)
+
+            networkStatus.online.value = false
+            runCurrent()
+
+            assertFalse(model.state.value.replyPending)
+            assertEquals(ConversationProblem.NETWORK, model.state.value.problem)
+            assertEquals(ConversationProblem.NETWORK, model.state.value.connectionProblem)
+            assertEquals(1, provider.requests.size)
+        }
+
+    @Test fun usageFailureBlocksSendUntilCopilotCheckSucceeds() =
+        runTest {
+            Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+            val model = model()
+            runCurrent()
+            provider.answer = { ConversationResult.Failure(ConversationProblem.USAGE) }
+            model.edit(TextFieldValue("quota"))
+            model.send()
+            runCurrent()
+
+            assertEquals(ConversationProblem.USAGE, model.state.value.problem)
+            assertEquals(ConversationProblem.USAGE, model.state.value.connectionProblem)
+            assertEquals(ConversationConnection.UNAVAILABLE, model.state.value.connection)
+            assertTrue(model.state.value.failed)
+            val checksBeforeReturn = provider.connections
+            model.deactivate()
+            model.activate(true)
+            runCurrent()
+            assertEquals(checksBeforeReturn + 1, provider.connections)
+            assertEquals(ConversationConnection.READY, model.state.value.connection)
+            assertTrue(model.state.value.failed)
+        }
+
+    @Test fun stalledReplyTimesOutAndRetainsEditableAttempt() =
+        runTest {
+            Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+            val model = model()
+            runCurrent()
+            provider.answer = { CompletableDeferred<ConversationResult<String>>().await() }
+            model.edit(TextFieldValue("waiting"))
+            model.send()
+            runCurrent()
+            assertTrue(model.state.value.replyPending)
+
+            advanceTimeBy(30_000)
+            runCurrent()
+
+            assertFalse(model.state.value.replyPending)
+            assertEquals(ConversationProblem.TIMEOUT, model.state.value.problem)
+            assertEquals("waiting", model.draft.text)
+            assertEquals(
+                listOf("waiting"),
+                model.state.value.messages
+                    .map { it.text },
+            )
+            model.dismissFailure()
+            assertTrue(
+                model.state.value.messages
+                    .isEmpty(),
+            )
+        }
+
+    @Test fun stalledConnectionCheckTimesOutAndAllowsExplicitRecheck() =
+        runTest {
+            Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+            provider.connectionAnswer = { CompletableDeferred<ConversationResult<String>>().await() }
+            val model = model()
+            runCurrent()
+            assertEquals(ConversationConnection.CHECKING, model.state.value.connection)
+
+            advanceTimeBy(30_000)
+            runCurrent()
+
+            assertEquals(ConversationConnection.UNAVAILABLE, model.state.value.connection)
+            assertEquals(ConversationProblem.TIMEOUT, model.state.value.connectionProblem)
+            provider.connectionAnswer = { ConversationResult.Success("gpt-4o") }
+            model.retryConnection()
+            runCurrent()
+            assertEquals(ConversationConnection.READY, model.state.value.connection)
         }
 
     @Test fun failedTurnRemainsVisibleAfterLeavingAndReturningToChat() =
@@ -326,6 +507,7 @@ class ConversationViewModelTest {
             val sentBeforeEdit = provider.requests.size
             val checksBeforeEdit = provider.connections
 
+            model.dismissFailure()
             model.edit(TextFieldValue("after"))
             runCurrent()
 
@@ -464,7 +646,7 @@ class ConversationViewModelTest {
         }
 
     private fun model() =
-        ConversationViewModel(authentication, provider).also {
+        ConversationViewModel(authentication, provider, networkStatus).also {
             store.put("model-${System.identityHashCode(it)}", it)
             it.bind("profile", "friend:mobi")
             it.activate(true)

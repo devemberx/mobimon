@@ -35,6 +35,13 @@ class GitHubAuthenticationViewModelTest {
         Dispatchers.resetMain()
     }
 
+    @Test fun firstFrameMatchesRestoringSession() =
+        runTest(dispatcher) {
+            authentication.session.value = GitHubSession.Restoring
+            val model = GitHubAuthenticationViewModel(authentication)
+            assertEquals(CopilotUiState.AuthenticationStatus(pending = true), model.state.value)
+        }
+
     @Test fun repeatedClicksAndManualChecksKeepOnePollingJob() =
         runTest(dispatcher) {
             val model = GitHubAuthenticationViewModel(authentication)

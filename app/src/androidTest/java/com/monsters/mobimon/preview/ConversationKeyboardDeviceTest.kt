@@ -5,6 +5,7 @@ import android.graphics.Bitmap
 import android.provider.Settings
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createEmptyComposeRule
+import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
@@ -25,6 +26,43 @@ import java.io.File
 @RunWith(AndroidJUnit4::class)
 class ConversationKeyboardDeviceTest {
     @get:Rule val compose = createEmptyComposeRule()
+
+    @Test
+    fun editingFailedPreviewRemovesUnansweredBubble() {
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        val intent = Intent(context, ConversationPreviewActivity::class.java).putExtra("state", "failed")
+        ActivityScenario.launch<ConversationPreviewActivity>(intent).use {
+            compose.onNodeWithTag("chat-inline-failure").assertIsDisplayed()
+            assertEquals(3, compose.onAllNodesWithTag("chat-user-bubble").fetchSemanticsNodes().size)
+            compose.onNodeWithText("내용 수정").performClick()
+            assertEquals(2, compose.onAllNodesWithTag("chat-user-bubble").fetchSemanticsNodes().size)
+            compose.onNodeWithTag("chat-inline-failure").assertDoesNotExist()
+        }
+    }
+
+    @Test
+    fun replyNetworkDialogRechecksWithoutRemovingTheFailedTurn() {
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        val intent = Intent(context, ConversationPreviewActivity::class.java).putExtra("state", "network-failed")
+        ActivityScenario.launch<ConversationPreviewActivity>(intent).use {
+            compose.onNodeWithTag("chat-network-dialog").assertIsDisplayed()
+            compose.onNodeWithTag("chat-network-retry").performClick()
+            compose.onNodeWithTag("chat-network-dialog").assertDoesNotExist()
+            compose.onNodeWithTag("chat-inline-failure").assertIsDisplayed()
+            assertEquals(3, compose.onAllNodesWithTag("chat-user-bubble").fetchSemanticsNodes().size)
+        }
+    }
+
+    @Test
+    fun shortConversationShowsBothSpeakersAndNewChat() {
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        val intent = Intent(context, ConversationPreviewActivity::class.java).putExtra("state", "messages")
+        ActivityScenario.launch<ConversationPreviewActivity>(intent).use {
+            compose.onNodeWithText("오늘은 조금 피곤한 하루였어.").assertIsDisplayed()
+            compose.onNodeWithText("오늘 하루도 수고했어요.", substring = true).assertIsDisplayed()
+            compose.onNodeWithTag("chat-new-action").assertIsDisplayed()
+        }
+    }
 
     @Test
     fun realImeResizesPanelsAndBackRetainsDraft() {

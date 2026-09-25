@@ -26,8 +26,10 @@ import com.monsters.mobimon.core.domain.VehicleSnapshot
 import com.monsters.mobimon.di.AppEnvironment
 import com.monsters.mobimon.di.AppUseModule
 import com.monsters.mobimon.di.AuthenticationModule
+import com.monsters.mobimon.di.NetworkModule
 import com.monsters.mobimon.di.PlatformModule
 import com.monsters.mobimon.di.VehicleProviderModule
+import com.monsters.mobimon.feature.auth.ConversationNetworkStatus
 import com.monsters.mobimon.runtime.AppUseStateSource
 import dagger.Module
 import dagger.Provides
@@ -51,7 +53,13 @@ import javax.inject.Singleton
 @Module
 @TestInstallIn(
     components = [SingletonComponent::class],
-    replaces = [PlatformModule::class, VehicleProviderModule::class, AppUseModule::class, AuthenticationModule::class],
+    replaces = [
+        PlatformModule::class,
+        VehicleProviderModule::class,
+        AppUseModule::class,
+        AuthenticationModule::class,
+        NetworkModule::class,
+    ],
 )
 object JourneyTestModule {
     @Provides
@@ -60,6 +68,9 @@ object JourneyTestModule {
 
     @Provides
     fun conversation(provider: JourneyConversationProvider): ConversationProvider = provider
+
+    @Provides
+    fun networkStatus(status: JourneyNetworkStatus): ConversationNetworkStatus = status
 
     @Provides
     fun clock(): Clock = Clock { 10_000L }
@@ -83,6 +94,15 @@ object JourneyTestModule {
     @Provides
     fun preferences(storage: JourneyStorage): DataStore<Preferences> = storage.preferences
 }
+
+@Singleton
+class JourneyNetworkStatus
+    @Inject
+    constructor() : ConversationNetworkStatus {
+        override val online = MutableStateFlow(true)
+
+        override fun isOnline() = online.value
+    }
 
 @Singleton
 class JourneyConversationProvider
