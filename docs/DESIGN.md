@@ -156,9 +156,10 @@ Friends, accessories and backgrounds are independent. Preserve equipment per fri
 Preview stays local until Apply commits; purchase confirms ownership only. Show
 compatibility, price and wallet balance before purchase; cancellation spends nothing.
 On entry, reuse the committed appearance already shown on Home while the Store
-refreshes its inventory and catalog. Keep the Store frame in place. Show a loading
-message only if the read takes longer than a brief transition; show errors and retry
-immediately.
+refreshes its inventory and catalog. Keep the header, preview, tabs and card bounds
+in place. If a read lasts beyond a brief transition, show still card placeholders
+in the catalog area; reveal the cards with a short fade when ready. The in-app
+character motion preference does not affect Store cards. Show errors and retry inline.
 
 | State | Action |
 | --- | --- |

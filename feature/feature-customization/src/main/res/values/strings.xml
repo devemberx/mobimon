@@ -35,8 +35,6 @@
     <string name="pet_action_insufficient_points">포인트 부족 · %1$d P 필요</string>
     <string name="pet_friend_mobi">Mobi · 강아지</string>
     <string name="pet_friend_luna">Luna · 고양이</string>
-    <string name="pet_catalog_pending">아이템 목록과 가격을 준비하고 있어요.</string>
-    <string name="customization_inventory_loading">아이템을 불러오고 있어요.</string>
     <string name="customization_inventory_failed">소유한 아이템을 확인할 수 없어요.</string>
     <string name="pet_inventory_save_failed">친구를 적용하지 못했어요. 다시 시도해 주세요.</string>
     <string name="pet_appearance_apply">이 모습 적용</string>
