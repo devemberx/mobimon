@@ -5,14 +5,18 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -32,22 +36,37 @@ internal fun ConversationParkingBadge(
     scale: Float,
     modifier: Modifier = Modifier,
 ) {
+    val enlargedText = LocalDensity.current.fontScale > 1f
+    val width = (if (confirmed) 258.dp else 272.dp) * scale
+    val height = 60.dp * scale
+    val sizing =
+        if (enlargedText) {
+            Modifier.widthIn(min = width).heightIn(min = height)
+        } else {
+            Modifier.size(width, height)
+        }
     val status =
         stringResource(
             if (confirmed) CoreUiR.string.mobimon_parking_confirmed else CoreUiR.string.mobimon_parking_restricted,
         )
     Box(
         modifier
-            .size((if (confirmed) 258.dp else 272.dp) * scale, 60.dp * scale)
+            .then(sizing)
             .background(Colors.raised, RoundedCornerShape(30.dp * scale))
             .testTag("chat-parking-badge")
             .semantics(mergeDescendants = true) { contentDescription = status },
     ) {
-        if (confirmed) {
+        if (confirmed && !enlargedText) {
             Icon(
                 painterResource(CoreUiR.drawable.mobimon_parking),
                 contentDescription = null,
-                modifier = Modifier.offset(37.dp * scale, 10.dp * scale).size(40.dp * scale),
+                modifier =
+                    Modifier
+                        .offset(
+                            37.dp * scale,
+                            10.dp * scale,
+                        ).size(40.dp * scale)
+                        .testTag("chat-parking-icon"),
                 tint = Colors.accent,
             )
             Text(
@@ -59,21 +78,33 @@ internal fun ConversationParkingBadge(
                 overflow = TextOverflow.Ellipsis,
             )
         } else {
+            val rowModifier =
+                if (enlargedText) {
+                    Modifier.align(Alignment.Center).padding(horizontal = 12.dp * scale, vertical = 8.dp * scale)
+                } else {
+                    Modifier.fillMaxSize()
+                }
             Row(
-                Modifier.fillMaxSize(),
+                rowModifier,
                 horizontalArrangement = Arrangement.spacedBy(16.dp * scale, Alignment.CenterHorizontally),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Icon(
-                    painterResource(CoreUiR.drawable.mobimon_parking_unconfirmed),
+                    painterResource(
+                        if (confirmed) {
+                            CoreUiR.drawable.mobimon_parking
+                        } else {
+                            CoreUiR.drawable.mobimon_parking_unconfirmed
+                        },
+                    ),
                     contentDescription = null,
                     modifier = Modifier.size(40.dp * scale).testTag("chat-parking-icon"),
-                    tint = Colors.destructive,
+                    tint = if (confirmed) Colors.accent else Colors.destructive,
                 )
                 Text(
                     status,
-                    style = mobiMonReferenceTextStyle(24f, scale),
-                    color = Colors.destructive,
+                    style = mobiMonReferenceTextStyle(if (confirmed) 26f else 24f, scale),
+                    color = if (confirmed) Colors.accent else Colors.destructive,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )

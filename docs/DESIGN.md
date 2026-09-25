@@ -44,9 +44,10 @@ Expressions supplement vehicle facts; they never diagnose a vehicle or replace w
   status color for the icon and text. Fresh, valid nonmoving `P` at speed zero
   shows “주차 확인됨”;
   every other state shows “주차 후 이용”. Conversation retains its separate Figma
-  badge at 258 × 60 when confirmed and 272 × 60 when restricted, positioned
-  beside its connection badge. Its restricted icon and label are also centered
-  together. Vehicle details may describe the specific signal
+  badge at 258 × 60 when confirmed and 272 × 60 when restricted at reference
+  text size, positioned beside its connection badge. Enlarged text expands the
+  badge so its icon and label stay separate. Its restricted icon and label are
+  also centered together. Vehicle details may describe the specific signal
   or data gap separately.
 
 ### Launcher icon and native splash

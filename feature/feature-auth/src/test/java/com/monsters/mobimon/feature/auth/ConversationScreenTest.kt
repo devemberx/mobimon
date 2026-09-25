@@ -614,6 +614,30 @@ class ConversationScreenTest {
     }
 
     @Test
+    fun enlargedParkingBadgesKeepIconAndLabelSeparate() {
+        show(fontScale = 1.6f)
+
+        fun assertSeparated(status: String) {
+            val badge = compose.onNodeWithContentDescription(status).fetchSemanticsNode().boundsInRoot
+            val icon =
+                compose
+                    .onNodeWithTag(
+                        "chat-parking-icon",
+                        useUnmergedTree = true,
+                    ).fetchSemanticsNode()
+                    .boundsInRoot
+            val label = compose.onNodeWithText(status, useUnmergedTree = true).fetchSemanticsNode().boundsInRoot
+            assertTrue("Icon overlaps $status", icon.right < label.left)
+            assertTrue("Icon escapes $status badge", icon.left >= badge.left)
+            assertTrue("Label escapes $status badge", label.right <= badge.right)
+        }
+
+        assertSeparated("주차 확인됨")
+        compose.runOnIdle { allowed = false }
+        assertSeparated("주차 후 이용")
+    }
+
+    @Test
     @GraphicsMode(GraphicsMode.Mode.NATIVE)
     @Config(qualifiers = "ko-rKR-w800dp-h1000dp-mdpi")
     fun enlargedTextKeepsFailedTurnAndRecoveryActionsVisible() {
