@@ -178,7 +178,10 @@ recovery for network, service, timeout, account, access, usage and
 length errors. Retries are explicit. Put a compact New conversation action at the
 right edge above the composer and omit the change-of-pace follow-up suggestion.
 Align failed-reply icon and text with the reference. Editing removes the unanswered
-user bubble while retaining completed history and the draft.
+user bubble while retaining completed history and the draft. Keep the failed turn
+visible until its Edit or Retry action; keyboard composition and selection updates
+must not dismiss it. Newly sent and received bubbles rise and fade into place over
+280ms, with a slight scale change; existing history and reduced-motion mode stay still.
 The checked-in conversation exports still show the older follow-up action and bubble
 appearance; compare those states against these updated requirements until new exports arrive.
 
@@ -189,8 +192,11 @@ during connection checks shows the [network dialog](ui/conversation/network-erro
 over chat. Other connection failures explain the cause and offer recheck or connection
 management. “다시 확인” checks access/model without sending the draft and displays the
 [checking dialog](ui/conversation/network-checking.svg) until it finishes. A failed
-message stays inline with its attempted turn and offers edit or explicit retry;
-retry may consume usage. An access failure requires recheck before Send. Home and
+message stays inline with its attempted turn and offers edit or explicit retry.
+A network failure or timeout during a reply also shows the connection dialog;
+rechecking restores access without resending the attempted turn. The inline failure
+remains after recheck until Edit or Retry. A retry may consume usage.
+An access failure requires recheck before Send. Home and
 Back preserve the draft. The modal stays on chat and does not interrupt Home.
 
 Hide unsupported voice controls. Future voice input requires permission, transcript

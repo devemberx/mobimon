@@ -41,6 +41,19 @@ class ConversationKeyboardDeviceTest {
     }
 
     @Test
+    fun replyNetworkDialogRechecksWithoutRemovingTheFailedTurn() {
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        val intent = Intent(context, ConversationPreviewActivity::class.java).putExtra("state", "network-failed")
+        ActivityScenario.launch<ConversationPreviewActivity>(intent).use {
+            compose.onNodeWithTag("chat-network-dialog").assertIsDisplayed()
+            compose.onNodeWithTag("chat-network-retry").performClick()
+            compose.onNodeWithTag("chat-network-dialog").assertDoesNotExist()
+            compose.onNodeWithTag("chat-inline-failure").assertIsDisplayed()
+            assertEquals(3, compose.onAllNodesWithTag("chat-user-bubble").fetchSemanticsNodes().size)
+        }
+    }
+
+    @Test
     fun shortConversationShowsBothSpeakersAndNewChat() {
         val context = InstrumentationRegistry.getInstrumentation().targetContext
         val intent = Intent(context, ConversationPreviewActivity::class.java).putExtra("state", "messages")

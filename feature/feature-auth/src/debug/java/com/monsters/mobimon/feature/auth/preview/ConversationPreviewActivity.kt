@@ -18,6 +18,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.sp
+import com.monsters.mobimon.core.domain.ConversationProblem
 import com.monsters.mobimon.core.ui.LocalMobiMonMotionEnabled
 import com.monsters.mobimon.core.ui.MobiMonColors
 import com.monsters.mobimon.core.ui.MobiMonTheme
@@ -40,7 +41,12 @@ class ConversationPreviewActivity : ComponentActivity() {
             var state by remember {
                 mutableStateOf(
                     ConversationUiState(
-                        connection = ConversationConnection.READY,
+                        connection =
+                            if (sample == "network-failed") {
+                                ConversationConnection.UNAVAILABLE
+                            } else {
+                                ConversationConnection.READY
+                            },
                         messages =
                             when (sample) {
                                 "messages" -> messages
@@ -53,7 +59,7 @@ class ConversationPreviewActivity : ComponentActivity() {
                                         ),
                                     )
                                 "pending" -> messages.take(1)
-                                "failed" ->
+                                "failed", "network-failed" ->
                                     listOf(
                                         messages.first(),
                                         ConversationMessage(
@@ -72,7 +78,9 @@ class ConversationPreviewActivity : ComponentActivity() {
                                 else -> emptyList()
                             },
                         replyPending = sample == "pending",
-                        failed = sample == "failed",
+                        failed = sample == "failed" || sample == "network-failed",
+                        problem = if (sample == "network-failed") ConversationProblem.NETWORK else null,
+                        connectionProblem = if (sample == "network-failed") ConversationProblem.NETWORK else null,
                     ),
                 )
             }
@@ -81,13 +89,13 @@ class ConversationPreviewActivity : ComponentActivity() {
                     TextFieldValue(
                         when (sample) {
                             "keyboard" -> "오늘 하루가 조금 힘들었어"
-                            "failed" -> "모비는 뭐가 좋아?"
+                            "failed", "network-failed" -> "모비는 뭐가 좋아?"
                             else -> ""
                         },
                     ),
                 )
             }
-            CompositionLocalProvider(LocalMobiMonMotionEnabled provides (sample == "pending")) {
+            CompositionLocalProvider(LocalMobiMonMotionEnabled provides (sample != "reduced-motion")) {
                 MobiMonTheme {
                     Box(
                         Modifier
@@ -116,6 +124,14 @@ class ConversationPreviewActivity : ComponentActivity() {
                             Modifier.fillMaxSize(),
                             interactionAllowed = true,
                             onRetry = { state = state.copy(failed = false) },
+                            onRecheckConnection = {
+                                state =
+                                    state.copy(
+                                        connection = ConversationConnection.READY,
+                                        connectionProblem = null,
+                                        connectionRetrying = false,
+                                    )
+                            },
                             onDismissFailure = {
                                 state = state.copy(messages = state.messages.dropLast(1), failed = false)
                             },

@@ -174,8 +174,9 @@ requires a successful check and a valid draft. Foreground return and explicit
 recheck repeat the model check; parking loss, account change and backgrounding
 cancel pending work. A connection-check failure stays on chat as a blocking dialog
 with Home and a specific recheck or account action. Failed replies stay inline with
-their attempted turn and offer edit or explicit retry. Rechecking access never
-resends a message.
+their attempted turn until explicit edit or retry. Reply network failures and
+timeouts also surface the connection dialog and require a successful model recheck
+before retry. Rechecking access never resends a message.
 Connection checks and replies have a 30-second total wait bound. Shorter transport
 timeouts report stalled connections promptly while retaining the draft and attempted turn.
 

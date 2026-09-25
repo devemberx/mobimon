@@ -139,23 +139,31 @@ class ConversationScreenTest {
 
     @Test
     @GraphicsMode(GraphicsMode.Mode.NATIVE)
-    fun failedMessageNetworkErrorKeepsRetryAndEditReachable() {
+    fun failedMessageNetworkErrorShowsDialogThenKeepsRetryAndEditReachable() {
         state =
             ConversationUiState(
-                ConversationConnection.READY,
+                ConversationConnection.UNAVAILABLE,
                 messages = listOf(ConversationMessage("attempt", "다시 보낼 내용", true)),
                 failed = true,
                 problem = ConversationProblem.NETWORK,
+                connectionProblem = ConversationProblem.NETWORK,
             )
         draft = TextFieldValue("다시 보낼 내용")
         show()
         capture("message-network-failed")
+        compose.onNodeWithTag("chat-network-dialog").assertIsDisplayed()
+        compose.onNodeWithTag("chat-network-retry").performClick()
+        compose.runOnIdle { assertEquals(1, checks) }
+        compose.runOnIdle { state = state.copy(connection = ConversationConnection.READY, connectionRetrying = false) }
         compose.onNodeWithTag("chat-network-dialog").assertDoesNotExist()
         compose.onNodeWithTag("chat-user-bubble").assertIsDisplayed()
+        compose.onNodeWithTag("chat-inline-failure").assertIsDisplayed()
+        compose.runOnIdle { draft = draft.copy(selection = TextRange(0)) }
+        compose.onNodeWithTag("chat-inline-failure").assertIsDisplayed()
         compose.onNodeWithText("다시 보내기").performClick()
         compose.runOnIdle {
             assertEquals(1, retries)
-            assertEquals(0, checks)
+            assertEquals(1, checks)
         }
         compose.onNodeWithText("내용 수정").performClick()
         compose.runOnIdle { assertEquals("다시 보낼 내용", draft.text) }

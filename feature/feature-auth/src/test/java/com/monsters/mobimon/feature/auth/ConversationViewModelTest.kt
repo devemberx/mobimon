@@ -224,7 +224,11 @@ class ConversationViewModelTest {
             )
             assertEquals("second", model.draft.text)
             assertEquals(ConversationProblem.TIMEOUT, model.state.value.problem)
+            assertEquals(ConversationProblem.TIMEOUT, model.state.value.connectionProblem)
             provider.answer = { ConversationResult.Success("answer") }
+            model.retryConnection()
+            runCurrent()
+            assertTrue(model.state.value.failed)
             model.retry()
             runCurrent()
             assertFalse(model.state.value.failed)
@@ -252,12 +256,56 @@ class ConversationViewModelTest {
 
             model.edit(TextFieldValue("after"))
 
+            assertTrue(model.state.value.failed)
+            assertEquals("before", model.draft.text)
+            assertEquals(
+                listOf("before"),
+                model.state.value.messages
+                    .map { it.text },
+            )
+            model.dismissFailure()
+            model.edit(TextFieldValue("after"))
+
             assertFalse(model.state.value.failed)
             assertTrue(
                 model.state.value.messages
                     .isEmpty(),
             )
             assertEquals("after", model.draft.text)
+        }
+
+    @Test fun replyNetworkFailureRequiresRecheckAndKeepsFailedTurnUntilExplicitAction() =
+        runTest {
+            Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+            val model = model()
+            runCurrent()
+            provider.answer = { ConversationResult.Failure(ConversationProblem.NETWORK) }
+            model.edit(TextFieldValue("keep me"))
+            model.send()
+            runCurrent()
+
+            assertEquals(ConversationConnection.UNAVAILABLE, model.state.value.connection)
+            assertEquals(ConversationProblem.NETWORK, model.state.value.connectionProblem)
+            assertTrue(model.state.value.failed)
+            model.edit(TextFieldValue("keep me", TextRange(0)))
+            assertTrue(model.state.value.failed)
+            assertEquals(
+                listOf("keep me"),
+                model.state.value.messages
+                    .map { it.text },
+            )
+
+            model.retryConnection()
+            runCurrent()
+            assertEquals(ConversationConnection.READY, model.state.value.connection)
+            assertEquals(null, model.state.value.connectionProblem)
+            assertTrue(model.state.value.failed)
+            assertEquals(
+                listOf("keep me"),
+                model.state.value.messages
+                    .map { it.text },
+            )
+            assertEquals(1, provider.requests.size)
         }
 
     @Test fun stalledReplyTimesOutAndRetainsEditableAttempt() =
@@ -375,6 +423,7 @@ class ConversationViewModelTest {
             val sentBeforeEdit = provider.requests.size
             val checksBeforeEdit = provider.connections
 
+            model.dismissFailure()
             model.edit(TextFieldValue("after"))
             runCurrent()
 

@@ -196,9 +196,8 @@ class ConversationViewModel(
     }
 
     fun edit(value: TextFieldValue) {
-        if (!active || !allowed || state.value.replyPending) return
+        if (!active || !allowed || state.value.replyPending || state.value.failed) return
         draft = value
-        if (state.value.failed) resumeEditing()
     }
 
     fun send(text: String = draft.text) = sendInternal(text, retry = false)
@@ -458,10 +457,23 @@ class ConversationViewModel(
                 failed = true,
                 problem = problem,
                 connection =
-                    if (problem in listOf(ConversationProblem.ACCOUNT, ConversationProblem.ACCESS)) {
+                    if (problem in
+                        listOf(
+                            ConversationProblem.ACCOUNT,
+                            ConversationProblem.ACCESS,
+                            ConversationProblem.NETWORK,
+                            ConversationProblem.TIMEOUT,
+                        )
+                    ) {
                         ConversationConnection.UNAVAILABLE
                     } else {
                         state.value.connection
+                    },
+                connectionProblem =
+                    if (problem in listOf(ConversationProblem.NETWORK, ConversationProblem.TIMEOUT)) {
+                        problem
+                    } else {
+                        state.value.connectionProblem
                     },
             )
     }

@@ -1,8 +1,10 @@
 package com.monsters.mobimon.feature.auth
 
+import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
@@ -45,6 +47,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -105,6 +108,7 @@ internal fun ConversationPanel(
     onDismissFailure: () -> Unit = {},
 ) {
     val focusRequester = remember { FocusRequester() }
+    val seenMessageIds = remember { mutableStateListOf<String>().apply { addAll(state.messages.map { it.id }) } }
     val keyboard = LocalSoftwareKeyboardController.current
     val chooseSuggestion: (String) -> Unit = { text ->
         if (allowed && !state.replyPending) {
@@ -131,6 +135,7 @@ internal fun ConversationPanel(
             onNewConversation,
             onRetry,
             onDismissFailure,
+            seenMessageIds,
         )
         return
     }
@@ -182,7 +187,7 @@ internal fun ConversationPanel(
             if (state.messages.isEmpty() && !state.replyPending) {
                 ConversationEmpty(scale, shortened, Modifier.fillMaxSize())
             } else {
-                ConversationMessages(state, friend, scale, shortened, Modifier.fillMaxSize())
+                ConversationMessages(state, friend, scale, shortened, seenMessageIds, Modifier.fillMaxSize())
             }
         }
         if (state.failed) {
@@ -318,6 +323,7 @@ private fun ReferenceConversationPanel(
     onNewConversation: (() -> Unit)?,
     onRetry: () -> Unit,
     onDismissFailure: () -> Unit,
+    seenMessageIds: MutableList<String>,
 ) {
     BoxWithConstraints(
         modifier
@@ -412,6 +418,7 @@ private fun ReferenceConversationPanel(
                     friend,
                     scale,
                     shortened,
+                    seenMessageIds,
                     Modifier.weight(1f).fillMaxWidth(),
                     reference = true,
                 )
@@ -699,10 +706,12 @@ private fun ConversationMessages(
     friend: String,
     scale: Float,
     shortened: Boolean,
+    seenMessageIds: MutableList<String>,
     modifier: Modifier = Modifier,
     reference: Boolean = false,
 ) {
     val scroll = rememberLazyListState()
+    val motionEnabled = LocalMobiMonMotionEnabled.current
     val count = state.messages.size + if (state.replyPending) 1 else 0
     LaunchedEffect(count, shortened) {
         // BoxWithConstraints can launch this during measurement; scrolling forces a remeasure.
@@ -741,7 +750,26 @@ private fun ConversationMessages(
         verticalArrangement = Arrangement.spacedBy((if (reference) 0.dp else 54.dp) * scale),
     ) {
         itemsIndexed(state.messages, key = { _, message -> message.id }) { index, message ->
-            Column {
+            val animateEntry = motionEnabled && message.id !in seenMessageIds
+            var entered by remember(message.id) { mutableStateOf(!animateEntry) }
+            LaunchedEffect(message.id) {
+                if (message.id !in seenMessageIds) seenMessageIds.add(message.id)
+                entered = true
+            }
+            val progress by animateFloatAsState(
+                targetValue = if (entered || !motionEnabled) 1f else 0f,
+                animationSpec = tween(280, easing = FastOutSlowInEasing),
+                label = "message arrival",
+            )
+            val entryProgress = progress
+            Column(
+                Modifier.graphicsLayer {
+                    alpha = entryProgress
+                    translationY = (1f - entryProgress) * 24.dp.toPx() * scale
+                    scaleX = 0.97f + entryProgress * 0.03f
+                    scaleY = 0.97f + entryProgress * 0.03f
+                },
+            ) {
                 MessageBubble(
                     message.text,
                     message.fromUser,
@@ -1026,7 +1054,7 @@ private fun ConversationComposer(
     ) {
         BasicTextField(
             value = draft,
-            onValueChange = { if (allowed && !state.replyPending) onDraftChange(it) },
+            onValueChange = { if (allowed && !state.replyPending && !state.failed) onDraftChange(it) },
             modifier =
                 Modifier
                     .weight(1f)
@@ -1036,7 +1064,7 @@ private fun ConversationComposer(
                         "chat-input",
                     ).semantics { contentDescription = label },
             enabled = allowed,
-            readOnly = state.replyPending,
+            readOnly = state.replyPending || state.failed,
             textStyle = mobiMonReferenceTextStyle(if (wide) 26f else 32f, scale).copy(color = Colors.text),
             cursorBrush = SolidColor(Colors.accent),
             maxLines = 3,
