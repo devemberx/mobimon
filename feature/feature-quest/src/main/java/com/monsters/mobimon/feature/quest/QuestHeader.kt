@@ -21,17 +21,14 @@ import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.monsters.mobimon.core.ui.MobiMonDimensions
-import com.monsters.mobimon.core.ui.MobiMonParkingBadge
 import com.monsters.mobimon.core.ui.MobiMonColors as Colors
 import com.monsters.mobimon.core.ui.R as CoreUiR
 
 @Composable
 internal fun QuestHeader(
-    isParked: Boolean,
     friendId: String,
     scale: Float,
     onBack: () -> Unit,
-    referenceLayout: Boolean,
     modifier: Modifier = Modifier,
     onHome: (() -> Unit)? = null,
     isDetail: Boolean = false,
@@ -88,18 +85,5 @@ internal fun QuestHeader(
                 style = questTextStyle(28f, scale, bold = false, color = Colors.muted),
             )
         }
-
-        MobiMonParkingBadge(
-            status =
-                stringResource(
-                    if (isParked) {
-                        CoreUiR.string.mobimon_parking_confirmed
-                    } else {
-                        CoreUiR.string.mobimon_parking_unconfirmed
-                    },
-                ),
-            scale = scale,
-            modifier = if (referenceLayout) Modifier.align(Alignment.Top) else Modifier,
-        )
     }
 }

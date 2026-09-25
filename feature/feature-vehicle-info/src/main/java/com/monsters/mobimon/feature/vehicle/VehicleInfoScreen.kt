@@ -53,9 +53,10 @@ import com.monsters.mobimon.core.domain.SignalUnavailableReason
 import com.monsters.mobimon.core.domain.VehicleSnapshot
 import com.monsters.mobimon.core.domain.VehicleWarning
 import com.monsters.mobimon.core.domain.WarningSeverity
+import com.monsters.mobimon.core.presentation.parkingBadgeConfirmed
 import com.monsters.mobimon.core.ui.MobiMonColors
 import com.monsters.mobimon.core.ui.MobiMonDimensions
-import com.monsters.mobimon.core.ui.MobiMonParkingBadge
+import com.monsters.mobimon.core.ui.MobiMonParkingStatusBadge
 import com.monsters.mobimon.core.ui.PetAvatar
 import com.monsters.mobimon.core.ui.R as CoreUiR
 
@@ -128,7 +129,6 @@ fun VehicleInfoScreen(
                             VehicleCardGrid(
                                 snapshot = snapshot,
                                 readings = readings,
-                                parkingScale = scale,
                                 modifier = Modifier.weight(1f),
                                 targetHeight = metricsPanelHeight,
                             )
@@ -180,7 +180,6 @@ fun VehicleInfoScreen(
                             VehicleCardGrid(
                                 snapshot = snapshot,
                                 readings = readings,
-                                parkingScale = compactScale,
                                 modifier = Modifier.weight(1f),
                             )
                         }
@@ -196,7 +195,6 @@ fun VehicleInfoScreen(
                         VehicleCardGrid(
                             snapshot = snapshot,
                             readings = readings,
-                            parkingScale = compactScale,
                             modifier = Modifier.fillMaxWidth(),
                         )
                     }
@@ -253,6 +251,12 @@ internal fun VehicleHeader(
                 fontSize = if (scale >= 0.7f) (28f * scale).sp else 14.sp,
             )
         }
+
+        MobiMonParkingStatusBadge(
+            confirmed = snapshot.parkingBadgeConfirmed,
+            modifier = Modifier.align(Alignment.Top),
+            scale = scale,
+        )
     }
 }
 
@@ -386,7 +390,6 @@ private fun VehicleCardGrid(
     snapshot: VehicleSnapshot,
     readings: VehicleInfoUiState,
     modifier: Modifier = Modifier,
-    parkingScale: Float = 1f,
     targetHeight: Dp? = null,
 ) {
     val fontScale = LocalDensity.current.fontScale
@@ -394,7 +397,7 @@ private fun VehicleCardGrid(
     val cards =
         listOf<@Composable (Modifier) -> Unit>(
             { BatteryCard(snapshot, readings.batteryPercent, it) },
-            { DrivingCard(snapshot, it, parkingScale) },
+            { DrivingCard(snapshot, it) },
             { TireCard(readings, it) },
             { EnvironmentCard(readings, it) },
             { DriverAssistCard(readings, it) },
@@ -471,29 +474,13 @@ private fun BatteryCard(
 private fun DrivingCard(
     snapshot: VehicleSnapshot,
     modifier: Modifier = Modifier,
-    parkingScale: Float = 1f,
 ) {
     val drivingText =
-        stringResource(
-            when {
-                snapshot.quality != SignalQuality.VALID || snapshot.drivingState == DrivingState.UNKNOWN ->
-                    CoreUiR.string.mobimon_parking_unconfirmed
-                snapshot.drivingState == DrivingState.MOVING -> R.string.vehicle_driving_moving
-                else -> CoreUiR.string.mobimon_parking_confirmed
-            },
-        )
+        stringResource(snapshot.drivingStatusTextRes())
     MetricCard(
         title = stringResource(R.string.vehicle_driving_card_title),
         value = drivingText,
         testTag = "vehicle-card-driving",
-        valueContent = {
-            MobiMonParkingBadge(
-                status = drivingText,
-                scale = parkingScale,
-                showParkingIcon =
-                    snapshot.quality != SignalQuality.VALID || snapshot.drivingState != DrivingState.MOVING,
-            )
-        },
         supporting = parkingSupportingText(snapshot),
         modifier = modifier,
         badge =
@@ -889,6 +876,14 @@ private fun VehicleCondition.mood(): VehicleMood =
         VehicleCondition.WARNING -> VehicleMood.WARNING
         VehicleCondition.STALE -> VehicleMood.STALE
         VehicleCondition.UNAVAILABLE -> VehicleMood.UNKNOWN
+    }
+
+private fun VehicleSnapshot.drivingStatusTextRes(): Int =
+    when {
+        quality != SignalQuality.VALID || drivingState == DrivingState.UNKNOWN ->
+            CoreUiR.string.mobimon_parking_unconfirmed
+        drivingState == DrivingState.MOVING -> R.string.vehicle_driving_moving
+        else -> CoreUiR.string.mobimon_parking_confirmed
     }
 
 private enum class VehicleMood(

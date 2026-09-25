@@ -73,6 +73,21 @@ class ConversationScreenTest {
     private lateinit var view: View
 
     @Test
+    fun restrictedConversationShowsParkingNoticeInHeader() {
+        allowed = false
+        show()
+        val badge =
+            compose
+                .onNodeWithContentDescription(
+                    "주차 후 이용 가능",
+                ).assertIsDisplayed()
+                .fetchSemanticsNode()
+                .boundsInRoot
+        assertEquals(36f, badge.top, 1f)
+        assertEquals(2488f, badge.right, 1f)
+    }
+
+    @Test
     fun suggestionsOnlyFillDraftAndExplicitSendCommitsCompositionWithoutDuplicates() {
         show()
         compose.onNodeWithTag("chat-send").assertIsNotEnabled()
@@ -298,16 +313,12 @@ class ConversationScreenTest {
         assertEquals(740f, dialog.height, 1f)
         val badge =
             compose
-                .onNodeWithTag(
-                    "chat-parking-badge",
-                    useUnmergedTree = true,
-                ).fetchSemanticsNode()
+                .onNodeWithContentDescription("주차 후 이용 가능")
+                .fetchSemanticsNode()
                 .boundsInRoot
-        assertEquals(2144f, badge.left, 1f)
-        assertEquals(272f, badge.width, 1f)
-        compose
-            .onNodeWithTag("chat-parking-badge", useUnmergedTree = true)
-            .assertContentDescriptionEquals("주차 필요")
+        assertEquals(2048f, badge.left, 1f)
+        assertEquals(36f, badge.top, 1f)
+        assertEquals(440f, badge.width, 1f)
         compose.onNodeWithTag("chat-send").assertDoesNotExist()
         compose.onNodeWithTag("chat-parking-home").assertIsDisplayed().performClick()
         compose.runOnIdle {
@@ -422,15 +433,14 @@ class ConversationScreenTest {
         assertEquals(100f, avatar.left, 1f)
         assertEquals(336f, avatar.top, 1f)
         assertEquals(624f, avatar.width, 1f)
-        val parking = compose.onNodeWithTag("chat-parking-badge").fetchSemanticsNode().boundsInRoot
-        compose.onNodeWithTag("chat-parking-badge").assertContentDescriptionEquals("주차 확인됨")
-        assertEquals(2146f, parking.left, 1f)
-        assertEquals(51f, parking.top, 1f)
-        assertEquals(258f, parking.width, 1f)
-        assertEquals(60f, parking.height, 1f)
+        val parking = compose.onNodeWithContentDescription("주차 확인됨").fetchSemanticsNode().boundsInRoot
+        assertEquals(2048f, parking.left, 1f)
+        assertEquals(36f, parking.top, 1f)
+        assertEquals(440f, parking.width, 1f)
+        assertEquals(76f, parking.height, 1f)
         val auth = compose.onNodeWithTag("chat-auth-badge").fetchSemanticsNode().boundsInRoot
         compose.onNodeWithTag("chat-auth-badge").assertContentDescriptionEquals("Copilot 연결됨")
-        assertEquals(1887f, auth.left, 1f)
+        assertEquals(1776f, auth.left, 1f)
         assertEquals(51f, auth.top, 1f)
         assertEquals(244f, auth.width, 1f)
         assertEquals(60f, auth.height, 1f)

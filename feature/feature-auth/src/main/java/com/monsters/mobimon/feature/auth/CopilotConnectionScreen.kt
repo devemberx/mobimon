@@ -59,10 +59,9 @@ import androidx.compose.ui.unit.sp
 import com.monsters.mobimon.core.ui.CompanionIcon
 import com.monsters.mobimon.core.ui.MobiMonFontFamily
 import com.monsters.mobimon.core.ui.MobiMonNavigationButton
-import com.monsters.mobimon.core.ui.MobiMonParkingBadge
+import com.monsters.mobimon.core.ui.MobiMonParkingStatusBadge
 import com.monsters.mobimon.core.ui.PetAvatar
 import com.monsters.mobimon.core.ui.MobiMonColors as Colors
-import com.monsters.mobimon.core.ui.R as CoreUiR
 
 /** Figma P51–P56. The host owns navigation, countdowns and all connection work. */
 @Composable
@@ -78,6 +77,7 @@ fun CopilotConnectionScreen(
     outfitId: String? = null,
     backgroundId: String? = null,
     qrCode: Painter? = null,
+    parkingBadgeConfirmed: Boolean = interactionAllowed,
 ) {
     val title = stringResource(R.string.copilot_title)
     val displayedState =
@@ -100,7 +100,7 @@ fun CopilotConnectionScreen(
                     Box(Modifier.fillMaxSize().testTag("copilot-reference")) {
                         CopilotReferenceHeader(
                             onAction,
-                            interactionAllowed,
+                            parkingBadgeConfirmed,
                             simulatedVehicle,
                             scale,
                             Modifier.offset(72.dp * scale, 36.dp * scale).width(2416.dp * scale),
@@ -148,7 +148,7 @@ fun CopilotConnectionScreen(
                     Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(24.dp),
                     verticalArrangement = Arrangement.spacedBy(24.dp),
                 ) {
-                    CopilotHeader(onAction, interactionAllowed, simulatedVehicle, scale)
+                    CopilotHeader(onAction, parkingBadgeConfirmed, simulatedVehicle, scale)
                     Row(
                         Modifier.fillMaxWidth().background(Colors.panel, RoundedCornerShape(24.dp)).padding(24.dp),
                         verticalAlignment = Alignment.CenterVertically,
@@ -192,7 +192,7 @@ fun CopilotConnectionScreen(
 @Composable
 private fun CopilotHeader(
     onAction: (CopilotAction) -> Unit,
-    interactionAllowed: Boolean,
+    parkingBadgeConfirmed: Boolean,
     simulatedVehicle: Boolean,
     scale: Float,
     modifier: Modifier = Modifier,
@@ -224,9 +224,9 @@ private fun CopilotHeader(
                         color = Colors.muted,
                     )
                 }
-                if (!compact) ParkingStatus(interactionAllowed, simulatedVehicle, scale)
+                if (!compact) ParkingStatus(parkingBadgeConfirmed, simulatedVehicle, scale)
             }
-            if (compact) ParkingStatus(interactionAllowed, simulatedVehicle, scale)
+            if (compact) ParkingStatus(parkingBadgeConfirmed, simulatedVehicle, scale)
         }
     }
 }
@@ -234,7 +234,7 @@ private fun CopilotHeader(
 @Composable
 private fun CopilotReferenceHeader(
     onAction: (CopilotAction) -> Unit,
-    interactionAllowed: Boolean,
+    parkingBadgeConfirmed: Boolean,
     simulatedVehicle: Boolean,
     scale: Float,
     modifier: Modifier,
@@ -260,16 +260,9 @@ private fun CopilotReferenceHeader(
             bold = true,
         )
         CopilotPositionedText(stringResource(R.string.copilot_subtitle), 136f, 88.2f, 28f, scale, color = Colors.muted)
-        MobiMonParkingBadge(
-            status =
-                stringResource(
-                    if (interactionAllowed) {
-                        CoreUiR.string.mobimon_parking_confirmed
-                    } else {
-                        CoreUiR.string.mobimon_parking_unconfirmed
-                    },
-                ),
-            modifier = Modifier.offset(2072.dp * scale, 0.dp),
+        MobiMonParkingStatusBadge(
+            confirmed = parkingBadgeConfirmed,
+            modifier = Modifier.align(Alignment.TopEnd),
             scale = scale,
         )
         if (simulatedVehicle) {
@@ -287,20 +280,13 @@ private fun CopilotReferenceHeader(
 
 @Composable
 private fun ParkingStatus(
-    interactionAllowed: Boolean,
+    parkingBadgeConfirmed: Boolean,
     simulatedVehicle: Boolean,
     scale: Float,
 ) {
     Column(horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        MobiMonParkingBadge(
-            status =
-                stringResource(
-                    if (interactionAllowed) {
-                        CoreUiR.string.mobimon_parking_confirmed
-                    } else {
-                        CoreUiR.string.mobimon_parking_unconfirmed
-                    },
-                ),
+        MobiMonParkingStatusBadge(
+            confirmed = parkingBadgeConfirmed,
             scale = scale,
         )
         if (simulatedVehicle) {

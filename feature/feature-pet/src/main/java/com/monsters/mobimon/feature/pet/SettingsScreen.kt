@@ -54,7 +54,7 @@ import com.monsters.mobimon.core.ui.MobiMonColors
 import com.monsters.mobimon.core.ui.MobiMonListItem
 import com.monsters.mobimon.core.ui.MobiMonMessage
 import com.monsters.mobimon.core.ui.MobiMonNavigationButton
-import com.monsters.mobimon.core.ui.MobiMonParkingBadge
+import com.monsters.mobimon.core.ui.MobiMonParkingStatusBadge
 import com.monsters.mobimon.core.ui.MobiMonReferenceText
 import com.monsters.mobimon.core.ui.mobiMonReferenceTextStyle
 import com.monsters.mobimon.core.ui.R as CoreUiR
@@ -81,6 +81,7 @@ fun SettingsScreen(
     onBack: () -> Unit = {},
     onDone: () -> Unit = {},
     parkedVerified: Boolean = false,
+    parkingBadgeConfirmed: Boolean = parkedVerified,
     debugModeInteractionAllowed: Boolean = parkedVerified,
     simulatedVehicle: Boolean = false,
     onOpenCopilot: (() -> Unit)? = null,
@@ -89,7 +90,7 @@ fun SettingsScreen(
         val reference = maxWidth >= 1400.dp && maxHeight >= 800.dp && LocalDensity.current.fontScale <= 1f
         val scale = if (reference) maxWidth.value / 2560f else 1f
         Column(Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally) {
-            SettingsHeader(reference, scale, parkedVerified, simulatedVehicle, onBack)
+            SettingsHeader(reference, scale, parkingBadgeConfirmed, simulatedVehicle, onBack)
             Column(
                 Modifier
                     .weight(1f)
@@ -101,7 +102,6 @@ fun SettingsScreen(
             ) {
                 if (!reference) {
                     Text(stringResource(R.string.pet_settings_subtitle), color = MobiMonColors.muted)
-                    SettingsParking(parkedVerified, 0.75f)
                 }
                 if (settingsAvailable) {
                     SettingsItem(
@@ -219,7 +219,7 @@ fun SettingsScreen(
 private fun SettingsHeader(
     reference: Boolean,
     scale: Float,
-    parkedVerified: Boolean,
+    parkingBadgeConfirmed: Boolean,
     simulatedVehicle: Boolean,
     onBack: () -> Unit,
 ) {
@@ -234,7 +234,7 @@ private fun SettingsHeader(
             borderWidth = (2 * scale).dp,
         )
     }
-    val parking: @Composable () -> Unit = { SettingsParking(parkedVerified, scale) }
+    val parking: @Composable () -> Unit = { SettingsParking(parkingBadgeConfirmed, scale) }
     if (reference) {
         Box(Modifier.fillMaxWidth().height((196 * scale).dp)) {
             Box(Modifier.offset((72 * scale).dp, (36 * scale).dp)) { back() }
@@ -273,27 +273,22 @@ private fun SettingsHeader(
             )
             Text(
                 stringResource(R.string.pet_settings_title),
-                Modifier.semantics { heading() },
+                Modifier.weight(1f).semantics { heading() },
                 style = MaterialTheme.typography.headlineLarge,
                 color = MobiMonColors.text,
             )
+            SettingsParking(parkingBadgeConfirmed, 0.75f)
         }
     }
 }
 
 @Composable
 private fun SettingsParking(
-    parkedVerified: Boolean,
+    parkingBadgeConfirmed: Boolean,
     scale: Float,
 ) {
-    MobiMonParkingBadge(
-        stringResource(
-            if (parkedVerified) {
-                CoreUiR.string.mobimon_parking_confirmed
-            } else {
-                CoreUiR.string.mobimon_parking_unconfirmed
-            },
-        ),
+    MobiMonParkingStatusBadge(
+        confirmed = parkingBadgeConfirmed,
         scale = scale,
     )
 }

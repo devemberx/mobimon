@@ -10,6 +10,7 @@ import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsFocused
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -34,6 +35,14 @@ import org.robolectric.annotation.Config
 class PetPreferencesScreenTest {
     @get:Rule
     val compose = createComposeRule()
+
+    @Test
+    fun parkingBadgeUsesSharedTopRightAnchor() {
+        compose.setContent { MobiMonTheme { SettingsScreen(CompanionSettings(), {}) } }
+        val bounds = compose.onNodeWithContentDescription("주차 후 이용 가능").fetchSemanticsNode().boundsInRoot
+        assertEquals(36f, bounds.top, 1f)
+        assertEquals(2488f, bounds.right, 1f)
+    }
 
     @Test
     @Config(qualifiers = "ko-rKR-w1792dp-h893dp-mdpi")
@@ -149,12 +158,31 @@ class PetPreferencesScreenTest {
             }
         }
 
-        compose.onNodeWithText("주차 확인 불가").assertExists()
+        compose.onNodeWithText("주차 후 이용 가능").assertExists()
         compose.onNodeWithText("GitHub Copilot").assertIsNotEnabled()
         compose.onNodeWithText("움직임 줄이기").performScrollTo().performClick()
         compose.onNodeWithText("Debugger").performScrollTo().performClick()
         assertEquals(0, motionCalls)
         assertEquals(0, debugCalls)
+    }
+
+    @Test
+    fun movingVehicleShowsDrivingBadgeWithoutEnablingSettingsActions() {
+        var motionCalls = 0
+        compose.setContent {
+            MobiMonTheme {
+                SettingsScreen(
+                    settings = CompanionSettings(),
+                    onReducedMotionChange = { motionCalls++ },
+                    parkedVerified = false,
+                )
+            }
+        }
+
+        compose.onNodeWithText("주차 후 이용 가능").assertExists()
+        compose.onNodeWithText("GitHub Copilot").assertIsNotEnabled()
+        compose.onNodeWithText("움직임 줄이기").performScrollTo().performClick()
+        assertEquals(0, motionCalls)
     }
 
     @Test
@@ -173,7 +201,7 @@ class PetPreferencesScreenTest {
             }
         }
 
-        compose.onNodeWithText("주차 확인 불가").assertExists()
+        compose.onNodeWithText("주차 후 이용 가능").assertExists()
         compose
             .onNodeWithText("Debugger")
             .performScrollTo()

@@ -2,6 +2,7 @@ package com.monsters.mobimon.feature.quest
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -27,7 +28,7 @@ internal fun QuestStatusPanel(
             state.appearance.failed ||
             state.pointBalance == PointBalanceState.Failed
     if (!hasStatus) return
-    Column(Modifier.padding(24.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+    Column(Modifier.fillMaxWidth(0.70f).padding(24.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         when {
             state.observationFailed -> {
                 MobiMonMessage(stringResource(R.string.quest_observation_failed), isError = true)

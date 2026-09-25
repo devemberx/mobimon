@@ -10,6 +10,30 @@ import org.junit.Test
 
 class VssVehicleInterpreterTest {
     @Test
+    fun parkInterpretationRequiresNoMotionZeroSpeedAndParkGear() {
+        val cases =
+            listOf(
+                Triple(false, 0f, 126) to DrivingState.PARKED,
+                Triple(true, 0f, 126) to DrivingState.MOVING,
+                Triple(false, 1f, 126) to DrivingState.MOVING,
+                Triple(false, 0f, 127) to DrivingState.UNKNOWN,
+            )
+        cases.forEach { (signals, expected) ->
+            val (moving, speed, gear) = signals
+            val snapshot =
+                VssVehicleInterpreter.snapshot(
+                    raw = vssSignals(vehicleIsMoving = moving, vehicleSpeedKmh = speed, selectedGear = gear),
+                    id = "vehicle",
+                    epoch = "epoch",
+                    sequence = 1,
+                    observedAtMillis = 100,
+                    source = SignalSource.SIMULATED,
+                )
+            assertEquals(expected, snapshot.drivingState)
+        }
+    }
+
+    @Test
     fun unavailableRawSourceDefaultsToParkGearStandingStill() {
         val raw = DefaultParkedVssRawVehicleSource().state.value
 

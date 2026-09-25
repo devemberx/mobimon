@@ -37,6 +37,7 @@ import com.monsters.mobimon.core.navigation.FeatureEntry
 import com.monsters.mobimon.core.navigation.FeatureNavigator
 import com.monsters.mobimon.core.presentation.VehiclePresentation
 import com.monsters.mobimon.core.presentation.parkedVerified
+import com.monsters.mobimon.core.presentation.parkingBadgeConfirmed
 import com.monsters.mobimon.core.ui.MobiMonButton
 import com.monsters.mobimon.core.ui.MobiMonDimensions
 import com.monsters.mobimon.core.ui.MobiMonMessage
@@ -181,6 +182,7 @@ class AiFeature(
                     onOpenConnection = { if (snapshot.parkedVerified) navigator.navigate(AiRoute.COPILOT) },
                     modifier = Modifier.weight(1f),
                     interactionAllowed = snapshot.parkedVerified,
+                    parkingBadgeConfirmed = snapshot.parkingBadgeConfirmed,
                     simulatedVehicle = snapshot.source == SignalSource.SIMULATED,
                     friendId = companion.inventory?.equippedItemIds?.get(CosmeticSlot.FRIEND) ?: "friend:mobi",
                     appearanceKey = profile?.appearance?.name ?: "GOLDEN",
@@ -220,6 +222,7 @@ class AiFeature(
                 },
                 modifier = Modifier.weight(1f),
                 interactionAllowed = snapshot.parkedVerified,
+                parkingBadgeConfirmed = snapshot.parkingBadgeConfirmed,
                 simulatedVehicle = snapshot.source == SignalSource.SIMULATED,
                 friendId = companion.inventory?.equippedItemIds?.get(CosmeticSlot.FRIEND) ?: "friend:mobi",
                 appearanceKey = profile?.appearance?.name ?: "GOLDEN",

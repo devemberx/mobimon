@@ -20,6 +20,7 @@ import com.monsters.mobimon.core.presentation.CompanionAppearancePresentation
 import com.monsters.mobimon.core.presentation.PointPresentation
 import com.monsters.mobimon.core.presentation.VehiclePresentation
 import com.monsters.mobimon.core.presentation.parkedVerified
+import com.monsters.mobimon.core.presentation.parkingBadgeConfirmed
 
 class QuestFeature(
     private val vehicle: VehiclePresentation,
@@ -80,6 +81,7 @@ class QuestFeature(
             onBack = navigator.back,
             onHome = navigator.returnHome,
             modifier = modifier,
+            parkingBadgeConfirmed = snapshot.parkingBadgeConfirmed,
         )
     }
 }
