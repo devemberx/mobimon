@@ -177,8 +177,10 @@ parking removes the dialog. AAOS restrictions remove the screen. Show specific
 recovery for network, service, timeout, account, access, usage and
 length errors. Retries are explicit. Put a compact New conversation action at the
 right edge above the composer and omit the change-of-pace follow-up suggestion.
-Align failed-reply icon and text with the reference. Editing removes the unanswered
-user bubble while retaining completed history and the draft. Keep the failed turn
+Match the failed-reply export's 28px warning ring with a 3px stroke, 30px regular
+title, 26px regular single-line note, and 230x52px Retry and 206x52px Edit
+actions at their exported positions. Editing removes the unanswered user bubble
+while retaining completed history and the draft. Keep the failed turn
 visible until its Edit or Retry action; keyboard composition and selection updates
 must not dismiss it. Newly sent and received bubbles rise and fade into place over
 280ms, with a slight scale change; existing history and reduced-motion mode stay still.
@@ -191,11 +193,21 @@ Park and AAOS allow interaction. Home remains available during the check. Chat s
 during connection checks shows the [network dialog](ui/conversation/network-error.svg)
 over chat. Other connection failures explain the cause and offer recheck or connection
 management. “다시 확인” checks access/model without sending the draft and displays the
-[checking dialog](ui/conversation/network-checking.svg) until it finishes. A failed
-message stays inline with its attempted turn and offers edit or explicit retry.
-A network failure or timeout during a reply also shows the connection dialog;
-rechecking restores access without resending the attempted turn. The inline failure
-remains after recheck until Edit or Retry. A retry may consume usage.
+[checking dialog](ui/conversation/network-checking.svg) until it finishes. The
+connection-check ring has a 28px radius, 7px stroke and rotating quarter arc,
+matching that export. Keep the destination visible while companion context loads;
+do not insert a separate loading screen on first entry. A failed message stays
+inline with its attempted turn and offers edit or explicit retry.
+Check validated internet before Send and recheck, and show the network dialog as
+soon as it disappears during a request. If internet remains available, account,
+access, usage, timeout and provider failures show Copilot recovery. Account errors
+open connection guidance; access and usage errors explain what to change in GitHub
+and return Home without an immediate recheck action. Returning to chat after those
+changes checks Copilot again. Online timeouts say that the Copilot response is
+delayed. Show one notice at a time:
+hide the inline failure while the connection dialog is open, then retain it until
+Edit or Retry. Rechecking restores access without resending the attempted turn.
+A retry may consume usage.
 An access failure requires recheck before Send. Home and
 Back preserve the draft. The modal stays on chat and does not interrupt Home.
 

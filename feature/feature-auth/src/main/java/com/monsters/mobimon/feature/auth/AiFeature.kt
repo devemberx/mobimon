@@ -1,8 +1,6 @@
 package com.monsters.mobimon.feature.auth
 
-import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -16,7 +14,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -41,8 +38,6 @@ import com.monsters.mobimon.core.navigation.FeatureNavigator
 import com.monsters.mobimon.core.presentation.VehiclePresentation
 import com.monsters.mobimon.core.presentation.parkedVerified
 import com.monsters.mobimon.core.ui.MobiMonButton
-import com.monsters.mobimon.core.ui.MobiMonContentColumn
-import com.monsters.mobimon.core.ui.MobiMonDestination
 import com.monsters.mobimon.core.ui.MobiMonDimensions
 import com.monsters.mobimon.core.ui.MobiMonMessage
 import kotlinx.coroutines.awaitCancellation
@@ -54,6 +49,7 @@ class AiFeature(
     private val vehicle: VehiclePresentation,
     private val authentication: GitHubAuthentication,
     private val conversation: ConversationProvider,
+    private val networkStatus: ConversationNetworkStatus = AssumedOnlineConversationNetworkStatus,
 ) : FeatureEntry {
     override val routes = setOf(AiRoute.COPILOT, AiRoute.CONVERSATION)
 
@@ -88,41 +84,18 @@ class AiFeature(
         val model: AiCompanionViewModel = viewModel(factory = factory)
         val companion by model.state.collectAsStateWithLifecycle()
         val profile = companion.profile
-        if (profile == null) {
-            val parkingRequired = route == AiRoute.CONVERSATION && !snapshot.parkedVerified
-            BackHandler(enabled = parkingRequired) { navigator.returnHome() }
-            Box(modifier.fillMaxSize()) {
-                MobiMonDestination(
-                    stringResource(R.string.copilot_title),
-                    navigator.back,
-                    navigator.returnHome,
-                    Modifier.fillMaxSize().then(if (parkingRequired) Modifier.clearAndSetSemantics {} else Modifier),
-                ) {
-                    MobiMonContentColumn {
-                        MobiMonMessage(
-                            stringResource(
-                                if (companion.failed) R.string.ai_context_failed else R.string.ai_context_loading,
-                            ),
-                            isError = companion.failed,
-                        )
-                        if (companion.failed) {
-                            MobiMonButton(onClick = model::retry) { Text(stringResource(R.string.ai_retry)) }
-                        }
-                    }
-                }
-                if (parkingRequired) ConversationParkingOverlay(navigator.returnHome)
-            }
-            return
-        }
         val session by authentication.session.collectAsStateWithLifecycle()
+        val online by networkStatus.online.collectAsStateWithLifecycle()
         val conversationFactory =
             remember(this) {
-                viewModelFactory { initializer { ConversationViewModel(authentication, conversation) } }
+                viewModelFactory { initializer { ConversationViewModel(authentication, conversation, networkStatus) } }
             }
         val conversationModel: ConversationViewModel = viewModel(factory = conversationFactory)
         val conversationState by conversationModel.state.collectAsStateWithLifecycle()
         val friendId = companion.inventory?.equippedItemIds?.get(CosmeticSlot.FRIEND) ?: "friend:mobi"
-        LaunchedEffect(conversationModel, profile.id, friendId) { conversationModel.bind(profile.id, friendId) }
+        LaunchedEffect(conversationModel, profile?.id, friendId) {
+            profile?.id?.let { conversationModel.bind(it, friendId) }
+        }
         LaunchedEffect(conversationModel, lifecycle, route, snapshot.parkedVerified) {
             if (route != AiRoute.CONVERSATION) return@LaunchedEffect
             lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
@@ -142,7 +115,15 @@ class AiFeature(
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     MobiMonMessage(
-                        stringResource(R.string.ai_context_update_failed),
+                        stringResource(
+                            if (profile ==
+                                null
+                            ) {
+                                R.string.ai_context_failed
+                            } else {
+                                R.string.ai_context_update_failed
+                            },
+                        ),
                         Modifier.weight(1f),
                         isError = true,
                     )
@@ -155,28 +136,41 @@ class AiFeature(
                     state =
                         conversationState.copy(
                             connection =
-                                when (currentSession) {
-                                    is GitHubSession.Authenticated -> conversationState.connection
-                                    GitHubSession.Restoring -> ConversationConnection.CHECKING
-                                    is GitHubSession.Failure ->
-                                        if (currentSession.problem in
-                                            setOf(AuthenticationProblem.NETWORK, AuthenticationProblem.PROVIDER)
-                                        ) {
-                                            conversationState.connection
-                                        } else {
-                                            ConversationConnection.SIGNED_OUT
-                                        }
-                                    GitHubSession.SignedOut -> ConversationConnection.SIGNED_OUT
+                                if (profile == null) {
+                                    ConversationConnection.CHECKING
+                                } else {
+                                    when (currentSession) {
+                                        is GitHubSession.Authenticated -> conversationState.connection
+                                        GitHubSession.Restoring -> ConversationConnection.CHECKING
+                                        is GitHubSession.Failure ->
+                                            if (currentSession.problem in
+                                                setOf(AuthenticationProblem.NETWORK, AuthenticationProblem.PROVIDER)
+                                            ) {
+                                                conversationState.connection
+                                            } else {
+                                                ConversationConnection.SIGNED_OUT
+                                            }
+                                        GitHubSession.SignedOut -> ConversationConnection.SIGNED_OUT
+                                    }
                                 },
                             connectionProblem =
-                                when (currentSession) {
-                                    is GitHubSession.Failure ->
-                                        when (currentSession.problem) {
-                                            AuthenticationProblem.NETWORK -> ConversationProblem.NETWORK
-                                            AuthenticationProblem.PROVIDER -> ConversationProblem.SERVICE
-                                            else -> null
-                                        }
-                                    else -> conversationState.connectionProblem
+                                if (profile == null) {
+                                    null
+                                } else {
+                                    when (currentSession) {
+                                        is GitHubSession.Failure ->
+                                            when (currentSession.problem) {
+                                                AuthenticationProblem.NETWORK -> ConversationProblem.NETWORK
+                                                AuthenticationProblem.PROVIDER ->
+                                                    if (online) {
+                                                        ConversationProblem.SERVICE
+                                                    } else {
+                                                        ConversationProblem.NETWORK
+                                                    }
+                                                else -> null
+                                            }
+                                        else -> conversationState.connectionProblem
+                                    }
                                 },
                         ),
                     draft = conversationModel.draft,
@@ -189,7 +183,7 @@ class AiFeature(
                     interactionAllowed = snapshot.parkedVerified,
                     simulatedVehicle = snapshot.source == SignalSource.SIMULATED,
                     friendId = companion.inventory?.equippedItemIds?.get(CosmeticSlot.FRIEND) ?: "friend:mobi",
-                    appearanceKey = profile.appearance.name,
+                    appearanceKey = profile?.appearance?.name ?: "GOLDEN",
                     accessoryId = companion.inventory?.equippedItemIds?.get(CosmeticSlot.ACCESSORY),
                     outfitId = companion.inventory?.equippedItemIds?.get(CosmeticSlot.OUTFIT),
                     onRetry = {
@@ -228,7 +222,7 @@ class AiFeature(
                 interactionAllowed = snapshot.parkedVerified,
                 simulatedVehicle = snapshot.source == SignalSource.SIMULATED,
                 friendId = companion.inventory?.equippedItemIds?.get(CosmeticSlot.FRIEND) ?: "friend:mobi",
-                appearanceKey = profile.appearance.name,
+                appearanceKey = profile?.appearance?.name ?: "GOLDEN",
                 accessoryId = companion.inventory?.equippedItemIds?.get(CosmeticSlot.ACCESSORY),
                 outfitId = companion.inventory?.equippedItemIds?.get(CosmeticSlot.OUTFIT),
                 backgroundId = companion.inventory?.equippedItemIds?.get(CosmeticSlot.BACKGROUND),

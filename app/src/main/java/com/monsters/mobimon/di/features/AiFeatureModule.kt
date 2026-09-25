@@ -7,6 +7,7 @@ import com.monsters.mobimon.core.domain.PointEconomy
 import com.monsters.mobimon.core.navigation.FeatureEntry
 import com.monsters.mobimon.core.presentation.VehiclePresentation
 import com.monsters.mobimon.feature.auth.AiFeature
+import com.monsters.mobimon.feature.auth.ConversationNetworkStatus
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -24,5 +25,6 @@ object AiFeatureModule {
         vehicle: VehiclePresentation,
         authentication: GitHubAuthentication,
         conversation: ConversationProvider,
-    ): FeatureEntry = AiFeature(pets, points, vehicle, authentication, conversation)
+        networkStatus: ConversationNetworkStatus,
+    ): FeatureEntry = AiFeature(pets, points, vehicle, authentication, conversation, networkStatus)
 }

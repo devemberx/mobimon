@@ -37,6 +37,12 @@ import org.junit.Test
 class ConversationViewModelTest {
     private val authentication = FakeAuthentication()
     private val provider = FakeProvider()
+    private val networkStatus =
+        object : ConversationNetworkStatus {
+            override val online = MutableStateFlow(true)
+
+            override fun isOnline() = online.value
+        }
     private val store = ViewModelStore()
 
     @After fun close() {
@@ -308,6 +314,84 @@ class ConversationViewModelTest {
             assertEquals(1, provider.requests.size)
         }
 
+    @Test fun offlineSendAndRecheckFailImmediatelyWithoutCallingCopilot() =
+        runTest {
+            Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+            val model = model()
+            runCurrent()
+            val checksBeforeDisconnect = provider.connections
+            networkStatus.online.value = false
+            model.edit(TextFieldValue("keep this"))
+            model.send()
+            runCurrent()
+
+            assertEquals(0, provider.requests.size)
+            assertEquals(ConversationProblem.NETWORK, model.state.value.problem)
+            assertEquals(ConversationProblem.NETWORK, model.state.value.connectionProblem)
+            assertFalse(model.state.value.replyPending)
+            assertEquals(
+                listOf("keep this"),
+                model.state.value.messages
+                    .map { it.text },
+            )
+
+            model.retryConnection()
+            runCurrent()
+            assertEquals(checksBeforeDisconnect, provider.connections)
+            assertEquals(ConversationProblem.NETWORK, model.state.value.connectionProblem)
+            assertFalse(model.state.value.connectionRetrying)
+
+            networkStatus.online.value = true
+            model.retryConnection()
+            runCurrent()
+            assertEquals(checksBeforeDisconnect + 1, provider.connections)
+            assertEquals(ConversationConnection.READY, model.state.value.connection)
+            assertTrue(model.state.value.failed)
+        }
+
+    @Test fun disconnectDuringPendingReplyStopsWaitingAndShowsNetworkFailure() =
+        runTest {
+            Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+            val model = model()
+            runCurrent()
+            provider.answer = { CompletableDeferred<ConversationResult<String>>().await() }
+            model.edit(TextFieldValue("sent before disconnect"))
+            model.send()
+            runCurrent()
+            assertTrue(model.state.value.replyPending)
+
+            networkStatus.online.value = false
+            runCurrent()
+
+            assertFalse(model.state.value.replyPending)
+            assertEquals(ConversationProblem.NETWORK, model.state.value.problem)
+            assertEquals(ConversationProblem.NETWORK, model.state.value.connectionProblem)
+            assertEquals(1, provider.requests.size)
+        }
+
+    @Test fun usageFailureBlocksSendUntilCopilotCheckSucceeds() =
+        runTest {
+            Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+            val model = model()
+            runCurrent()
+            provider.answer = { ConversationResult.Failure(ConversationProblem.USAGE) }
+            model.edit(TextFieldValue("quota"))
+            model.send()
+            runCurrent()
+
+            assertEquals(ConversationProblem.USAGE, model.state.value.problem)
+            assertEquals(ConversationProblem.USAGE, model.state.value.connectionProblem)
+            assertEquals(ConversationConnection.UNAVAILABLE, model.state.value.connection)
+            assertTrue(model.state.value.failed)
+            val checksBeforeReturn = provider.connections
+            model.deactivate()
+            model.activate(true)
+            runCurrent()
+            assertEquals(checksBeforeReturn + 1, provider.connections)
+            assertEquals(ConversationConnection.READY, model.state.value.connection)
+            assertTrue(model.state.value.failed)
+        }
+
     @Test fun stalledReplyTimesOutAndRetainsEditableAttempt() =
         runTest {
             Dispatchers.setMain(StandardTestDispatcher(testScheduler))
@@ -562,7 +646,7 @@ class ConversationViewModelTest {
         }
 
     private fun model() =
-        ConversationViewModel(authentication, provider).also {
+        ConversationViewModel(authentication, provider, networkStatus).also {
             store.put("model-${System.identityHashCode(it)}", it)
             it.bind("profile", "friend:mobi")
             it.activate(true)

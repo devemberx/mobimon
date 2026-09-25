@@ -129,6 +129,29 @@ class MobiMonContentTest {
     }
 
     @Test
+    fun startChatDuringRestorationDoesNotFlashConversation() {
+        var startReady = false
+        compose.setContent {
+            MobiMonContent(
+                entries,
+                appUseState = AppUseState.ALLOWED,
+                conversationAuthenticated = true,
+                currentConversationAuthentication = { true },
+                currentConversationStartReady = { startReady },
+            )
+        }
+        compose.onNodeWithText("Open menu").performClick()
+        clickMenuItem("설정")
+        compose.onNodeWithText("Open menu").performClick()
+        clickMenuItem("대화하기")
+        compose.onNodeWithText("Route COPILOT").assertExists()
+        compose.onNodeWithText("Route CONVERSATION").assertDoesNotExist()
+        compose.runOnIdle { startReady = true }
+        compose.onNodeWithText("Chat").performClick()
+        compose.onNodeWithText("Route CONVERSATION").assertExists()
+    }
+
+    @Test
     fun menuRoutesVehicleAndCustomizationAndClosesWithBackAndClose() {
         show()
         compose.onNodeWithText("Open menu").performClick()

@@ -31,6 +31,7 @@ import com.monsters.mobimon.core.domain.GitHubSession
 import com.monsters.mobimon.core.domain.SignalQuality
 import com.monsters.mobimon.testing.JourneyAuthentication
 import com.monsters.mobimon.testing.JourneyConversationProvider
+import com.monsters.mobimon.testing.JourneyNetworkStatus
 import com.monsters.mobimon.testing.JourneyStorage
 import com.monsters.mobimon.testing.JourneyVehicle
 import dagger.hilt.android.testing.HiltAndroidRule
@@ -62,6 +63,8 @@ class CopilotConnectionJourneyTest {
 
     @Inject lateinit var conversations: JourneyConversationProvider
 
+    @Inject lateinit var networkStatus: JourneyNetworkStatus
+
     @Before
     fun setUp() = hilt.inject()
 
@@ -79,6 +82,7 @@ class CopilotConnectionJourneyTest {
             waitFor(hasText(text(PetR.string.pet_settings_ai_title)) and isEnabled())
             compose.onNodeWithText(text(PetR.string.pet_settings_ai_title)).ensureDisplayed().performClick()
             waitFor(hasText(text(AuthR.string.copilot_connect)))
+            compose.waitForIdle()
             compose.onNodeWithText(text(AuthR.string.copilot_connect)).ensureDisplayed().assertIsNotEnabled()
             compose.onNodeWithText("아직 계정 연결을 이용할 수 없어요.", substring = true).assertExists()
             scenario.recreate()
@@ -142,6 +146,28 @@ class CopilotConnectionJourneyTest {
             waitFor(hasText(text(AuthR.string.chat_ready)))
             compose.onNodeWithTag("chat-network-dialog").assertDoesNotExist()
             assertEquals(0, conversations.replies)
+        }
+    }
+
+    @Test
+    fun offlineSendShowsOnlyNetworkDialogAndRecheckDoesNotCallCopilot() {
+        authentication.approve()
+        ActivityScenario.launch(MainActivity::class.java).use {
+            waitFor(hasText(text(PetR.string.pet_talk_action)) and isEnabled())
+            compose.onNodeWithText(text(PetR.string.pet_talk_action)).ensureDisplayed().performClick()
+            waitFor(hasTestTag("chat-input"))
+            compose.onNodeWithTag("chat-input").performTextInput("연결 확인")
+            waitFor(hasTestTag("chat-send") and isEnabled())
+            val checksBeforeDisconnect = conversations.connections
+            networkStatus.online.value = false
+            compose.onNodeWithTag("chat-send").performClick()
+
+            waitFor(hasText(text(AuthR.string.chat_network_title)))
+            compose.onNodeWithTag("chat-inline-failure").assertDoesNotExist()
+            assertEquals(0, conversations.replies)
+            compose.onNodeWithTag("chat-network-retry").ensureDisplayed().performClick()
+            compose.onNodeWithText(text(AuthR.string.chat_network_title)).assertExists()
+            assertEquals(checksBeforeDisconnect, conversations.connections)
         }
     }
 

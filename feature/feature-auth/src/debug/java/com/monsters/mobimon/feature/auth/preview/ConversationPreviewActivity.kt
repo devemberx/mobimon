@@ -32,6 +32,17 @@ class ConversationPreviewActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         val sample = intent.getStringExtra("state")
+        val sampleProblem =
+            when (sample) {
+                "network-failed" -> ConversationProblem.NETWORK
+                "usage-failed" -> ConversationProblem.USAGE
+                "access-failed" -> ConversationProblem.ACCESS
+                "account-failed" -> ConversationProblem.ACCOUNT
+                "timeout-failed" -> ConversationProblem.TIMEOUT
+                else -> null
+            }
+        val failedSamples =
+            setOf("failed", "network-failed", "usage-failed", "access-failed", "account-failed", "timeout-failed")
         val messages =
             listOf(
                 ConversationMessage("sample-user", "오늘은 조금 피곤한 하루였어.", true),
@@ -42,11 +53,13 @@ class ConversationPreviewActivity : ComponentActivity() {
                 mutableStateOf(
                     ConversationUiState(
                         connection =
-                            if (sample == "network-failed") {
-                                ConversationConnection.UNAVAILABLE
-                            } else {
-                                ConversationConnection.READY
+                            when (sample) {
+                                "network-failed", "usage-failed", "access-failed", "account-failed", "timeout-failed" ->
+                                    ConversationConnection.UNAVAILABLE
+                                "checking" -> ConversationConnection.CHECKING
+                                else -> ConversationConnection.READY
                             },
+                        connectionRetrying = sample == "checking",
                         messages =
                             when (sample) {
                                 "messages" -> messages
@@ -59,7 +72,7 @@ class ConversationPreviewActivity : ComponentActivity() {
                                         ),
                                     )
                                 "pending" -> messages.take(1)
-                                "failed", "network-failed" ->
+                                in failedSamples ->
                                     listOf(
                                         messages.first(),
                                         ConversationMessage(
@@ -78,9 +91,9 @@ class ConversationPreviewActivity : ComponentActivity() {
                                 else -> emptyList()
                             },
                         replyPending = sample == "pending",
-                        failed = sample == "failed" || sample == "network-failed",
-                        problem = if (sample == "network-failed") ConversationProblem.NETWORK else null,
-                        connectionProblem = if (sample == "network-failed") ConversationProblem.NETWORK else null,
+                        failed = sample == "failed" || sampleProblem != null,
+                        problem = sampleProblem,
+                        connectionProblem = sampleProblem,
                     ),
                 )
             }
@@ -89,7 +102,8 @@ class ConversationPreviewActivity : ComponentActivity() {
                     TextFieldValue(
                         when (sample) {
                             "keyboard" -> "오늘 하루가 조금 힘들었어"
-                            "failed", "network-failed" -> "모비는 뭐가 좋아?"
+                            in failedSamples ->
+                                "모비는 뭐가 좋아?"
                             else -> ""
                         },
                     ),

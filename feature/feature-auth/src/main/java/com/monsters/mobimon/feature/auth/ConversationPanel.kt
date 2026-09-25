@@ -567,16 +567,18 @@ private fun ConversationInlineFailure(
 ) {
     Box(modifier.testTag("chat-inline-failure")) {
         Icon(
-            painterResource(R.drawable.conversation_warning),
+            painterResource(R.drawable.conversation_inline_warning),
             null,
-            Modifier.offset(x = 2.dp * scale).size(32.dp * scale).testTag("chat-inline-warning-icon"),
+            Modifier.offset(y = -2.dp * scale).size(32.dp * scale).testTag("chat-inline-warning-icon"),
             tint = Color.Unspecified,
         )
         Text(
             stringResource(R.string.chat_inline_failure_title),
-            Modifier.offset(50.dp * scale, 0.dp),
-            style = mobiMonReferenceTextStyle(24f, scale, true),
+            Modifier.offset(48.dp * scale, -9.dp * scale).width(262.dp * scale),
+            style = mobiMonReferenceTextStyle(30f, scale).copy(lineHeight = (36f * scale).sp),
             color = Color(0xFFEAB8AA),
+            maxLines = 1,
+            softWrap = false,
         )
         Text(
             stringResource(
@@ -588,10 +590,11 @@ private fun ConversationInlineFailure(
                     conversationFailureNote(problem)
                 },
             ),
-            Modifier.offset(50.dp * scale, 36.dp * scale).width(1020.dp * scale),
-            style = mobiMonReferenceTextStyle(18f, scale),
+            Modifier.offset(48.dp * scale, 31.dp * scale).width(1020.dp * scale),
+            style = mobiMonReferenceTextStyle(26f, scale).copy(lineHeight = (31f * scale).sp),
             color = Color(0xFFB5C5D5),
-            maxLines = 2,
+            maxLines = 1,
+            softWrap = false,
         )
         ReferenceFailureAction(
             stringResource(conversationRetryLabel(problem)),

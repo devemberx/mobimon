@@ -19,7 +19,18 @@ internal class GitHubAuthenticationViewModel(
     private val address = MutableStateFlow(false)
     private val confirming = MutableStateFlow(false)
     private val busy = MutableStateFlow(false)
-    private val mutableState = MutableStateFlow<CopilotUiState>(CopilotUiState.Introduction(!authentication.configured))
+    private val mutableState =
+        MutableStateFlow<CopilotUiState>(
+            when (val session = authentication.session.value) {
+                is GitHubSession.Authenticated ->
+                    CopilotUiState.AuthenticationStatus(
+                        account = "@${session.account.login}",
+                    )
+                is GitHubSession.Failure -> CopilotUiState.AuthenticationStatus(problem = session.problem)
+                GitHubSession.Restoring -> CopilotUiState.AuthenticationStatus(pending = true)
+                GitHubSession.SignedOut -> CopilotUiState.Introduction(!authentication.configured)
+            },
+        )
     val state = mutableState.asStateFlow()
     private var command: Job? = null
     private var active = false
