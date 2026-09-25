@@ -120,7 +120,7 @@ fun VehicleInfoScreen(
 
     fun openSelector(slot: Int) {
         dialogSlot = slot
-        draftCardId = currentCards[slot]
+        draftCardId = null
     }
 
     BoxWithConstraints(
@@ -283,13 +283,16 @@ fun VehicleInfoScreen(
                     selectedCardId = draftCardId,
                     onSlotSelected = { next ->
                         dialogSlot = next
-                        draftCardId = currentCards[next]
+                        draftCardId = null
                     },
                     onCardSelected = { draftCardId = it },
                     onDismiss = { dialogSlot = null },
                     onConfirm = {
                         val chosen = draftCardId
-                        if (chosen != null && VehicleCardCatalog.find(chosen) != null) {
+                        if (chosen != null &&
+                            chosen !in currentCards &&
+                            VehicleCardCatalog.cards.any { it.id == chosen }
+                        ) {
                             currentCards = currentCards.toMutableList().also { it[slot] = chosen }
                             onCardSelectionConfirmed(currentCards)
                         }
@@ -708,6 +711,7 @@ private fun VehicleCardSelector(
 ) {
     val readings = snapshot.toVehicleInfoUiState()
     val designScale = LocalVehicleDesignScale.current
+    val availableCards = VehicleCardCatalog.cards.filterNot { it.id in cards }
     BackHandler(onBack = onDismiss)
     BoxWithConstraints(
         Modifier
@@ -817,7 +821,7 @@ private fun VehicleCardSelector(
                         modifier = Modifier.weight(1f),
                     )
                     Text(
-                        stringResource(R.string.vehicle_card_selector_count, VehicleCardCatalog.cards.size),
+                        stringResource(R.string.vehicle_card_selector_count, availableCards.size),
                         color = MobiMonColors.muted,
                         fontSize = (24f * designScale).sp,
                     )
@@ -841,7 +845,7 @@ private fun VehicleCardSelector(
                     horizontalArrangement = Arrangement.spacedBy(24.dp * designScale),
                     verticalArrangement = Arrangement.spacedBy(20.dp * designScale),
                 ) {
-                    itemsIndexed(VehicleCardCatalog.cards, key = { _, card -> card.id }) { index, card ->
+                    itemsIndexed(availableCards, key = { _, card -> card.id }) { index, card ->
                         val selected = selectedCardId == card.id
                         Box(
                             Modifier
@@ -879,11 +883,13 @@ private fun VehicleCardSelector(
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                     Text(
                         text =
-                            stringResource(
-                                R.string.vehicle_card_selector_selected,
-                                selectedSlot + 1,
-                                VehicleCardCatalog.find(selectedCardId.orEmpty())?.title.orEmpty(),
-                            ),
+                            selectedCardId?.let { id ->
+                                stringResource(
+                                    R.string.vehicle_card_selector_selected,
+                                    selectedSlot + 1,
+                                    VehicleCardCatalog.find(id)?.title.orEmpty(),
+                                )
+                            } ?: stringResource(R.string.vehicle_card_selector_choose),
                         color = MobiMonColors.muted,
                         fontSize = (26f * designScale).sp,
                         modifier = Modifier.weight(1f),
@@ -907,6 +913,7 @@ private fun VehicleCardSelector(
                     Spacer(Modifier.width(16.dp * designScale))
                     Button(
                         onClick = onConfirm,
+                        enabled = availableCards.any { it.id == selectedCardId },
                         modifier =
                             Modifier
                                 .then(

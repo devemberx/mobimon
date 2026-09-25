@@ -228,10 +228,12 @@ Specific warnings take priority; partial data stays partial. See
 
 The v5 vehicle screen shows six cards by default: battery charge, charging,
 tire pressure, washer fluid, outside environment and driver assistance. Long
-pressing any card opens a scrollable gallery of 30 VSS-mapped alternatives at
-the same size as the displayed cards. The active slot and selected card are
-highlighted; Confirm saves that slot's choice locally. The hint below the six
-cards explains the gesture. Unavailable or stale signals show missing data
+pressing any card opens a scrollable gallery drawn from 30 VSS-mapped cards at
+the same size as the displayed cards. Cards already assigned to any slot are
+omitted from the gallery. The active slot and selected alternative are
+highlighted; Confirm becomes available after choosing an alternative and saves
+that slot's choice locally. The hint below the six cards explains the gesture.
+Unavailable or stale signals show missing data
 instead of sample values. In the Debug app with no adapter, the screen uses
 simulated defaults; the Settings-enabled Debugger can edit every card signal.
 The character panel uses the normal, hungry and sick Mobi artwork for the

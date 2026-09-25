@@ -5,6 +5,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.getUnclippedBoundsInRoot
 import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.junit4.createComposeRule
@@ -232,6 +233,8 @@ class VehicleInfoScreenTest {
 
         compose.onNodeWithTag("vehicle-card-slot-1").performTouchInput { longClick() }
         compose.onNodeWithText("차량상태 카드 변경").assertIsDisplayed()
+        compose.onNodeWithTag("vehicle-dialog-option-battery").assertDoesNotExist()
+        compose.onNodeWithTag("vehicle-dialog-confirm").assertIsNotEnabled()
         compose.onNodeWithTag("vehicle-dialog-option-battery-health").performScrollTo().performClick()
         compose.onNodeWithTag("vehicle-dialog-confirm").performClick()
 
@@ -241,6 +244,10 @@ class VehicleInfoScreenTest {
         }
         compose.onNodeWithText("배터리 건강도").assertExists()
         assertTrue(compose.onAllNodesWithText("정보 없음").fetchSemanticsNodes().isNotEmpty())
+
+        compose.onNodeWithTag("vehicle-card-slot-1").performTouchInput { longClick() }
+        compose.onNodeWithTag("vehicle-dialog-option-battery-health").assertDoesNotExist()
+        compose.onNodeWithTag("vehicle-dialog-option-battery").assertIsDisplayed()
     }
 
     @Test
@@ -261,6 +268,24 @@ class VehicleInfoScreenTest {
     }
 
     @Test
+    fun galleryExcludesAllAssignedCardsAndClearsDraftWhenSlotChanges() {
+        val assigned = listOf("battery", "battery-health", "tire", "washer", "environment", "assist")
+        compose.setContent {
+            MaterialTheme {
+                VehicleInfoScreen(snapshot = snapshot(), selectedCards = assigned)
+            }
+        }
+
+        compose.onNodeWithTag("vehicle-card-slot-1").performTouchInput { longClick() }
+        compose.onNodeWithTag("vehicle-dialog-option-battery").assertDoesNotExist()
+        compose.onNodeWithTag("vehicle-dialog-option-battery-health").assertDoesNotExist()
+        compose.onNodeWithText("28개 · 실제 크기 · 아래로 스크롤 ↓").assertIsDisplayed()
+        compose.onNodeWithTag("vehicle-dialog-option-battery-range").performScrollTo().performClick()
+        compose.onNodeWithTag("vehicle-dialog-slot-2").performClick()
+        compose.onNodeWithTag("vehicle-dialog-confirm").assertIsNotEnabled()
+    }
+
+    @Test
     fun lastGalleryCardCanReplaceTheSixthSlotAfterScrolling() {
         var selections by mutableStateOf(VehicleCardCatalog.defaultSlots.map { it.id })
         compose.setContent {
@@ -274,7 +299,7 @@ class VehicleInfoScreenTest {
         }
 
         compose.onNodeWithTag("vehicle-card-slot-6").performTouchInput { longClick() }
-        compose.onNodeWithTag("vehicle-dialog-list").performScrollToIndex(29)
+        compose.onNodeWithTag("vehicle-dialog-list").performScrollToIndex(28)
         compose.onNodeWithTag("vehicle-dialog-option-breakdown").assertIsDisplayed().performClick()
         compose.onNodeWithTag("vehicle-dialog-confirm").performClick()
 
@@ -294,8 +319,10 @@ class VehicleInfoScreenTest {
         assertTrue(dialog.right.value <= 2560f)
         assertTrue(dialog.top.value >= 0f)
         assertTrue(dialog.bottom.value <= 1248f)
-        compose.onNodeWithTag("vehicle-dialog-option-battery").assertIsDisplayed()
-        compose.onNodeWithTag("vehicle-dialog-confirm").assertIsDisplayed()
+        compose.onNodeWithTag("vehicle-dialog-option-battery").assertDoesNotExist()
+        compose.onNodeWithTag("vehicle-dialog-option-battery-health").assertIsDisplayed()
+        compose.onNodeWithText("29개 · 실제 크기 · 아래로 스크롤 ↓").assertIsDisplayed()
+        compose.onNodeWithTag("vehicle-dialog-confirm").assertIsNotEnabled()
     }
 
     @Test

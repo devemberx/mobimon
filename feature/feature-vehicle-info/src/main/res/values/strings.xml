@@ -49,6 +49,7 @@
   <string name="vehicle_card_selector_cancel">취소</string>
   <string name="vehicle_card_selector_confirm">카드 변경 확인</string>
   <string name="vehicle_card_selector_selected">선택한 카드  ·  %1$d번 %2$s</string>
+  <string name="vehicle_card_selector_choose">변경할 카드를 선택해 주세요</string>
   <string name="vehicle_unknown_short">정보 없음</string>
   <string name="vehicle_quality_valid_short">최신</string>
   <string name="vehicle_quality_stale_short">오래됨</string>
