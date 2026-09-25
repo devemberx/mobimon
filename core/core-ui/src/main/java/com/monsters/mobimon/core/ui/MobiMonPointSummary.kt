@@ -4,8 +4,10 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.sp
 
 /** Shows loading/failure distinctly from a committed zero-point balance. */
 @Composable
@@ -13,7 +15,8 @@ fun MobiMonPointSummary(
     balance: Long?,
     modifier: Modifier = Modifier,
     failed: Boolean = false,
-    textStyle: TextStyle = MaterialTheme.typography.titleLarge,
+    scale: Float = 1f,
+    shadow: Shadow? = null,
 ) {
     Text(
         text =
@@ -23,6 +26,12 @@ fun MobiMonPointSummary(
                 else -> stringResource(R.string.mobimon_points_balance, balance)
             },
         modifier = modifier,
-        style = textStyle,
+        style =
+            MaterialTheme.typography.titleLarge.copy(
+                fontSize = (36f * scale).coerceAtLeast(24f).sp,
+                fontWeight = FontWeight.Bold,
+                shadow = shadow,
+                color = MobiMonColors.text,
+            ),
     )
 }

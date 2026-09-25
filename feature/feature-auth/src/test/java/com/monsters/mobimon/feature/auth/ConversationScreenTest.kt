@@ -79,12 +79,17 @@ class ConversationScreenTest {
         val badge =
             compose
                 .onNodeWithContentDescription(
-                    "주차 후 이용 가능",
+                    "주차 후 이용",
                 ).assertIsDisplayed()
                 .fetchSemanticsNode()
                 .boundsInRoot
-        assertEquals(36f, badge.top, 1f)
-        assertEquals(2488f, badge.right, 1f)
+        assertEquals(51f, badge.top, 1f)
+        assertEquals(2416f, badge.right, 1f)
+        val icon = compose.onNodeWithTag("chat-parking-icon", useUnmergedTree = true).fetchSemanticsNode().boundsInRoot
+        val text = compose.onNodeWithText("주차 후 이용", useUnmergedTree = true).fetchSemanticsNode().boundsInRoot
+        assertEquals(badge.center.x, (icon.left + text.right) / 2f, 1f)
+        assertEquals(badge.center.y, icon.center.y, 1f)
+        assertEquals(badge.center.y, text.center.y, 1f)
     }
 
     @Test
@@ -119,8 +124,9 @@ class ConversationScreenTest {
         compose.onNodeWithTag("chat-input").performTextInput("작성 중")
         compose.onNodeWithTag("chat-send").assertIsNotEnabled()
         compose.onNodeWithText("Copilot 연결됨").assertDoesNotExist()
+        compose.onNodeWithTag("chat-auth-badge").assertContentDescriptionEquals("Copilot 확인 중")
         compose.runOnIdle { state = state.copy(connection = ConversationConnection.SIGNED_OUT) }
-        compose.onNodeWithTag("chat-auth-badge").assertContentDescriptionEquals("계정 연결 필요")
+        compose.onNodeWithTag("chat-auth-badge").assertContentDescriptionEquals("Copilot 확인 중")
         compose.onNodeWithTag("chat-send").assertIsNotEnabled()
         compose.runOnIdle { allowed = false }
         compose.onNodeWithTag("chat-parking-dialog").assertIsDisplayed()
@@ -129,6 +135,31 @@ class ConversationScreenTest {
             assertEquals("작성 중", draft.text)
             assertEquals(0, sends)
         }
+    }
+
+    @Test
+    fun connectionBadgeUsesOnlyConnectedAndCheckingLabels() {
+        var connection by mutableStateOf(ConversationConnection.CHECKING)
+        var problem by mutableStateOf<ConversationProblem?>(null)
+        compose.setContent {
+            MobiMonTheme {
+                ConversationAuthBadge(connection = connection, problem = problem, scale = 1f)
+            }
+        }
+
+        val badge = compose.onNodeWithTag("chat-auth-badge")
+        badge.assertContentDescriptionEquals("Copilot 확인 중")
+        compose.runOnIdle { connection = ConversationConnection.SIGNED_OUT }
+        badge.assertContentDescriptionEquals("Copilot 확인 중")
+        compose.runOnIdle { connection = ConversationConnection.UNAVAILABLE }
+        badge.assertContentDescriptionEquals("Copilot 확인 중")
+        compose.runOnIdle {
+            connection = ConversationConnection.READY
+            problem = ConversationProblem.NETWORK
+        }
+        badge.assertContentDescriptionEquals("Copilot 확인 중")
+        compose.runOnIdle { problem = null }
+        badge.assertContentDescriptionEquals("Copilot 연결됨")
     }
 
     @Test
@@ -313,12 +344,13 @@ class ConversationScreenTest {
         assertEquals(740f, dialog.height, 1f)
         val badge =
             compose
-                .onNodeWithContentDescription("주차 후 이용 가능")
+                .onNodeWithContentDescription("주차 후 이용")
                 .fetchSemanticsNode()
                 .boundsInRoot
-        assertEquals(2048f, badge.left, 1f)
-        assertEquals(36f, badge.top, 1f)
-        assertEquals(440f, badge.width, 1f)
+        assertEquals(2144f, badge.left, 1f)
+        assertEquals(51f, badge.top, 1f)
+        assertEquals(272f, badge.width, 1f)
+        assertEquals(60f, badge.height, 1f)
         compose.onNodeWithTag("chat-send").assertDoesNotExist()
         compose.onNodeWithTag("chat-parking-home").assertIsDisplayed().performClick()
         compose.runOnIdle {
@@ -434,13 +466,13 @@ class ConversationScreenTest {
         assertEquals(336f, avatar.top, 1f)
         assertEquals(624f, avatar.width, 1f)
         val parking = compose.onNodeWithContentDescription("주차 확인됨").fetchSemanticsNode().boundsInRoot
-        assertEquals(2048f, parking.left, 1f)
-        assertEquals(36f, parking.top, 1f)
-        assertEquals(440f, parking.width, 1f)
-        assertEquals(76f, parking.height, 1f)
+        assertEquals(2146f, parking.left, 1f)
+        assertEquals(51f, parking.top, 1f)
+        assertEquals(258f, parking.width, 1f)
+        assertEquals(60f, parking.height, 1f)
         val auth = compose.onNodeWithTag("chat-auth-badge").fetchSemanticsNode().boundsInRoot
         compose.onNodeWithTag("chat-auth-badge").assertContentDescriptionEquals("Copilot 연결됨")
-        assertEquals(1776f, auth.left, 1f)
+        assertEquals(1887f, auth.left, 1f)
         assertEquals(51f, auth.top, 1f)
         assertEquals(244f, auth.width, 1f)
         assertEquals(60f, auth.height, 1f)
@@ -579,6 +611,30 @@ class ConversationScreenTest {
         compose.onNodeWithTag("chat-input").assertIsDisplayed()
         compose.onNodeWithTag("chat-send").assertIsDisplayed().assertHeightIsAtLeast(76.dp)
         capture("target-enlarged-text")
+    }
+
+    @Test
+    fun enlargedParkingBadgesKeepIconAndLabelSeparate() {
+        show(fontScale = 1.6f)
+
+        fun assertSeparated(status: String) {
+            val badge = compose.onNodeWithContentDescription(status).fetchSemanticsNode().boundsInRoot
+            val icon =
+                compose
+                    .onNodeWithTag(
+                        "chat-parking-icon",
+                        useUnmergedTree = true,
+                    ).fetchSemanticsNode()
+                    .boundsInRoot
+            val label = compose.onNodeWithText(status, useUnmergedTree = true).fetchSemanticsNode().boundsInRoot
+            assertTrue("Icon overlaps $status", icon.right < label.left)
+            assertTrue("Icon escapes $status badge", icon.left >= badge.left)
+            assertTrue("Label escapes $status badge", label.right <= badge.right)
+        }
+
+        assertSeparated("주차 확인됨")
+        compose.runOnIdle { allowed = false }
+        assertSeparated("주차 후 이용")
     }
 
     @Test

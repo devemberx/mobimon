@@ -33,7 +33,7 @@ class VehicleInfoScreenTest {
         render(snapshot(quality = SignalQuality.UNAVAILABLE, drivingState = DrivingState.UNKNOWN, battery = null))
 
         val unconfirmedParkingBadges =
-            compose.onAllNodes(hasContentDescription("주차 후 이용 가능"), useUnmergedTree = true).fetchSemanticsNodes()
+            compose.onAllNodes(hasContentDescription("주차 후 이용"), useUnmergedTree = true).fetchSemanticsNodes()
 
         assertTrue(
             "Unverified parking should remain visible in the header",
@@ -166,7 +166,7 @@ class VehicleInfoScreenTest {
         render(snapshot(drivingState = DrivingState.MOVING))
 
         val movingBadges =
-            compose.onAllNodes(hasContentDescription("주차 후 이용 가능"), useUnmergedTree = true).fetchSemanticsNodes()
+            compose.onAllNodes(hasContentDescription("주차 후 이용"), useUnmergedTree = true).fetchSemanticsNodes()
 
         assertTrue(
             "Moving vehicle state should be visible in the header",

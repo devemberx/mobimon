@@ -12,9 +12,6 @@ object MobiMonColors {
     val accent = Color(0xFF87DAF5)
     val success = Color(0xFF71E5C5)
     val warning = Color(0xFFFFD18A)
-    val parkingRestrictedBackground = Color(0xFF3F2D23)
-    val parkingRestrictedBorder = Color(0xFFC78755)
-    val parkingRestrictedForeground = warning
     val destructive = Color(0xFFFFA79F)
     val border = Color(0xFF64839F)
     val button = Color(0xFFF7F2E8)

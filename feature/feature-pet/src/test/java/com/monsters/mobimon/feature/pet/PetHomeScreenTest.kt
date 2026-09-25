@@ -53,7 +53,7 @@ class PetHomeScreenTest {
     @Test
     fun initialLoadingDoesNotShowParkingBadge() {
         compose.setContent { MobiMonTheme { PetHomeLoadingScreen(false, {}) } }
-        compose.onNodeWithContentDescription("주차 후 이용 가능").assertDoesNotExist()
+        compose.onNodeWithContentDescription("주차 후 이용").assertDoesNotExist()
         compose.onNodeWithContentDescription("주차 확인됨").assertDoesNotExist()
     }
 
@@ -194,7 +194,7 @@ class PetHomeScreenTest {
                 )
         }
         assertEquals(friend, compose.onNodeWithContentDescription("Mobi 강아지").fetchSemanticsNode().boundsInRoot)
-        compose.onNodeWithText("주차 후 이용 가능").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText("주차 후 이용").performScrollTo().assertIsDisplayed()
         compose.onNodeWithText("배터리 72%").assertDoesNotExist()
         compose.onNodeWithText("대화하기 · 연결 불가").performScrollTo().assertIsNotEnabled()
         compose.runOnIdle { snapshot.value = parkedSnapshot() }
@@ -206,7 +206,7 @@ class PetHomeScreenTest {
     fun realUnavailableHomeDoesNotClaimParkedState() {
         render()
 
-        compose.onNodeWithText("주차 후 이용 가능").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText("주차 후 이용").performScrollTo().assertIsDisplayed()
         compose.onNodeWithContentDescription("주차 확인됨").assertDoesNotExist()
     }
 
@@ -264,7 +264,7 @@ class PetHomeScreenTest {
     fun staleParkingDoesNotClaimParked() {
         render(snapshot = parkedSnapshot().copy(quality = SignalQuality.STALE, batteryQuality = SignalQuality.VALID))
 
-        compose.onNodeWithText("주차 후 이용 가능").assertExists()
+        compose.onNodeWithText("주차 후 이용").assertExists()
         compose.onNodeWithText("배터리 72%").assertDoesNotExist()
         compose.onNodeWithContentDescription("주차 확인됨").assertDoesNotExist()
     }
@@ -366,7 +366,7 @@ class PetHomeScreenTest {
         var retries = 0
         compose.setContent { MobiMonTheme { PetHomeLoadingScreen(true, { retries++ }) } }
         compose.onNodeWithText("친구를 불러오지 못했어요", substring = true).assertExists()
-        compose.onNodeWithContentDescription("주차 후 이용 가능").assertExists()
+        compose.onNodeWithContentDescription("주차 후 이용").assertExists()
         compose.onNodeWithText("다시 시도").assertHeightIsAtLeast(76.dp).performClick()
         assertEquals(1, retries)
     }

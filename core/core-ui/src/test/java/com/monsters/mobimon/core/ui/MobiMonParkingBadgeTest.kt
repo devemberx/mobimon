@@ -14,7 +14,7 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.unit.dp
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -30,7 +30,7 @@ class MobiMonParkingBadgeTest {
     private lateinit var view: View
 
     @Test
-    fun restrictedBadgeUsesMutedOrangePaletteAndCenteredTextWithoutIcon() {
+    fun restrictedBadgeUsesReferenceSizeAndPauseIcon() {
         compose.setContent {
             MobiMonTheme {
                 view = LocalView.current
@@ -38,19 +38,22 @@ class MobiMonParkingBadgeTest {
             }
         }
 
-        compose.onNodeWithContentDescription("주차 후 이용 가능").assertWidthIsAtLeast(440.dp)
+        compose.onNodeWithContentDescription("주차 후 이용").assertWidthIsAtLeast(344.dp)
         val badgeBounds = compose.onNodeWithTag("parking").fetchSemanticsNode().boundsInRoot
-        assertEquals(440f, badgeBounds.width, 1f)
+        assertEquals(344f, badgeBounds.width, 1f)
         assertEquals(76f, badgeBounds.height, 1f)
-        val textBounds = compose.onNodeWithText("주차 후 이용 가능", useUnmergedTree = true).fetchSemanticsNode().boundsInRoot
-        assertEquals(badgeBounds.center.x, textBounds.center.x, 1f)
+        val iconBounds = compose.onNodeWithTag("parking-icon", useUnmergedTree = true).fetchSemanticsNode().boundsInRoot
+        val textBounds = compose.onNodeWithText("주차 후 이용", useUnmergedTree = true).fetchSemanticsNode().boundsInRoot
+        assertEquals(badgeBounds.center.x, (iconBounds.left + textBounds.right) / 2f, 1f)
+        assertEquals(badgeBounds.center.y, iconBounds.center.y, 1f)
+        assertEquals(badgeBounds.center.y, textBounds.center.y, 1f)
         val (background, hasIconPixels) = badgePixels()
-        assertEquals(0xFF3F2D23.toInt(), background)
-        assertFalse(hasIconPixels)
+        assertEquals(MobiMonColors.panel.toArgb(), background)
+        assertTrue(hasIconPixels)
     }
 
     @Test
-    fun confirmedBadgeKeepsPaletteAndCentersTextWithoutIcon() {
+    fun confirmedBadgeRestoresFigmaParkingIconAndGeometry() {
         compose.setContent {
             MobiMonTheme {
                 view = LocalView.current
@@ -58,15 +61,15 @@ class MobiMonParkingBadgeTest {
             }
         }
 
-        compose.onNodeWithContentDescription("주차 확인됨").assertWidthIsAtLeast(440.dp)
+        compose.onNodeWithContentDescription("주차 확인됨").assertWidthIsAtLeast(344.dp)
         val badgeBounds = compose.onNodeWithTag("parking").fetchSemanticsNode().boundsInRoot
-        assertEquals(440f, badgeBounds.width, 1f)
+        assertEquals(344f, badgeBounds.width, 1f)
         assertEquals(76f, badgeBounds.height, 1f)
         val textBounds = compose.onNodeWithText("주차 확인됨", useUnmergedTree = true).fetchSemanticsNode().boundsInRoot
-        assertEquals(badgeBounds.center.x, textBounds.center.x, 1f)
+        assertEquals(badgeBounds.left + 127.65f, textBounds.left, 1f)
         val (background, hasIconPixels) = badgePixels()
         assertEquals(MobiMonColors.panel.toArgb(), background)
-        assertFalse(hasIconPixels)
+        assertTrue(hasIconPixels)
     }
 
     private fun badgePixels(): Pair<Int, Boolean> {

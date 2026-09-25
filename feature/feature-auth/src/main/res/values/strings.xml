@@ -100,7 +100,6 @@
     <string name="chat_today">%1$s와의 대화</string>
     <string name="chat_ready">Copilot 연결됨</string>
     <string name="chat_checking">Copilot 확인 중</string>
-    <string name="chat_network_badge">네트워크 오류</string>
     <string name="chat_network_title">네트워크 연결을 확인해 주세요</string>
     <string name="chat_connection_error_title">Copilot 연결을 확인해 주세요</string>
     <string name="chat_connection_account_title">Copilot 계정을 확인해 주세요</string>

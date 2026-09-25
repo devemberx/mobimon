@@ -61,8 +61,8 @@ class QuestScreenTest {
     @Test
     fun unavailableParkingShowsSharedRestrictedBadge() {
         render(presentation().copy(parkedVerified = false))
-        compose.onNodeWithText("주차 후 이용 가능").assertIsDisplayed()
-        val bounds = compose.onNodeWithContentDescription("주차 후 이용 가능").fetchSemanticsNode().boundsInRoot
+        compose.onNodeWithText("주차 후 이용").assertIsDisplayed()
+        val bounds = compose.onNodeWithContentDescription("주차 후 이용").fetchSemanticsNode().boundsInRoot
         assertEquals(36f, bounds.top, 1f)
         assertEquals(2488f, bounds.right, 1f)
     }
@@ -70,7 +70,7 @@ class QuestScreenTest {
     @Test
     fun loadingNoticeDoesNotMoveParkingBadge() {
         render(presentation(QuestUiState(isLoading = true)).copy(parkedVerified = false))
-        val bounds = compose.onNodeWithContentDescription("주차 후 이용 가능").fetchSemanticsNode().boundsInRoot
+        val bounds = compose.onNodeWithContentDescription("주차 후 이용").fetchSemanticsNode().boundsInRoot
         assertEquals(36f, bounds.top, 1f)
         assertEquals(2488f, bounds.right, 1f)
     }
@@ -520,11 +520,10 @@ class QuestScreenTest {
     }
 
     @Test
-    fun referenceListAlignsHeadingBalanceAndTabs() {
+    fun referenceListAlignsHeaderBalanceAndTabs() {
         render(presentation())
         val backButton = compose.onNodeWithTag("quest-header-back-button").getUnclippedBoundsInRoot()
         val parkingBadge = compose.onNodeWithContentDescription("주차 확인됨").getUnclippedBoundsInRoot()
-        val heading = compose.onNodeWithText("함께 해 볼까요?").getUnclippedBoundsInRoot()
         val balance = compose.onNodeWithText("포인트 120 P").getUnclippedBoundsInRoot()
         val firstTab = compose.onNodeWithTag("quest-tab-all").getUnclippedBoundsInRoot()
         val secondTab = compose.onNodeWithTag("quest-tab-ongoing").getUnclippedBoundsInRoot()
@@ -535,10 +534,9 @@ class QuestScreenTest {
             parkingBadge.top.value,
             2f,
         )
-        assertTrue("Balance follows the section heading", balance.left > heading.right)
-        val balanceCenterOffset =
-            ((balance.top + balance.bottom) - (heading.top + heading.bottom)).value / 2f
-        assertTrue("Balance is centered slightly below the heading", balanceCenterOffset in 0f..12f)
+        assertEquals("Balance follows Home's 48 px badge gap", 48f, (parkingBadge.left - balance.right).value, 2f)
+        val balanceCenterOffset = ((balance.top + balance.bottom) - (parkingBadge.top + parkingBadge.bottom)).value / 2f
+        assertEquals("Balance follows Home's 7 px vertical offset", 7f, balanceCenterOffset, 2f)
         assertEquals(808f, firstTab.left.value, 2f)
         assertEquals(314f, firstTab.top.value, 2f)
         assertEquals(336f, (firstTab.right - firstTab.left).value, 2f)

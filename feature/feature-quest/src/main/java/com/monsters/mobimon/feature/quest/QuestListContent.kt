@@ -58,6 +58,7 @@ internal fun QuestListContent(
     modifier: Modifier = Modifier,
     isCompact: Boolean = false,
     pointBalance: PointBalanceState = PointBalanceState.Loading,
+    showPointInPanel: Boolean = true,
 ) {
     if (isCompact) {
         Column(
@@ -109,6 +110,7 @@ internal fun QuestListContent(
                 onSelectQuest = onSelectQuest,
                 onClaimReward = onClaimReward,
                 pointBalance = pointBalance,
+                showPointSummary = showPointInPanel,
                 modifier = Modifier.fillMaxWidth(),
             )
         }
@@ -163,6 +165,7 @@ internal fun QuestListContent(
                 onSelectQuest = onSelectQuest,
                 onClaimReward = onClaimReward,
                 pointBalance = pointBalance,
+                showPointSummary = showPointInPanel,
                 modifier =
                     Modifier
                         .weight(1f)
@@ -184,6 +187,7 @@ internal fun QuestRightPanel(
     onClaimReward: (String) -> Unit,
     modifier: Modifier = Modifier,
     pointBalance: PointBalanceState = PointBalanceState.Loading,
+    showPointSummary: Boolean = true,
 ) {
     val displayedQuests =
         when (selectedTab) {
@@ -202,12 +206,14 @@ internal fun QuestRightPanel(
                 text = stringResource(R.string.quest_section_title),
                 style = questTextStyle(48f, scale, bold = true, color = Colors.text),
             )
-            MobiMonPointSummary(
-                balance = (pointBalance as? PointBalanceState.Ready)?.balance,
-                modifier = Modifier.offset(y = 8.dp * scale),
-                failed = pointBalance == PointBalanceState.Failed,
-                textStyle = questTextStyle(36f, scale, color = Colors.text),
-            )
+            if (showPointSummary) {
+                MobiMonPointSummary(
+                    balance = (pointBalance as? PointBalanceState.Ready)?.balance,
+                    modifier = Modifier.offset(y = 8.dp * scale),
+                    failed = pointBalance == PointBalanceState.Failed,
+                    scale = scale,
+                )
+            }
         }
 
         Spacer(Modifier.height((if (isCompact) 24 else 38).dp * scale))

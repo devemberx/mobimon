@@ -492,16 +492,8 @@ private fun HomeHeader(
                     MobiMonPointSummary(
                         pointBalance,
                         failed = pointLoadFailed,
-                        textStyle =
-                            MaterialTheme.typography.titleLarge.copy(
-                                shadow = textShadow,
-                                fontSize =
-                                    (
-                                        36 *
-                                            scale
-                                    ).coerceAtLeast(24f).sp,
-                                fontWeight = FontWeight.Bold,
-                            ),
+                        scale = scale,
+                        shadow = textShadow,
                     )
                 }
                 HomeParkingStatus(snapshot, scale = scale)
