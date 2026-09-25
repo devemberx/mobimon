@@ -45,6 +45,7 @@ import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import com.monsters.mobimon.core.domain.ConversationProblem
 import com.monsters.mobimon.core.ui.MobiMonNavigationButton
+import com.monsters.mobimon.core.ui.MobiMonParkingStatusBadge
 import com.monsters.mobimon.core.ui.MobiMonReferenceText
 import com.monsters.mobimon.core.ui.PetAvatar
 import com.monsters.mobimon.core.ui.mobiMonReferenceTextStyle
@@ -73,6 +74,7 @@ fun ConversationScreen(
     onNewConversation: (() -> Unit)? = null,
     onReturnHome: () -> Unit = onBack,
     onRecheckConnection: () -> Unit = onRetry,
+    parkingBadgeConfirmed: Boolean = interactionAllowed,
 ) {
     val friend = stringResource(if (friendId == "friend:luna") R.string.copilot_luna else R.string.copilot_mobi)
     val title = stringResource(R.string.chat_title)
@@ -161,16 +163,7 @@ fun ConversationScreen(
                         connection = state.connection,
                         problem = if (messageFailure) state.problem else state.connectionProblem,
                         scale = scale,
-                        modifier = Modifier.offset(1887.dp * scale, 51.dp * scale),
-                    )
-                    ConversationParkingBadge(
-                        parked = interactionAllowed,
-                        scale = scale,
-                        modifier =
-                            Modifier.offset(
-                                (if (interactionAllowed) 2146.dp else 2144.dp) * scale,
-                                51.dp * scale,
-                            ),
+                        modifier = Modifier.offset(1776.dp * scale, 51.dp * scale),
                     )
                     ConversationHeader(
                         friend,
@@ -209,6 +202,15 @@ fun ConversationScreen(
                 }
             }
         }
+        MobiMonParkingStatusBadge(
+            confirmed = parkingBadgeConfirmed,
+            modifier =
+                Modifier.align(Alignment.TopEnd).padding(
+                    end = if (wide) 72.dp * scale else 24.dp,
+                    top = if (wide) 36.dp * scale else 16.dp,
+                ),
+            scale = scale,
+        )
         if (!interactionAllowed) {
             ConversationParkingOverlay(onReturnHome)
         } else if (connectionDialog) {

@@ -23,6 +23,7 @@ import com.monsters.mobimon.core.navigation.FeatureNavigator
 import com.monsters.mobimon.core.navigation.LocalDebugSettingsAvailable
 import com.monsters.mobimon.core.presentation.VehiclePresentation
 import com.monsters.mobimon.core.presentation.parkedVerified
+import com.monsters.mobimon.core.presentation.parkingBadgeConfirmed
 
 class SettingsFeature(
     private val settings: SettingsRepository,
@@ -94,6 +95,7 @@ class SettingsFeature(
             onBack = navigator.back,
             onDone = navigator.returnHome,
             parkedVerified = snapshot.parkedVerified,
+            parkingBadgeConfirmed = snapshot.parkingBadgeConfirmed,
             simulatedVehicle = snapshot.source == SignalSource.SIMULATED,
             onOpenCopilot = { if (snapshot.parkedVerified) navigator.navigate(AiRoute.COPILOT) },
         )

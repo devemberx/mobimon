@@ -2,6 +2,7 @@ package com.monsters.mobimon.feature.vehicle
 
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
@@ -13,6 +14,7 @@ import com.monsters.mobimon.core.domain.SignalSource
 import com.monsters.mobimon.core.domain.VehicleSnapshot
 import com.monsters.mobimon.core.domain.VehicleWarning
 import com.monsters.mobimon.core.domain.WarningSeverity
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -30,7 +32,13 @@ class VehicleInfoScreenTest {
     fun unavailableSnapshotDoesNotInventParkedStateOrBattery() {
         render(snapshot(quality = SignalQuality.UNAVAILABLE, drivingState = DrivingState.UNKNOWN, battery = null))
 
-        compose.onNodeWithText("주차 확인 불가").performScrollTo().assertIsDisplayed()
+        val unconfirmedParkingBadges =
+            compose.onAllNodes(hasContentDescription("주차 후 이용 가능"), useUnmergedTree = true).fetchSemanticsNodes()
+
+        assertTrue(
+            "Unverified parking should remain visible in the header",
+            unconfirmedParkingBadges.any { it.boundsInRoot.top < 160f },
+        )
         compose.onNodeWithText("배터리 정보 없음").performScrollTo().assertIsDisplayed()
     }
 
@@ -141,6 +149,34 @@ class VehicleInfoScreenTest {
     }
 
     @Test
+    fun headerShowsParkedConfirmedBadgeWhenParkingIsVerified() {
+        render(snapshot())
+
+        val confirmedParkingBadges =
+            compose.onAllNodes(hasContentDescription("주차 확인됨"), useUnmergedTree = true).fetchSemanticsNodes()
+
+        assertTrue(
+            "Verified parking badge should be visible in the header",
+            confirmedParkingBadges.any { it.boundsInRoot.top < 160f },
+        )
+    }
+
+    @Test
+    fun headerShowsDrivingBadgeWhenVehicleIsMoving() {
+        render(snapshot(drivingState = DrivingState.MOVING))
+
+        val movingBadges =
+            compose.onAllNodes(hasContentDescription("주차 후 이용 가능"), useUnmergedTree = true).fetchSemanticsNodes()
+
+        assertTrue(
+            "Moving vehicle state should be visible in the header",
+            movingBadges.any { it.boundsInRoot.top < 160f },
+        )
+        assertEquals(36f, movingBadges.single().boundsInRoot.top, 1f)
+        assertEquals(2488f, movingBadges.single().boundsInRoot.right, 1f)
+    }
+
+    @Test
     fun headerBackButtonCallsOnBackAndHomeButtonDoesNotExist() {
         var backClicked = false
         compose.setContent {
@@ -180,5 +216,7 @@ class VehicleInfoScreenTest {
         drivingState = drivingState,
         quality = quality,
         batteryPercent = battery,
+        speed = 0,
+        gear = "P",
     )
 }

@@ -69,6 +69,7 @@ import com.monsters.mobimon.core.ui.MobiMonButton
 import com.monsters.mobimon.core.ui.MobiMonColors
 import com.monsters.mobimon.core.ui.MobiMonMessage
 import com.monsters.mobimon.core.ui.MobiMonNavigationButton
+import com.monsters.mobimon.core.ui.MobiMonParkingStatusBadge
 import com.monsters.mobimon.core.ui.MobiMonPointSummary
 import com.monsters.mobimon.core.ui.ParticleType
 import com.monsters.mobimon.core.ui.PetAvatar
@@ -544,9 +545,16 @@ fun PetHomeLoadingScreen(
     failed: Boolean,
     onRetry: () -> Unit,
     modifier: Modifier = Modifier,
+    parkingBadgeConfirmed: Boolean = false,
 ) {
     Surface(modifier = modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
-        Box {
+        BoxWithConstraints {
+            val badgeScale = maxWidth.value / 2560f
+            MobiMonParkingStatusBadge(
+                confirmed = parkingBadgeConfirmed,
+                modifier = Modifier.align(Alignment.TopEnd).padding(end = 72.dp * badgeScale, top = 36.dp * badgeScale),
+                scale = badgeScale,
+            )
             Column(
                 Modifier
                     .fillMaxSize()

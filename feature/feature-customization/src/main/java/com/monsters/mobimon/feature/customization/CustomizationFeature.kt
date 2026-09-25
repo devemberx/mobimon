@@ -17,6 +17,7 @@ import com.monsters.mobimon.core.presentation.PointBalanceState
 import com.monsters.mobimon.core.presentation.PointPresentation
 import com.monsters.mobimon.core.presentation.VehiclePresentation
 import com.monsters.mobimon.core.presentation.parkedVerified
+import com.monsters.mobimon.core.presentation.parkingBadgeConfirmed
 
 class CustomizationFeature(
     private val points: PointEconomy,
@@ -70,6 +71,7 @@ class CustomizationFeature(
             onBack = navigator.back,
             timeOfDay = vehicleReading.backgroundTimeOfDay,
             interactionAllowed = interactionAllowed,
+            parkingBadgeConfirmed = vehicleSnapshot.parkingBadgeConfirmed,
         )
     }
 }

@@ -43,6 +43,22 @@ class PetHomeScreenTest {
     val compose = createComposeRule()
 
     @Test
+    fun parkingBadgeUsesSharedTopRightAnchor() {
+        render(snapshot = parkedSnapshot())
+        val bounds = compose.onNodeWithContentDescription("주차 확인됨").fetchSemanticsNode().boundsInRoot
+        assertEquals(36f, bounds.top, 1f)
+        assertEquals(2488f, bounds.right, 1f)
+    }
+
+    @Test
+    fun loadingHomeKeepsParkingBadgeAtSharedAnchor() {
+        compose.setContent { MobiMonTheme { PetHomeLoadingScreen(false, {}, parkingBadgeConfirmed = false) } }
+        val bounds = compose.onNodeWithContentDescription("주차 후 이용 가능").fetchSemanticsNode().boundsInRoot
+        assertEquals(36f, bounds.top, 1f)
+        assertEquals(2488f, bounds.right, 1f)
+    }
+
+    @Test
     @Config(qualifiers = "ko-rKR-w1792dp-h893dp-mdpi")
     fun conversationActionReportsItsBoundsAfterEnlargedTextScrolling() {
         var origin: Rect? = null
@@ -179,7 +195,7 @@ class PetHomeScreenTest {
                 )
         }
         assertEquals(friend, compose.onNodeWithContentDescription("Mobi 강아지").fetchSemanticsNode().boundsInRoot)
-        compose.onNodeWithText("주차 확인 불가").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText("주차 후 이용 가능").performScrollTo().assertIsDisplayed()
         compose.onNodeWithText("배터리 72%").assertDoesNotExist()
         compose.onNodeWithText("대화하기 · 연결 불가").performScrollTo().assertIsNotEnabled()
         compose.runOnIdle { snapshot.value = parkedSnapshot() }
@@ -191,7 +207,7 @@ class PetHomeScreenTest {
     fun realUnavailableHomeDoesNotClaimParkedState() {
         render()
 
-        compose.onNodeWithText("주차 확인 불가").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText("주차 후 이용 가능").performScrollTo().assertIsDisplayed()
         compose.onNodeWithContentDescription("주차 확인됨").assertDoesNotExist()
     }
 
@@ -249,7 +265,7 @@ class PetHomeScreenTest {
     fun staleParkingDoesNotClaimParked() {
         render(snapshot = parkedSnapshot().copy(quality = SignalQuality.STALE, batteryQuality = SignalQuality.VALID))
 
-        compose.onNodeWithText("주차 확인 불가").assertExists()
+        compose.onNodeWithText("주차 후 이용 가능").assertExists()
         compose.onNodeWithText("배터리 72%").assertDoesNotExist()
         compose.onNodeWithContentDescription("주차 확인됨").assertDoesNotExist()
     }
@@ -379,6 +395,8 @@ class PetHomeScreenTest {
             DrivingState.PARKED,
             SignalQuality.VALID,
             72,
+            speed = 0,
+            gear = "P",
         )
 
     private fun render(

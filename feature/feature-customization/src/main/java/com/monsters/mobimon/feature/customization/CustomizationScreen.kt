@@ -55,6 +55,7 @@ import com.monsters.mobimon.core.ui.CharacterAssetImage
 import com.monsters.mobimon.core.ui.MobiMonButton
 import com.monsters.mobimon.core.ui.MobiMonColors
 import com.monsters.mobimon.core.ui.MobiMonMessage
+import com.monsters.mobimon.core.ui.MobiMonParkingStatusBadge
 import com.monsters.mobimon.core.ui.MobiMonPointSummary
 import com.monsters.mobimon.core.ui.MobiMonSelectionCard
 import com.monsters.mobimon.core.ui.MobiMonTab
@@ -83,6 +84,7 @@ fun CustomizationScreen(
     timeOfDay: String? = null,
     catalogLoadFailed: Boolean = false,
     interactionAllowed: Boolean = true,
+    parkingBadgeConfirmed: Boolean = interactionAllowed,
 ) {
     var tab by rememberSaveable { mutableStateOf(CosmeticSlot.FRIEND) }
     BoxWithConstraints(modifier.fillMaxSize().background(MobiMonColors.background)) {
@@ -91,7 +93,14 @@ fun CustomizationScreen(
         val reference = maxWidth >= 1000.dp && maxHeight >= 1100.dp * scale && LocalDensity.current.fontScale <= 1.2f
         if (!reference) {
             Column(Modifier.fillMaxSize()) {
-                StoreHeader(pointBalance, pointLoadFailed, onBack, 0.6f, Modifier.fillMaxWidth().padding(16.dp))
+                StoreHeader(
+                    pointBalance,
+                    pointLoadFailed,
+                    onBack,
+                    parkingBadgeConfirmed,
+                    0.6f,
+                    Modifier.fillMaxWidth().padding(16.dp),
+                )
                 CompactCustomizationScreen(
                     inventory,
                     catalog,
@@ -122,6 +131,7 @@ fun CustomizationScreen(
                     pointBalance,
                     pointLoadFailed,
                     onBack,
+                    parkingBadgeConfirmed,
                     scale,
                     Modifier.offset(72.dp * scale, 36.dp * scale).size(2416.dp * scale, 104.dp * scale),
                 )
@@ -167,6 +177,7 @@ fun CustomizationScreen(
                     pointBalance,
                     pointLoadFailed,
                     onBack,
+                    parkingBadgeConfirmed,
                     scale,
                     Modifier.offset(72.dp * scale, 36.dp * scale).size(2416.dp * scale, 104.dp * scale),
                 )
@@ -630,6 +641,7 @@ private fun StoreHeader(
     balance: Long?,
     failed: Boolean,
     onBack: () -> Unit,
+    parkingBadgeConfirmed: Boolean,
     scale: Float,
     modifier: Modifier,
 ) {
@@ -671,6 +683,12 @@ private fun StoreHeader(
                         ).sp,
                     color = MobiMonColors.text,
                 ),
+        )
+        Spacer(Modifier.width(48.dp * scale))
+        MobiMonParkingStatusBadge(
+            confirmed = parkingBadgeConfirmed,
+            modifier = Modifier.align(Alignment.Top),
+            scale = scale,
         )
     }
 }

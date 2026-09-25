@@ -46,15 +46,28 @@ wait_for_boot() {
     exit 1
 }
 
+root_adbd() {
+    local attempt
+    for ((attempt = 1; attempt <= 15; attempt++)); do
+        if "$adb_bin" root; then
+            "$adb_bin" wait-for-device
+            return
+        fi
+        if ((attempt < 15)); then
+            sleep 2
+        fi
+    done
+    echo 'AAOS emulator did not accept adb root after 15 attempts.' >&2
+    exit 1
+}
+
 apk=$(bash "$script_dir/build-aaos-system-bars-overlay.sh")
-"$adb_bin" root
-"$adb_bin" wait-for-device
+root_adbd
 "$adb_bin" disable-verity
 "$adb_bin" reboot
 wait_for_boot
 
-"$adb_bin" root
-"$adb_bin" wait-for-device
+root_adbd
 "$adb_bin" remount
 "$adb_bin" push "$apk" /product/overlay/MobiMonSystemBars.apk
 "$adb_bin" shell chmod 644 /product/overlay/MobiMonSystemBars.apk

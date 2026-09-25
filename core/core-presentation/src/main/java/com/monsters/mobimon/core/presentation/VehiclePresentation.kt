@@ -58,3 +58,7 @@ class VehiclePresentation(
 
 val VehicleSnapshot.parkedVerified: Boolean
     get() = quality == SignalQuality.VALID && drivingState == DrivingState.PARKED
+
+/** Display-only badge decision; command authorization continues to use parkedVerified. */
+val VehicleSnapshot.parkingBadgeConfirmed: Boolean
+    get() = parkedVerified && speed == 0 && gear == "P"

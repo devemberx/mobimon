@@ -16,6 +16,7 @@ import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.getUnclippedBoundsInRoot
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performScrollTo
@@ -189,27 +190,46 @@ class VehicleReviewTest {
     }
 
     private fun assertTextFullyVisible(text: String) {
-        val node = compose.onNodeWithText(text).performScrollTo().assertIsDisplayed()
-        val layouts = mutableListOf<TextLayoutResult>()
-        node.performSemanticsAction(SemanticsActions.GetTextLayoutResult) { it(layouts) }
-        assertTrue("Text layout exists for $text", layouts.isNotEmpty())
-        val fullBounds = node.getUnclippedBoundsInRoot()
-        val visibleBounds = node.fetchSemanticsNode().boundsInRoot
-        layouts.forEach { layout ->
-            assertFalse("Clipped text height: $text", layout.didOverflowHeight)
-            assertTrue("Text has a rendered line: $text", layout.lineCount > 0)
-            assertEquals("Missing characters: $text", text.length, layout.getLineEnd(layout.lineCount - 1, true))
-            // Compose 1.6 String Text semantics rebuilds its paragraph at the parent's width.
-            // Check actual line extents, not hasVisualOverflow's wider paragraph container.
-            repeat(layout.lineCount) { line ->
-                assertFalse("Ellipsized text: $text", layout.isLineEllipsized(line))
-                assertTrue("Clipped line start: $text", layout.getLineLeft(line) >= -0.5f)
-                assertTrue("Clipped line end: $text", layout.getLineRight(line) <= layout.size.width + 0.5f)
-                assertTrue("Clipped line bottom: $text", layout.getLineBottom(line) <= layout.size.height + 0.5f)
+        val nodes = compose.onAllNodesWithText(text, useUnmergedTree = true)
+        val count = nodes.fetchSemanticsNodes().size
+        assertTrue("Text exists for $text", count > 0)
+        repeat(count) { index ->
+            val node =
+                nodes[index]
+                    .let {
+                        runCatching { it.performScrollTo() }.getOrElse { _ -> it }
+                    }.assertIsDisplayed()
+            val layouts = mutableListOf<TextLayoutResult>()
+            node.performSemanticsAction(SemanticsActions.GetTextLayoutResult) { it(layouts) }
+            assertTrue("Text layout exists for $text", layouts.isNotEmpty())
+            val fullBounds = node.getUnclippedBoundsInRoot()
+            val visibleBounds = node.fetchSemanticsNode().boundsInRoot
+            layouts.forEach { layout ->
+                assertFalse("Clipped text height: $text", layout.didOverflowHeight)
+                assertTrue("Text has a rendered line: $text", layout.lineCount > 0)
+                assertEquals("Missing characters: $text", text.length, layout.getLineEnd(layout.lineCount - 1, true))
+                // Compose 1.6 String Text semantics rebuilds its paragraph at the parent's width.
+                // Check actual line extents, not hasVisualOverflow's wider paragraph container.
+                repeat(layout.lineCount) { line ->
+                    assertFalse("Ellipsized text: $text", layout.isLineEllipsized(line))
+                    assertTrue("Clipped line start: $text", layout.getLineLeft(line) >= -0.5f)
+                    assertTrue("Clipped line end: $text", layout.getLineRight(line) <= layout.size.width + 0.5f)
+                    assertTrue("Clipped line bottom: $text", layout.getLineBottom(line) <= layout.size.height + 0.5f)
+                }
             }
+            assertEquals(
+                "Clipped width: $text",
+                (fullBounds.right - fullBounds.left).value,
+                visibleBounds.width,
+                0.5f,
+            )
+            assertEquals(
+                "Clipped height: $text",
+                (fullBounds.bottom - fullBounds.top).value,
+                visibleBounds.height,
+                0.5f,
+            )
         }
-        assertEquals("Clipped width: $text", (fullBounds.right - fullBounds.left).value, visibleBounds.width, 0.5f)
-        assertEquals("Clipped height: $text", (fullBounds.bottom - fullBounds.top).value, visibleBounds.height, 0.5f)
     }
 
     private fun staleSnapshot() = samples().last().second.copy(parkingAgeMillis = 19_000, batteryAgeMillis = 61_000)
