@@ -45,7 +45,43 @@ import java.io.File
 class StoreReferenceScreenTest {
     @get:Rule val compose = createComposeRule()
 
+    @Test fun fastFirstStoreReadShowsItemsWithoutLoadingMessage() {
+        compose.mainClock.autoAdvance = false
+        var inventory by mutableStateOf<CosmeticInventory?>(null)
+        var catalog by mutableStateOf(emptyList<CosmeticItem>())
+        compose.setContent {
+            MobiMonTheme {
+                CustomizationScreen(
+                    inventory = inventory,
+                    catalog = catalog,
+                    selectedItemId = null,
+                    purchasing = false,
+                    purchaseFailed = false,
+                    onSelectItem = {},
+                    onPurchaseItem = { _, _ -> },
+                    onEquipItem = {},
+                    onEquipFriend = {},
+                    pointBalance = 1200,
+                    pointLoadFailed = false,
+                )
+            }
+        }
+
+        compose.onNodeWithTag("store-reference").assertExists()
+        compose.onNodeWithText("아이템을 불러오고 있어요.").assertDoesNotExist()
+        compose.mainClock.advanceTimeBy(200)
+        compose.runOnIdle {
+            inventory = CosmeticInventory(setOf("friend:mobi"), mapOf(CosmeticSlot.FRIEND to "friend:mobi"))
+            catalog = listOf(CosmeticItem("friend:mobi", CosmeticSlot.FRIEND, 0))
+        }
+        compose.mainClock.autoAdvance = true
+        compose.onNodeWithTag("shop-items").assertExists()
+        compose.onNodeWithText("아이템을 불러오고 있어요.").assertDoesNotExist()
+        compose.onNodeWithText("아이템 목록과 가격을 준비하고 있어요.").assertDoesNotExist()
+    }
+
     @Test fun firstInventoryLoadKeepsReferenceFrameThroughFailureAndRecovery() {
+        compose.mainClock.autoAdvance = false
         var inventory by mutableStateOf<CosmeticInventory?>(null)
         var failed by mutableStateOf(false)
         var retries = 0
@@ -81,7 +117,7 @@ class StoreReferenceScreenTest {
         val initialFrame = compose.onNodeWithTag("store-reference").getUnclippedBoundsInRoot()
         val initialHeader = compose.onNodeWithText("꾸미기").getUnclippedBoundsInRoot()
         val initialPreview = compose.onNodeWithTag("store-preview-panel").getUnclippedBoundsInRoot()
-        compose.onNodeWithText("소유한 아이템을 확인하고 있어요.").assertIsDisplayed()
+        compose.onNodeWithText("아이템을 불러오고 있어요.").assertDoesNotExist()
         val loadingBadge = compose.onNodeWithContentDescription("주차 확인됨").getUnclippedBoundsInRoot()
         val pointSummary = compose.onNodeWithText("포인트 1,200 P").getUnclippedBoundsInRoot()
         assertEquals(36f, loadingBadge.top.value, 1f)
@@ -95,13 +131,18 @@ class StoreReferenceScreenTest {
         compose.onNodeWithTag("shop-items").assertDoesNotExist()
         compose.onNodeWithContentDescription("뒤로").performClick()
         assertEquals(1, backs)
+        compose.mainClock.advanceTimeBy(480)
+        compose.onNodeWithText("아이템을 불러오고 있어요.").assertDoesNotExist()
+        compose.mainClock.advanceTimeBy(32)
+        compose.onNodeWithText("아이템을 불러오고 있어요.").assertIsDisplayed()
         capture(view, "inventory-loading")
+        compose.mainClock.autoAdvance = true
 
         compose.runOnIdle { failed = true }
         compose.onNodeWithText("소유한 아이템을 확인할 수 없어요.").assertIsDisplayed()
         compose.onNodeWithText("다시 시도").assertIsDisplayed().performClick()
         assertEquals(1, retries)
-        compose.onNodeWithText("소유한 아이템을 확인하고 있어요.").assertIsDisplayed()
+        compose.onNodeWithText("아이템을 불러오고 있어요.").assertDoesNotExist()
         assertEquals(initialPreview, compose.onNodeWithTag("store-preview-panel").getUnclippedBoundsInRoot())
 
         compose.runOnIdle {
@@ -111,7 +152,7 @@ class StoreReferenceScreenTest {
         assertEquals(initialHeader, compose.onNodeWithText("꾸미기").getUnclippedBoundsInRoot())
         assertEquals(initialPreview, compose.onNodeWithTag("store-preview-panel").getUnclippedBoundsInRoot())
         compose.onNodeWithTag("shop-items").assertExists()
-        compose.onNodeWithText("소유한 아이템을 확인하고 있어요.").assertDoesNotExist()
+        compose.onNodeWithText("아이템을 불러오고 있어요.").assertDoesNotExist()
     }
 
     @Test fun categoriesSelectIndependentlyAndPreviewOnlyAppliesOnConfirmation() {

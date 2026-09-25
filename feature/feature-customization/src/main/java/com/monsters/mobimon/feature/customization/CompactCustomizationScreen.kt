@@ -88,32 +88,35 @@ internal fun CompactCustomizationScreen(
     timeOfDay: String? = null,
     catalogLoadFailed: Boolean = false,
     interactionAllowed: Boolean = true,
+    showPending: Boolean = false,
 ) {
     var subTab by rememberSaveable { mutableIntStateOf(0) } // 0: 전체, 1: 보유 중
 
     val observationFailed = loadFailed || catalogLoadFailed
     val recoveryNeeded = observationFailed || pointLoadFailed
     if (inventory == null) {
-        Column(
-            modifier = modifier.fillMaxSize().padding(24.dp),
-            verticalArrangement = Arrangement.Center,
-            horizontalAlignment = Alignment.CenterHorizontally,
-        ) {
-            MobiMonMessage(
-                stringResource(
-                    when {
-                        catalogLoadFailed -> R.string.customization_catalog_failed
-                        loadFailed -> R.string.customization_inventory_failed
-                        pointLoadFailed -> com.monsters.mobimon.core.ui.R.string.mobimon_points_failed
-                        else -> R.string.customization_inventory_loading
-                    },
-                ),
-                isError = recoveryNeeded,
-            )
-            if (recoveryNeeded) {
-                Spacer(Modifier.height(16.dp))
-                MobiMonButton(onClick = onRetry, modifier = Modifier.fillMaxWidth()) {
-                    Text(stringResource(R.string.customization_retry))
+        if (recoveryNeeded || showPending) {
+            Column(
+                modifier = modifier.fillMaxSize().padding(24.dp),
+                verticalArrangement = Arrangement.Center,
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                MobiMonMessage(
+                    stringResource(
+                        when {
+                            catalogLoadFailed -> R.string.customization_catalog_failed
+                            loadFailed -> R.string.customization_inventory_failed
+                            pointLoadFailed -> com.monsters.mobimon.core.ui.R.string.mobimon_points_failed
+                            else -> R.string.customization_inventory_loading
+                        },
+                    ),
+                    isError = recoveryNeeded,
+                )
+                if (recoveryNeeded) {
+                    Spacer(Modifier.height(16.dp))
+                    MobiMonButton(onClick = onRetry, modifier = Modifier.fillMaxWidth()) {
+                        Text(stringResource(R.string.customization_retry))
+                    }
                 }
             }
         }
@@ -276,7 +279,7 @@ internal fun CompactCustomizationScreen(
                             if (scrollCatalog) Modifier.height(400.dp) else Modifier.weight(1f),
                         ),
                 ) {
-                    if (filteredItems.isEmpty()) {
+                    if (filteredItems.isEmpty() && showPending && !catalogLoadFailed) {
                         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                             Text(
                                 stringResource(R.string.pet_catalog_pending),

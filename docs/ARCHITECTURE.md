@@ -79,7 +79,9 @@ Conversation navigation carries the activated button's bounds to the shell;
 
 Shared presentation retains committed values on read failure, with explicit retry
 and no duplicate collectors. Settings writes and customization stream retries are
-independent of other loads; preview reaches shared appearance only on commit.
+independent of other loads. Store entry can display the shared committed appearance
+while its own catalog and inventory streams start; preview reaches shared appearance
+only on commit.
 
 The decorative background uses `UtcClock` in the local time zone; a vehicle location
 timestamp remains evidence and cannot override it. Only the separate Debug

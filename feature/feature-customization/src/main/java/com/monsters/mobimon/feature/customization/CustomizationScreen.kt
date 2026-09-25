@@ -27,8 +27,10 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -60,6 +62,7 @@ import com.monsters.mobimon.core.ui.MobiMonSelectionCard
 import com.monsters.mobimon.core.ui.MobiMonTab
 import com.monsters.mobimon.core.ui.PetAvatar
 import com.monsters.mobimon.core.ui.companionBackgroundRes
+import kotlinx.coroutines.delay
 
 @Composable
 fun CustomizationScreen(
@@ -86,6 +89,16 @@ fun CustomizationScreen(
     parkingBadgeConfirmed: Boolean = interactionAllowed,
 ) {
     var tab by rememberSaveable { mutableStateOf(CosmeticSlot.FRIEND) }
+    val inventoryPending = inventory == null
+    val catalogPending = catalog.isEmpty()
+    val recoveryNeeded = loadFailed || catalogLoadFailed || pointLoadFailed
+    var showPending by remember(inventoryPending, catalogPending, recoveryNeeded) { mutableStateOf(false) }
+    LaunchedEffect(inventoryPending, catalogPending, recoveryNeeded) {
+        if ((inventoryPending || catalogPending) && !recoveryNeeded) {
+            delay(500)
+            showPending = true
+        }
+    }
     BoxWithConstraints(modifier.fillMaxSize().background(MobiMonColors.background)) {
         val scale = maxWidth.value / 2560f
         val contentHeight = maxHeight
@@ -122,6 +135,7 @@ fun CustomizationScreen(
                     timeOfDay = timeOfDay,
                     catalogLoadFailed = catalogLoadFailed,
                     interactionAllowed = interactionAllowed,
+                    showPending = showPending,
                 )
             }
         } else if (inventory == null) {
@@ -144,29 +158,30 @@ fun CustomizationScreen(
                         .clip(RoundedCornerShape(36.dp * scale))
                         .background(MobiMonColors.raised),
                 )
-                val recoveryNeeded = loadFailed || catalogLoadFailed || pointLoadFailed
-                Column(
-                    Modifier.offset(1040.dp * scale, 196.dp * scale).size(
-                        1448.dp * scale,
-                        contentHeight - 220.dp * scale,
-                    ),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.Center,
-                ) {
-                    MobiMonMessage(
-                        stringResource(
-                            when {
-                                catalogLoadFailed -> R.string.customization_catalog_failed
-                                loadFailed -> R.string.customization_inventory_failed
-                                pointLoadFailed -> com.monsters.mobimon.core.ui.R.string.mobimon_points_failed
-                                else -> R.string.customization_inventory_loading
-                            },
+                if (recoveryNeeded || showPending) {
+                    Column(
+                        Modifier.offset(1040.dp * scale, 196.dp * scale).size(
+                            1448.dp * scale,
+                            contentHeight - 220.dp * scale,
                         ),
-                        isError = recoveryNeeded,
-                    )
-                    if (recoveryNeeded) {
-                        Spacer(Modifier.height(24.dp * scale))
-                        MobiMonButton(onRetry) { Text(stringResource(R.string.customization_retry)) }
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center,
+                    ) {
+                        MobiMonMessage(
+                            stringResource(
+                                when {
+                                    catalogLoadFailed -> R.string.customization_catalog_failed
+                                    loadFailed -> R.string.customization_inventory_failed
+                                    pointLoadFailed -> com.monsters.mobimon.core.ui.R.string.mobimon_points_failed
+                                    else -> R.string.customization_inventory_loading
+                                },
+                            ),
+                            isError = recoveryNeeded,
+                        )
+                        if (recoveryNeeded) {
+                            Spacer(Modifier.height(24.dp * scale))
+                            MobiMonButton(onRetry) { Text(stringResource(R.string.customization_retry)) }
+                        }
                     }
                 }
             }
@@ -535,7 +550,7 @@ fun CustomizationScreen(
                         }
                     }
                 }
-                if (items.isEmpty()) {
+                if (items.isEmpty() && showPending && !catalogLoadFailed) {
                     Text(
                         stringResource(R.string.pet_catalog_pending),
                         color = MobiMonColors.muted,

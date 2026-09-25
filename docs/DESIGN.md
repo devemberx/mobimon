@@ -155,6 +155,10 @@ section heading when the header cannot fit both statuses.
 Friends, accessories and backgrounds are independent. Preserve equipment per friend.
 Preview stays local until Apply commits; purchase confirms ownership only. Show
 compatibility, price and wallet balance before purchase; cancellation spends nothing.
+On entry, reuse the committed appearance already shown on Home while the Store
+refreshes its inventory and catalog. Keep the Store frame in place. Show a loading
+message only if the read takes longer than a brief transition; show errors and retry
+immediately.
 
 | State | Action |
 | --- | --- |
