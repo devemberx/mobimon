@@ -19,6 +19,7 @@ import com.monsters.mobimon.core.presentation.PointBalanceState
 import com.monsters.mobimon.core.presentation.PointPresentation
 import com.monsters.mobimon.core.presentation.VehiclePresentation
 import com.monsters.mobimon.core.presentation.parkedVerified
+import com.monsters.mobimon.core.presentation.parkingBadgeConfirmed
 
 class PetFeature(
     private val pets: PetRepository,
@@ -51,7 +52,12 @@ class PetFeature(
         }
         val profile = pet.profile
         if (profile == null || pet.isLoading) {
-            PetHomeLoadingScreen(failed = pet.loadFailed, onRetry = retry, modifier = modifier)
+            PetHomeLoadingScreen(
+                failed = pet.loadFailed,
+                onRetry = retry,
+                modifier = modifier,
+                parkingBadgeConfirmed = snapshot.parkingBadgeConfirmed,
+            )
             return
         }
         PetHomeScreen(

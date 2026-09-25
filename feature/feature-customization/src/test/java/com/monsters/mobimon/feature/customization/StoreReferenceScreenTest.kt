@@ -82,6 +82,9 @@ class StoreReferenceScreenTest {
         val initialHeader = compose.onNodeWithText("꾸미기").getUnclippedBoundsInRoot()
         val initialPreview = compose.onNodeWithTag("store-preview-panel").getUnclippedBoundsInRoot()
         compose.onNodeWithText("소유한 아이템을 확인하고 있어요.").assertIsDisplayed()
+        val loadingBadge = compose.onNodeWithContentDescription("주차 확인됨").fetchSemanticsNode().boundsInRoot
+        assertEquals(36f, loadingBadge.top, 1f)
+        assertEquals(2488f, loadingBadge.right, 1f)
         compose.onNodeWithTag("shop-items").assertDoesNotExist()
         compose.onNodeWithContentDescription("뒤로").performClick()
         assertEquals(1, backs)
@@ -139,7 +142,10 @@ class StoreReferenceScreenTest {
             }
         }
         compose.onNodeWithTag("store-tab-FRIEND").assertIsSelected()
-        compose.onNodeWithText("주차 확인됨").assertDoesNotExist()
+        compose.onNodeWithText("주차 확인됨").assertIsDisplayed()
+        val badge = compose.onNodeWithContentDescription("주차 확인됨").fetchSemanticsNode().boundsInRoot
+        assertEquals(36f, badge.top, 1f)
+        assertEquals(2488f, badge.right, 1f)
         compose.onNodeWithText("꾸미기").assertExists()
         assertNull(applied)
         capture(view, "P20-friend")

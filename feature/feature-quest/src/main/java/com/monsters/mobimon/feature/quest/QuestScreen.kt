@@ -27,6 +27,7 @@ import androidx.compose.ui.semantics.paneTitle
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.monsters.mobimon.core.navigation.AppRoute
+import com.monsters.mobimon.core.ui.MobiMonParkingStatusBadge
 import com.monsters.mobimon.core.ui.MobiMonColors as Colors
 
 @Composable
@@ -42,6 +43,7 @@ fun QuestScreen(
     modifier: Modifier = Modifier,
     onBack: () -> Unit = {},
     onHome: (() -> Unit)? = null,
+    parkingBadgeConfirmed: Boolean = state.parkedVerified,
 ) {
     var selectedQuestId by rememberSaveable { mutableStateOf<String?>(null) }
     var selectedTab by rememberSaveable { mutableStateOf(QuestFilterTab.ALL) }
@@ -54,23 +56,63 @@ fun QuestScreen(
         }
     }
     val title = stringResource(R.string.quest_header_title)
-    Column(
+    Box(
         modifier = modifier.fillMaxSize().background(Colors.background).semantics { paneTitle = title },
     ) {
-        QuestStatusPanel(state, onRetryQuests, onRetryWallet, onRetryAppearance)
-        BoxWithConstraints(Modifier.fillMaxWidth().weight(1f)) {
-            val fontScale = LocalDensity.current.fontScale
-            val reference = maxWidth >= 1400.dp && maxHeight >= maxWidth * (1184f / 2560f) && fontScale <= 1f
-            val scale = if (reference) maxWidth.value / 2560f else 0.75f
-            val contentHeight = maxHeight
-            if (reference) {
-                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Box(Modifier.fillMaxSize().testTag("quest-reference")) {
+        Column(Modifier.fillMaxSize()) {
+            QuestStatusPanel(state, onRetryQuests, onRetryWallet, onRetryAppearance)
+            BoxWithConstraints(Modifier.fillMaxWidth().weight(1f)) {
+                val fontScale = LocalDensity.current.fontScale
+                val reference = maxWidth >= 1400.dp && maxHeight >= maxWidth * (1184f / 2560f) && fontScale <= 1f
+                val scale = if (reference) maxWidth.value / 2560f else 0.75f
+                val contentHeight = maxHeight
+                if (reference) {
+                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        Box(Modifier.fillMaxSize().testTag("quest-reference")) {
+                            QuestHeader(
+                                friendId = state.appearance.friendId,
+                                scale = scale,
+                                onBack = {
+                                    if (selectedQuest != null) {
+                                        selectedQuestId = null
+                                    } else {
+                                        onBack()
+                                    }
+                                },
+                                onHome = onHome,
+                                isDetail = selectedQuest != null,
+                                modifier =
+                                    Modifier
+                                        .offset(72.dp * scale, 36.dp * scale)
+                                        .size(2416.dp * scale, 104.dp * scale),
+                            )
+                            QuestContent(
+                                state = state,
+                                selectedQuest = selectedQuest,
+                                selectedTab = selectedTab,
+                                scale = scale,
+                                isCompact = false,
+                                onSelectTab = { selectedTab = it },
+                                onSelectQuest = { selectedQuestId = it },
+                                onClaimReward = onClaimReward,
+                                onNavigateRoute = onNavigateRoute,
+                                modifier =
+                                    Modifier.offset(72.dp * scale, 196.dp * scale).size(
+                                        2416.dp * scale,
+                                        contentHeight - 220.dp * scale,
+                                    ),
+                            )
+                        }
+                    }
+                } else {
+                    val compactScale = (maxWidth.value / 1400f).coerceIn(0.55f, 0.9f)
+                    Column(
+                        modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(24.dp),
+                        verticalArrangement = Arrangement.spacedBy(24.dp),
+                    ) {
                         QuestHeader(
-                            isParked = state.parkedVerified,
                             friendId = state.appearance.friendId,
-                            scale = scale,
-                            referenceLayout = true,
+                            scale = compactScale,
                             onBack = {
                                 if (selectedQuest != null) {
                                     selectedQuestId = null
@@ -80,94 +122,64 @@ fun QuestScreen(
                             },
                             onHome = onHome,
                             isDetail = selectedQuest != null,
-                            modifier =
-                                Modifier
-                                    .offset(72.dp * scale, 36.dp * scale)
-                                    .size(2416.dp * scale, 104.dp * scale),
+                            modifier = Modifier.fillMaxWidth(),
                         )
                         QuestContent(
                             state = state,
                             selectedQuest = selectedQuest,
                             selectedTab = selectedTab,
-                            scale = scale,
-                            isCompact = false,
+                            scale = compactScale,
+                            isCompact = true,
                             onSelectTab = { selectedTab = it },
                             onSelectQuest = { selectedQuestId = it },
                             onClaimReward = onClaimReward,
                             onNavigateRoute = onNavigateRoute,
-                            modifier =
-                                Modifier.offset(72.dp * scale, 196.dp * scale).size(
-                                    2416.dp * scale,
-                                    contentHeight - 220.dp * scale,
-                                ),
+                            modifier = Modifier.fillMaxWidth(),
                         )
                     }
                 }
-            } else {
-                val compactScale = (maxWidth.value / 1400f).coerceIn(0.55f, 0.9f)
-                Column(
-                    modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(24.dp),
-                    verticalArrangement = Arrangement.spacedBy(24.dp),
+                val hiddenQuest = state.hiddenQuests.firstOrNull()
+                if (hiddenQuest != null &&
+                    state.rewardSuccess == null &&
+                    !state.isLoading &&
+                    !state.observationFailed
                 ) {
-                    QuestHeader(
-                        isParked = state.parkedVerified,
+                    QuestHiddenClaimModal(
+                        quest = hiddenQuest,
                         friendId = state.appearance.friendId,
-                        scale = compactScale,
-                        referenceLayout = false,
-                        onBack = {
-                            if (selectedQuest != null) {
-                                selectedQuestId = null
-                            } else {
-                                onBack()
-                            }
-                        },
-                        onHome = onHome,
-                        isDetail = selectedQuest != null,
-                        modifier = Modifier.fillMaxWidth(),
+                        accessoryId = state.appearance.accessoryId,
+                        outfitId = state.appearance.outfitId,
+                        backgroundId = state.appearance.backgroundId,
+                        scale = scale,
+                        canClaim = state.canClaim,
+                        isBusy = state.pendingQuestId != null,
+                        errorMessage = state.errorMessage,
+                        onClaim = { onClaimReward(hiddenQuest.id) },
+                        onDismiss = { onDismissHiddenQuest(hiddenQuest.id) },
                     )
-                    QuestContent(
-                        state = state,
-                        selectedQuest = selectedQuest,
-                        selectedTab = selectedTab,
-                        scale = compactScale,
-                        isCompact = true,
-                        onSelectTab = { selectedTab = it },
-                        onSelectQuest = { selectedQuestId = it },
-                        onClaimReward = onClaimReward,
-                        onNavigateRoute = onNavigateRoute,
-                        modifier = Modifier.fillMaxWidth(),
+                }
+                state.rewardSuccess?.let { success ->
+                    QuestRewardSuccessModal(
+                        points = success.points,
+                        bonusPoints = success.bonusPoints,
+                        weatherMultiplier = success.weatherMultiplier,
+                        friendId = state.appearance.friendId,
+                        accessoryId = state.appearance.accessoryId,
+                        outfitId = state.appearance.outfitId,
+                        backgroundId = state.appearance.backgroundId,
+                        scale = scale,
+                        onConfirm = onDismissRewardSuccess,
                     )
                 }
             }
-            val hiddenQuest = state.hiddenQuests.firstOrNull()
-            if (hiddenQuest != null && state.rewardSuccess == null && !state.isLoading && !state.observationFailed) {
-                QuestHiddenClaimModal(
-                    quest = hiddenQuest,
-                    friendId = state.appearance.friendId,
-                    accessoryId = state.appearance.accessoryId,
-                    outfitId = state.appearance.outfitId,
-                    backgroundId = state.appearance.backgroundId,
-                    scale = scale,
-                    canClaim = state.canClaim,
-                    isBusy = state.pendingQuestId != null,
-                    errorMessage = state.errorMessage,
-                    onClaim = { onClaimReward(hiddenQuest.id) },
-                    onDismiss = { onDismissHiddenQuest(hiddenQuest.id) },
-                )
-            }
-            state.rewardSuccess?.let { success ->
-                QuestRewardSuccessModal(
-                    points = success.points,
-                    bonusPoints = success.bonusPoints,
-                    weatherMultiplier = success.weatherMultiplier,
-                    friendId = state.appearance.friendId,
-                    accessoryId = state.appearance.accessoryId,
-                    outfitId = state.appearance.outfitId,
-                    backgroundId = state.appearance.backgroundId,
-                    scale = scale,
-                    onConfirm = onDismissRewardSuccess,
-                )
-            }
+        }
+        BoxWithConstraints(Modifier.fillMaxSize()) {
+            val badgeScale = maxWidth.value / 2560f
+            MobiMonParkingStatusBadge(
+                confirmed = parkingBadgeConfirmed,
+                modifier = Modifier.align(Alignment.TopEnd).padding(end = 72.dp * badgeScale, top = 36.dp * badgeScale),
+                scale = badgeScale,
+            )
         }
     }
 }

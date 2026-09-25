@@ -147,6 +147,15 @@ class CopilotConnectionScreenTest {
     fun unknownParkingBlocksConnectionButKeepsExitAvailable() {
         val actions = mutableListOf<CopilotAction>()
         show(CopilotUiState.Introduction(), actions::add, allowed = false)
+        val badge =
+            compose
+                .onNodeWithContentDescription(
+                    "주차 후 이용 가능",
+                ).assertIsDisplayed()
+                .fetchSemanticsNode()
+                .boundsInRoot
+        assertEquals(36f, badge.top, 1f)
+        assertEquals(2488f, badge.right, 1f)
         compose
             .onNodeWithText("QR로 연결하기")
             .assertIsDisplayed()

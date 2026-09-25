@@ -59,6 +59,23 @@ class QuestScreenTest {
     private val catalog = QuestCatalog(DefaultPointQuestCatalog())
 
     @Test
+    fun unavailableParkingShowsSharedRestrictedBadge() {
+        render(presentation().copy(parkedVerified = false))
+        compose.onNodeWithText("주차 후 이용 가능").assertIsDisplayed()
+        val bounds = compose.onNodeWithContentDescription("주차 후 이용 가능").fetchSemanticsNode().boundsInRoot
+        assertEquals(36f, bounds.top, 1f)
+        assertEquals(2488f, bounds.right, 1f)
+    }
+
+    @Test
+    fun loadingNoticeDoesNotMoveParkingBadge() {
+        render(presentation(QuestUiState(isLoading = true)).copy(parkedVerified = false))
+        val bounds = compose.onNodeWithContentDescription("주차 후 이용 가능").fetchSemanticsNode().boundsInRoot
+        assertEquals(36f, bounds.top, 1f)
+        assertEquals(2488f, bounds.right, 1f)
+    }
+
+    @Test
     @Config(qualifiers = "ko-rKR-w2560dp-h1332dp-mdpi")
     @GraphicsMode(GraphicsMode.Mode.NATIVE)
     fun panelsFollowAvailableContentHeight() = checkPanelHeights(listOf(1184.dp, 1268.dp, 1184.dp), 1f)
