@@ -52,7 +52,7 @@ data class DebugRawVssState(
     val vehicleIsMoving: Boolean = false,
     val vehicleSpeedKmh: Float = 0f,
     val selectedGear: Int = 126,
-    val traveledDistanceKm: Float = 0f,
+    val traveledDistanceMeters: Float = 0f,
     val driverSeatBelted: Boolean = false,
     val leftIndicatorSignaling: Boolean = false,
     val rightIndicatorSignaling: Boolean = false,
@@ -93,6 +93,7 @@ data class DebugInterpretationOverrides(
 data class DebugVssState(
     val raw: DebugRawVssState = DebugRawVssState(),
     val overrides: DebugInterpretationOverrides = DebugInterpretationOverrides(),
+    val cardExtraSignals: Map<String, String> = DebugCardVssSignals.defaults,
 ) {
     val isDistracted: Boolean
         get() = overrides.isDistracted ?: (raw.driverDistractionLevel >= DISTRACTION_THRESHOLD_PERCENT)
@@ -222,6 +223,11 @@ class DebugStore
 
         private fun loadState(): DebugVssState =
             DebugVssState(
+                cardExtraSignals =
+                    DebugCardVssSignals.additional.associate { definition ->
+                        definition.path to
+                            (prefs.getString("card.${definition.path}", null) ?: definition.defaultValue)
+                    },
                 raw =
                     DebugRawVssState(
                         driverFatigueLevel = prefs.float("Vehicle.Driver.FatigueLevel", 0f),
@@ -277,7 +283,11 @@ class DebugStore
                         vehicleIsMoving = prefs.bool("Vehicle.IsMoving", false),
                         vehicleSpeedKmh = prefs.float("Vehicle.Speed", 0f),
                         selectedGear = prefs.int("Vehicle.Powertrain.Transmission.SelectedGear", 126),
-                        traveledDistanceKm = prefs.float("Vehicle.TraveledDistance", 0f),
+                        traveledDistanceMeters =
+                            prefs.float(
+                                "Vehicle.TraveledDistance.meters",
+                                prefs.float("Vehicle.TraveledDistance", 0f) * 1_000f,
+                            ),
                         driverSeatBelted = prefs.bool("Vehicle.Cabin.Seat.Row1.DriverSide.IsBelted", false),
                         leftIndicatorSignaling =
                             prefs.bool("Vehicle.Body.Lights.DirectionIndicator.Left.IsSignaling", false),
@@ -372,7 +382,7 @@ class DebugStore
             putBoolean("Vehicle.IsMoving", raw.vehicleIsMoving)
             putFloat("Vehicle.Speed", raw.vehicleSpeedKmh)
             putInt("Vehicle.Powertrain.Transmission.SelectedGear", raw.selectedGear)
-            putFloat("Vehicle.TraveledDistance", raw.traveledDistanceKm)
+            putFloat("Vehicle.TraveledDistance.meters", raw.traveledDistanceMeters)
             putBoolean("Vehicle.Cabin.Seat.Row1.DriverSide.IsBelted", raw.driverSeatBelted)
             putBoolean("Vehicle.Body.Lights.DirectionIndicator.Left.IsSignaling", raw.leftIndicatorSignaling)
             putBoolean("Vehicle.Body.Lights.DirectionIndicator.Right.IsSignaling", raw.rightIndicatorSignaling)
@@ -386,6 +396,7 @@ class DebugStore
             putFloat("Vehicle.TripDuration", raw.tripDurationSeconds)
             putFloat("Vehicle.TripMeterReading", raw.tripMeterReadingKm)
             putFloat("Vehicle.AverageSpeed", raw.averageSpeedKmh)
+            state.cardExtraSignals.forEach { (path, value) -> putString("card.$path", value) }
             writeOverrides(state.overrides)
             return this
         }

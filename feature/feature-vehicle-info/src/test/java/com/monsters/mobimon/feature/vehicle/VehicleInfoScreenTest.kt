@@ -1,13 +1,22 @@
 package com.monsters.mobimon.feature.vehicle
 
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsNotEnabled
+import androidx.compose.ui.test.getUnclippedBoundsInRoot
 import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.longClick
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.performScrollToIndex
+import androidx.compose.ui.test.performTouchInput
 import com.monsters.mobimon.core.domain.DrivingState
 import com.monsters.mobimon.core.domain.SignalQuality
 import com.monsters.mobimon.core.domain.SignalSource
@@ -54,6 +63,22 @@ class VehicleInfoScreenTest {
     }
 
     @Test
+    fun missingDefaultCardSignalsDoNotClaimGlobalHealth() {
+        render(
+            snapshot().copy(
+                tirePressureStatus = "OK",
+                isEmergencyBraking = false,
+                isDrowsy = false,
+                isDistracted = false,
+                attentionLevel = 85,
+            ),
+        )
+
+        compose.onNodeWithText("차량의 상태가 좋아요").assertDoesNotExist()
+        compose.onNodeWithText("일부 정보만 확인했어요").assertIsDisplayed()
+    }
+
+    @Test
     fun partialAssistReadingsDoNotEstablishNoWarnings() {
         render(snapshot().copy(isEmergencyBraking = false, isDrowsy = false))
 
@@ -65,7 +90,7 @@ class VehicleInfoScreenTest {
     fun uninterpretedTireStatusDoesNotEstablishNoWarnings() {
         render(snapshot().copy(tirePressureStatus = "NG"))
 
-        compose.onNodeWithText("NG").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText("저압 경고").performScrollTo().assertIsDisplayed()
         compose.onNodeWithText("저압 경고 없음").assertDoesNotExist()
     }
 
@@ -191,6 +216,144 @@ class VehicleInfoScreenTest {
         compose.onNodeWithTag("vehicle-header-back-button").performClick()
         assertTrue("Back callback invoked", backClicked)
         compose.onNodeWithTag("vehicle-header-home-button").assertDoesNotExist()
+    }
+
+    @Test
+    fun longPressOpensFullCardChoicesAndConfirmChangesOnlyTheSelectedSlot() {
+        var selections by mutableStateOf(VehicleCardCatalog.defaultSlots.map { it.id })
+        compose.setContent {
+            MaterialTheme {
+                VehicleInfoScreen(
+                    snapshot = snapshot(),
+                    selectedCards = selections,
+                    onCardSelectionConfirmed = { selections = it },
+                )
+            }
+        }
+
+        compose.onNodeWithTag("vehicle-card-slot-1").performTouchInput { longClick() }
+        compose.onNodeWithText("차량상태 카드 변경").assertIsDisplayed()
+        compose.onNodeWithTag("vehicle-dialog-option-battery").assertDoesNotExist()
+        compose.onNodeWithTag("vehicle-dialog-confirm").assertIsNotEnabled()
+        compose.onNodeWithTag("vehicle-dialog-option-battery-health").performScrollTo().performClick()
+        compose.onNodeWithTag("vehicle-dialog-confirm").performClick()
+
+        compose.runOnIdle {
+            assertEquals("battery-health", selections[0])
+            assertEquals("charging", selections[1])
+        }
+        compose.onNodeWithText("배터리 건강도").assertExists()
+        assertTrue(compose.onAllNodesWithText("정보 없음").fetchSemanticsNodes().isNotEmpty())
+
+        compose.onNodeWithTag("vehicle-card-slot-1").performTouchInput { longClick() }
+        compose.onNodeWithTag("vehicle-dialog-option-battery-health").assertDoesNotExist()
+        compose.onNodeWithTag("vehicle-dialog-option-battery").assertIsDisplayed()
+    }
+
+    @Test
+    fun cancelKeepsPreviousCard() {
+        var selections by mutableStateOf(VehicleCardCatalog.defaultSlots.map { it.id })
+        compose.setContent {
+            MaterialTheme {
+                VehicleInfoScreen(snapshot = snapshot(), selectedCards = selections, onCardSelectionConfirmed = {
+                    selections =
+                        it
+                })
+            }
+        }
+        compose.onNodeWithTag("vehicle-card-slot-1").performTouchInput { longClick() }
+        compose.onNodeWithTag("vehicle-dialog-option-battery-health").performScrollTo().performClick()
+        compose.onNodeWithTag("vehicle-dialog-cancel").performClick()
+        compose.runOnIdle { assertEquals("battery", selections[0]) }
+    }
+
+    @Test
+    fun galleryExcludesAllAssignedCardsAndClearsDraftWhenSlotChanges() {
+        val assigned = listOf("battery", "battery-health", "tire", "washer", "environment", "assist")
+        compose.setContent {
+            MaterialTheme {
+                VehicleInfoScreen(snapshot = snapshot(), selectedCards = assigned)
+            }
+        }
+
+        compose.onNodeWithTag("vehicle-card-slot-1").performTouchInput { longClick() }
+        compose.onNodeWithTag("vehicle-dialog-option-battery").assertDoesNotExist()
+        compose.onNodeWithTag("vehicle-dialog-option-battery-health").assertDoesNotExist()
+        compose.onNodeWithText("28개 · 실제 크기 · 아래로 스크롤 ↓").assertIsDisplayed()
+        compose.onNodeWithTag("vehicle-dialog-option-battery-range").performScrollTo().performClick()
+        compose.onNodeWithTag("vehicle-dialog-slot-2").performClick()
+        compose.onNodeWithTag("vehicle-dialog-confirm").assertIsNotEnabled()
+    }
+
+    @Test
+    fun lastGalleryCardCanReplaceTheSixthSlotAfterScrolling() {
+        var selections by mutableStateOf(VehicleCardCatalog.defaultSlots.map { it.id })
+        compose.setContent {
+            MaterialTheme {
+                VehicleInfoScreen(
+                    snapshot = snapshot(),
+                    selectedCards = selections,
+                    onCardSelectionConfirmed = { selections = it },
+                )
+            }
+        }
+
+        compose.onNodeWithTag("vehicle-card-slot-6").performTouchInput { longClick() }
+        compose.onNodeWithTag("vehicle-dialog-list").performScrollToIndex(28)
+        compose.onNodeWithTag("vehicle-dialog-option-breakdown").assertIsDisplayed().performClick()
+        compose.onNodeWithTag("vehicle-dialog-confirm").performClick()
+
+        compose.runOnIdle {
+            assertEquals("battery", selections[0])
+            assertEquals("breakdown", selections[5])
+        }
+    }
+
+    @Test
+    fun selectorOpensAtFirstCardWithinTheContentArea() {
+        render(snapshot())
+        compose.onNodeWithTag("vehicle-card-slot-1").performTouchInput { longClick() }
+
+        val dialog = compose.onNodeWithTag("vehicle-card-selector").getUnclippedBoundsInRoot()
+        assertTrue(dialog.left.value >= 0f)
+        assertTrue(dialog.right.value <= 2560f)
+        assertTrue(dialog.top.value >= 0f)
+        assertTrue(dialog.bottom.value <= 1248f)
+        compose.onNodeWithTag("vehicle-dialog-option-battery").assertDoesNotExist()
+        compose.onNodeWithTag("vehicle-dialog-option-battery-health").assertIsDisplayed()
+        compose.onNodeWithText("29개 · 실제 크기 · 아래로 스크롤 ↓").assertIsDisplayed()
+        compose.onNodeWithTag("vehicle-dialog-confirm").assertIsNotEnabled()
+    }
+
+    @Test
+    fun verifiedTireWarningUsesSickCharacterCopy() {
+        render(
+            snapshot().copy(
+                tirePressureStatus = "NG",
+                warnings =
+                    listOf(
+                        VehicleWarning(
+                            item = "타이어",
+                            severity = WarningSeverity.CAUTION,
+                            description = "타이어 공기압 확인이 필요해요.",
+                            nextAction = "점검",
+                            observedAtMillis = 200,
+                        ),
+                    ),
+            ),
+        )
+
+        compose.onNodeWithText("아픔").assertIsDisplayed()
+        compose.onNodeWithText("모비가 아파요").assertIsDisplayed()
+        assertTrue(compose.onAllNodesWithText("타이어 공기압 확인이 필요해요.").fetchSemanticsNodes().isNotEmpty())
+    }
+
+    @Test
+    fun verifiedLowBatteryUsesHungryCharacterCopy() {
+        render(snapshot(battery = 18))
+
+        compose.onNodeWithText("배고픔").assertIsDisplayed()
+        compose.onNodeWithText("모비가 배고파요").assertIsDisplayed()
     }
 
     private fun render(snapshot: VehicleSnapshot) {

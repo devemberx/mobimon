@@ -12,6 +12,7 @@ fun VehicleSnapshot.vehicleCondition(): VehicleCondition {
     return when {
         quality == SignalQuality.UNAVAILABLE -> VehicleCondition.UNAVAILABLE
         quality == SignalQuality.STALE -> VehicleCondition.STALE
+        tirePressureStatus == "NG" -> VehicleCondition.WARNING
         isEmergencyBraking == true ||
             isDrowsy == true ||
             isDistracted == true ||

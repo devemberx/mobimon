@@ -1,11 +1,13 @@
 package com.monsters.mobimon.vehicle
 
+import com.monsters.mobimon.BuildConfig
 import com.monsters.mobimon.core.domain.Clock
 import com.monsters.mobimon.core.domain.DrivingState
 import com.monsters.mobimon.core.domain.IdGenerator
 import com.monsters.mobimon.core.domain.SettingsRepository
 import com.monsters.mobimon.core.domain.SignalQuality
 import com.monsters.mobimon.core.domain.SignalSource
+import com.monsters.mobimon.core.domain.VehicleCardVssDefaults
 import com.monsters.mobimon.core.domain.VehicleRepository
 import com.monsters.mobimon.core.domain.VehicleSnapshot
 import com.monsters.mobimon.core.vss.DefaultParkedVssRawVehicleSource
@@ -17,6 +19,7 @@ import com.monsters.mobimon.core.vss.generated.VssSignals
 import com.monsters.mobimon.debug.DebugInterpretationOverrides
 import com.monsters.mobimon.debug.DebugRawVssState
 import com.monsters.mobimon.debug.DebugVssProvider
+import com.monsters.mobimon.debug.toCardSignalValues
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -40,14 +43,7 @@ class DemoVehicleRepository(
 ) : VehicleRepository {
     private val mutableSnapshots =
         MutableStateFlow(
-            VssVehicleInterpreter.snapshot(
-                raw = vssRawSource.state.value,
-                id = INITIAL_SNAPSHOT_ID,
-                epoch = INITIAL_SNAPSHOT_EPOCH,
-                sequence = 0,
-                observedAtMillis = clock.nowMillis(),
-                source = rawSourceSignalSource(),
-            ),
+            initialSnapshot(),
         )
     override val snapshots = mutableSnapshots.asStateFlow()
     private var observation: Job? = null
@@ -70,24 +66,35 @@ class DemoVehicleRepository(
 
                     val snapshot: VehicleSnapshot =
                         if (isDebugOn) {
-                            VssVehicleInterpreter.snapshot(
-                                raw = debugState.raw.toVssRawVehicleState(),
-                                id = "$epoch-$nextSequence",
-                                epoch = epoch,
-                                sequence = nextSequence,
-                                observedAtMillis = observedAt,
-                                source = SignalSource.SIMULATED,
-                                overrides = debugState.overrides.toVssInterpretationOverrides(),
+                            val interpreted =
+                                VssVehicleInterpreter.snapshot(
+                                    raw = debugState.raw.toVssRawVehicleState(),
+                                    id = "$epoch-$nextSequence",
+                                    epoch = epoch,
+                                    sequence = nextSequence,
+                                    observedAtMillis = observedAt,
+                                    source = SignalSource.SIMULATED,
+                                    overrides = debugState.overrides.toVssInterpretationOverrides(),
+                                )
+                            interpreted.copy(
+                                vssCardSignals =
+                                    if (BuildConfig.DEBUG) {
+                                        debugState.cardExtraSignals + debugState.raw.toCardSignalValues()
+                                    } else {
+                                        emptyMap()
+                                    },
                             )
                         } else {
-                            VssVehicleInterpreter.snapshot(
-                                raw = vssRawSource.state.value,
-                                id = "$epoch-$nextSequence",
-                                epoch = epoch,
-                                sequence = nextSequence,
-                                observedAtMillis = observedAt,
-                                source = rawSourceSignalSource(),
-                            )
+                            val interpreted =
+                                VssVehicleInterpreter.snapshot(
+                                    raw = vssRawSource.state.value,
+                                    id = "$epoch-$nextSequence",
+                                    epoch = epoch,
+                                    sequence = nextSequence,
+                                    observedAtMillis = observedAt,
+                                    source = rawSourceSignalSource(),
+                                )
+                            interpreted.copy(vssCardSignals = fallbackCardSignals())
                         }
 
                     synchronized(this@DemoVehicleRepository) {
@@ -125,7 +132,7 @@ class DemoVehicleRepository(
         vssRawSource.stop()
         if (vssRawSource is DefaultParkedVssRawVehicleSource) {
             val current = mutableSnapshots.value
-            mutableSnapshots.value =
+            val interpreted =
                 VssVehicleInterpreter.snapshot(
                     raw = vssRawSource.state.value,
                     id = current.id,
@@ -134,6 +141,7 @@ class DemoVehicleRepository(
                     observedAtMillis = clock.nowMillis(),
                     source = rawSourceSignalSource(),
                 )
+            mutableSnapshots.value = interpreted.copy(vssCardSignals = fallbackCardSignals())
             return
         }
         mutableSnapshots.value =
@@ -149,6 +157,26 @@ class DemoVehicleRepository(
             SignalSource.SIMULATED
         } else {
             SignalSource.REAL
+        }
+
+    private fun initialSnapshot(): VehicleSnapshot {
+        val interpreted =
+            VssVehicleInterpreter.snapshot(
+                raw = vssRawSource.state.value,
+                id = INITIAL_SNAPSHOT_ID,
+                epoch = INITIAL_SNAPSHOT_EPOCH,
+                sequence = 0,
+                observedAtMillis = clock.nowMillis(),
+                source = rawSourceSignalSource(),
+            )
+        return interpreted.copy(vssCardSignals = fallbackCardSignals())
+    }
+
+    private fun fallbackCardSignals(): Map<String, String> =
+        if (BuildConfig.DEBUG && vssRawSource is DefaultParkedVssRawVehicleSource) {
+            VehicleCardVssDefaults.values
+        } else {
+            emptyMap()
         }
 }
 

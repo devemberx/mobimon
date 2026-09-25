@@ -84,7 +84,7 @@ fun DebugVssState.toDriveEvaluationData(
         continuousDistanceKm = driveDistanceKm,
         isDistracted = isDistracted,
         laneDepartureCount = if (raw.laneDepartureWarning) DrivingQuestEvaluator.MAX_LANE_DEPARTURES else 0,
-        totalDistanceKm = raw.traveledDistanceKm,
+        totalDistanceKm = raw.traveledDistanceMeters / 1_000f,
         safeDriveCount = safeDriveCount,
         weather = weather,
         isBatteryChargedProperly = isCharging && batteryPercent >= BATTERY_CARE_MIN_SOC,

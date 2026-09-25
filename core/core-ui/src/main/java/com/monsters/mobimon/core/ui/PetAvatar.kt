@@ -23,6 +23,7 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -122,6 +123,7 @@ fun PetAvatar(
     isMoving: Boolean = false,
     movingLeft: Boolean = true,
     vehicleWarning: Boolean = false,
+    artworkOverride: Int? = null,
 ) {
     val cat = friendId == "friend:luna"
     val cream = appearanceKey == "CREAM"
@@ -129,6 +131,17 @@ fun PetAvatar(
     // Reduced motion keeps the gentle idle breath and drops travel animation only.
     val runEnabled = isAnimated && isMoving && LocalMobiMonMotionEnabled.current
     val description = stringResource(if (cat) R.string.mobimon_luna_description else R.string.mobimon_mobi_description)
+    if (artworkOverride != null && !cat) {
+        Box(modifier = modifier.size(120.dp).semantics { contentDescription = description }) {
+            Image(
+                painter = painterResource(artworkOverride),
+                contentDescription = null,
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.Fit,
+            )
+        }
+        return
+    }
     if (emotion == PetEmotion.HAPPY) {
         val happyAsset = CharacterArtwork.happy(friendId, accessoryId ?: outfitId)
         Box(modifier = modifier.size(120.dp).semantics { contentDescription = description }) {

@@ -226,6 +226,19 @@ account limits apply; local clearing does not promise provider deletion.
 Specific warnings take priority; partial data stays partial. See
 [current support](ARCHITECTURE.md#current-foundation) before using condition expressions.
 
+The v5 vehicle screen shows six cards by default: battery charge, charging,
+tire pressure, washer fluid, outside environment and driver assistance. Long
+pressing any card opens a scrollable gallery drawn from 30 VSS-mapped cards at
+the same size as the displayed cards. Cards already assigned to any slot are
+omitted from the gallery. The active slot and selected alternative are
+highlighted; Confirm becomes available after choosing an alternative and saves
+that slot's choice locally. The hint below the six cards explains the gesture.
+Unavailable or stale signals show missing data
+instead of sample values. In the Debug app with no adapter, the screen uses
+simulated defaults; the Settings-enabled Debugger can edit every card signal.
+The character panel uses the normal, hungry and sick Mobi artwork for the
+corresponding observed conditions.
+
 ## AI connection and settings
 
 Settings expose save failures. Debug controls are Debug-only and off by default.

@@ -7,6 +7,7 @@ import com.monsters.mobimon.core.domain.IdGenerator
 import com.monsters.mobimon.core.domain.SettingsRepository
 import com.monsters.mobimon.core.domain.SignalQuality
 import com.monsters.mobimon.core.domain.SignalSource
+import com.monsters.mobimon.core.domain.VehicleCardVssDefaults
 import com.monsters.mobimon.core.domain.VehicleSnapshot
 import com.monsters.mobimon.core.domain.WriteResult
 import com.monsters.mobimon.core.vss.DefaultParkedVssRawVehicleSource
@@ -75,6 +76,60 @@ class FakeVssRawSource : VssRawVehicleSource {
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class DemoVehicleRepositoryTest {
+    @Test
+    fun fallbackAndDebugExposeCardSignalsButRealAdapterDoesNotInventThem() =
+        runTest {
+            val settings = FakeSettingsRepository()
+            val debug = FakeDebugStore()
+            val fallback =
+                DemoVehicleRepository(
+                    Clock { testScheduler.currentTime },
+                    IdGenerator { "epoch" },
+                    settings,
+                    debug,
+                    DefaultParkedVssRawVehicleSource(),
+                    backgroundScope,
+                )
+            assertEquals(VehicleCardVssDefaults.values, fallback.snapshots.value.vssCardSignals)
+            assertEquals(100, fallback.snapshots.value.washerFluidLevel)
+
+            val real =
+                DemoVehicleRepository(
+                    Clock { testScheduler.currentTime },
+                    IdGenerator { "real" },
+                    settings,
+                    debug,
+                    FakeVssRawSource(),
+                    backgroundScope,
+                )
+            real.start()
+            runCurrent()
+            assertTrue(
+                real.snapshots.value.vssCardSignals
+                    .isEmpty(),
+            )
+
+            settings.mutableSettings.value = CompanionSettings(debugModeEnabled = true)
+            debug.mutableState.value =
+                DebugVssState(
+                    raw = DebugRawVssState(tractionBatterySocDisplayed = 41f),
+                    cardExtraSignals =
+                        DebugVssState().cardExtraSignals +
+                            ("Vehicle.Chassis.Axle.Row1.Wheel.Left.Brake.IsFluidLevelLow" to "true"),
+                )
+            runCurrent()
+            assertEquals(SignalSource.SIMULATED, real.snapshots.value.source)
+            assertEquals(
+                "41.0",
+                real.snapshots.value.vssCardSignals["Vehicle.Powertrain.TractionBattery.StateOfCharge.Displayed"],
+            )
+            assertEquals(
+                "true",
+                real.snapshots.value.vssCardSignals["Vehicle.Chassis.Axle.Row1.Wheel.Left.Brake.IsFluidLevelLow"],
+            )
+            real.stop()
+        }
+
     @Test
     fun initialSnapshotUsesDefaultParkedVssBeforeRuntimeStarts() =
         runTest {
