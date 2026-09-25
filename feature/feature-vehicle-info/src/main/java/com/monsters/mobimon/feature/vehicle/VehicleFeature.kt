@@ -27,6 +27,7 @@ import com.monsters.mobimon.core.ui.MobiMonMessage
 class VehicleFeature(
     private val vehicle: VehiclePresentation,
     private val appearance: CompanionAppearancePresentation,
+    private val cardSelectionStore: VehicleCardSelectionStore = InMemoryVehicleCardSelectionStore(),
 ) : FeatureEntry {
     override val routes = setOf(VehicleRoute.VEHICLE_INFO)
 
@@ -39,6 +40,7 @@ class VehicleFeature(
         val snapshot = vehicle.snapshot()
         val appearanceModel = appearance.model()
         val equipped by appearanceModel.state.collectAsStateWithLifecycle()
+        val selectedCards by cardSelectionStore.selectedCards.collectAsStateWithLifecycle()
         Column(
             modifier =
                 modifier
@@ -74,6 +76,8 @@ class VehicleFeature(
                 accessoryId = equipped.accessoryId,
                 backgroundId = equipped.backgroundId,
                 outfitId = equipped.outfitId,
+                selectedCards = selectedCards,
+                onCardSelectionConfirmed = cardSelectionStore::save,
             )
         }
     }

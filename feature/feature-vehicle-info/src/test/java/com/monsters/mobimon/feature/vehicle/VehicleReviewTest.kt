@@ -16,11 +16,13 @@ import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.getUnclippedBoundsInRoot
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.longClick
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performSemanticsAction
+import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
@@ -57,11 +59,10 @@ class VehicleReviewTest {
 
         listOf(
             "충분함",
-            "주차 확인됨",
             "확인된 공기압 상태",
             "경고 없음",
             "주의 경고 없음",
-            "Debug 패널에서 받은 예시 데이터",
+            "앞유리 워셔액 잔량",
         ).forEach(::assertTextFullyVisible)
     }
 
@@ -91,12 +92,21 @@ class VehicleReviewTest {
         show({ samples().first().second }, fontScale = 1f)
 
         val reference = compose.onNodeWithTag("vehicle-reference").getUnclippedBoundsInRoot()
-        val finalCardText = compose.onNodeWithText("Debug 패널에서 받은 예시 데이터").getUnclippedBoundsInRoot()
+        val finalCardText = compose.onNodeWithText("주의 경고 없음").getUnclippedBoundsInRoot()
 
         assertTrue(
             "Final metric row should settle near the lower content area",
             finalCardText.bottom > reference.bottom - 260.dp,
         )
+    }
+
+    @Test
+    fun referenceCardContentMatchesFigmaVerticalPositions() {
+        show({ samples().first().second }, fontScale = 1f)
+
+        val card = compose.onNodeWithTag("vehicle-card-slot-1").getUnclippedBoundsInRoot()
+        val supporting = compose.onNodeWithText("배터리 82%", useUnmergedTree = true).getUnclippedBoundsInRoot()
+        assertEquals(228f, (supporting.top - card.top).value, 8f)
     }
 
     @Test
@@ -107,7 +117,7 @@ class VehicleReviewTest {
             val bitmap = Bitmap.createBitmap(view.width, view.height, Bitmap.Config.ARGB_8888)
             view.draw(Canvas(bitmap))
             val panelRgb = 0x142A42
-            val bottomClearanceStart = (bitmap.height - 48).coerceAtLeast(0)
+            val bottomClearanceStart = (bitmap.height - 16).coerceAtLeast(0)
             var panelPixels = 0
             for (y in bottomClearanceStart until bitmap.height) {
                 for (x in 0 until bitmap.width) {
@@ -126,8 +136,8 @@ class VehicleReviewTest {
     fun compactWideMetricRowsUseEqualCardHeights() {
         show({ samples().first().second }, fontScale = 1f)
 
-        val topRowCard = compose.onNodeWithTag("vehicle-card-battery").getUnclippedBoundsInRoot()
-        val bottomRowCard = compose.onNodeWithTag("vehicle-card-environment").getUnclippedBoundsInRoot()
+        val topRowCard = compose.onNodeWithTag("vehicle-card-slot-1").getUnclippedBoundsInRoot()
+        val bottomRowCard = compose.onNodeWithTag("vehicle-card-slot-4").getUnclippedBoundsInRoot()
 
         assertEquals(
             "Metric card rows should use matching heights",
@@ -147,6 +157,15 @@ class VehicleReviewTest {
         renderReviewImages("enlarged-text", fontScale = 1.5f)
     }
 
+    @Test
+    fun cardSelectorProducesReviewImage() {
+        show({ samples().first().second }, fontScale = 1f)
+        compose.onNodeWithTag("vehicle-card-slot-1").performTouchInput { longClick() }
+        compose.onNodeWithTag("vehicle-card-selector").assertIsDisplayed()
+        val directory = File("build/reports/vehicle-ui").apply { mkdirs() }
+        capture(view, File(directory, "reference-card-selector.png"))
+    }
+
     private fun renderReviewImages(
         variant: String,
         fontScale: Float,
@@ -160,10 +179,10 @@ class VehicleReviewTest {
             if (variant == "enlarged-text") {
                 compose.onNodeWithTag("vehicle-status-banner").performScrollTo()
             }
-            compose.onNodeWithText("차량 정보").assertIsDisplayed()
+            compose.onNodeWithText("차량 상태").assertIsDisplayed()
             capture(view, File(directory, "$variant-$name.png"))
             if (variant == "enlarged-text") {
-                compose.onNodeWithText("Debug 패널에서 받은 예시 데이터").performScrollTo()
+                compose.onNodeWithTag("vehicle-card-slot-6").performScrollTo()
                 capture(view, File(directory, "$variant-$name-metrics.png"))
             }
         }
@@ -266,6 +285,8 @@ class VehicleReviewTest {
                 isEmergencyBraking = false,
                 isDrowsy = false,
                 isDistracted = false,
+                isCharging = false,
+                washerFluidLevel = 68,
             )
         val partial =
             checked.copy(

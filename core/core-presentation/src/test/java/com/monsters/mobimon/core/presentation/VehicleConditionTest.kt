@@ -55,4 +55,17 @@ class VehicleConditionTest {
         assertEquals(VehicleCondition.LOW_BATTERY, normal.copy(batteryPercent = 10).vehicleCondition())
         assertEquals(VehicleCondition.PARTIAL, normal.copy(tirePressureStatus = null).vehicleCondition())
     }
+
+    @Test
+    fun currentAggregatedTireLowSignalMakesTheCharacterSick() {
+        assertEquals(VehicleCondition.WARNING, normal.copy(tirePressureStatus = "NG").vehicleCondition())
+        assertEquals(
+            VehicleCondition.WARNING,
+            normal.copy(tirePressureStatus = "NG", batteryPercent = 10).vehicleCondition(),
+        )
+        assertEquals(
+            VehicleCondition.STALE,
+            normal.copy(tirePressureStatus = "NG", quality = SignalQuality.STALE).vehicleCondition(),
+        )
+    }
 }
