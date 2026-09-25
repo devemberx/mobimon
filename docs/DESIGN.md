@@ -30,13 +30,14 @@ Expressions supplement vehicle facts; they never diagnose a vehicle or replace w
 - Reflow or scroll when enlarged text or the keyboard requires it. Controls are at least
   76 × 76dp, with 24dp spacing/edge clearance where possible. Maintain 4.5:1 text
   contrast and 3:1 control/icon contrast; pair status colors with labels or shapes.
-- Reuse shared navigation controls and `MobiMonParkingBadge` on every route.
+- Reuse shared navigation controls and `MobiMonParkingBadge` on every loaded route.
   Keep points and
   simulation labels separate. Order focus by heading, information and actions;
   trap dialog focus and return it to the trigger on dismissal.
 - Place the shared parking badge at the top right of each route, 72px from the
   content edge and 36px from the content top in the reference layout. It moves
-  with its screen during navigation. Both states use a 440 × 76 capsule at
+  with its screen during navigation. The initial profile loading screen omits
+  the badge. Both states use a 440 × 76 capsule at
   reference scale, with centered text and no parking icon. The confirmed badge
   keeps the dark blue and cyan palette. The restricted badge uses a deep orange
   surface, orange border and amber text. Fresh, valid nonmoving `P` at speed zero

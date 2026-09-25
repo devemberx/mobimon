@@ -51,11 +51,10 @@ class PetHomeScreenTest {
     }
 
     @Test
-    fun loadingHomeKeepsParkingBadgeAtSharedAnchor() {
-        compose.setContent { MobiMonTheme { PetHomeLoadingScreen(false, {}, parkingBadgeConfirmed = false) } }
-        val bounds = compose.onNodeWithContentDescription("주차 후 이용 가능").fetchSemanticsNode().boundsInRoot
-        assertEquals(36f, bounds.top, 1f)
-        assertEquals(2488f, bounds.right, 1f)
+    fun initialLoadingDoesNotShowParkingBadge() {
+        compose.setContent { MobiMonTheme { PetHomeLoadingScreen(false, {}) } }
+        compose.onNodeWithContentDescription("주차 후 이용 가능").assertDoesNotExist()
+        compose.onNodeWithContentDescription("주차 확인됨").assertDoesNotExist()
     }
 
     @Test
@@ -367,6 +366,7 @@ class PetHomeScreenTest {
         var retries = 0
         compose.setContent { MobiMonTheme { PetHomeLoadingScreen(true, { retries++ }) } }
         compose.onNodeWithText("친구를 불러오지 못했어요", substring = true).assertExists()
+        compose.onNodeWithContentDescription("주차 후 이용 가능").assertExists()
         compose.onNodeWithText("다시 시도").assertHeightIsAtLeast(76.dp).performClick()
         assertEquals(1, retries)
     }

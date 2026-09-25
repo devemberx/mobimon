@@ -549,12 +549,19 @@ fun PetHomeLoadingScreen(
 ) {
     Surface(modifier = modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
         BoxWithConstraints {
-            val badgeScale = maxWidth.value / 2560f
-            MobiMonParkingStatusBadge(
-                confirmed = parkingBadgeConfirmed,
-                modifier = Modifier.align(Alignment.TopEnd).padding(end = 72.dp * badgeScale, top = 36.dp * badgeScale),
-                scale = badgeScale,
-            )
+            if (failed) {
+                val badgeScale = maxWidth.value / 2560f
+                MobiMonParkingStatusBadge(
+                    confirmed = parkingBadgeConfirmed,
+                    modifier =
+                        Modifier.align(Alignment.TopEnd).padding(
+                            end = 72.dp * badgeScale,
+                            top =
+                                36.dp * badgeScale,
+                        ),
+                    scale = badgeScale,
+                )
+            }
             Column(
                 Modifier
                     .fillMaxSize()
