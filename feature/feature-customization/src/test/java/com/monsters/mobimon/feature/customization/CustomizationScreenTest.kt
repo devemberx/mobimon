@@ -9,6 +9,7 @@ import androidx.compose.ui.test.assertContentDescriptionEquals
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertHeightIsAtLeast
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
@@ -34,6 +35,50 @@ import org.robolectric.annotation.Config
 @Config(sdk = [34], qualifiers = "ko-rKR-w2560dp-h1248dp-mdpi")
 class CustomizationScreenTest {
     @get:Rule val compose = createComposeRule()
+
+    @Test fun compactStoreWaitsForItsOwnInventoryBeforeShowingActions() {
+        compose.mainClock.autoAdvance = false
+        var storeInventoryReady by mutableStateOf(false)
+        val inventory =
+            CosmeticInventory(
+                setOf("friend:mobi", "friend:luna"),
+                mapOf(CosmeticSlot.FRIEND to "friend:mobi"),
+            )
+        val catalog =
+            listOf(
+                CosmeticItem("friend:mobi", CosmeticSlot.FRIEND, 0),
+                CosmeticItem("friend:luna", CosmeticSlot.FRIEND, 0),
+            )
+        compose.setContent {
+            CompositionLocalProvider(LocalDensity provides Density(LocalDensity.current.density, 2f)) {
+                MobiMonTheme {
+                    CustomizationScreen(
+                        inventory = inventory,
+                        catalog = catalog,
+                        selectedItemId = "friend:luna",
+                        purchasing = false,
+                        purchaseFailed = false,
+                        onSelectItem = {},
+                        onPurchaseItem = { _, _ -> },
+                        onEquipItem = {},
+                        onEquipFriend = {},
+                        pointBalance = 1200,
+                        pointLoadFailed = false,
+                        storeInventoryReady = storeInventoryReady,
+                    )
+                }
+            }
+        }
+
+        compose.onNodeWithTag("preview-character").assertExists()
+        compose.onNodeWithText("루나").assertDoesNotExist()
+        compose.mainClock.advanceTimeBy(240)
+        compose.onAllNodesWithTag("store-item-placeholder").assertCountEquals(2)
+        compose.runOnIdle { storeInventoryReady = true }
+        compose.mainClock.autoAdvance = true
+        compose.onAllNodesWithTag("store-item-placeholder").assertCountEquals(0)
+        compose.onNodeWithText("이 모습 적용").assertIsEnabled()
+    }
 
     @Test fun compactStoreKeepsItsCatalogWhileItemsLoad() {
         compose.mainClock.autoAdvance = false

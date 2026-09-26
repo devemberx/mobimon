@@ -51,16 +51,27 @@ class CustomizationFeature(
 
         CustomizationScreen(
             inventory = inventoryState.inventory ?: appearanceState.inventory,
+            storeInventoryReady = inventoryState.inventory != null,
             catalog = inventoryState.catalog,
             selectedItemId = inventoryState.selectedItemId,
             purchasing = inventoryState.purchasing,
             purchaseFailed = inventoryState.purchaseFailed,
             onSelectItem = inventoryModel::selectItem,
             onPurchaseItem = { itemId, price ->
-                if (interactionAllowed) inventoryModel.purchaseItem(itemId, price)
+                if (interactionAllowed && inventoryModel.state.value.inventory != null) {
+                    inventoryModel.purchaseItem(itemId, price)
+                }
             },
-            onEquipItem = { itemId -> if (interactionAllowed) inventoryModel.equipItem(itemId) },
-            onEquipFriend = { itemId -> if (interactionAllowed) inventoryModel.equipFriend(itemId) },
+            onEquipItem = { itemId ->
+                if (interactionAllowed && inventoryModel.state.value.inventory != null) inventoryModel.equipItem(itemId)
+            },
+            onEquipFriend = { itemId ->
+                if (interactionAllowed &&
+                    inventoryModel.state.value.inventory != null
+                ) {
+                    inventoryModel.equipFriend(itemId)
+                }
+            },
             pointBalance = (pointBalance as? PointBalanceState.Ready)?.balance,
             pointLoadFailed = pointBalance == PointBalanceState.Failed,
             modifier = modifier,

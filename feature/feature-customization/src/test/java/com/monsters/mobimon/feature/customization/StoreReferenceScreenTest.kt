@@ -48,6 +48,82 @@ import java.io.File
 class StoreReferenceScreenTest {
     @get:Rule val compose = createComposeRule()
 
+    @Test fun sharedAppearanceDoesNotEnableActionsBeforeStoreInventoryLoads() {
+        compose.mainClock.autoAdvance = false
+        var storeInventoryReady by mutableStateOf(false)
+        lateinit var view: View
+        val inventory =
+            CosmeticInventory(
+                setOf("friend:mobi", "friend:luna"),
+                mapOf(CosmeticSlot.FRIEND to "friend:mobi"),
+            )
+        val catalog =
+            listOf(
+                CosmeticItem("friend:mobi", CosmeticSlot.FRIEND, 0),
+                CosmeticItem("friend:luna", CosmeticSlot.FRIEND, 0),
+            )
+        compose.setContent {
+            val currentView = LocalView.current
+            SideEffect { view = currentView }
+            MobiMonTheme {
+                CustomizationScreen(
+                    inventory = inventory,
+                    catalog = catalog,
+                    selectedItemId = "friend:luna",
+                    purchasing = false,
+                    purchaseFailed = false,
+                    onSelectItem = {},
+                    onPurchaseItem = { _, _ -> },
+                    onEquipItem = {},
+                    onEquipFriend = {},
+                    pointBalance = 1200,
+                    pointLoadFailed = false,
+                    storeInventoryReady = storeInventoryReady,
+                )
+            }
+        }
+
+        compose.onNodeWithTag("preview-character").assertExists()
+        compose.onNodeWithText("아이템을 골라 주세요").assertIsNotEnabled()
+        compose.mainClock.advanceTimeBy(240)
+        compose.onAllNodesWithTag("store-item-placeholder").assertCountEquals(2)
+        capture(view, "shared-appearance-loading")
+        compose.runOnIdle { storeInventoryReady = true }
+        compose.mainClock.autoAdvance = true
+        compose.onAllNodesWithTag("store-item-placeholder").assertCountEquals(0)
+        compose.onNodeWithText("루나와 함께하기").assertIsEnabled()
+        capture(view, "shared-appearance-loaded")
+    }
+
+    @Test fun equippedBackgroundRemainsVisibleWhileCatalogLoads() {
+        val inventory =
+            CosmeticInventory(
+                setOf("friend:mobi", "background:star"),
+                mapOf(CosmeticSlot.FRIEND to "friend:mobi", CosmeticSlot.BACKGROUND to "background:star"),
+            )
+        compose.setContent {
+            MobiMonTheme {
+                CustomizationScreen(
+                    inventory = inventory,
+                    catalog = listOf(CosmeticItem("background:star", CosmeticSlot.BACKGROUND, 200)),
+                    selectedItemId = null,
+                    purchasing = false,
+                    purchaseFailed = false,
+                    onSelectItem = {},
+                    onPurchaseItem = { _, _ -> },
+                    onEquipItem = {},
+                    onEquipFriend = {},
+                    pointBalance = 1200,
+                    pointLoadFailed = false,
+                    storeInventoryReady = false,
+                )
+            }
+        }
+
+        compose.onNodeWithTag("store-tab-BACKGROUND").performClick()
+        compose.onNodeWithTag("store-preview-particles").assertExists()
+    }
+
     @Test fun fastCatalogReadFillsExistingStoreWithoutPlaceholders() {
         compose.mainClock.autoAdvance = false
         val inventory = CosmeticInventory(setOf("friend:mobi"), mapOf(CosmeticSlot.FRIEND to "friend:mobi"))

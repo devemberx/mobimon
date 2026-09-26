@@ -102,6 +102,20 @@ class CustomizationCatalogTest {
         assertFalse(presentation.selectedEquipped)
     }
 
+    @Test fun pendingCatalogKeepsTheCommittedBackgroundInPreview() {
+        val inventory =
+            CosmeticInventory(
+                setOf("background:star"),
+                mapOf(CosmeticSlot.FRIEND to "friend:mobi", CosmeticSlot.BACKGROUND to "background:star"),
+            )
+
+        val presentation = customizationCatalog(inventory, emptyList(), CosmeticSlot.BACKGROUND, null)
+
+        assertTrue(presentation.items.isEmpty())
+        assertNull(presentation.selected)
+        assertEquals("background:star", presentation.preview.backgroundId)
+    }
+
     @Test fun ownedFilterRetainsPreviewAndShowsTheRemovalChoice() {
         val inventory =
             CosmeticInventory(setOf("accessory:mobi_headphones"), mapOf(CosmeticSlot.FRIEND to "friend:mobi"))

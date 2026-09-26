@@ -87,10 +87,12 @@ fun CustomizationScreen(
     catalogLoadFailed: Boolean = false,
     interactionAllowed: Boolean = true,
     parkingBadgeConfirmed: Boolean = interactionAllowed,
+    storeInventoryReady: Boolean = inventory != null,
 ) {
     var tab by rememberSaveable { mutableStateOf(CosmeticSlot.FRIEND) }
-    val inventoryPending = inventory == null
+    val inventoryPending = !storeInventoryReady
     val catalogPending = catalog.isEmpty()
+    val displayCatalog = if (storeInventoryReady) catalog else emptyList()
     val recoveryNeeded = loadFailed || catalogLoadFailed || pointLoadFailed
     var showPending by remember(inventoryPending, catalogPending, recoveryNeeded) { mutableStateOf(false) }
     LaunchedEffect(inventoryPending, catalogPending, recoveryNeeded) {
@@ -115,7 +117,7 @@ fun CustomizationScreen(
                 )
                 CompactCustomizationScreen(
                     inventory,
-                    catalog,
+                    displayCatalog,
                     selectedItemId,
                     purchasing,
                     purchaseFailed,
@@ -136,6 +138,7 @@ fun CustomizationScreen(
                     catalogLoadFailed = catalogLoadFailed,
                     interactionAllowed = interactionAllowed,
                     showPending = showPending,
+                    storeInventoryReady = storeInventoryReady,
                 )
             }
         } else {
@@ -148,7 +151,7 @@ fun CustomizationScreen(
                     scale,
                     Modifier.offset(72.dp * scale, 36.dp * scale).size(2416.dp * scale, 104.dp * scale),
                 )
-                val presentation = customizationCatalog(inventory, catalog, tab, selectedItemId)
+                val presentation = customizationCatalog(inventory, displayCatalog, tab, selectedItemId)
                 val items = presentation.items
                 val selected = presentation.selected
                 val previewFriend = presentation.preview.friendId
@@ -615,6 +618,7 @@ fun CustomizationScreen(
                     },
                     enabled =
                         interactionAllowed &&
+                            storeInventoryReady &&
                             selected != null &&
                             !observationFailed &&
                             !equipped &&

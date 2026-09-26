@@ -89,6 +89,7 @@ internal fun CompactCustomizationScreen(
     catalogLoadFailed: Boolean = false,
     interactionAllowed: Boolean = true,
     showPending: Boolean = false,
+    storeInventoryReady: Boolean = inventory != null,
 ) {
     var subTab by rememberSaveable { mutableIntStateOf(0) } // 0: 전체, 1: 보유 중
 
@@ -427,6 +428,7 @@ internal fun CompactCustomizationScreen(
 
                     val buttonEnabled =
                         interactionAllowed &&
+                            storeInventoryReady &&
                             !purchasing &&
                             !observationFailed &&
                             !saving &&

@@ -81,8 +81,8 @@ internal fun customizationCatalog(
                     },
                 outfitId = selected?.takeIf { it.slot == CosmeticSlot.OUTFIT }?.id ?: equipment[CosmeticSlot.OUTFIT],
                 backgroundId =
-                    if (tab == CosmeticSlot.BACKGROUND) {
-                        selected?.takeUnless { it.isRemoval }?.id
+                    if (tab == CosmeticSlot.BACKGROUND && selected != null) {
+                        selected.takeUnless { it.isRemoval }?.id
                     } else {
                         inventory.equippedItemIds[CosmeticSlot.BACKGROUND]
                     },
