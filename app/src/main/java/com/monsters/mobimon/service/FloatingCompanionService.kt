@@ -36,7 +36,10 @@ import androidx.lifecycle.viewmodel.compose.LocalViewModelStoreOwner
 import androidx.savedstate.setViewTreeSavedStateRegistryOwner
 import com.monsters.mobimon.R
 import com.monsters.mobimon.core.domain.SettingsRepository
+import com.monsters.mobimon.core.domain.VehicleRepository
 import com.monsters.mobimon.core.presentation.CompanionAppearancePresentation
+import com.monsters.mobimon.core.presentation.VehicleCondition
+import com.monsters.mobimon.core.presentation.vehicleCondition
 import com.monsters.mobimon.core.ui.LocalMobiMonMotionEnabled
 import com.monsters.mobimon.core.ui.MobiMonTheme
 import com.monsters.mobimon.core.ui.PetAvatar
@@ -71,6 +74,8 @@ class FloatingCompanionService : Service() {
 
     @Inject lateinit var companionAppearance: CompanionAppearancePresentation
 
+    @Inject lateinit var vehicleRepository: VehicleRepository
+
     private var windowManager: WindowManager? = null
     private var composeView: ComposeView? = null
     private var overlayParams: WindowManager.LayoutParams? = null
@@ -79,6 +84,8 @@ class FloatingCompanionService : Service() {
 
     private var isMoving by mutableStateOf(false)
     private var movingLeft by mutableStateOf(true)
+    private var vehicleWarning by mutableStateOf(false)
+    private var vehicleHungry by mutableStateOf(false)
 
     // Unknown until the first preference read, so stay in place like the in-app shell.
     private var reducedMotion by mutableStateOf(true)
@@ -97,6 +104,7 @@ class FloatingCompanionService : Service() {
         startInForeground()
         initOverlayView()
         observeSettings()
+        observeVehicleState()
     }
 
     override fun onStartCommand(
@@ -222,6 +230,8 @@ class FloatingCompanionService : Service() {
                                     isAnimated = true,
                                     isMoving = isMoving,
                                     movingLeft = movingLeft,
+                                    vehicleWarning = vehicleWarning,
+                                    vehicleHungry = vehicleHungry,
                                 )
                             }
                         }
@@ -321,8 +331,8 @@ class FloatingCompanionService : Service() {
         wanderJob?.cancel()
         wanderJob = null
         isMoving = false
-        // Dragging stays available; only autonomous wandering stops.
-        if (reducedMotion) return
+        // Dragging stays available; autonomous wandering stops when reducedMotion is on, or when vehicle is abnormal or hungry.
+        if (!FloatingCompanionWanderMath.isWanderingAllowed(reducedMotion, vehicleWarning, vehicleHungry)) return
         wanderJob =
             serviceScope.launch {
                 delay(initialDelayMs)
@@ -460,6 +470,22 @@ class FloatingCompanionService : Service() {
         }
     }
 
+    private fun observeVehicleState() {
+        serviceScope.launch {
+            vehicleRepository.snapshots
+                .collect { snapshot ->
+                    val condition = snapshot.vehicleCondition()
+                    val newWarning = (condition == VehicleCondition.WARNING)
+                    val newHungry = (condition == VehicleCondition.LOW_BATTERY)
+                    if (vehicleWarning != newWarning || vehicleHungry != newHungry) {
+                        vehicleWarning = newWarning
+                        vehicleHungry = newHungry
+                        restartWandering()
+                    }
+                }
+        }
+    }
+
     private fun restartWandering() {
         val view = composeView ?: return
         val params = overlayParams ?: return
@@ -492,6 +518,12 @@ class FloatingCompanionService : Service() {
 }
 
 internal object FloatingCompanionWanderMath {
+    fun isWanderingAllowed(
+        reducedMotion: Boolean,
+        vehicleWarning: Boolean,
+        vehicleHungry: Boolean,
+    ): Boolean = !reducedMotion && !vehicleWarning && !vehicleHungry
+
     fun calculateTargetPosition(
         currentX: Int,
         currentY: Int,

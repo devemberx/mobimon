@@ -130,6 +130,7 @@ fun PetHomeScreen(
                     inventoryLoadFailed,
                     companionModifier,
                     vehicleWarning = snapshot.vehicleCondition() == VehicleCondition.WARNING,
+                    vehicleHungry = snapshot.vehicleCondition() == VehicleCondition.LOW_BATTERY,
                     onClick = { bubbleTrigger++ },
                 )
             }
@@ -331,6 +332,7 @@ private fun HomeCompanion(
     inventoryLoadFailed: Boolean,
     modifier: Modifier = Modifier,
     vehicleWarning: Boolean,
+    vehicleHungry: Boolean = false,
     onClick: () -> Unit,
 ) {
     Box(modifier, contentAlignment = Alignment.Center) {
@@ -351,6 +353,7 @@ private fun HomeCompanion(
                     outfitId = outfitId,
                     backgroundId = backgroundId,
                     vehicleWarning = vehicleWarning,
+                    vehicleHungry = vehicleHungry,
                 )
             inventoryLoadFailed -> Unit
             !inventoryLoaded ->

@@ -507,16 +507,24 @@ private fun CompanionStatusPanel(
                 accessoryId = accessoryId,
                 outfitId = outfitId,
                 backgroundId = backgroundId,
+                vehicleWarning = mood == VehicleMood.WARNING,
+                vehicleHungry = mood == VehicleMood.ATTENTION,
                 artworkOverride =
-                    if (friendId == "friend:mobi") {
-                        when (mood) {
-                            VehicleMood.GOOD -> R.drawable.mobi_vehicle_normal
-                            VehicleMood.ATTENTION -> R.drawable.mobi_vehicle_hungry
-                            VehicleMood.WARNING -> R.drawable.mobi_vehicle_sick
-                            else -> null
-                        }
-                    } else {
-                        null
+                    when (friendId) {
+                        "friend:mobi" ->
+                            when (mood) {
+                                VehicleMood.GOOD -> R.drawable.mobi_vehicle_normal
+                                VehicleMood.ATTENTION -> R.drawable.mobi_vehicle_hungry
+                                else -> null
+                            }
+                        "friend:luna" ->
+                            when (mood) {
+                                VehicleMood.GOOD -> R.drawable.luna_vehicle_normal
+                                VehicleMood.ATTENTION -> R.drawable.luna_vehicle_hungry
+                                VehicleMood.WARNING -> R.drawable.luna_vehicle_sick
+                                else -> null
+                            }
+                        else -> null
                     },
             )
             StatusPill(

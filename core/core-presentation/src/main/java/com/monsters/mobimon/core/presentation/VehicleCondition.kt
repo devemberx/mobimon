@@ -16,10 +16,14 @@ fun VehicleSnapshot.vehicleCondition(): VehicleCondition {
         isEmergencyBraking == true ||
             isDrowsy == true ||
             isDistracted == true ||
+            isEngineWarning == true ||
             warnings.any {
                 it.quality == SignalQuality.VALID && it.severity != WarningSeverity.NOTICE
             } -> VehicleCondition.WARNING
-        battery != null && battery < 20 -> VehicleCondition.LOW_BATTERY
+        (battery != null && battery < 20) ||
+            isFuelLevelLow == true ||
+            vssCardSignals["Vehicle.Powertrain.FuelSystem.IsFuelLevelLow"]?.toBoolean() == true ->
+            VehicleCondition.LOW_BATTERY
         battery == null ||
             tirePressureStatus.isNullOrBlank() ||
             isEmergencyBraking == null ||

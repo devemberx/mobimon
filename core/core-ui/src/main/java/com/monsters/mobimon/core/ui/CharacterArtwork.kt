@@ -114,6 +114,26 @@ object CharacterArtwork {
         accessoryId: String? = null,
     ): CharacterAsset =
         happyEquippedLooks[accessoryId] ?: happyCharacters[friendId] ?: happyCharacters.getValue("friend:mobi")
+
+    val hungryCharacters =
+        mapOf(
+            "friend:luna" to CharacterAsset(R.drawable.mobimon_luna_hungry, visualScale = 0.87f),
+        )
+
+    val sickCharacters =
+        mapOf(
+            "friend:luna" to CharacterAsset(R.drawable.mobimon_luna_sick, visualScale = 0.87f),
+        )
+
+    fun hungry(
+        friendId: String,
+        accessoryId: String? = null,
+    ): CharacterAsset = hungryCharacters[friendId] ?: preview(friendId, accessoryId)
+
+    fun sick(
+        friendId: String,
+        accessoryId: String? = null,
+    ): CharacterAsset = sickCharacters[friendId] ?: preview(friendId, accessoryId)
 }
 
 @Composable
