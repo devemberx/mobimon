@@ -71,6 +71,7 @@ Do not package full-screen references or generation drafts as runtime UI.
 | Mobi idle sprite / Luna frames | `core/core-ui/src/main/assets/characters/{mobi,luna}/idle_breath/` |
 | Luna hungry / sick frames | `core/core-ui/src/main/assets/characters/luna/{hungry,sick}/` |
 | Original Mobi warning artwork | `art/characters/mobi/unhealthy/` (not packaged) |
+| Luna side/back master reference | [Luna_Side_Back.png](../art/characters/luna/references/Luna_Side_Back.png) (not packaged) |
 | Shared artwork, accessories and backgrounds | `core/core-ui/src/main/res/drawable-nodpi/` |
 | Feature icons/artwork | Owning module's `res/drawable/` or `res/drawable-nodpi/` |
 | References | [docs/ui](ui/README.md) |
@@ -79,6 +80,22 @@ Do not package full-screen references or generation drafts as runtime UI.
 Use approved master assets for variants. Preserve identity, proportions, style,
 scene geometry, canvas size, framing, subject scale/anchor and transparency; change
 only requested properties. Check dimensions and compare visually before use.
+
+#### Luna generation references
+
+Always inspect and provide both approved references as image inputs when generating
+or editing any Luna image, including expressions, poses, animation frames and accessories:
+
+- Front: [luna_idle_breath_01.png](../core/core-ui/src/main/assets/characters/luna/idle_breath/luna_idle_breath_01.png).
+- Side and back: [Luna_Side_Back.png](../art/characters/luna/references/Luna_Side_Back.png).
+
+Keep Luna's character proportions consistent in every view and frame: head-to-body
+ratio, head shape, ear size/spacing, limb length/thickness, tail length/thickness/curl
+and facial feature size/placement. Preserve these underlying proportions through
+perspective and pose changes; do not redesign or stretch anatomy to fit a canvas
+or accessory. Compare each result with both references before accepting it and
+reject unintended proportion drift. For variants, also supply the approved source
+image or frame and follow the preservation rules above.
 
 Mobi idle uses a lossless 6 x 4 atlas of all 24 original 1254px RGBA frames.
 The atlas retains every source frame pixel; separate frame PNGs are not kept.
