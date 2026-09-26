@@ -141,6 +141,7 @@ fun VehicleInfoScreen(
                     Box(Modifier.fillMaxSize().testTag("vehicle-reference")) {
                         VehicleHeader(
                             snapshot = snapshot,
+                            friendId = friendId,
                             onBack = onBack,
                             onHome = onHome,
                             scale = scale,
@@ -209,6 +210,7 @@ fun VehicleInfoScreen(
             ) {
                 VehicleHeader(
                     snapshot = snapshot,
+                    friendId = friendId,
                     onBack = onBack,
                     onHome = onHome,
                     scale = compactScale,
@@ -307,6 +309,7 @@ fun VehicleInfoScreen(
 @Composable
 internal fun VehicleHeader(
     snapshot: VehicleSnapshot,
+    friendId: String,
     onBack: () -> Unit,
     onHome: (() -> Unit)?,
     scale: Float,
@@ -345,7 +348,17 @@ internal fun VehicleHeader(
                 modifier = Modifier.semantics { heading() },
             )
             Text(
-                text = stringResource(R.string.vehicle_header_subtitle),
+                text =
+                    stringResource(
+                        R.string.vehicle_header_subtitle,
+                        stringResource(
+                            if (friendId == "friend:luna") {
+                                R.string.vehicle_companion_luna
+                            } else {
+                                R.string.vehicle_companion_mobi
+                            },
+                        ),
+                    ),
                 color = MobiMonColors.muted,
                 fontSize = if (scale >= 0.7f) (28f * scale).sp else 14.sp,
             )

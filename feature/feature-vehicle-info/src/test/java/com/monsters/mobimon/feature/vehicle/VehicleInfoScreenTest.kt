@@ -202,6 +202,23 @@ class VehicleInfoScreenTest {
     }
 
     @Test
+    fun headerSubtitleTracksSelectedCompanion() {
+        var friendId by mutableStateOf("friend:mobi")
+        compose.setContent {
+            MaterialTheme {
+                VehicleInfoScreen(snapshot = snapshot(), friendId = friendId)
+            }
+        }
+
+        compose.onNodeWithText("모비의 상태로 내 차를 한눈에").assertIsDisplayed()
+
+        compose.runOnIdle { friendId = "friend:luna" }
+
+        compose.onNodeWithText("루나의 상태로 내 차를 한눈에").assertIsDisplayed()
+        compose.onNodeWithText("모비의 상태로 내 차를 한눈에").assertDoesNotExist()
+    }
+
+    @Test
     fun headerBackButtonCallsOnBackAndHomeButtonDoesNotExist() {
         var backClicked = false
         compose.setContent {
