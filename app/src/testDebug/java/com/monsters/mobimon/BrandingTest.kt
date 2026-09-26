@@ -105,14 +105,19 @@ class BrandingTest {
                         }
                     }
                 canvas.clipPath(mask)
-                val background = if (column == 2) Color.rgb(211, 227, 253) else MobiMonColors.background.toArgb()
-                canvas.drawColor(background)
-                val foreground = if (column < 2) icon.foreground else requireNotNull(icon.monochrome).mutate()
-                if (column >= 2) foreground.setTint(if (column == 2) Color.rgb(9, 21, 37) else Color.rgb(135, 218, 245))
                 // AdaptiveIconDrawable expands its layers by 1.5 before applying the launcher mask.
                 val extra = size / 4
-                foreground.setBounds(-extra, -extra, size + extra, size + extra)
-                foreground.draw(canvas)
+                if (column < 2) {
+                    icon.setBounds(-extra, -extra, size + extra, size + extra)
+                    icon.draw(canvas)
+                } else {
+                    val background = if (column == 2) Color.rgb(211, 227, 253) else MobiMonColors.background.toArgb()
+                    canvas.drawColor(background)
+                    val monochrome = requireNotNull(icon.monochrome).mutate()
+                    monochrome.setTint(if (column == 2) Color.rgb(9, 21, 37) else Color.rgb(135, 218, 245))
+                    monochrome.setBounds(-extra, -extra, size + extra, size + extra)
+                    monochrome.draw(canvas)
+                }
                 canvas.restore()
                 canvas.drawText("${size}px", column * 160f + 12f, top + size + 17f, text)
             }

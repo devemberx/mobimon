@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Adaptive icon background scenery: sunset sky, ocean, and coastal road. -->
+<!-- Adaptive icon background scenery: coastal highway and sunset. -->
 <bitmap xmlns:android="http://schemas.android.com/apk/res/android"
     android:src="@drawable/ic_launcher_background_artwork"
     android:gravity="fill"
