@@ -262,6 +262,25 @@ simulated defaults; the Settings-enabled Debugger can edit every card signal.
 The character panel uses the normal, hungry and sick Mobi artwork for the
 corresponding observed conditions.
 
+Each vehicle card has an upper-right badge. Current information-only readings
+show **Info**; verified condition readings show **Normal** or **Caution**.
+Missing, stale or invalid readings show **Unavailable**, never Normal. The same
+badge appears in the card selector. Card selection changes layout only; the
+companion condition uses all current evidence, including unselected cards.
+
+| Companion response to Caution | Cards and evidence |
+| --- | --- |
+| Hungry | `battery` below 20%, `washer` below 20%, `washer-low` asserted |
+| Sick | `battery-error` with codes, `service-due`, `brake-fluid`, `low-beam`, `brake-light`, `tire-low`, `pad-warning`, `abs`, or `breakdown` asserted; `tire` low; `assist` with an interpreted warning |
+| No expression change (Info) | `battery-health`, `battery-range`, `battery-time`, `driver-door`, `charging-time`, `service-distance`, `service-time`, `parking-brake`, `driver-belt`, `pad-wear`, `hood`, `trunk`, `air-temperature`, `rain-intensity`, `cabin-temperature`, `distance`, `dtc-count`, `fatigue`, `distraction`, `charging`, `environment` |
+
+The Info values alone do not establish a warning; existing interpreted engine
+and driver-assist warnings still make the companion Sick. One confirmed wheel
+warning suffices for Caution, while Normal for four-wheel VSS cards requires
+all four wheel readings. An interpreted tire status can also classify the
+default tire card.
+Sick takes priority over Hungry. Expressions reflect signals, not a diagnosis.
+
 ## AI connection and settings
 
 Settings expose save failures. Debug controls are Debug-only and off by default.
