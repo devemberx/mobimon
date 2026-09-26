@@ -97,6 +97,55 @@ class DecorativeMotionTest {
     }
 
     @Test
+    fun lunaWithHatAnimatesAcrossMotionStates() {
+        show {
+            Row {
+                PetAvatar(
+                    modifier = Modifier.size(180.dp).testTag("luna_hat_idle"),
+                    friendId = "friend:luna",
+                    accessoryId = "accessory:luna_cap",
+                )
+                PetAvatar(
+                    modifier = Modifier.size(180.dp).testTag("luna_hat_moving"),
+                    friendId = "friend:luna",
+                    accessoryId = "accessory:luna_cap",
+                    isMoving = true,
+                )
+                PetAvatar(
+                    modifier = Modifier.size(180.dp).testTag("luna_hat_hungry"),
+                    friendId = "friend:luna",
+                    accessoryId = "accessory:luna_cap",
+                    emotion = PetEmotion.HUNGRY,
+                )
+                PetAvatar(
+                    modifier = Modifier.size(180.dp).testTag("luna_hat_sick"),
+                    friendId = "friend:luna",
+                    accessoryId = "accessory:luna_cap",
+                    emotion = PetEmotion.SICK,
+                )
+                PetAvatar(
+                    modifier = Modifier.size(180.dp).testTag("luna_sunglasses_static"),
+                    friendId = "friend:luna",
+                    accessoryId = "accessory:luna_sunglasses",
+                )
+            }
+        }
+        val firstIdle = pixels("luna_hat_idle")
+        val firstMoving = pixels("luna_hat_moving")
+        val firstHungry = pixels("luna_hat_hungry")
+        val firstSick = pixels("luna_hat_sick")
+        val firstSunglasses = pixels("luna_sunglasses_static")
+
+        compose.mainClock.advanceTimeBy(320)
+
+        assertTrue("Luna with hat idle breathes over time", firstIdle != pixels("luna_hat_idle"))
+        assertTrue("Luna with hat moves/runs over time", firstMoving != pixels("luna_hat_moving"))
+        assertTrue("Luna with hat hungry animates over time", firstHungry != pixels("luna_hat_hungry"))
+        assertTrue("Luna with hat sick animates over time", firstSick != pixels("luna_hat_sick"))
+        assertTrue("Luna with sunglasses remains static", firstSunglasses == pixels("luna_sunglasses_static"))
+    }
+
+    @Test
     fun particlesStopWhenMotionPreferenceChanges() {
         var motionEnabled by mutableStateOf(true)
         show {
