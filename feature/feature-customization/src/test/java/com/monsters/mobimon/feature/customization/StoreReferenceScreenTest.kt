@@ -12,6 +12,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
@@ -19,6 +20,8 @@ import androidx.compose.ui.test.assertIsNotSelected
 import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.getUnclippedBoundsInRoot
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onAllNodesWithTag
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
@@ -45,7 +48,120 @@ import java.io.File
 class StoreReferenceScreenTest {
     @get:Rule val compose = createComposeRule()
 
+    @Test fun sharedAppearanceDoesNotEnableActionsBeforeStoreInventoryLoads() {
+        compose.mainClock.autoAdvance = false
+        var storeInventoryReady by mutableStateOf(false)
+        lateinit var view: View
+        val inventory =
+            CosmeticInventory(
+                setOf("friend:mobi", "friend:luna"),
+                mapOf(CosmeticSlot.FRIEND to "friend:mobi"),
+            )
+        val catalog =
+            listOf(
+                CosmeticItem("friend:mobi", CosmeticSlot.FRIEND, 0),
+                CosmeticItem("friend:luna", CosmeticSlot.FRIEND, 0),
+            )
+        compose.setContent {
+            val currentView = LocalView.current
+            SideEffect { view = currentView }
+            MobiMonTheme {
+                CustomizationScreen(
+                    inventory = inventory,
+                    catalog = catalog,
+                    selectedItemId = "friend:luna",
+                    purchasing = false,
+                    purchaseFailed = false,
+                    onSelectItem = {},
+                    onPurchaseItem = { _, _ -> },
+                    onEquipItem = {},
+                    onEquipFriend = {},
+                    pointBalance = 1200,
+                    pointLoadFailed = false,
+                    storeInventoryReady = storeInventoryReady,
+                )
+            }
+        }
+
+        compose.onNodeWithTag("preview-character").assertExists()
+        compose.onNodeWithText("아이템을 골라 주세요").assertIsNotEnabled()
+        compose.mainClock.advanceTimeBy(240)
+        compose.onAllNodesWithTag("store-item-placeholder").assertCountEquals(2)
+        capture(view, "shared-appearance-loading")
+        compose.runOnIdle { storeInventoryReady = true }
+        compose.mainClock.autoAdvance = true
+        compose.onAllNodesWithTag("store-item-placeholder").assertCountEquals(0)
+        compose.onNodeWithText("루나와 함께하기").assertIsEnabled()
+        capture(view, "shared-appearance-loaded")
+    }
+
+    @Test fun equippedBackgroundRemainsVisibleWhileCatalogLoads() {
+        val inventory =
+            CosmeticInventory(
+                setOf("friend:mobi", "background:star"),
+                mapOf(CosmeticSlot.FRIEND to "friend:mobi", CosmeticSlot.BACKGROUND to "background:star"),
+            )
+        compose.setContent {
+            MobiMonTheme {
+                CustomizationScreen(
+                    inventory = inventory,
+                    catalog = listOf(CosmeticItem("background:star", CosmeticSlot.BACKGROUND, 200)),
+                    selectedItemId = null,
+                    purchasing = false,
+                    purchaseFailed = false,
+                    onSelectItem = {},
+                    onPurchaseItem = { _, _ -> },
+                    onEquipItem = {},
+                    onEquipFriend = {},
+                    pointBalance = 1200,
+                    pointLoadFailed = false,
+                    storeInventoryReady = false,
+                )
+            }
+        }
+
+        compose.onNodeWithTag("store-tab-BACKGROUND").performClick()
+        compose.onNodeWithTag("store-preview-particles").assertExists()
+    }
+
+    @Test fun fastCatalogReadFillsExistingStoreWithoutPlaceholders() {
+        compose.mainClock.autoAdvance = false
+        val inventory = CosmeticInventory(setOf("friend:mobi"), mapOf(CosmeticSlot.FRIEND to "friend:mobi"))
+        var catalog by mutableStateOf(emptyList<CosmeticItem>())
+        compose.setContent {
+            MobiMonTheme {
+                CustomizationScreen(
+                    inventory = inventory,
+                    catalog = catalog,
+                    selectedItemId = null,
+                    purchasing = false,
+                    purchaseFailed = false,
+                    onSelectItem = {},
+                    onPurchaseItem = { _, _ -> },
+                    onEquipItem = {},
+                    onEquipFriend = {},
+                    pointBalance = 1200,
+                    pointLoadFailed = false,
+                )
+            }
+        }
+
+        compose.onNodeWithTag("store-reference").assertExists()
+        val initialGrid = compose.onNodeWithTag("shop-items").getUnclippedBoundsInRoot()
+        compose.onNodeWithTag("preview-character").assertExists()
+        compose.onAllNodesWithTag("store-item-placeholder").assertCountEquals(0)
+        compose.mainClock.advanceTimeBy(100)
+        compose.runOnIdle {
+            catalog = listOf(CosmeticItem("friend:mobi", CosmeticSlot.FRIEND, 0))
+        }
+        compose.mainClock.autoAdvance = true
+        assertEquals(initialGrid, compose.onNodeWithTag("shop-items").getUnclippedBoundsInRoot())
+        compose.onAllNodesWithTag("store-item-placeholder").assertCountEquals(0)
+        compose.onAllNodesWithText("모비").assertCountEquals(2)
+    }
+
     @Test fun firstInventoryLoadKeepsReferenceFrameThroughFailureAndRecovery() {
+        compose.mainClock.autoAdvance = false
         var inventory by mutableStateOf<CosmeticInventory?>(null)
         var failed by mutableStateOf(false)
         var retries = 0
@@ -81,7 +197,8 @@ class StoreReferenceScreenTest {
         val initialFrame = compose.onNodeWithTag("store-reference").getUnclippedBoundsInRoot()
         val initialHeader = compose.onNodeWithText("꾸미기").getUnclippedBoundsInRoot()
         val initialPreview = compose.onNodeWithTag("store-preview-panel").getUnclippedBoundsInRoot()
-        compose.onNodeWithText("소유한 아이템을 확인하고 있어요.").assertIsDisplayed()
+        val initialGrid = compose.onNodeWithTag("shop-items").getUnclippedBoundsInRoot()
+        compose.onAllNodesWithTag("store-item-placeholder").assertCountEquals(0)
         val loadingBadge = compose.onNodeWithContentDescription("주차 확인됨").getUnclippedBoundsInRoot()
         val pointSummary = compose.onNodeWithText("포인트 1,200 P").getUnclippedBoundsInRoot()
         assertEquals(36f, loadingBadge.top.value, 1f)
@@ -92,16 +209,20 @@ class StoreReferenceScreenTest {
             ((pointSummary.top + pointSummary.bottom) - (loadingBadge.top + loadingBadge.bottom)).value / 2f,
             2f,
         )
-        compose.onNodeWithTag("shop-items").assertDoesNotExist()
         compose.onNodeWithContentDescription("뒤로").performClick()
         assertEquals(1, backs)
+        compose.mainClock.advanceTimeBy(96)
+        compose.onAllNodesWithTag("store-item-placeholder").assertCountEquals(0)
+        compose.mainClock.advanceTimeBy(128)
+        compose.onAllNodesWithTag("store-item-placeholder").assertCountEquals(2)
         capture(view, "inventory-loading")
+        compose.mainClock.autoAdvance = true
 
         compose.runOnIdle { failed = true }
         compose.onNodeWithText("소유한 아이템을 확인할 수 없어요.").assertIsDisplayed()
+        compose.onAllNodesWithTag("store-item-placeholder").assertCountEquals(0)
         compose.onNodeWithText("다시 시도").assertIsDisplayed().performClick()
         assertEquals(1, retries)
-        compose.onNodeWithText("소유한 아이템을 확인하고 있어요.").assertIsDisplayed()
         assertEquals(initialPreview, compose.onNodeWithTag("store-preview-panel").getUnclippedBoundsInRoot())
 
         compose.runOnIdle {
@@ -110,8 +231,8 @@ class StoreReferenceScreenTest {
         assertEquals(initialFrame, compose.onNodeWithTag("store-reference").getUnclippedBoundsInRoot())
         assertEquals(initialHeader, compose.onNodeWithText("꾸미기").getUnclippedBoundsInRoot())
         assertEquals(initialPreview, compose.onNodeWithTag("store-preview-panel").getUnclippedBoundsInRoot())
-        compose.onNodeWithTag("shop-items").assertExists()
-        compose.onNodeWithText("소유한 아이템을 확인하고 있어요.").assertDoesNotExist()
+        assertEquals(initialGrid, compose.onNodeWithTag("shop-items").getUnclippedBoundsInRoot())
+        compose.onAllNodesWithTag("store-item-placeholder").assertCountEquals(0)
     }
 
     @Test fun categoriesSelectIndependentlyAndPreviewOnlyAppliesOnConfirmation() {

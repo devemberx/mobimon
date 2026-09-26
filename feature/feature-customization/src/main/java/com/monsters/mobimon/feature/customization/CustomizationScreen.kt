@@ -27,8 +27,10 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -60,6 +62,7 @@ import com.monsters.mobimon.core.ui.MobiMonSelectionCard
 import com.monsters.mobimon.core.ui.MobiMonTab
 import com.monsters.mobimon.core.ui.PetAvatar
 import com.monsters.mobimon.core.ui.companionBackgroundRes
+import kotlinx.coroutines.delay
 
 @Composable
 fun CustomizationScreen(
@@ -84,8 +87,20 @@ fun CustomizationScreen(
     catalogLoadFailed: Boolean = false,
     interactionAllowed: Boolean = true,
     parkingBadgeConfirmed: Boolean = interactionAllowed,
+    storeInventoryReady: Boolean = inventory != null,
 ) {
     var tab by rememberSaveable { mutableStateOf(CosmeticSlot.FRIEND) }
+    val inventoryPending = !storeInventoryReady
+    val catalogPending = catalog.isEmpty()
+    val displayCatalog = if (storeInventoryReady) catalog else emptyList()
+    val recoveryNeeded = loadFailed || catalogLoadFailed || pointLoadFailed
+    var showPending by remember(inventoryPending, catalogPending, recoveryNeeded) { mutableStateOf(false) }
+    LaunchedEffect(inventoryPending, catalogPending, recoveryNeeded) {
+        if ((inventoryPending || catalogPending) && !recoveryNeeded) {
+            delay(200)
+            showPending = true
+        }
+    }
     BoxWithConstraints(modifier.fillMaxSize().background(MobiMonColors.background)) {
         val scale = maxWidth.value / 2560f
         val contentHeight = maxHeight
@@ -102,7 +117,7 @@ fun CustomizationScreen(
                 )
                 CompactCustomizationScreen(
                     inventory,
-                    catalog,
+                    displayCatalog,
                     selectedItemId,
                     purchasing,
                     purchaseFailed,
@@ -122,53 +137,9 @@ fun CustomizationScreen(
                     timeOfDay = timeOfDay,
                     catalogLoadFailed = catalogLoadFailed,
                     interactionAllowed = interactionAllowed,
+                    showPending = showPending,
+                    storeInventoryReady = storeInventoryReady,
                 )
-            }
-        } else if (inventory == null) {
-            Box(Modifier.fillMaxSize().testTag("store-reference")) {
-                StoreHeader(
-                    pointBalance,
-                    pointLoadFailed,
-                    onBack,
-                    parkingBadgeConfirmed,
-                    scale,
-                    Modifier.offset(72.dp * scale, 36.dp * scale).size(2416.dp * scale, 104.dp * scale),
-                )
-                Box(
-                    Modifier
-                        .offset(72.dp * scale, 196.dp * scale)
-                        .size(916.dp * scale, contentHeight - 220.dp * scale)
-                        .testTag("store-preview-panel")
-                        .background(MobiMonColors.panel, RoundedCornerShape(48.dp * scale))
-                        .padding(32.dp * scale)
-                        .clip(RoundedCornerShape(36.dp * scale))
-                        .background(MobiMonColors.raised),
-                )
-                val recoveryNeeded = loadFailed || catalogLoadFailed || pointLoadFailed
-                Column(
-                    Modifier.offset(1040.dp * scale, 196.dp * scale).size(
-                        1448.dp * scale,
-                        contentHeight - 220.dp * scale,
-                    ),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.Center,
-                ) {
-                    MobiMonMessage(
-                        stringResource(
-                            when {
-                                catalogLoadFailed -> R.string.customization_catalog_failed
-                                loadFailed -> R.string.customization_inventory_failed
-                                pointLoadFailed -> com.monsters.mobimon.core.ui.R.string.mobimon_points_failed
-                                else -> R.string.customization_inventory_loading
-                            },
-                        ),
-                        isError = recoveryNeeded,
-                    )
-                    if (recoveryNeeded) {
-                        Spacer(Modifier.height(24.dp * scale))
-                        MobiMonButton(onRetry) { Text(stringResource(R.string.customization_retry)) }
-                    }
-                }
             }
         } else {
             Box(Modifier.fillMaxSize().testTag("store-reference")) {
@@ -180,7 +151,7 @@ fun CustomizationScreen(
                     scale,
                     Modifier.offset(72.dp * scale, 36.dp * scale).size(2416.dp * scale, 104.dp * scale),
                 )
-                val presentation = customizationCatalog(inventory, catalog, tab, selectedItemId)
+                val presentation = customizationCatalog(inventory, displayCatalog, tab, selectedItemId)
                 val items = presentation.items
                 val selected = presentation.selected
                 val previewFriend = presentation.preview.friendId
@@ -190,7 +161,6 @@ fun CustomizationScreen(
                 val equipped = presentation.selectedEquipped
                 val owned = presentation.selectedOwned
                 val observationFailed = loadFailed || catalogLoadFailed
-                val recoveryNeeded = observationFailed || pointLoadFailed
                 val recoveryHeight = maxOf(76.dp, 112.dp * scale)
                 val actionTop = contentHeight - 136.dp * scale
                 val recoveryTop = actionTop - recoveryHeight - 16.dp * scale
@@ -247,9 +217,19 @@ fun CustomizationScreen(
                                     modifier = Modifier.fillMaxSize().testTag("store-preview-particles"),
                                 )
                             }
-                            if (tab != CosmeticSlot.BACKGROUND) {
-                                val characterSize = minOf(maxWidth, maxHeight) * 0.58f
-                                val topOffset = maxHeight * 0.21f
+                            val characterSize = minOf(maxWidth, maxHeight) * 0.58f
+                            val topOffset = maxHeight * 0.21f
+                            if (inventory == null) {
+                                val placeholderSize = characterSize * 0.7f
+                                Box(
+                                    Modifier
+                                        .align(Alignment.TopCenter)
+                                        .offset(y = topOffset + (characterSize - placeholderSize) / 2)
+                                        .size(placeholderSize)
+                                        .background(MobiMonColors.raised.copy(alpha = 0.75f), CircleShape)
+                                        .testTag("store-preview-placeholder"),
+                                )
+                            } else if (tab != CosmeticSlot.BACKGROUND) {
                                 PetAvatar(
                                     Modifier
                                         .align(Alignment.TopCenter)
@@ -263,7 +243,9 @@ fun CustomizationScreen(
                             }
                         }
                         val previewTitle =
-                            if (tab == CosmeticSlot.BACKGROUND) {
+                            if (inventory == null) {
+                                ""
+                            } else if (tab == CosmeticSlot.BACKGROUND) {
                                 selected?.id?.let { cosmeticName(it) } ?: stringResource(R.string.pet_item_none)
                             } else {
                                 storeFriendName(previewFriend)
@@ -274,13 +256,23 @@ fun CustomizationScreen(
                                 .height(108.dp * scale),
                             contentAlignment = Alignment.Center,
                         ) {
-                            Text(
-                                previewTitle,
-                                fontSize = (48f * scale).sp,
-                                color = MobiMonColors.text,
-                                fontWeight = FontWeight.Bold,
-                                textAlign = TextAlign.Center,
-                            )
+                            if (inventory == null) {
+                                Box(
+                                    Modifier
+                                        .size(
+                                            220.dp * scale,
+                                            36.dp * scale,
+                                        ).background(MobiMonColors.raised, CircleShape),
+                                )
+                            } else {
+                                Text(
+                                    previewTitle,
+                                    fontSize = (48f * scale).sp,
+                                    color = MobiMonColors.text,
+                                    fontWeight = FontWeight.Bold,
+                                    textAlign = TextAlign.Center,
+                                )
+                            }
                         }
                     }
                     Row(
@@ -288,41 +280,48 @@ fun CustomizationScreen(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.Start,
                     ) {
-                        Text(
-                            if (equipped) {
-                                when (tab) {
-                                    CosmeticSlot.FRIEND -> "동행 중"
-                                    CosmeticSlot.ACCESSORY -> "착용 중"
-                                    else -> "사용 중"
-                                }
-                            } else {
-                                "미리보기"
-                            },
-                            color = MobiMonColors.accent,
-                            fontSize = (28f * scale).sp,
-                            modifier =
-                                Modifier.background(MobiMonColors.raised, CircleShape).padding(
-                                    24.dp * scale,
-                                    14.dp * scale,
-                                ),
-                        )
-                        Spacer(Modifier.width(44.dp * scale))
-                        val previewSubtitle =
-                            storePreviewDescription(
-                                tab = tab,
-                                selectedItemId = selected?.id,
-                                previewFriend = previewFriend,
-                                equipped = equipped,
+                        if (inventory == null) {
+                            Box(
+                                Modifier
+                                    .size(
+                                        132.dp * scale,
+                                        52.dp * scale,
+                                    ).background(MobiMonColors.raised, CircleShape),
                             )
-                        Text(
-                            previewSubtitle,
-                            color = MobiMonColors.muted,
-                            fontSize =
-                                (
-                                    28f *
-                                        scale
-                                ).sp,
-                        )
+                            Spacer(Modifier.width(44.dp * scale))
+                            Box(
+                                Modifier
+                                    .size(
+                                        320.dp * scale,
+                                        28.dp * scale,
+                                    ).background(MobiMonColors.raised, CircleShape),
+                            )
+                        } else {
+                            Text(
+                                if (equipped) {
+                                    when (tab) {
+                                        CosmeticSlot.FRIEND -> "동행 중"
+                                        CosmeticSlot.ACCESSORY -> "착용 중"
+                                        else -> "사용 중"
+                                    }
+                                } else {
+                                    "미리보기"
+                                },
+                                color = MobiMonColors.accent,
+                                fontSize = (28f * scale).sp,
+                                modifier =
+                                    Modifier.background(MobiMonColors.raised, CircleShape).padding(
+                                        24.dp * scale,
+                                        14.dp * scale,
+                                    ),
+                            )
+                            Spacer(Modifier.width(44.dp * scale))
+                            Text(
+                                storePreviewDescription(tab, selected?.id, previewFriend, equipped),
+                                color = MobiMonColors.muted,
+                                fontSize = (28f * scale).sp,
+                            )
+                        }
                     }
                 }
                 Row(
@@ -409,15 +408,26 @@ fun CustomizationScreen(
                     horizontalArrangement = Arrangement.spacedBy(24.dp * scale),
                     verticalArrangement = Arrangement.spacedBy(24.dp * scale),
                 ) {
+                    if (items.isEmpty() && showPending && !recoveryNeeded) {
+                        items(if (tab == CosmeticSlot.FRIEND) 2 else 3) {
+                            StorePendingCard(
+                                Modifier.fillMaxWidth().height(
+                                    minOf((if (tab == CosmeticSlot.FRIEND) 492 else 432).dp * scale, catalogHeight),
+                                ),
+                                shape = RoundedCornerShape(36.dp * scale),
+                            )
+                        }
+                    }
                     items(items, key = { it.id }) { item ->
                         val isNone = item.isRemoval
-                        val active = inventory.isEquipped(item)
+                        val active = inventory?.isEquipped(item) == true
                         MobiMonSelectionCard(
                             item.id == selected?.id,
                             { onSelectItem(item.id) },
-                            Modifier.fillMaxWidth().height(
-                                minOf((if (tab == CosmeticSlot.FRIEND) 492 else 432).dp * scale, catalogHeight),
-                            ),
+                            Modifier
+                                .fillMaxWidth()
+                                .height(minOf((if (tab == CosmeticSlot.FRIEND) 492 else 432).dp * scale, catalogHeight))
+                                .then(storeCardRevealModifier(item.id)),
                             shape = RoundedCornerShape(36.dp * scale),
                         ) {
                             Column(Modifier.fillMaxSize().padding(36.dp * scale)) {
@@ -524,7 +534,7 @@ fun CustomizationScreen(
                                         when {
                                             active -> if (tab == CosmeticSlot.ACCESSORY) "착용 중" else "사용 중"
                                             item.id == selected?.id -> "✓ 선택됨"
-                                            isNone || item.id in inventory.ownedItemIds -> "보유 중"
+                                            isNone || item.id in inventory?.ownedItemIds.orEmpty() -> "보유 중"
                                             else -> "${item.price} P"
                                         },
                                         fontSize = (28f * scale).sp,
@@ -534,14 +544,6 @@ fun CustomizationScreen(
                             }
                         }
                     }
-                }
-                if (items.isEmpty()) {
-                    Text(
-                        stringResource(R.string.pet_catalog_pending),
-                        color = MobiMonColors.muted,
-                        fontSize = (32f * scale).sp,
-                        modifier = Modifier.offset(1080.dp * scale, 600.dp * scale).width(1300.dp * scale),
-                    )
                 }
                 if (tab == CosmeticSlot.ACCESSORY && !purchaseFailed && !saveFailed && !recoveryNeeded) {
                     Box(
@@ -616,6 +618,7 @@ fun CustomizationScreen(
                     },
                     enabled =
                         interactionAllowed &&
+                            storeInventoryReady &&
                             selected != null &&
                             !observationFailed &&
                             !equipped &&

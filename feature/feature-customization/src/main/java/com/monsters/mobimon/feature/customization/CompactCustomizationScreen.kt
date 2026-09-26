@@ -88,38 +88,13 @@ internal fun CompactCustomizationScreen(
     timeOfDay: String? = null,
     catalogLoadFailed: Boolean = false,
     interactionAllowed: Boolean = true,
+    showPending: Boolean = false,
+    storeInventoryReady: Boolean = inventory != null,
 ) {
     var subTab by rememberSaveable { mutableIntStateOf(0) } // 0: 전체, 1: 보유 중
 
     val observationFailed = loadFailed || catalogLoadFailed
     val recoveryNeeded = observationFailed || pointLoadFailed
-    if (inventory == null) {
-        Column(
-            modifier = modifier.fillMaxSize().padding(24.dp),
-            verticalArrangement = Arrangement.Center,
-            horizontalAlignment = Alignment.CenterHorizontally,
-        ) {
-            MobiMonMessage(
-                stringResource(
-                    when {
-                        catalogLoadFailed -> R.string.customization_catalog_failed
-                        loadFailed -> R.string.customization_inventory_failed
-                        pointLoadFailed -> com.monsters.mobimon.core.ui.R.string.mobimon_points_failed
-                        else -> R.string.customization_inventory_loading
-                    },
-                ),
-                isError = recoveryNeeded,
-            )
-            if (recoveryNeeded) {
-                Spacer(Modifier.height(16.dp))
-                MobiMonButton(onClick = onRetry, modifier = Modifier.fillMaxWidth()) {
-                    Text(stringResource(R.string.customization_retry))
-                }
-            }
-        }
-        return
-    }
-
     val presentation = customizationCatalog(inventory, catalog, activeTab, selectedItemId, ownedOnly = subTab == 1)
     val effectiveSelectedId = presentation.selected?.id
     val previewFriendId = presentation.preview.friendId
@@ -189,7 +164,7 @@ internal fun CompactCustomizationScreen(
                                 )
                             }
                         }
-                        if (activeTab != CosmeticSlot.BACKGROUND) {
+                        if (inventory != null && activeTab != CosmeticSlot.BACKGROUND) {
                             val characterSize = minOf(maxWidth, maxHeight) * 0.58f
                             val topOffset = maxHeight * 0.21f
                             PetAvatar(
@@ -276,126 +251,124 @@ internal fun CompactCustomizationScreen(
                             if (scrollCatalog) Modifier.height(400.dp) else Modifier.weight(1f),
                         ),
                 ) {
-                    if (filteredItems.isEmpty()) {
-                        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                            Text(
-                                stringResource(R.string.pet_catalog_pending),
-                                style = MaterialTheme.typography.bodyLarge,
-                                textAlign = TextAlign.Center,
-                                color = MaterialTheme.colorScheme.outline,
-                            )
+                    LazyVerticalGrid(
+                        modifier = Modifier.fillMaxSize().selectableGroup().testTag("shop-items"),
+                        columns = GridCells.Adaptive(240.dp),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp),
+                    ) {
+                        if (filteredItems.isEmpty() && showPending && !recoveryNeeded) {
+                            items(2) {
+                                StorePendingCard(Modifier.fillMaxWidth().heightIn(min = 180.dp))
+                            }
                         }
-                    } else {
-                        LazyVerticalGrid(
-                            modifier = Modifier.selectableGroup().testTag("shop-items"),
-                            columns = GridCells.Adaptive(240.dp),
-                            horizontalArrangement = Arrangement.spacedBy(12.dp),
-                            verticalArrangement = Arrangement.spacedBy(12.dp),
-                        ) {
-                            items(filteredItems, key = { it.id }) { item ->
-                                val isSelected = item.id == effectiveSelectedId
-                                val isOwned = inventory.isOwned(item)
-                                val isEquipped = inventory.isEquipped(item)
+                        items(filteredItems, key = { it.id }) { item ->
+                            val isSelected = item.id == effectiveSelectedId
+                            val isOwned = inventory?.isOwned(item) == true
+                            val isEquipped = inventory?.isEquipped(item) == true
 
-                                MobiMonSelectionCard(
-                                    selected = isSelected,
-                                    onClick = { onSelectItem(item.id) },
-                                    modifier = Modifier.fillMaxWidth().heightIn(min = 180.dp),
-                                ) {
-                                    Box(modifier = Modifier.fillMaxSize()) {
-                                        Column(
-                                            modifier = Modifier.fillMaxWidth().padding(12.dp),
-                                            horizontalAlignment = Alignment.CenterHorizontally,
+                            MobiMonSelectionCard(
+                                selected = isSelected,
+                                onClick = { onSelectItem(item.id) },
+                                modifier =
+                                    Modifier
+                                        .fillMaxWidth()
+                                        .heightIn(min = 180.dp)
+                                        .then(storeCardRevealModifier(item.id)),
+                            ) {
+                                Box(modifier = Modifier.fillMaxSize()) {
+                                    Column(
+                                        modifier = Modifier.fillMaxWidth().padding(12.dp),
+                                        horizontalAlignment = Alignment.CenterHorizontally,
+                                    ) {
+                                        // Item Icon visual placeholder
+                                        Box(
+                                            modifier =
+                                                Modifier
+                                                    .size(70.dp)
+                                                    .clip(CircleShape)
+                                                    .background(
+                                                        color = MaterialTheme.colorScheme.primaryContainer,
+                                                        shape = CircleShape,
+                                                    ),
+                                            contentAlignment = Alignment.Center,
                                         ) {
-                                            // Item Icon visual placeholder
-                                            Box(
-                                                modifier =
-                                                    Modifier
-                                                        .size(70.dp)
-                                                        .clip(CircleShape)
-                                                        .background(
-                                                            color = MaterialTheme.colorScheme.primaryContainer,
-                                                            shape = CircleShape,
-                                                        ),
-                                                contentAlignment = Alignment.Center,
+                                            val iconAsset =
+                                                CharacterArtwork.characters[item.id]
+                                                    ?: CharacterArtwork.itemIcons[item.id]
+                                            if (iconAsset != null) {
+                                                CharacterAssetImage(iconAsset, Modifier.size(64.dp))
+                                            } else if (item.slot == CosmeticSlot.BACKGROUND ||
+                                                item.id.startsWith("background:")
                                             ) {
-                                                val iconAsset =
-                                                    CharacterArtwork.characters[item.id]
-                                                        ?: CharacterArtwork.itemIcons[item.id]
-                                                if (iconAsset != null) {
-                                                    CharacterAssetImage(iconAsset, Modifier.size(64.dp))
-                                                } else if (item.slot == CosmeticSlot.BACKGROUND ||
-                                                    item.id.startsWith("background:")
-                                                ) {
-                                                    val particleType =
-                                                        when {
-                                                            item.id.contains("snow") -> ParticleType.SNOW
-                                                            item.id.contains(
-                                                                "petal",
-                                                            ) ||
-                                                                item.id.contains("flower") -> ParticleType.PETAL
-                                                            else -> ParticleType.STAR
-                                                        }
-                                                    FallingParticlesEffect(
-                                                        particleType = particleType,
-                                                        modifier = Modifier.fillMaxSize(),
-                                                        particleCount = 12,
-                                                        minSize = 4.dp,
-                                                        maxSize = 10.dp,
-                                                    )
-                                                } else {
-                                                    Icon(
-                                                        imageVector = Icons.Default.Check,
-                                                        contentDescription = null,
-                                                        tint = MaterialTheme.colorScheme.primary,
-                                                        modifier = Modifier.size(32.dp),
-                                                    )
-                                                }
+                                                val particleType =
+                                                    when {
+                                                        item.id.contains("snow") -> ParticleType.SNOW
+                                                        item.id.contains(
+                                                            "petal",
+                                                        ) ||
+                                                            item.id.contains("flower") -> ParticleType.PETAL
+                                                        else -> ParticleType.STAR
+                                                    }
+                                                FallingParticlesEffect(
+                                                    particleType = particleType,
+                                                    modifier = Modifier.fillMaxSize(),
+                                                    particleCount = 12,
+                                                    minSize = 4.dp,
+                                                    maxSize = 10.dp,
+                                                )
+                                            } else {
+                                                Icon(
+                                                    imageVector = Icons.Default.Check,
+                                                    contentDescription = null,
+                                                    tint = MaterialTheme.colorScheme.primary,
+                                                    modifier = Modifier.size(32.dp),
+                                                )
+                                            }
+                                        }
+
+                                        Spacer(modifier = Modifier.height(12.dp))
+
+                                        val title = cosmeticName(item.id)
+
+                                        Text(
+                                            text = title,
+                                            style = MaterialTheme.typography.titleMedium,
+                                            fontWeight = FontWeight.Bold,
+                                            textAlign = TextAlign.Center,
+                                        )
+
+                                        val subtitle =
+                                            when {
+                                                isEquipped -> stringResource(R.string.pet_item_status_equipped)
+                                                isOwned -> stringResource(R.string.pet_item_status_owned)
+                                                else -> stringResource(R.string.pet_item_status_unowned, item.price)
                                             }
 
-                                            Spacer(modifier = Modifier.height(12.dp))
+                                        Text(
+                                            text = subtitle,
+                                            style = MaterialTheme.typography.labelLarge,
+                                            color =
+                                                if (isEquipped) {
+                                                    MaterialTheme.colorScheme.primary
+                                                } else {
+                                                    MaterialTheme.colorScheme.outline
+                                                },
+                                            textAlign = TextAlign.Center,
+                                        )
+                                    }
 
-                                            val title = cosmeticName(item.id)
-
-                                            Text(
-                                                text = title,
-                                                style = MaterialTheme.typography.titleMedium,
-                                                fontWeight = FontWeight.Bold,
-                                                textAlign = TextAlign.Center,
-                                            )
-
-                                            val subtitle =
-                                                when {
-                                                    isEquipped -> stringResource(R.string.pet_item_status_equipped)
-                                                    isOwned -> stringResource(R.string.pet_item_status_owned)
-                                                    else -> stringResource(R.string.pet_item_status_unowned, item.price)
-                                                }
-
-                                            Text(
-                                                text = subtitle,
-                                                style = MaterialTheme.typography.labelLarge,
-                                                color =
-                                                    if (isEquipped) {
-                                                        MaterialTheme.colorScheme.primary
-                                                    } else {
-                                                        MaterialTheme.colorScheme.outline
-                                                    },
-                                                textAlign = TextAlign.Center,
-                                            )
-                                        }
-
-                                        if (isSelected || isEquipped) {
-                                            Icon(
-                                                imageVector = Icons.Default.Check,
-                                                contentDescription = null,
-                                                tint = MaterialTheme.colorScheme.primary,
-                                                modifier =
-                                                    Modifier
-                                                        .align(Alignment.TopEnd)
-                                                        .padding(8.dp)
-                                                        .size(24.dp),
-                                            )
-                                        }
+                                    if (isSelected || isEquipped) {
+                                        Icon(
+                                            imageVector = Icons.Default.Check,
+                                            contentDescription = null,
+                                            tint = MaterialTheme.colorScheme.primary,
+                                            modifier =
+                                                Modifier
+                                                    .align(Alignment.TopEnd)
+                                                    .padding(8.dp)
+                                                    .size(24.dp),
+                                        )
                                     }
                                 }
                             }
@@ -455,6 +428,7 @@ internal fun CompactCustomizationScreen(
 
                     val buttonEnabled =
                         interactionAllowed &&
+                            storeInventoryReady &&
                             !purchasing &&
                             !observationFailed &&
                             !saving &&

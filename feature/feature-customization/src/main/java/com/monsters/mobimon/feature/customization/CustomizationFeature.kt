@@ -13,6 +13,7 @@ import com.monsters.mobimon.core.navigation.AppRoute
 import com.monsters.mobimon.core.navigation.CompanionRoute
 import com.monsters.mobimon.core.navigation.FeatureEntry
 import com.monsters.mobimon.core.navigation.FeatureNavigator
+import com.monsters.mobimon.core.presentation.CompanionAppearancePresentation
 import com.monsters.mobimon.core.presentation.PointBalanceState
 import com.monsters.mobimon.core.presentation.PointPresentation
 import com.monsters.mobimon.core.presentation.VehiclePresentation
@@ -22,6 +23,7 @@ import com.monsters.mobimon.core.presentation.parkingBadgeConfirmed
 class CustomizationFeature(
     private val points: PointEconomy,
     private val wallet: PointPresentation,
+    private val appearance: CompanionAppearancePresentation,
     private val vehicle: VehiclePresentation,
 ) : FeatureEntry {
     override val routes = setOf(CompanionRoute.APPEARANCE)
@@ -39,6 +41,8 @@ class CustomizationFeature(
             }
         val inventoryModel: CosmeticInventoryViewModel = viewModel(factory = factory)
         val inventoryState by inventoryModel.state.collectAsStateWithLifecycle()
+        val appearanceModel = appearance.model()
+        val appearanceState by appearanceModel.state.collectAsStateWithLifecycle()
         val pointModel = wallet.model()
         val pointBalance by pointModel.state.collectAsStateWithLifecycle()
         val vehicleReading = vehicle.reading()
@@ -46,17 +50,28 @@ class CustomizationFeature(
         val interactionAllowed = vehicleSnapshot.parkedVerified
 
         CustomizationScreen(
-            inventory = inventoryState.inventory,
+            inventory = inventoryState.inventory ?: appearanceState.inventory,
+            storeInventoryReady = inventoryState.inventory != null,
             catalog = inventoryState.catalog,
             selectedItemId = inventoryState.selectedItemId,
             purchasing = inventoryState.purchasing,
             purchaseFailed = inventoryState.purchaseFailed,
             onSelectItem = inventoryModel::selectItem,
             onPurchaseItem = { itemId, price ->
-                if (interactionAllowed) inventoryModel.purchaseItem(itemId, price)
+                if (interactionAllowed && inventoryModel.state.value.inventory != null) {
+                    inventoryModel.purchaseItem(itemId, price)
+                }
             },
-            onEquipItem = { itemId -> if (interactionAllowed) inventoryModel.equipItem(itemId) },
-            onEquipFriend = { itemId -> if (interactionAllowed) inventoryModel.equipFriend(itemId) },
+            onEquipItem = { itemId ->
+                if (interactionAllowed && inventoryModel.state.value.inventory != null) inventoryModel.equipItem(itemId)
+            },
+            onEquipFriend = { itemId ->
+                if (interactionAllowed &&
+                    inventoryModel.state.value.inventory != null
+                ) {
+                    inventoryModel.equipFriend(itemId)
+                }
+            },
             pointBalance = (pointBalance as? PointBalanceState.Ready)?.balance,
             pointLoadFailed = pointBalance == PointBalanceState.Failed,
             modifier = modifier,

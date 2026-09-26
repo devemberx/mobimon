@@ -23,27 +23,40 @@ internal data class CustomizationCatalog(
 )
 
 internal fun customizationCatalog(
-    inventory: CosmeticInventory,
+    inventory: CosmeticInventory?,
     catalog: List<CosmeticItem>,
     tab: CosmeticSlot,
     selectedItemId: String?,
     ownedOnly: Boolean = false,
 ): CustomizationCatalog {
+    if (inventory == null) {
+        return CustomizationCatalog(
+            items = emptyList(),
+            selected = null,
+            selectedOwned = false,
+            selectedEquipped = false,
+            preview = CosmeticPreview("friend:mobi", null, null, null),
+        )
+    }
     val friend = inventory.equippedItemIds[CosmeticSlot.FRIEND] ?: "friend:mobi"
     val available = catalog.filterNot { it.id.contains("necklace") || it.id.contains("mint_scarf") }
     val tabItems =
-        when (tab) {
-            CosmeticSlot.ACCESSORY ->
-                listOf(NONE_ACCESSORY_ITEM) +
-                    available.filter {
-                        (it.slot == CosmeticSlot.ACCESSORY || it.slot == CosmeticSlot.OUTFIT) &&
-                            (
-                                it.compatibleFriendId == friend ||
-                                    (friend == "friend:mobi" && it.compatibleFriendId == null)
-                            )
-                    }
-            CosmeticSlot.BACKGROUND -> listOf(NONE_BACKGROUND_ITEM) + available.filter { it.slot == tab }
-            else -> available.filter { it.slot == tab }
+        if (catalog.isEmpty()) {
+            emptyList()
+        } else {
+            when (tab) {
+                CosmeticSlot.ACCESSORY ->
+                    listOf(NONE_ACCESSORY_ITEM) +
+                        available.filter {
+                            (it.slot == CosmeticSlot.ACCESSORY || it.slot == CosmeticSlot.OUTFIT) &&
+                                (
+                                    it.compatibleFriendId == friend ||
+                                        (friend == "friend:mobi" && it.compatibleFriendId == null)
+                                )
+                        }
+                CosmeticSlot.BACKGROUND -> listOf(NONE_BACKGROUND_ITEM) + available.filter { it.slot == tab }
+                else -> available.filter { it.slot == tab }
+            }
         }
     val selected =
         tabItems.firstOrNull { it.id == selectedItemId }
@@ -68,8 +81,8 @@ internal fun customizationCatalog(
                     },
                 outfitId = selected?.takeIf { it.slot == CosmeticSlot.OUTFIT }?.id ?: equipment[CosmeticSlot.OUTFIT],
                 backgroundId =
-                    if (tab == CosmeticSlot.BACKGROUND) {
-                        selected?.takeUnless { it.isRemoval }?.id
+                    if (tab == CosmeticSlot.BACKGROUND && selected != null) {
+                        selected.takeUnless { it.isRemoval }?.id
                     } else {
                         inventory.equippedItemIds[CosmeticSlot.BACKGROUND]
                     },
