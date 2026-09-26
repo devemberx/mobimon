@@ -1,22 +1,59 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Mobi's sprout, face and steering wheel remain readable when the launcher applies one tint. -->
+<!-- Mobi and Luna driving the car within the adaptive safe zone, themed for monochrome launcher icons. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="108dp"
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
+    <!-- Mobi sprout -->
     <path
         android:fillColor="#FFFFFFFF"
-        android:pathData="M53,41 L55,34 C47,34 44,27 47,24 C54,24 58,29 57,34 C61,27 68,27 71,30 C69,36 63,39 57,37 L56,41 Z" />
+        android:pathData="M38,34 C36,30 34,31 34.5,33 C35,35 36.5,35.5 38,36 L38,39 L43,39 L43,36 C44.5,35.5 46,35 46.5,33 C47,31 45,30 43,34 Z" />
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M40,36 L42,36 L42,40 L40,40 Z" />
+    <!-- Mobi head, ear, eyes cutout, and mouth cutout -->
     <path
         android:fillColor="#FFFFFFFF"
         android:fillType="evenOdd"
-        android:pathData="M31,57 C32,44 41,38 53,38 C66,38 75,46 76,57 C82,67 79,72 72,72 L71,79 C70,85 62,86 59,81 L49,81 C45,86 37,85 36,79 L35,72 C27,73 25,66 31,57 Z M40,51 A2.5,3.5 0,1 0,45,51 A2.5,3.5 0,1 0,40,51 Z M62,51 A2.5,3.5 0,1 0,67,51 A2.5,3.5 0,1 0,62,51 Z M48,55 C51,59 56,59 59,55 L61,57 C57,63 50,63 46,57 Z M42,71 A12,12 0,1 0,66,71 A12,12 0,1 0,42,71 Z" />
+        android:pathData="M30.5,43 C27,43 27,48 28,51 C29,53 31,53 32,51 C34,54 38,55 41.5,55 C47,55 52,52 52,47 C52,42 47,39 41.5,39 C37,39 33,41 30.5,43 Z M36.5,44 A1.5,2 0 1 0 36.5,48 A1.5,2 0 1 0 36.5,44 Z M45.5,44 A1.5,2 0 1 0 45.5,48 A1.5,2 0 1 0 45.5,44 Z M39,48 C40.5,50.5 42.5,50.5 44,48 C43,50 40,50 39,48 Z" />
+    <!-- Luna head, ears, eyes cutout, mouth cutout, and whiskers -->
     <path
         android:fillColor="#FFFFFFFF"
         android:fillType="evenOdd"
-        android:pathData="M44,71 A10,10 0,1 0,64,71 A10,10 0,1 0,44,71 Z M46,71 A8,8 0,1 0,62,71 A8,8 0,1 0,46,71 Z" />
+        android:pathData="M56,40 L60,33 L65,39 C68,38 70,38 71,39 L77,35 L77,43 C80,47 79,51 75,54 C72,55 68,55 64.5,55 C59,55 54,52 54,47 C54,44 55,42 56,40 Z M60.5,44 A1.5,2 0 1 0 60.5,48 A1.5,2 0 1 0 60.5,44 Z M68.5,44 A1.5,2 0 1 0 68.5,48 A1.5,2 0 1 0 68.5,44 Z M62,48 C63.5,50.5 65.5,50.5 67,48 C66,50 63,50 62,48 Z M55,46.5 L58,47 L55,47.5 Z M55,48.5 L58,48.5 L55,49 Z M74,46.5 L71,47 L74,47.5 Z M74,48.5 L71,48.5 L74,49 Z" />
+    <!-- Windshield arch -->
+    <path
+        android:strokeColor="#FFFFFFFF"
+        android:strokeWidth="1.5"
+        android:strokeLineCap="round"
+        android:pathData="M35,60 C42,50 64,50 71,60" />
+    <!-- Steering wheel -->
+    <path
+        android:strokeColor="#FFFFFFFF"
+        android:strokeWidth="1.5"
+        android:pathData="M38.5,55.5 A4,4 0 1 0 46.5,55.5 A4,4 0 1 0 38.5,55.5 Z" />
+    <!-- Car body and hood -->
     <path
         android:fillColor="#FFFFFFFF"
-        android:pathData="M54,65 L56,69 L60,70 L57,73 L58,77 L54,75 L50,77 L51,73 L48,70 L52,69 Z" />
+        android:fillType="evenOdd"
+        android:pathData="M37,59 L69,59 C73,59 76,62 76,66 C76,70 74,74 70,74 L36,74 C32,74 30,70 30,66 C30,62 33,59 37,59 Z M35.5,63.5 A3.5,3.5 0 1 0 35.5,70.5 A3.5,3.5 0 1 0 35.5,63.5 Z M70.5,63.5 A3.5,3.5 0 1 0 70.5,70.5 A3.5,3.5 0 1 0 70.5,63.5 Z M41,64 L65,64 C65.5,64 66,64.5 66,65 L66,69 C66,69.5 65.5,70 65,70 L41,70 C40.5,70 40,69.5 40,69 L40,65 C40,64.5 40.5,64 41,64 Z" />
+    <!-- Headlight inner cores -->
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M35.5,65 A2,2 0 1 0 35.5,69 A2,2 0 1 0 35.5,65 Z" />
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M70.5,65 A2,2 0 1 0 70.5,69 A2,2 0 1 0 70.5,65 Z" />
+    <!-- Front bumper -->
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M33,74.5 L73,74.5 C73.8,74.5 74,75 74,75.5 L74,76 C74,76.5 73.8,77 73,77 L33,77 C32.2,77 32,76.5 32,76 L32,75.5 C32,75 32.2,74.5 33,74.5 Z" />
+    <!-- Tires -->
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M29,67 L31,67 C31.5,67 32,67.5 32,68 L32,73 C32,73.5 31.5,74 31,74 L29,74 C28.5,74 28,73.5 28,73 L28,68 C28,67.5 28.5,67 29,67 Z" />
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M75,67 L77,67 C77.5,67 78,67.5 78,68 L78,73 C78,73.5 77.5,74 77,74 L75,74 C74.5,74 74,73.5 74,73 L74,68 C74,67.5 74.5,67 75,67 Z" />
 </vector>

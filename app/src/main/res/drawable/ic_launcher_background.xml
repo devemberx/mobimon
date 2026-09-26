@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Adaptive icon foreground: Mobi and Luna driving the car within the adaptive safe zone. -->
+<!-- Adaptive icon background scenery: sunset sky, ocean, and coastal road. -->
 <bitmap xmlns:android="http://schemas.android.com/apk/res/android"
-    android:src="@drawable/ic_launcher_foreground_artwork"
+    android:src="@drawable/ic_launcher_background_artwork"
     android:gravity="fill"
     android:filter="true" />
