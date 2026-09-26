@@ -243,8 +243,11 @@ internal enum class LunaActiveAnimation {
 
 internal object LunaAnimationManager {
     fun retainOnly(active: LunaActiveAnimation) {
-        if (active != LunaActiveAnimation.IDLE) LunaAnimationCache.clear()
-        if (active != LunaActiveAnimation.RUN) LunaRunAnimationCache.clear()
+        val retainMotion = active == LunaActiveAnimation.IDLE || active == LunaActiveAnimation.RUN
+        if (!retainMotion) {
+            LunaAnimationCache.clear()
+            LunaRunAnimationCache.clear()
+        }
         if (active != LunaActiveAnimation.HUNGRY) LunaHungryAnimationCache.clear()
         if (active != LunaActiveAnimation.SICK) LunaSickAnimationCache.clear()
     }
@@ -345,14 +348,12 @@ fun PetAvatar(
                     isSick ->
                         LunaSickAnimation(
                             modifier = Modifier.fillMaxSize(),
-                            movingLeft = movingLeft,
                             fallbackAsset = CharacterArtwork.sick(friendId, equippedAccessory),
                             hasHat = hasLunaHat,
                         )
                     isHungry ->
                         LunaHungryAnimation(
                             modifier = Modifier.fillMaxSize(),
-                            movingLeft = movingLeft,
                             fallbackAsset = CharacterArtwork.hungry(friendId, equippedAccessory),
                             hasHat = hasLunaHat,
                         )
@@ -366,7 +367,6 @@ fun PetAvatar(
                     else ->
                         LunaIdleBreathAnimation(
                             modifier = Modifier.fillMaxSize(),
-                            movingLeft = movingLeft,
                             fallbackAsset = CharacterArtwork.preview(friendId, equippedAccessory),
                             hasHat = hasLunaHat,
                         )
@@ -458,7 +458,6 @@ fun LunaRunAnimation(
 @Composable
 fun LunaIdleBreathAnimation(
     modifier: Modifier = Modifier,
-    movingLeft: Boolean = true,
     contentDescription: String? = null,
     fallbackAsset: CharacterAsset = CharacterArtwork.characters.getValue("friend:luna"),
     hasHat: Boolean = false,
@@ -470,14 +469,12 @@ fun LunaIdleBreathAnimation(
         modifier,
         contentDescription,
         fallbackAsset,
-        movingLeft,
     )
 }
 
 @Composable
 fun LunaHungryAnimation(
     modifier: Modifier = Modifier,
-    movingLeft: Boolean = true,
     contentDescription: String? = null,
     fallbackAsset: CharacterAsset = CharacterArtwork.hungry("friend:luna"),
     hasHat: Boolean = false,
@@ -489,14 +486,12 @@ fun LunaHungryAnimation(
         modifier,
         contentDescription,
         fallbackAsset,
-        movingLeft,
     )
 }
 
 @Composable
 fun LunaSickAnimation(
     modifier: Modifier = Modifier,
-    movingLeft: Boolean = true,
     contentDescription: String? = null,
     fallbackAsset: CharacterAsset = CharacterArtwork.sick("friend:luna"),
     hasHat: Boolean = false,
@@ -508,7 +503,6 @@ fun LunaSickAnimation(
         modifier,
         contentDescription,
         fallbackAsset,
-        movingLeft,
     )
 }
 
@@ -520,7 +514,6 @@ private fun IdleBreathAnimation(
     modifier: Modifier,
     contentDescription: String?,
     fallbackAsset: CharacterAsset,
-    movingLeft: Boolean = true,
 ) {
     val context = LocalContext.current
     val frames = remember(context, loadFrames, hasHat) { loadFrames(context, hasHat) }
@@ -554,10 +547,9 @@ private fun IdleBreathAnimation(
             modifier =
                 if (applyAssetTransform) {
                     modifier.graphicsLayer {
-                        val flip = if (movingLeft) 1f else -1f
-                        scaleX = baseAsset.visualScale * flip
+                        scaleX = baseAsset.visualScale
                         scaleY = baseAsset.visualScale
-                        translationX = size.width * baseAsset.translationXFraction * flip
+                        translationX = size.width * baseAsset.translationXFraction
                         translationY = size.height * baseAsset.translationYFraction
                     }
                 } else {

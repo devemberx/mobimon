@@ -416,4 +416,44 @@ class DecorativeMotionTest {
         assertTrue("Luna animates while moving hungry", firstHungry != pixels("luna-moving-hungry"))
         assertTrue("Luna animates while moving sick", firstSick != pixels("luna-moving-sick"))
     }
+
+    @Test
+    fun lunaIdleBreathAnimationMaintainsConsistentDirectionRegardlessOfMovingLeft() {
+        var movingLeft by mutableStateOf(true)
+        show {
+            PetAvatar(
+                modifier = Modifier.size(180.dp).testTag("luna-idle"),
+                friendId = "friend:luna",
+                isMoving = false,
+                movingLeft = movingLeft,
+            )
+        }
+        val idleLeftPixels = pixels("luna-idle")
+        updateStateAndDraw { movingLeft = false }
+        val idleRightPixels = pixels("luna-idle")
+        assertTrue(
+            "Luna idle breath pixels must be identical regardless of movingLeft",
+            idleLeftPixels == idleRightPixels,
+        )
+    }
+
+    @Test
+    fun lunaRunAnimationMirrorsWhenMovingRight() {
+        var movingLeft by mutableStateOf(true)
+        show {
+            PetAvatar(
+                modifier = Modifier.size(180.dp).testTag("luna-run"),
+                friendId = "friend:luna",
+                isMoving = true,
+                movingLeft = movingLeft,
+            )
+        }
+        val runLeftPixels = pixels("luna-run")
+        updateStateAndDraw { movingLeft = false }
+        val runRightPixels = pixels("luna-run")
+        assertTrue(
+            "Luna running animation must mirror when moving right",
+            runLeftPixels != runRightPixels,
+        )
+    }
 }
