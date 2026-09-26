@@ -319,4 +319,52 @@ class DecorativeMotionTest {
         }
         return result
     }
+
+    @Test
+    fun lunaPlaysHungryAndSickAnimationsWhenRequested() {
+        show {
+            Row {
+                PetAvatar(
+                    Modifier.size(180.dp).testTag("luna-hungry"),
+                    friendId = "friend:luna",
+                    vehicleHungry = true,
+                )
+                PetAvatar(
+                    Modifier.size(180.dp).testTag("luna-sick"),
+                    friendId = "friend:luna",
+                    vehicleWarning = true,
+                )
+            }
+        }
+        val firstHungry = pixels("luna-hungry")
+        val firstSick = pixels("luna-sick")
+        compose.mainClock.advanceTimeBy(320)
+        assertTrue("Luna animates while hungry", firstHungry != pixels("luna-hungry"))
+        assertTrue("Luna animates while sick", firstSick != pixels("luna-sick"))
+    }
+
+    @Test
+    fun lunaPlaysHungryAndSickAnimationsWhileMoving() {
+        show {
+            Row {
+                PetAvatar(
+                    Modifier.size(180.dp).testTag("luna-moving-hungry"),
+                    friendId = "friend:luna",
+                    isMoving = true,
+                    vehicleHungry = true,
+                )
+                PetAvatar(
+                    Modifier.size(180.dp).testTag("luna-moving-sick"),
+                    friendId = "friend:luna",
+                    isMoving = true,
+                    vehicleWarning = true,
+                )
+            }
+        }
+        val firstHungry = pixels("luna-moving-hungry")
+        val firstSick = pixels("luna-moving-sick")
+        compose.mainClock.advanceTimeBy(320)
+        assertTrue("Luna animates while moving hungry", firstHungry != pixels("luna-moving-hungry"))
+        assertTrue("Luna animates while moving sick", firstSick != pixels("luna-moving-sick"))
+    }
 }

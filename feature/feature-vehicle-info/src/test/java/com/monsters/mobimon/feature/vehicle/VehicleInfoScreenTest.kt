@@ -356,6 +356,20 @@ class VehicleInfoScreenTest {
         compose.onNodeWithText("모비가 배고파요").assertIsDisplayed()
     }
 
+    @Test
+    fun lunaDisplaysHungryAndSickState() {
+        compose.setContent {
+            MaterialTheme {
+                VehicleInfoScreen(
+                    snapshot = snapshot(battery = 15),
+                    friendId = "friend:luna",
+                )
+            }
+        }
+        compose.onNodeWithText("배고픔").assertIsDisplayed()
+        compose.onNodeWithText("루나가 배고파요").assertIsDisplayed()
+    }
+
     private fun render(snapshot: VehicleSnapshot) {
         compose.setContent {
             MaterialTheme {

@@ -69,6 +69,7 @@ Do not package full-screen references or generation drafts as runtime UI.
 | Asset | Location |
 | --- | --- |
 | Mobi idle sprite / Luna frames | `core/core-ui/src/main/assets/characters/{mobi,luna}/idle_breath/` |
+| Luna hungry / sick frames | `core/core-ui/src/main/assets/characters/luna/{hungry,sick}/` |
 | Original Mobi warning artwork | `art/characters/mobi/unhealthy/` (not packaged) |
 | Shared artwork, accessories and backgrounds | `core/core-ui/src/main/res/drawable-nodpi/` |
 | Feature icons/artwork | Owning module's `res/drawable/` or `res/drawable-nodpi/` |

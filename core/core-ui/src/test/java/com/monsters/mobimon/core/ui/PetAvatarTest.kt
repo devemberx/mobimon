@@ -128,6 +128,24 @@ class PetAvatarTest {
     }
 
     @Test
+    fun lunaHungryAnimationCacheLoadsTwentyFourFramesFromAssets() {
+        val context =
+            androidx.test.core.app.ApplicationProvider
+                .getApplicationContext<android.content.Context>()
+        val frames = LunaHungryAnimationCache.getOrLoadFrames(context)
+        assertEquals(24, frames.size)
+    }
+
+    @Test
+    fun lunaSickAnimationCacheLoadsTwentyFourFramesFromAssets() {
+        val context =
+            androidx.test.core.app.ApplicationProvider
+                .getApplicationContext<android.content.Context>()
+        val frames = LunaSickAnimationCache.getOrLoadFrames(context)
+        assertEquals(24, frames.size)
+    }
+
+    @Test
     fun itemIconsCropBoundsMatchItemSpans() {
         val headphonesCrop = CharacterArtwork.itemIcons.getValue("accessory:mobi_headphones").crop
         assertNotNull(headphonesCrop)
@@ -211,5 +229,45 @@ class PetAvatarTest {
         assertNotEquals(signatures.getValue("mobi-happy"), signatures.getValue("luna-happy"))
         assertTrue(signatures.getValue("mobi-happy").toSet().size > 100)
         assertTrue(signatures.getValue("luna-happy").toSet().size > 100)
+    }
+
+    @Test
+    fun hungryAndSickArtworkAreDefinedForLuna() {
+        val lunaHungry = CharacterArtwork.hungry("friend:luna")
+        val lunaSick = CharacterArtwork.sick("friend:luna")
+        assertNotNull(lunaHungry)
+        assertNotNull(lunaSick)
+        assertEquals(0.87f, lunaHungry.visualScale)
+        assertEquals(0.87f, lunaSick.visualScale)
+        assertEquals(R.drawable.mobimon_luna_hungry, lunaHungry.resourceId)
+        assertEquals(R.drawable.mobimon_luna_sick, lunaSick.resourceId)
+    }
+
+    @Test
+    fun lunaAnimationManagerRetainsOnlyActiveCache() {
+        val context =
+            androidx.test.core.app.ApplicationProvider
+                .getApplicationContext<android.content.Context>()
+        LunaAnimationCache.getOrLoadFrames(context)
+        LunaHungryAnimationCache.getOrLoadFrames(context)
+        LunaSickAnimationCache.getOrLoadFrames(context)
+        LunaRunAnimationCache.getOrLoadFrames(context)
+
+        assertNotNull(LunaAnimationCache.peek())
+        assertNotNull(LunaHungryAnimationCache.peek())
+        assertNotNull(LunaSickAnimationCache.peek())
+        assertNotNull(LunaRunAnimationCache.peek())
+
+        LunaAnimationManager.retainOnly(LunaActiveAnimation.HUNGRY)
+        assertNull(LunaAnimationCache.peek())
+        assertNotNull(LunaHungryAnimationCache.peek())
+        assertNull(LunaSickAnimationCache.peek())
+        assertNull(LunaRunAnimationCache.peek())
+
+        LunaAnimationManager.clearAll()
+        assertNull(LunaAnimationCache.peek())
+        assertNull(LunaHungryAnimationCache.peek())
+        assertNull(LunaSickAnimationCache.peek())
+        assertNull(LunaRunAnimationCache.peek())
     }
 }
