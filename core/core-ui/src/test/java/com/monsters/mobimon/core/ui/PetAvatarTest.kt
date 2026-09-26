@@ -269,6 +269,22 @@ class PetAvatarTest {
         assertNotNull(LunaSickAnimationCache.peek())
         assertNotNull(LunaRunAnimationCache.peek())
 
+        LunaAnimationManager.retainOnly(LunaActiveAnimation.IDLE)
+        assertNotNull(LunaAnimationCache.peek())
+        assertNotNull(LunaRunAnimationCache.peek())
+        assertNull(LunaHungryAnimationCache.peek())
+        assertNull(LunaSickAnimationCache.peek())
+
+        LunaHungryAnimationCache.getOrLoadFrames(context)
+        LunaSickAnimationCache.getOrLoadFrames(context)
+        LunaAnimationManager.retainOnly(LunaActiveAnimation.RUN)
+        assertNotNull(LunaAnimationCache.peek())
+        assertNotNull(LunaRunAnimationCache.peek())
+        assertNull(LunaHungryAnimationCache.peek())
+        assertNull(LunaSickAnimationCache.peek())
+
+        LunaHungryAnimationCache.getOrLoadFrames(context)
+        LunaSickAnimationCache.getOrLoadFrames(context)
         LunaAnimationManager.retainOnly(LunaActiveAnimation.HUNGRY)
         assertNull(LunaAnimationCache.peek())
         assertNotNull(LunaHungryAnimationCache.peek())

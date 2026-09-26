@@ -243,8 +243,11 @@ internal enum class LunaActiveAnimation {
 
 internal object LunaAnimationManager {
     fun retainOnly(active: LunaActiveAnimation) {
-        if (active != LunaActiveAnimation.IDLE) LunaAnimationCache.clear()
-        if (active != LunaActiveAnimation.RUN) LunaRunAnimationCache.clear()
+        val retainMotion = active == LunaActiveAnimation.IDLE || active == LunaActiveAnimation.RUN
+        if (!retainMotion) {
+            LunaAnimationCache.clear()
+            LunaRunAnimationCache.clear()
+        }
         if (active != LunaActiveAnimation.HUNGRY) LunaHungryAnimationCache.clear()
         if (active != LunaActiveAnimation.SICK) LunaSickAnimationCache.clear()
     }
