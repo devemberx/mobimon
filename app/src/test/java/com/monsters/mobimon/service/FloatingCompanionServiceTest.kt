@@ -8,7 +8,9 @@ import com.monsters.mobimon.core.domain.WriteResult
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
@@ -17,6 +19,38 @@ import org.robolectric.annotation.Config
 @RunWith(RobolectricTestRunner::class)
 @Config(manifest = Config.NONE)
 class FloatingCompanionServiceTest {
+    @Test
+    fun wanderingDisallowedWhenReducedMotionOrWarningOrHungry() {
+        assertTrue(
+            FloatingCompanionWanderMath.isWanderingAllowed(
+                reducedMotion = false,
+                vehicleWarning = false,
+                vehicleHungry = false,
+            ),
+        )
+        assertFalse(
+            FloatingCompanionWanderMath.isWanderingAllowed(
+                reducedMotion = true,
+                vehicleWarning = false,
+                vehicleHungry = false,
+            ),
+        )
+        assertFalse(
+            FloatingCompanionWanderMath.isWanderingAllowed(
+                reducedMotion = false,
+                vehicleWarning = true,
+                vehicleHungry = false,
+            ),
+        )
+        assertFalse(
+            FloatingCompanionWanderMath.isWanderingAllowed(
+                reducedMotion = false,
+                vehicleWarning = false,
+                vehicleHungry = true,
+            ),
+        )
+    }
+
     @Test
     fun overlayLifecycleOwnerInitializesInResumedStateAndDestroysCleanly() {
         val owner = OverlayLifecycleOwner()

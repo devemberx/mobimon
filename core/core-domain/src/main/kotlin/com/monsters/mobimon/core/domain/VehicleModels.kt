@@ -44,6 +44,7 @@ data class VehicleSnapshot(
     val isRaining: Boolean? = null,
     val washerFluidLevel: Int? = null,
     val isEngineWarning: Boolean? = null,
+    val isFuelLevelLow: Boolean? = null,
     val tirePressureStatus: String? = null,
     val speed: Int? = null,
     val gear: String? = null,

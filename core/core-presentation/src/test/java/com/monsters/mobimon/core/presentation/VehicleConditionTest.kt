@@ -68,4 +68,22 @@ class VehicleConditionTest {
             normal.copy(tirePressureStatus = "NG", quality = SignalQuality.STALE).vehicleCondition(),
         )
     }
+
+    @Test
+    fun lowFuelOrChargingLevelMakesTheCharacterHungryAndEngineWarningMakesSick() {
+        assertEquals(VehicleCondition.LOW_BATTERY, normal.copy(isFuelLevelLow = true).vehicleCondition())
+        assertEquals(
+            VehicleCondition.LOW_BATTERY,
+            normal
+                .copy(
+                    vssCardSignals = mapOf("Vehicle.Powertrain.FuelSystem.IsFuelLevelLow" to "true"),
+                ).vehicleCondition(),
+        )
+        assertEquals(VehicleCondition.WARNING, normal.copy(isEngineWarning = true).vehicleCondition())
+        // Warning takes precedence over hungry
+        assertEquals(
+            VehicleCondition.WARNING,
+            normal.copy(isEngineWarning = true, isFuelLevelLow = true).vehicleCondition(),
+        )
+    }
 }

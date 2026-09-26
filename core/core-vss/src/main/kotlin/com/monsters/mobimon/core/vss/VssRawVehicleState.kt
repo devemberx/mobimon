@@ -32,6 +32,7 @@ data class VssInterpretationOverrides(
     val isRaining: Boolean? = null,
     val washerFluidLevel: Int? = null,
     val isEngineWarning: Boolean? = null,
+    val isFuelLevelLow: Boolean? = null,
     val tirePressureStatus: String? = null,
     val isMoving: Boolean? = null,
     val speed: Int? = null,
@@ -123,6 +124,7 @@ object VssVehicleInterpreter {
             isRaining = overrides.isRaining ?: (raw.rainIntensity > 0),
             washerFluidLevel = overrides.washerFluidLevel ?: raw.washerFluidLevel.coerceIn(0, 100),
             isEngineWarning = overrides.isEngineWarning ?: (raw.diagnosticsDtcCount > 0),
+            isFuelLevelLow = overrides.isFuelLevelLow ?: raw.fuelLevelLow,
             tirePressureStatus =
                 overrides.tirePressureStatus
                     ?: if (
@@ -248,6 +250,9 @@ private val VssSignals.currentLocationTimestamp: String
 
 private val VssSignals.combustionEngineRunning: Boolean
     get() = powertrain.combustionEngine.isRunning
+
+private val VssSignals.fuelLevelLow: Boolean
+    get() = powertrain.fuelSystem.isFuelLevelLow
 
 private const val DISTRACTION_THRESHOLD_PERCENT = 70f
 private const val FATIGUE_THRESHOLD_PERCENT = 70f
